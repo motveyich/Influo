@@ -1,0 +1,984 @@
+import React, { useState, useEffect } from 'react';
+import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
+import { profileService } from '../services/profileService';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { X, User, Briefcase, Instagram, Youtube, Twitter, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+interface ProfileSetupModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentProfile?: UserProfile | null;
+  onProfileUpdated: (profile: UserProfile) => void;
+}
+
+export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUpdated }: ProfileSetupModalProps) {
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser'>('basic');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { t } = useTranslation();
+
+  // Basic info state
+  const [basicInfo, setBasicInfo] = useState({
+    fullName: '',
+    email: '',
+    bio: '',
+    location: '',
+    website: '',
+    avatar: ''
+  });
+
+  // Influencer data state
+  const [influencerData, setInfluencerData] = useState({
+    socialMediaLinks: [] as SocialMediaLink[],
+    metrics: {
+      totalFollowers: 0,
+      engagementRate: 0,
+      averageViews: 0,
+      monthlyGrowth: 0
+    } as InfluencerMetrics,
+    contentCategories: [] as string[],
+    availableForCollabs: true,
+    responseTime: '24 hours',
+    pricing: {
+      post: 0,
+      story: 0,
+      reel: 0,
+      video: 0
+    }
+  });
+
+  // Advertiser data state
+  const [advertiserData, setAdvertiserData] = useState({
+    companyName: '',
+    industry: '',
+    campaignPreferences: {
+      preferredPlatforms: [],
+      budgetRange: {
+        min: 0,
+        max: 0,
+        currency: 'USD'
+      },
+      targetAudience: {
+        ageRange: [18, 65] as [number, number],
+        genders: [],
+        countries: [],
+        interests: []
+      },
+      campaignTypes: []
+    } as AdvertiserPreferences,
+    previousCampaigns: 0,
+    averageBudget: 0
+  });
+
+  const [newSocialLink, setNewSocialLink] = useState({
+    platform: 'instagram' as const,
+    url: '',
+    username: ''
+  });
+
+  const [newCategory, setNewCategory] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  const getPredefinedCategories = () => [
+    t('contentCategories.fashionStyle'),
+    t('contentCategories.beautyCosmetics'),
+    t('contentCategories.lifestyle'),
+    t('contentCategories.travelTourism'),
+    t('contentCategories.foodCooking'),
+    t('contentCategories.fitnessHealth'),
+    t('contentCategories.sports'),
+    t('contentCategories.techGadgets'),
+    t('contentCategories.gamingEsports'),
+    t('contentCategories.musicEntertainment'),
+    t('contentCategories.artCreativity'),
+    t('contentCategories.businessEntrepreneurship'),
+    t('contentCategories.educationLearning'),
+    t('contentCategories.scienceResearch'),
+    t('contentCategories.automotiveTransport'),
+    t('contentCategories.realEstateInteriorDesign'),
+    t('contentCategories.financeInvestment'),
+    t('contentCategories.parentingFamily'),
+    t('contentCategories.pets'),
+    t('contentCategories.booksLiterature'),
+    t('contentCategories.moviesShows'),
+    t('contentCategories.photography'),
+    t('contentCategories.designArchitecture'),
+    t('contentCategories.politicsSociety'),
+    t('contentCategories.ecologySustainability'),
+    t('contentCategories.psychologyPersonalDevelopment'),
+    t('contentCategories.medicineHealthcare'),
+    t('contentCategories.humorComedy'),
+    t('contentCategories.newsJournalism'),
+    t('contentCategories.religionSpirituality'),
+  ];
+
+  useEffect(() => {
+    if (currentProfile) {
+      setBasicInfo({
+        fullName: currentProfile.fullName || '',
+        email: currentProfile.email || '',
+        bio: currentProfile.bio || '',
+        location: currentProfile.location || '',
+        website: currentProfile.website || '',
+        avatar: currentProfile.avatar || ''
+      });
+
+      if (currentProfile.influencerData) {
+        setInfluencerData({
+          socialMediaLinks: currentProfile.influencerData.socialMediaLinks || [],
+          metrics: currentProfile.influencerData.metrics || {
+            totalFollowers: 0,
+            engagementRate: 0,
+            averageViews: 0,
+            monthlyGrowth: 0
+          },
+          contentCategories: currentProfile.influencerData.contentCategories || [],
+          availableForCollabs: currentProfile.influencerData.availableForCollabs ?? true,
+          responseTime: currentProfile.influencerData.responseTime || '24 hours',
+          pricing: currentProfile.influencerData.pricing || {
+            post: 0,
+            story: 0,
+            reel: 0,
+            video: 0
+          }
+        });
+      }
+
+      if (currentProfile.advertiserData) {
+        setAdvertiserData({
+          companyName: currentProfile.advertiserData.companyName || '',
+          industry: currentProfile.advertiserData.industry || '',
+          campaignPreferences: currentProfile.advertiserData.campaignPreferences || {
+            preferredPlatforms: [],
+            budgetRange: {
+              min: 0,
+              max: 0,
+              currency: 'USD'
+            },
+            targetAudience: {
+              ageRange: [18, 65] as [number, number],
+              genders: [],
+              countries: [],
+              interests: []
+            },
+            campaignTypes: []
+          },
+          previousCampaigns: currentProfile.advertiserData.previousCampaigns || 0,
+          averageBudget: currentProfile.advertiserData.averageBudget || 0
+        });
+      }
+    } else {
+      // Reset all data when no current profile
+      setBasicInfo({
+        fullName: '',
+        email: '',
+        bio: '',
+        location: '',
+        website: '',
+        avatar: ''
+      });
+      setInfluencerData({
+        socialMediaLinks: [],
+        metrics: {
+          totalFollowers: 0,
+          engagementRate: 0,
+          averageViews: 0,
+          monthlyGrowth: 0
+        },
+        contentCategories: [],
+        availableForCollabs: true,
+        responseTime: '24 hours',
+        pricing: {
+          post: 0,
+          story: 0,
+          reel: 0,
+          video: 0
+        }
+      });
+      setAdvertiserData({
+        companyName: '',
+        industry: '',
+        campaignPreferences: {
+          preferredPlatforms: [],
+          budgetRange: {
+            min: 0,
+            max: 0,
+            currency: 'USD'
+          },
+          targetAudience: {
+            ageRange: [18, 65] as [number, number],
+            genders: [],
+            countries: [],
+            interests: []
+          },
+          campaignTypes: []
+        },
+        previousCampaigns: 0,
+        averageBudget: 0
+      });
+    }
+  }, [currentProfile, isOpen]);
+
+  const validateBasicInfo = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!basicInfo.fullName.trim()) {
+      newErrors.fullName = t('profile.validation.fullNameRequired');
+    }
+
+    if (!basicInfo.email.trim()) {
+      newErrors.email = t('profile.validation.emailRequired');
+    } else if (!/\S+@\S+\.\S+/.test(basicInfo.email)) {
+      newErrors.email = t('profile.validation.emailInvalid');
+    }
+
+    if (!basicInfo.bio.trim()) {
+      newErrors.bio = t('profile.validation.bioRequired');
+    } else if (basicInfo.bio.length < 50) {
+      newErrors.bio = t('profile.validation.bioTooShort');
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateBasicInfo()) {
+      setActiveTab('basic');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Prepare profile data with proper structure
+      const profileData: Partial<UserProfile> = {
+        ...basicInfo,
+        // Always include the data - service will handle null conversion
+        influencerData: influencerData,
+        advertiserData: advertiserData
+      };
+
+      let updatedProfile: UserProfile;
+
+      if (currentProfile) {
+        updatedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
+        toast.success(t('profile.success.updated'));
+      } else {
+        updatedProfile = await profileService.createProfile(profileData);
+        toast.success(t('profile.success.created'));
+      }
+
+      onProfileUpdated(updatedProfile);
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to save profile:', error);
+      if (error.message.includes('email already exists')) {
+        setErrors({ email: t('profile.validation.emailExists') });
+        setActiveTab('basic');
+      } else {
+        toast.error(error.message || t('profile.errors.updateFailed'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addSocialMediaLink = () => {
+    if (!newSocialLink.url.trim()) return;
+
+    const link: SocialMediaLink = {
+      platform: newSocialLink.platform,
+      url: newSocialLink.url,
+      username: newSocialLink.username || undefined,
+      verified: false
+    };
+
+    setInfluencerData(prev => ({
+      ...prev,
+      socialMediaLinks: [...prev.socialMediaLinks, link]
+    }));
+
+    setNewSocialLink({ platform: 'instagram', url: '', username: '' });
+  };
+
+  const removeSocialMediaLink = (index: number) => {
+    setInfluencerData(prev => ({
+      ...prev,
+      socialMediaLinks: prev.socialMediaLinks.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addContentCategory = () => {
+    if (!newCategory.trim()) return;
+
+    // Check if category already exists
+    if (influencerData.contentCategories.includes(newCategory.trim())) {
+      return;
+    }
+
+    setInfluencerData(prev => ({
+      ...prev,
+      contentCategories: [...prev.contentCategories, newCategory.trim()]
+    }));
+
+    setNewCategory('');
+    setShowCategoryDropdown(false);
+  };
+
+  const addPredefinedCategory = (category: string) => {
+    if (influencerData.contentCategories.includes(category)) {
+      return;
+    }
+
+    setInfluencerData(prev => ({
+      ...prev,
+      contentCategories: [...prev.contentCategories, category]
+    }));
+
+    setShowCategoryDropdown(false);
+  };
+
+  const clearBasicInfo = () => {
+    setBasicInfo({
+      fullName: '',
+      email: '',
+      bio: '',
+      location: '',
+      website: '',
+      avatar: ''
+    });
+    setErrors({});
+  };
+
+  const clearInfluencerData = () => {
+    setInfluencerData({
+      socialMediaLinks: [],
+      metrics: {
+        totalFollowers: 0,
+        engagementRate: 0,
+        averageViews: 0,
+        monthlyGrowth: 0
+      },
+      contentCategories: [],
+      availableForCollabs: true,
+      responseTime: '24 hours',
+      pricing: {
+        post: 0,
+        story: 0,
+        reel: 0,
+        video: 0
+      }
+    });
+    // Clear form-specific state
+    setNewSocialLink({ platform: 'instagram', url: '', username: '' });
+    setNewCategory('');
+    setShowCategoryDropdown(false);
+    setErrors({});
+  };
+
+  const clearAdvertiserData = () => {
+    setAdvertiserData({
+      companyName: '',
+      industry: '',
+      campaignPreferences: {
+        preferredPlatforms: [],
+        budgetRange: {
+          min: 0,
+          max: 0,
+          currency: 'USD'
+        },
+        targetAudience: {
+          ageRange: [18, 65] as [number, number],
+          genders: [],
+          countries: [],
+          interests: []
+        },
+        campaignTypes: []
+      },
+      previousCampaigns: 0,
+      averageBudget: 0
+    });
+  };
+
+  const removeContentCategory = (index: number) => {
+    setInfluencerData(prev => ({
+      ...prev,
+      contentCategories: prev.contentCategories.filter((_, i) => i !== index)
+    }));
+  };
+
+  const getSocialIcon = (platform: string) => {
+    switch (platform) {
+      case 'instagram':
+        return <Instagram className="w-4 h-4" />;
+      case 'youtube':
+        return <Youtube className="w-4 h-4" />;
+      case 'twitter':
+        return <Twitter className="w-4 h-4" />;
+      default:
+        return <User className="w-4 h-4" />;
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {currentProfile ? t('profile.editProfile') : t('profile.completeProfile')}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('basic')}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'basic'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>{t('profile.basicInfo')}</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('influencer')}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'influencer'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Instagram className="w-4 h-4" />
+              <span>Инфлюенсер</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('advertiser')}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'advertiser'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Briefcase className="w-4 h-4" />
+              <span>Рекламодатель</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[60vh]">
+          {activeTab === 'basic' && (
+            <div className="space-y-6">
+              {/* Section Header with Clear Button */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">{t('profile.basicInfo')}</h3>
+                <button
+                  type="button"
+                  onClick={clearBasicInfo}
+                  className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Очистить раздел
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.fullName')} *
+                  </label>
+                  <input
+                    type="text"
+                    value={basicInfo.fullName}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      errors.fullName ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder={t('profile.placeholders.fullName')}
+                  />
+                  {errors.fullName && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.fullName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.email')} *
+                  </label>
+                  <input
+                    type="email"
+                    value={basicInfo.email}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, email: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder={t('profile.placeholders.email')}
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.location')}
+                  </label>
+                  <input
+                    type="text"
+                    value={basicInfo.location}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder={t('profile.placeholders.location')}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.website')}
+                  </label>
+                  <input
+                    type="url"
+                    value={basicInfo.website}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, website: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder={t('profile.placeholders.website')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('profile.fields.bio')} *
+                </label>
+                <textarea
+                  value={basicInfo.bio}
+                  onChange={(e) => setBasicInfo(prev => ({ ...prev, bio: e.target.value }))}
+                  rows={4}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.bio ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder={t('profile.placeholders.bio')}
+                />
+                <div className="flex justify-between items-center mt-1">
+                  {errors.bio && (
+                    <p className="text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.bio}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 ml-auto">
+                    {basicInfo.bio.length}/1500 символов
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'influencer' && (
+            <div className="space-y-6">
+              {/* Section Header with Clear Button */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">{t('profile.influencerSettings')}</h3>
+                <button
+                  type="button"
+                  onClick={clearInfluencerData}
+                  className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Очистить раздел
+                </button>
+              </div>
+              
+              {/* Social Media Links */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">{t('profile.socialMediaAccounts')}</h4>
+                
+                {/* Add new social link */}
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <select
+                      value={newSocialLink.platform}
+                      onChange={(e) => setNewSocialLink(prev => ({ ...prev, platform: e.target.value as any }))}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="instagram">Instagram</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="twitter">Twitter</option>
+                      <option value="tiktok">TikTok</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={newSocialLink.username}
+                      onChange={(e) => setNewSocialLink(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder={t('profile.placeholders.socialUsername')}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <input
+                      type="url"
+                      value={newSocialLink.url}
+                      onChange={(e) => setNewSocialLink(prev => ({ ...prev, url: e.target.value }))}
+                      placeholder={t('profile.placeholders.socialUrl')}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={addSocialMediaLink}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Existing social links */}
+                <div className="space-y-2">
+                  {influencerData.socialMediaLinks.map((link, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        {getSocialIcon(link.platform)}
+                        <div>
+                          <p className="font-medium text-gray-900 capitalize">{link.platform}</p>
+                          <p className="text-sm text-gray-600">{link.username || link.url}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeSocialMediaLink(index)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Metrics */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">{t('profile.audienceMetrics')}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.totalFollowers')}
+                    </label>
+                    <input
+                      type="number"
+                      value={influencerData.metrics.totalFollowers}
+                      onChange={(e) => setInfluencerData(prev => ({
+                        ...prev,
+                        metrics: { ...prev.metrics, totalFollowers: parseInt(e.target.value) || 0 }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.engagementRate')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={influencerData.metrics.engagementRate}
+                      onChange={(e) => setInfluencerData(prev => ({
+                        ...prev,
+                        metrics: { ...prev.metrics, engagementRate: parseFloat(e.target.value) || 0 }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="3.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.averageViews')}
+                    </label>
+                    <input
+                      type="number"
+                      value={influencerData.metrics.averageViews}
+                      onChange={(e) => setInfluencerData(prev => ({
+                        ...prev,
+                        metrics: { ...prev.metrics, averageViews: parseInt(e.target.value) || 0 }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="5000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.responseTime')}
+                    </label>
+                    <select
+                      value={influencerData.responseTime}
+                      onChange={(e) => setInfluencerData(prev => ({ ...prev, responseTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="1 hour">{t('time.within1Hour')}</option>
+                      <option value="24 hours">{t('time.within24Hours')}</option>
+                      <option value="48 hours">{t('time.within48Hours')}</option>
+                      <option value="1 week">{t('time.within1Week')}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Categories */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">{t('profile.contentCategories')}</h4>
+                
+                <div className="mb-4">
+                  {/* Predefined categories as buttons */}
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Выберите категории из списка:
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                    {getPredefinedCategories().map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => addPredefinedCategory(category)}
+                        disabled={influencerData.contentCategories.includes(category)}
+                        className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                          influencerData.contentCategories.includes(category)
+                            ? 'bg-purple-100 border-purple-300 text-purple-700 cursor-not-allowed'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-purple-50 hover:border-purple-300'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Custom category input */}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Или добавьте свою категорию:
+                  </label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder={t('profile.placeholders.category')}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      onKeyPress={(e) => e.key === 'Enter' && addContentCategory()}
+                    />
+                    <button
+                      type="button"
+                      onClick={addContentCategory}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {influencerData.contentCategories.map((category, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                    >
+                      {category}
+                      <button
+                        type="button"
+                        onClick={() => removeContentCategory(index)}
+                        className="ml-2 text-purple-600 hover:text-purple-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'advertiser' && (
+            <div className="space-y-6">
+              {/* Section Header with Clear Button */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">{t('profile.advertiserSettings')}</h3>
+                <button
+                  type="button"
+                  onClick={clearAdvertiserData}
+                  className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Очистить раздел
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.companyName')}
+                  </label>
+                  <input
+                    type="text"
+                    value={advertiserData.companyName}
+                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, companyName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder={t('profile.placeholders.companyName')}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.industry')}
+                  </label>
+                  <select
+                    value={advertiserData.industry}
+                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, industry: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="">Выберите отрасль</option>
+                    <option value="fashion">{t('industries.fashion')}</option>
+                    <option value="tech">{t('industries.tech')}</option>
+                    <option value="food">{t('industries.food')}</option>
+                    <option value="travel">{t('industries.travel')}</option>
+                    <option value="fitness">{t('industries.fitness')}</option>
+                    <option value="lifestyle">{t('industries.lifestyle')}</option>
+                    <option value="other">{t('industries.other')}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.previousCampaigns')}
+                  </label>
+                  <input
+                    type="number"
+                    value={advertiserData.previousCampaigns}
+                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, previousCampaigns: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.fields.averageBudget')}
+                  </label>
+                  <input
+                    type="number"
+                    value={advertiserData.averageBudget}
+                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, averageBudget: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="5000"
+                  />
+                </div>
+              </div>
+
+              {/* Budget Range */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">{t('profile.budgetRange')}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.minBudget')}
+                    </label>
+                    <input
+                      type="number"
+                      value={advertiserData.campaignPreferences.budgetRange.min}
+                      onChange={(e) => setAdvertiserData(prev => ({
+                        ...prev,
+                        campaignPreferences: {
+                          ...prev.campaignPreferences,
+                          budgetRange: {
+                            ...prev.campaignPreferences.budgetRange,
+                            min: parseInt(e.target.value) || 0
+                          }
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="1000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.maxBudget')}
+                    </label>
+                    <input
+                      type="number"
+                      value={advertiserData.campaignPreferences.budgetRange.max}
+                      onChange={(e) => setAdvertiserData(prev => ({
+                        ...prev,
+                        campaignPreferences: {
+                          ...prev.campaignPreferences,
+                          budgetRange: {
+                            ...prev.campaignPreferences.budgetRange,
+                            max: parseInt(e.target.value) || 0
+                          }
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('profile.fields.currency')}
+                    </label>
+                    <select
+                      value={advertiserData.campaignPreferences.budgetRange.currency}
+                      onChange={(e) => setAdvertiserData(prev => ({
+                        ...prev,
+                        campaignPreferences: {
+                          ...prev.campaignPreferences,
+                          budgetRange: {
+                            ...prev.campaignPreferences.budgetRange,
+                            currency: e.target.value
+                          }
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={handleSaveProfile}
+            disabled={isLoading}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isLoading ? 'Сохранение...' : 'Сохранить профиль'}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

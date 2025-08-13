@@ -1,0 +1,262 @@
+import React from 'react';
+import { Offer } from '../../../core/types';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye } from 'lucide-react';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+
+interface OfferCardProps {
+  offer: Offer;
+  onAction: (offerId: string, action: 'accept' | 'decline' | 'counter') => void;
+}
+
+export function OfferCard({ offer, onAction }: OfferCardProps) {
+  const { t } = useTranslation();
+
+  const getStatusColor = (status: Offer['status']) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'accepted':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'declined':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'counter':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'withdrawn':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'info_requested':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: Offer['status']) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'accepted':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'declined':
+        return <XCircle className="w-4 h-4" />;
+      case 'counter':
+        return <MessageCircle className="w-4 h-4" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'withdrawn':
+        return <XCircle className="w-4 h-4" />;
+      case 'info_requested':
+        return <MessageCircle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD',
+    }).format(amount);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Предложение о сотрудничестве
+              </h3>
+              <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
+                <div className="flex items-center space-x-1">
+                  {getStatusIcon(offer.status)}
+                  <span className="capitalize">
+                    {offer.status === 'pending' ? t('offers.status.pending') :
+                     offer.status === 'accepted' ? t('offers.status.accepted') :
+                     offer.status === 'declined' ? t('offers.status.declined') :
+                     offer.status === 'counter' ? t('offers.status.counter') :
+                     offer.status === 'completed' ? t('offers.status.completed') :
+                     offer.status === 'withdrawn' ? t('offers.status.withdrawn') :
+                     offer.status === 'info_requested' ? t('offers.status.infoRequested') : offer.status}
+                  </span>
+                </div>
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              ID кампании: {offer.campaignId} • ID предложения: {offer.offerId}
+            </p>
+          </div>
+          
+          <div className="text-right">
+            <div className="flex items-center space-x-2 text-lg font-bold text-green-600">
+              <DollarSign className="w-5 h-5" />
+              <span>{formatCurrency(offer.details.rate, offer.details.currency)}</span>
+            </div>
+            <p className="text-sm text-gray-600">{offer.details.timeline}</p>
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <div className="flex items-center space-x-1">
+            <Eye className="w-4 h-4" />
+            <span>{offer.metadata.viewCount} {t('offers.stats.views')}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <MessageCircle className="w-4 h-4" />
+            <span>{offer.messages.length} {t('offers.stats.messages')}</span>
+          </div>
+          <span>
+            Создано {formatDistanceToNow(parseISO(offer.timeline.createdAt), { addSuffix: true })}
+          </span>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className="p-6">
+        {/* Deliverables */}
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.deliverables')}</h4>
+          <div className="flex flex-wrap gap-2">
+            {offer.details.deliverables.map((deliverable, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-md"
+              >
+                {deliverable}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Terms */}
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.terms')}</h4>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {offer.details.terms}
+          </p>
+        </div>
+
+        {/* Timeline */}
+        {(offer.timeline.respondedAt || offer.timeline.completedAt) && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.timeline')}</h4>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>
+                  Создано {formatDistanceToNow(parseISO(offer.timeline.createdAt), { addSuffix: true })}
+                </span>
+              </div>
+              {offer.timeline.respondedAt && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className={`w-2 h-2 rounded-full ${
+                    offer.status === 'accepted' ? 'bg-green-400' : 
+                    offer.status === 'declined' ? 'bg-red-400' : 'bg-yellow-400'
+                  }`}></div>
+                  <span>
+                    Отвечено {formatDistanceToNow(parseISO(offer.timeline.respondedAt), { addSuffix: true })}
+                  </span>
+                </div>
+              )}
+              {offer.timeline.completedAt && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <span>
+                    Завершено {formatDistanceToNow(parseISO(offer.timeline.completedAt), { addSuffix: true })}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        {offer.status === 'pending' && (
+          <div className="flex space-x-3">
+            <button
+              onClick={() => onAction(offer.offerId, 'accept')}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>{t('offers.actions.accept')} предложение</span>
+            </button>
+            <button
+              onClick={() => onAction(offer.offerId, 'counter')}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>{t('offers.actions.counter')}</span>
+            </button>
+            <button
+              onClick={() => onAction(offer.offerId, 'decline')}
+              className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+            >
+              <XCircle className="w-4 h-4" />
+              <span>{t('offers.actions.decline')}</span>
+            </button>
+          </div>
+        )}
+
+        {offer.status === 'accepted' && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-medium text-green-800">
+                Предложение принято! Проверьте сообщения для следующих шагов.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {offer.status === 'declined' && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <XCircle className="w-5 h-5 text-red-600" />
+              <span className="text-sm font-medium text-red-800">
+                Это предложение было отклонено.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {offer.status === 'counter' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <MessageCircle className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">
+                Встречное предложение отправлено. Ожидание ответа.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {offer.status === 'withdrawn' && (
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <XCircle className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-800">
+                Это предложение было отозвано.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {offer.status === 'info_requested' && (
+          <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <MessageCircle className="w-5 h-5 text-orange-600" />
+              <span className="text-sm font-medium text-orange-800">
+                Запрошена дополнительная информация. Проверьте сообщения.
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
