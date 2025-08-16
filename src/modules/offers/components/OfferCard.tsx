@@ -6,10 +6,13 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface OfferCardProps {
   offer: Offer;
-  onAction: (offerId: string, action: 'accept' | 'decline' | 'counter') => void;
+  onAction?: (offerId: string, action: 'accept' | 'decline' | 'counter') => void;
+  onWithdraw?: (offerId: string) => void;
+  onModify?: (offerId: string) => void;
+  showSenderActions?: boolean;
 }
 
-export function OfferCard({ offer, onAction }: OfferCardProps) {
+export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderActions = false }: OfferCardProps) {
   const { t } = useTranslation();
 
   // Check if this is an application (not a traditional offer)
@@ -179,7 +182,7 @@ export function OfferCard({ offer, onAction }: OfferCardProps) {
         )}
 
         {/* Actions */}
-        {offer.status === 'pending' && (
+        {offer.status === 'pending' && !showSenderActions && onAction && (
           <div className="flex space-x-3">
             <button
               onClick={() => onAction(offer.offerId, 'accept')}
@@ -201,6 +204,26 @@ export function OfferCard({ offer, onAction }: OfferCardProps) {
             >
               <XCircle className="w-4 h-4" />
               <span>{t('offers.actions.decline')}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Sender Actions (for sent offers) */}
+        {offer.status === 'pending' && showSenderActions && (
+          <div className="flex space-x-3">
+            <button
+              onClick={() => onModify?.(offer.offerId)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Изменить условия</span>
+            </button>
+            <button
+              onClick={() => onWithdraw?.(offer.offerId)}
+              className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+            >
+              <XCircle className="w-4 h-4" />
+              <span>Отозвать</span>
             </button>
           </div>
         )}

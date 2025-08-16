@@ -154,6 +154,25 @@ export function OffersPage() {
     setOffers(prev => [offer, ...prev]);
   };
 
+  const handleWithdrawOffer = async (offerId: string) => {
+    if (!confirm('Вы уверены, что хотите отозвать это предложение?')) return;
+
+    try {
+      await offerService.withdrawOffer(offerId);
+      // Refresh offers list
+      loadOffers();
+      toast.success('Предложение отозвано успешно!');
+    } catch (error: any) {
+      console.error('Failed to withdraw offer:', error);
+      toast.error(error.message || 'Не удалось отозвать предложение');
+    }
+  };
+
+  const handleModifyOffer = (offerId: string) => {
+    // For now, just show a message - in a real app this would open an edit modal
+    toast.info('Функция изменения условий будет доступна в следующем обновлении');
+  };
+
   const filteredOffers = offers.filter(offer => {
     if (selectedFilter === 'all') return true;
     return offer.status === selectedFilter;
@@ -322,7 +341,10 @@ export function OffersPage() {
             <OfferCard
               key={offer.offerId}
               offer={offer}
-              onAction={showMyOffers ? undefined : handleOfferAction}
+              onAction={!showMyOffers ? handleOfferAction : undefined}
+              onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
+              onModify={showMyOffers ? handleModifyOffer : undefined}
+              showSenderActions={showMyOffers}
             />
           ))}
         </div>
