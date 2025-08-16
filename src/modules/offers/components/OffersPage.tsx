@@ -50,11 +50,11 @@ export function OffersPage() {
       const { applicationService } = await import('../../applications/services/applicationService');
       
       // Load applications as offers
-      const sentApplications = await applicationService.getUserApplications(currentUserId, 'sent');
-      const receivedApplications = await applicationService.getUserApplications(currentUserId, 'received');
+      const sentApplications = await applicationService.getUserApplications(currentUserId, showMyOffers ? 'sent' : 'received');
+      const receivedApplications = await applicationService.getUserApplications(currentUserId, showMyOffers ? 'received' : 'sent');
       
       // Transform applications to offer-like format for display
-      const transformedSent = sentApplications.map(app => ({
+      const transformedApplications = sentApplications.map(app => ({
         offerId: app.id,
         influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
         campaignId: app.targetReferenceId,
@@ -77,30 +77,7 @@ export function OffersPage() {
         type: 'application'
       }));
       
-      const transformedReceived = receivedApplications.map(app => ({
-        offerId: app.id,
-        influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
-        campaignId: app.targetReferenceId,
-        advertiserId: app.targetType === 'advertiser_card' ? app.targetId : app.applicantId,
-        details: {
-          rate: app.applicationData.proposedRate || 0,
-          currency: 'USD',
-          deliverables: app.applicationData.deliverables || [],
-          timeline: app.applicationData.timeline || '',
-          terms: app.applicationData.message || ''
-        },
-        status: app.status === 'sent' ? 'pending' : app.status,
-        timeline: {
-          createdAt: app.createdAt,
-          respondedAt: app.timeline?.respondedAt,
-          completedAt: app.timeline?.completedAt
-        },
-        messages: [],
-        metadata: app.metadata || { viewCount: 0 },
-        type: 'application'
-      }));
-      
-      setApplications(showMyOffers ? transformedSent : transformedReceived);
+      setApplications(transformedApplications);
     } catch (error) {
       console.error('Failed to load applications:', error);
       setApplications([]);
