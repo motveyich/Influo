@@ -16,6 +16,9 @@ export class CardAnalyticsService {
         return;
       }
 
+      // Получаем владельца карточки
+      const ownerId = await this.getCardOwnerId(cardType, cardId);
+      
       // Track view in analytics
       analytics.track('card_viewed', {
         card_type: cardType,
@@ -23,8 +26,10 @@ export class CardAnalyticsService {
         viewer_id: viewerId
       });
 
-      // Update card analytics
-      await this.updateCardMetrics(cardType, cardId, 'view');
+      // Update card analytics only if viewer is the owner
+      if (ownerId && viewerId === ownerId) {
+        await this.updateCardMetrics(cardType, cardId, 'view');
+      }
     } catch (error) {
       console.error('Failed to track card view:', error);
     }
