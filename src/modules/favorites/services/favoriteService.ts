@@ -152,6 +152,20 @@ export class FavoriteService {
             continue;
           }
 
+          // Check for existing application to this user
+          const { data: existingApplication } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('applicant_id', userId)
+            .eq('target_id', influencerCard.user_id)
+            .eq('target_type', 'influencer_card')
+            .maybeSingle();
+
+          if (existingApplication) {
+            console.log(`Skipping duplicate application to user ${influencerCard.user_id}`);
+            continue;
+          }
+
           // Create application for each favorite
           const { applicationService } = await import('../../applications/services/applicationService');
           

@@ -5,6 +5,7 @@ import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, 
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
+import { supabase } from '../../../core/supabase';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -66,6 +67,21 @@ export function InfluencerCardDisplay({
         return;
       }
 
+      // Check for existing application to this user
+      const { data: existingApplication } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('applicant_id', currentUserId)
+        .eq('target_id', card.userId)
+        .eq('target_type', 'influencer_card')
+        .maybeSingle();
+
+      if (existingApplication) {
+        toast.error('Вы уже отправили заявку этому инфлюенсеру');
+        setIsLoading(false);
+        return;
+      }
+
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -83,7 +99,11 @@ export function InfluencerCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      toast.error(error.message || 'Не удалось отправить заявку');
+      if (error.message.includes('уже отправили заявку')) {
+        toast.error('Вы уже отправили заявку этому инфлюенсеру');
+      } else {
+        toast.error(error.message || 'Не удалось отправить заявку');
+      }
     } finally {
       setIsLoading(false);
     }

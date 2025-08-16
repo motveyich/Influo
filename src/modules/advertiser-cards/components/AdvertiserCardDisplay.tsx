@@ -7,6 +7,8 @@ import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import toast from 'react-hot-toast';
 
+import { supabase } from '../../../core/supabase';
+
 interface AdvertiserCardDisplayProps {
   card: AdvertiserCard;
   showActions?: boolean;
@@ -65,6 +67,21 @@ export function AdvertiserCardDisplay({
         return;
       }
 
+      // Check for existing application to this user
+      const { data: existingApplication } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('applicant_id', currentUserId)
+        .eq('target_id', card.userId)
+        .eq('target_type', 'advertiser_card')
+        .maybeSingle();
+
+      if (existingApplication) {
+        toast.error('Вы уже отправили заявку этому рекламодателю');
+        setIsLoading(false);
+        return;
+      }
+
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -82,7 +99,11 @@ export function AdvertiserCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      toast.error(error.message || 'Не удалось отправить заявку');
+      if (error.message.includes('уже отправили заявку')) {
+        toast.error('Вы уже отправили заявку этому рекламодателю');
+      } else {
+        toast.error(error.message || 'Не удалось отправить заявку');
+      }
     } finally {
       setIsLoading(false);
     }
