@@ -140,12 +140,24 @@ export class FavoriteService {
       
       for (const favorite of targetFavorites) {
         try {
+          // Get the influencer card to retrieve the user_id
+          const { data: influencerCard, error: cardError } = await supabase
+            .from('influencer_cards')
+            .select('user_id')
+            .eq('id', favorite.targetId)
+            .single();
+
+          if (cardError || !influencerCard) {
+            console.error(`Failed to get influencer card ${favorite.targetId}:`, cardError);
+            continue;
+          }
+
           // Create application for each favorite
           const { applicationService } = await import('../../applications/services/applicationService');
           
           await applicationService.createApplication({
             applicantId: userId,
-            targetId: favorite.targetId, // This is the card ID
+            targetId: influencerCard.user_id, // Use the user_id from the card
             targetType: 'influencer_card',
             targetReferenceId: favorite.targetId,
             applicationData: {
