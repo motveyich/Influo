@@ -49,16 +49,18 @@ export function OffersPage() {
     try {
       const { applicationService } = await import('../../applications/services/applicationService');
       
-      // Load applications as offers
-      const sentApplications = await applicationService.getUserApplications(currentUserId, showMyOffers ? 'sent' : 'received');
-      const receivedApplications = await applicationService.getUserApplications(currentUserId, showMyOffers ? 'received' : 'sent');
+      // Load applications based on current view
+      const userApplications = await applicationService.getUserApplications(
+        currentUserId, 
+        showMyOffers ? 'sent' : 'received'
+      );
       
       // Transform applications to offer-like format for display
-      const transformedApplications = sentApplications.map(app => ({
+      const transformedApplications = userApplications.map(app => ({
         offerId: app.id,
-        influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
+        influencerId: showMyOffers ? app.targetId : app.applicantId,
         campaignId: app.targetReferenceId,
-        advertiserId: app.targetType === 'advertiser_card' ? app.targetId : app.applicantId,
+        advertiserId: showMyOffers ? app.applicantId : app.targetId,
         details: {
           rate: app.applicationData.proposedRate || 0,
           currency: 'USD',
@@ -88,18 +90,17 @@ export function OffersPage() {
     try {
       setIsLoading(true);
       
-      let loadedOffers: Offer[];
-      if (showMyOffers) {
-        // Load offers sent by current user (advertiser)
-        loadedOffers = await offerService.getUserOffers(currentUserId, 'sent');
-      } else {
-        // Load offers received by current user (influencer)
-        loadedOffers = await offerService.getUserOffers(currentUserId, 'received');
-      }
+      // Load real offers from offers table
+      const loadedOffers = await offerService.getUserOffers(
+        currentUserId, 
+        showMyOffers ? 'sent' : 'received'
+      );
       
-      // Combine offers and applications
-      const combinedOffers = [...loadedOffers, ...applications];
-      setOffers(combinedOffers);
+      // Load applications and transform them
+      await loadApplications();
+      
+      // Combine real offers with transformed applications
+      setOffers([...loadedOffers, ...applications]);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
@@ -109,10 +110,10 @@ export function OffersPage() {
     }
   };
 
-  // Update applications loading when showMyCampaigns changes
+  // Update loading when showMyOffers changes
   useEffect(() => {
     if (currentUserId) {
-      loadApplications();
+      loadOffers();
     }
   }, [showMyOffers]);
 
