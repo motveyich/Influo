@@ -62,6 +62,7 @@ export function InfluencerCardDisplay({
     try {
       if (!currentUserId) {
         toast.error('Необходимо войти в систему');
+        setIsLoading(false);
         return;
       }
 

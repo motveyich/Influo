@@ -12,6 +12,19 @@ export class ApplicationService {
         throw new Error('Cannot create application to yourself');
       }
       
+      // Check for existing application to prevent duplicates
+      const { data: existingApplication } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('applicant_id', applicationData.applicantId)
+        .eq('target_reference_id', applicationData.targetReferenceId)
+        .eq('target_type', applicationData.targetType)
+        .maybeSingle();
+
+      if (existingApplication) {
+        throw new Error('Вы уже отправили заявку на эту карточку');
+      }
+      
       this.validateApplicationData(applicationData);
 
       const newApplication = {
@@ -183,7 +196,15 @@ export class ApplicationService {
 
   private async sendApplicationNotification(application: Application): Promise<void> {
     try {
-      const messageContent = `Новая заявка на сотрудничество от ${application.applicantId}`;
+      // Get applicant profile to show proper name
+      const { data: applicantProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', application.applicantId)
+        .single();
+
+      const applicantName = applicantProfile?.full_name || 'пользователя';
+      const messageContent = `Новая заявка на сотрудничество от ${applicantName}`;
       
       await chatService.sendMessage({
         senderId: application.applicantId,
@@ -203,11 +224,19 @@ export class ApplicationService {
 
   private async sendResponseNotification(application: Application, response: string): Promise<void> {
     try {
+      // Get target profile to show proper name
+      const { data: targetProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', application.targetId)
+        .single();
+
+      const targetName = targetProfile?.full_name || 'Пользователь';
       const messageContent = `Ваша заявка была ${
         response === 'accepted' ? 'принята' :
         response === 'declined' ? 'отклонена' :
         response === 'in_progress' ? 'взята в работу' : 'обновлена'
-      }`;
+      } пользователем ${targetName}`;
       
       await chatService.sendMessage({
         senderId: application.targetId,
