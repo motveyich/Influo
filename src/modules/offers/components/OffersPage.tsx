@@ -52,15 +52,15 @@ export function OffersPage() {
       // Load applications based on current view
       const userApplications = await applicationService.getUserApplications(
         currentUserId, 
-        showMyOffers ? 'sent' : 'received'
+        showMyOffers ? 'received' : 'sent'
       );
       
       // Transform applications to offer-like format for display
       const transformedApplications = userApplications.map(app => ({
         offerId: app.id,
-        influencerId: showMyOffers ? app.targetId : app.applicantId,
+        influencerId: showMyOffers ? app.applicantId : app.targetId,
         campaignId: app.targetReferenceId,
-        advertiserId: showMyOffers ? app.applicantId : app.targetId,
+        advertiserId: showMyOffers ? app.targetId : app.applicantId,
         details: {
           rate: app.applicationData.proposedRate || 0,
           currency: 'USD',
@@ -79,10 +79,10 @@ export function OffersPage() {
         type: 'application'
       }));
       
-      setApplications(transformedApplications);
+      return transformedApplications;
     } catch (error) {
       console.error('Failed to load applications:', error);
-      setApplications([]);
+      return [];
     }
   };
 
@@ -97,10 +97,10 @@ export function OffersPage() {
       );
       
       // Load applications and transform them
-      await loadApplications();
+      const transformedApplications = await loadApplications();
       
       // Combine real offers with transformed applications
-      setOffers([...loadedOffers, ...applications]);
+      setOffers([...loadedOffers, ...transformedApplications]);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
