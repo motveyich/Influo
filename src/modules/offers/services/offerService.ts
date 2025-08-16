@@ -159,9 +159,13 @@ export class OfferService {
         })
         .eq('offer_id', offerId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Предложение не найдено или уже было отозвано');
+      }
 
       const withdrawnOffer = this.transformFromDatabase(data);
 

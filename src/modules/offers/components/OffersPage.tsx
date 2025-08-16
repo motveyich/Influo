@@ -170,7 +170,7 @@ export function OffersPage() {
 
   const handleModifyOffer = (offerId: string) => {
     // For now, just show a message - in a real app this would open an edit modal
-    toast.info('Функция изменения условий будет доступна в следующем обновлении');
+    toast('Функция изменения условий будет доступна в следующем обновлении');
   };
 
   const filteredOffers = offers.filter(offer => {
