@@ -305,7 +305,7 @@ export class ApplicationService {
       const { error } = await supabase
         .from(TABLES.APPLICATIONS)
         .update({
-          status: 'withdrawn',
+          status: 'cancelled',
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);

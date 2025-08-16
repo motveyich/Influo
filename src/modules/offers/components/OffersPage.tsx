@@ -197,16 +197,16 @@ export function OffersPage() {
         await chatService.sendMessage({
           senderId: currentUserId,
           receiverId: offer.advertiserId,
-          messageContent: 'Заявка на сотрудничество была отозвана отправителем.',
+          messageContent: 'Заявка на сотрудничество была отменена отправителем.',
           messageType: 'text',
           metadata: {
             applicationId: offerId,
-            actionType: 'application_withdrawn'
+            actionType: 'application_cancelled'
           }
         });
         console.log('Chat notification sent successfully');
         
-        toast.success('Заявка отозвана успешно!');
+        toast.success('Заявка отменена успешно!');
       } else {
         console.log('Processing as real offer withdrawal...');
         // This is a real offer
