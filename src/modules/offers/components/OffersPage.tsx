@@ -188,8 +188,13 @@ export function OffersPage() {
         toast.success('Предложение отозвано успешно!');
       }
       
-      // Refresh offers list
-      loadOffers();
+      // Remove the withdrawn offer/application from the UI immediately
+      setOffers(prev => prev.filter(o => o.offerId !== offerId));
+      
+      // Also refresh the full list to ensure consistency
+      setTimeout(() => {
+        loadOffers();
+      }, 1000);
     } catch (error: any) {
       console.error('Failed to withdraw offer:', error);
       toast.error(error.message || 'Не удалось отозвать заявку');
