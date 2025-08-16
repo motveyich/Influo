@@ -277,20 +277,50 @@ export class ApplicationService {
 
   async withdrawApplication(applicationId: string): Promise<void> {
     try {
+      console.log('=== WITHDRAW APPLICATION SERVICE START ===');
+      console.log('Application ID:', applicationId);
+      
+      // First check if application exists
+      const { data: existingApp, error: fetchError } = await supabase
+        .from(TABLES.APPLICATIONS)
+        .select('*')
+        .eq('id', applicationId)
+        .maybeSingle();
+      
+      console.log('Existing application:', existingApp);
+      console.log('Fetch error:', fetchError);
+      
+      if (fetchError) {
+        console.error('Database fetch error:', fetchError);
+        throw fetchError;
+      }
+      
+      if (!existingApp) {
+        console.error('Application not found in database');
+        throw new Error('Заявка не найдена в базе данных');
+      }
+      
+      console.log('Current application status:', existingApp.status);
+      
       const { error } = await supabase
         .from(TABLES.APPLICATIONS)
         .update({
-          status: 'cancelled',
+          status: 'withdrawn',
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);
 
+      console.log('Update error:', error);
       if (error) throw error;
+      
+      console.log('Application status updated successfully');
 
       // Track analytics
       analytics.track('application_withdrawn', {
         application_id: applicationId
       });
+      
+      console.log('=== WITHDRAW APPLICATION SERVICE END ===');
     } catch (error) {
       console.error('Failed to withdraw application:', error);
       throw error;

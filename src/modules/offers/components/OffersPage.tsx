@@ -88,20 +88,32 @@ export function OffersPage() {
 
   const loadOffers = async () => {
     try {
+      console.log('=== LOAD OFFERS START ===');
+      console.log('Show my offers:', showMyOffers);
+      console.log('Current user ID:', currentUserId);
+      
       setIsLoading(true);
       
       // Load real offers from offers table
+      console.log('Loading real offers...');
       const loadedOffers = await offerService.getUserOffers(
         currentUserId, 
         showMyOffers ? 'sent' : 'received'
       );
+      console.log('Real offers loaded:', loadedOffers.length);
       
       // Load applications and transform them
+      console.log('Loading applications...');
       const transformedApplications = await loadApplications();
+      console.log('Applications loaded:', transformedApplications.length);
       
       // Combine real offers with transformed applications
       const allOffers = [...loadedOffers, ...transformedApplications];
+      console.log('Total combined offers:', allOffers.length);
+      console.log('All offers:', allOffers.map(o => ({ id: o.offerId, status: o.status, type: o.type })));
+      
       setOffers(allOffers);
+      console.log('=== LOAD OFFERS END ===');
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
@@ -161,15 +173,26 @@ export function OffersPage() {
     if (!confirm('Вы уверены, что хотите отозвать это предложение?')) return;
 
     try {
+      console.log('=== WITHDRAW DEBUG START ===');
+      console.log('Withdrawing offer/application with ID:', offerId);
+      console.log('Current user ID:', currentUserId);
+      
       // Find the offer to determine if it's a real offer or application
       const offer = offers.find(o => o.offerId === offerId);
+      console.log('Found offer/application:', offer);
+      console.log('Offer type:', offer?.type);
       
       if (offer?.type === 'application') {
+        console.log('Processing as application withdrawal...');
         // This is an application, use application service
         const { applicationService } = await import('../../applications/services/applicationService');
+        console.log('About to call withdrawApplication...');
         await applicationService.withdrawApplication(offerId);
+        console.log('withdrawApplication completed successfully');
         
         // Send chat notification
+        console.log('Sending chat notification...');
+        console.log('SenderId:', currentUserId, 'ReceiverId:', offer.advertiserId);
         const { chatService } = await import('../../chat/services/chatService');
         await chatService.sendMessage({
           senderId: currentUserId,
@@ -181,18 +204,26 @@ export function OffersPage() {
             actionType: 'application_withdrawn'
           }
         });
+        console.log('Chat notification sent successfully');
         
         toast.success('Заявка отозвана успешно!');
       } else {
+        console.log('Processing as real offer withdrawal...');
         // This is a real offer
         await offerService.withdrawOffer(offerId);
         toast.success('Предложение отозвано успешно!');
       }
       
+      console.log('About to reload offers...');
       // Force reload the offers list to get fresh data from database
       await loadOffers();
+      console.log('Offers reloaded successfully');
+      console.log('=== WITHDRAW DEBUG END ===');
     } catch (error: any) {
+      console.error('=== WITHDRAW ERROR ===');
       console.error('Failed to withdraw offer:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       toast.error(error.message || 'Не удалось отозвать заявку');
     }
   };
