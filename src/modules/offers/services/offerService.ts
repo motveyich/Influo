@@ -148,24 +148,38 @@ export class OfferService {
 
   async withdrawOffer(offerId: string): Promise<Offer> {
     try {
+      // First, fetch the offer to verify its existence and status
+      const { data: existingOffer, error: fetchError } = await supabase
+        .from(TABLES.OFFERS)
+        .select('*')
+        .eq('offer_id', offerId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      
+      if (!existingOffer) {
+        throw new Error('Предложение не найдено');
+      }
+
+      if (existingOffer.status !== 'pending') {
+        throw new Error(`Нельзя отозвать предложение со статусом "${existingOffer.status}"`);
+      }
+
       const { data, error } = await supabase
         .from(TABLES.OFFERS)
         .update({
           status: 'withdrawn',
           timeline: {
+            ...existingOffer.timeline,
             withdrawnAt: new Date().toISOString()
           },
           updated_at: new Date().toISOString()
         })
         .eq('offer_id', offerId)
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
-      
-      if (!data) {
-        throw new Error('Предложение не найдено или уже было отозвано');
-      }
 
       const withdrawnOffer = this.transformFromDatabase(data);
 
