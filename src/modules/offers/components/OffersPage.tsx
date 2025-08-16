@@ -160,13 +160,39 @@ export function OffersPage() {
     if (!confirm('Вы уверены, что хотите отозвать это предложение?')) return;
 
     try {
-      await offerService.withdrawOffer(offerId);
+      // Find the offer to determine if it's a real offer or application
+      const offer = offers.find(o => o.offerId === offerId);
+      
+      if (offer?.type === 'application') {
+        // This is an application, use application service
+        const { applicationService } = await import('../../applications/services/applicationService');
+        await applicationService.withdrawApplication(offerId);
+        
+        // Send chat notification
+        const { chatService } = await import('../../chat/services/chatService');
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: offer.influencerId,
+          messageContent: 'Заявка на сотрудничество была отозвана отправителем.',
+          messageType: 'text',
+          metadata: {
+            applicationId: offerId,
+            actionType: 'application_withdrawn'
+          }
+        });
+        
+        toast.success('Заявка отозвана успешно!');
+      } else {
+        // This is a real offer
+        await offerService.withdrawOffer(offerId);
+        toast.success('Предложение отозвано успешно!');
+      }
+      
       // Refresh offers list
       loadOffers();
-      toast.success('Предложение отозвано успешно!');
     } catch (error: any) {
       console.error('Failed to withdraw offer:', error);
-      toast.error(error.message || 'Не удалось отозвать предложение');
+      toast.error(error.message || 'Не удалось отозвать заявку');
     }
   };
 

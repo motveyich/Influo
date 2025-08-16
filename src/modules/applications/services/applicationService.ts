@@ -275,6 +275,28 @@ export class ApplicationService {
     }
   }
 
+  async withdrawApplication(applicationId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from(TABLES.APPLICATIONS)
+        .update({
+          status: 'withdrawn',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      // Track analytics
+      analytics.track('application_withdrawn', {
+        application_id: applicationId
+      });
+    } catch (error) {
+      console.error('Failed to withdraw application:', error);
+      throw error;
+    }
+  }
+
   private transformFromDatabase(dbData: any): Application {
     return {
       id: dbData.id,
