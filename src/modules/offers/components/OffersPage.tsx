@@ -137,7 +137,7 @@ export function OffersPage() {
     if (currentUserId) {
       loadApplications();
     }
-  }, [showMyCampaigns]);
+  }, [showMyOffers]);
 
   const handleOfferUpdate = (update: any) => {
     console.log('Offer update received:', update);

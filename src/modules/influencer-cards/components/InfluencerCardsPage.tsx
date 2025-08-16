@@ -417,6 +417,20 @@ export function InfluencerCardsPage() {
     toast.success('Переход к аналитике...');
   };
 
+  const handleBulkApplications = async () => {
+    try {
+      const favoriteIds = favoriteCards.map(card => card.id);
+      await favoriteService.sendBulkApplications(currentUserId, favoriteIds, {
+        message: 'Заинтересован в сотрудничестве с вашей карточкой',
+        proposedRate: 1000
+      });
+      toast.success(`Заявки отправлены ${favoriteCards.length} инфлюенсерам!`);
+    } catch (error: any) {
+      console.error('Failed to send bulk applications:', error);
+      toast.error('Не удалось отправить массовые заявки');
+    }
+  };
+
   const clearFilters = () => {
     if (activeSection === 'favorites') {
       toast.info('Фильтры не применяются к избранному');
@@ -998,18 +1012,4 @@ export function InfluencerCardsPage() {
       </div>
     </FeatureGate>
   );
-
-  const handleBulkApplications = async () => {
-    try {
-      const favoriteIds = favoriteCards.map(card => card.id);
-      await favoriteService.sendBulkApplications(currentUserId, favoriteIds, {
-        message: 'Заинтересован в сотрудничестве с вашей карточкой',
-        proposedRate: 1000
-      });
-      toast.success(`Заявки отправлены ${favoriteCards.length} инфлюенсерам!`);
-    } catch (error: any) {
-      console.error('Failed to send bulk applications:', error);
-      toast.error('Не удалось отправить массовые заявки');
-    }
-  };
 }
