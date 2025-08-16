@@ -9,6 +9,8 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
+import { supabase } from '../../../core/supabase';
+import toast from 'react-hot-toast';
 
 interface Conversation {
   id: string;
