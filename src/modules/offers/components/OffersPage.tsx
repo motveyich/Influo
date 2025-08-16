@@ -172,7 +172,7 @@ export function OffersPage() {
         const { chatService } = await import('../../chat/services/chatService');
         await chatService.sendMessage({
           senderId: currentUserId,
-          receiverId: offer.influencerId,
+          receiverId: offer.advertiserId,
           messageContent: 'Заявка на сотрудничество была отозвана отправителем.',
           messageType: 'text',
           metadata: {
