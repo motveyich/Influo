@@ -17,7 +17,7 @@ export class ApplicationService {
         .from('applications')
         .select('id')
         .eq('applicant_id', applicationData.applicantId)
-        .eq('target_reference_id', applicationData.targetReferenceId)
+        .eq('target_id', applicationData.targetId)
         .eq('target_type', applicationData.targetType)
         .maybeSingle();
 
