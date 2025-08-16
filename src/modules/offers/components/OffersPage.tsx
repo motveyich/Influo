@@ -111,16 +111,27 @@ export function OffersPage() {
       
       // Combine real offers with transformed applications
       // Filter out withdrawn/cancelled offers and applications
-      const activeOffers = loadedOffers.filter(offer => 
-        offer.status !== 'withdrawn' && offer.status !== 'cancelled'
-      );
-      const activeApplications = transformedApplications.filter(app => 
-        app.status !== 'withdrawn' && app.status !== 'cancelled'
-      );
+      console.log('Filtering withdrawn/cancelled offers and applications...');
+      
+      const activeOffers = loadedOffers.filter(offer => {
+        const isActive = offer.status !== 'withdrawn' && offer.status !== 'cancelled';
+        if (!isActive) {
+          console.log(`Filtering out offer ${offer.offerId} with status: ${offer.status}`);
+        }
+        return isActive;
+      });
+      
+      const activeApplications = transformedApplications.filter(app => {
+        const isActive = app.status !== 'withdrawn' && app.status !== 'cancelled';
+        if (!isActive) {
+          console.log(`Filtering out application ${app.offerId} with status: ${app.status}`);
+        }
+        return isActive;
+      });
       
       const allOffers = [...activeOffers, ...activeApplications];
       console.log('Total combined offers:', allOffers.length);
-      console.log('All offers:', allOffers.map(o => ({ id: o.offerId, status: o.status, type: o.type })));
+      console.log('Active offers only:', allOffers.map(o => ({ id: o.offerId, status: o.status, type: o.type })));
       
       setOffers(allOffers);
       console.log('=== LOAD OFFERS END ===');
@@ -226,18 +237,12 @@ export function OffersPage() {
       
       console.log('About to reload offers...');
       // Immediately remove from UI and then reload to ensure consistency
-      setOffers(prev => {
-        console.log('Removing offer from UI:', offerId);
-        const filtered = prev.filter(o => o.offerId !== offerId);
-        console.log('Offers after removal:', filtered.length);
-        return filtered;
-      });
+      console.log('Immediately removing offer from UI:', offerId);
+      setOffers(prev => prev.filter(o => o.offerId !== offerId));
       
-      // Also reload from database to ensure consistency
-      setTimeout(async () => {
-        console.log('Reloading offers from database...');
-        await loadOffers();
-      }, 500);
+      // Force reload from database immediately
+      console.log('Force reloading offers from database...');
+      await loadOffers();
       
       console.log('Offers reloaded successfully');
       console.log('=== WITHDRAW DEBUG END ===');
