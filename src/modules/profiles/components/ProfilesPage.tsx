@@ -90,12 +90,12 @@ export function ProfilesPage() {
         const categories = currentUserProfile.influencerData.contentCategories || [];
         
         setInfluencerData({
-          mainSocialLink: mainLink,
-          category: categories.length > 0 ? categories[0] : '',
-          platformName: influencerData.platformName || '',
-          platformLink: mainLink,
-          audienceDescription: influencerData.audienceDescription || '',
-          portfolioLink: influencerData.portfolioLink || ''
+          mainSocialLink: currentUserProfile.influencerData.mainSocialLink || mainLink,
+          category: currentUserProfile.influencerData.category || (categories.length > 0 ? categories[0] : ''),
+          platformName: currentUserProfile.influencerData.platformName || '',
+          platformLink: currentUserProfile.influencerData.platformLink || mainLink,
+          audienceDescription: currentUserProfile.influencerData.audienceDescription || '',
+          portfolioLink: currentUserProfile.influencerData.portfolioLink || ''
         });
       } else {
         setInfluencerData({
@@ -112,9 +112,9 @@ export function ProfilesPage() {
       if (currentUserProfile.advertiserData) {
         setAdvertiserData({
           companyName: currentUserProfile.advertiserData.companyName || '',
-          companyWebsite: currentUserProfile.website || '',
-          companyDescription: advertiserData.companyDescription || '',
-          portfolioLink: advertiserData.portfolioLink || ''
+          companyWebsite: currentUserProfile.advertiserData.companyWebsite || currentUserProfile.website || '',
+          companyDescription: currentUserProfile.advertiserData.companyDescription || '',
+          portfolioLink: currentUserProfile.advertiserData.portfolioLink || ''
         });
       } else {
         setAdvertiserData({
