@@ -59,6 +59,11 @@ export function AdvertiserCardDisplay({
   const handleApply = async () => {
     setIsLoading(true);
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -66,7 +71,9 @@ export function AdvertiserCardDisplay({
         targetReferenceId: card.id,
         applicationData: {
           message: `Заинтересован в участии в кампании "${card.campaignTitle}"`,
-          proposedRate: card.budget.type === 'fixed' ? card.budget.amount : card.budget.min
+          proposedRate: card.budget.type === 'fixed' ? (card.budget.amount || 1000) : (card.budget.min || 1000),
+          timeline: '2 недели',
+          deliverables: ['Участие в кампании']
         }
       });
 
@@ -82,6 +89,11 @@ export function AdvertiserCardDisplay({
 
   const handleToggleFavorite = async () => {
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       if (isFavorite) {
         await favoriteService.removeFromFavorites(currentUserId!, 'advertiser_card', card.id);
         setIsFavorite(false);
@@ -114,11 +126,18 @@ export function AdvertiserCardDisplay({
 
   const handleSendMessage = async () => {
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       await cardAnalyticsService.trackCardInteraction('advertiser', card.id, currentUserId!, 'message');
-      // Redirect to chat or open chat modal
-      window.location.href = `/chat?user=${card.userId}`;
+      
+      // Navigate to chat with the specific user
+      window.location.href = `/chat?userId=${card.userId}`;
     } catch (error) {
       console.error('Failed to initiate message:', error);
+      toast.error('Не удалось перейти к чату');
     }
   };
 

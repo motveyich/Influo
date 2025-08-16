@@ -60,6 +60,11 @@ export function InfluencerCardDisplay({
   const handleApply = async () => {
     setIsLoading(true);
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -67,7 +72,9 @@ export function InfluencerCardDisplay({
         targetReferenceId: card.id,
         applicationData: {
           message: `Заинтересован в сотрудничестве с вашей карточкой на платформе ${card.platform}`,
-          proposedRate: card.serviceDetails.pricing.post || 0
+          proposedRate: card.serviceDetails.pricing.post || 1000,
+          timeline: '2 недели',
+          deliverables: ['Пост в Instagram']
         }
       });
 
@@ -83,6 +90,11 @@ export function InfluencerCardDisplay({
 
   const handleToggleFavorite = async () => {
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       if (isFavorite) {
         await favoriteService.removeFromFavorites(currentUserId!, 'influencer_card', card.id);
         setIsFavorite(false);
@@ -115,11 +127,18 @@ export function InfluencerCardDisplay({
 
   const handleSendMessage = async () => {
     try {
+      if (!currentUserId) {
+        toast.error('Необходимо войти в систему');
+        return;
+      }
+
       await cardAnalyticsService.trackCardInteraction('influencer', card.id, currentUserId!, 'message');
-      // Redirect to chat or open chat modal
-      window.location.href = `/chat?user=${card.userId}`;
+      
+      // Navigate to chat with the specific user
+      window.location.href = `/chat?userId=${card.userId}`;
     } catch (error) {
       console.error('Failed to initiate message:', error);
+      toast.error('Не удалось перейти к чату');
     }
   };
 
