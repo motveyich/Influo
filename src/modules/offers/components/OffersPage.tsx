@@ -88,53 +88,73 @@ export function OffersPage() {
 
   const loadOffers = async () => {
     try {
-      console.log('=== LOAD OFFERS START ===');
-      console.log('Show my offers:', showMyOffers);
-      console.log('Current user ID:', currentUserId);
+      console.log('=== LOAD OFFERS DEBUG START ===');
+      console.log('Loading offers for user:', currentUserId);
+      console.log('Show my offers (sent):', showMyOffers);
+      console.log('Loading type:', showMyOffers ? 'sent' : 'received');
       
       setIsLoading(true);
       
       // Load real offers from offers table
-      console.log('Loading real offers...');
+      console.log('=== LOADING REAL OFFERS FROM OFFERS TABLE ===');
       const loadedOffers = await offerService.getUserOffers(
         currentUserId, 
         showMyOffers ? 'sent' : 'received'
       );
-      console.log('Real offers loaded:', loadedOffers.length);
-      console.log('Real offers statuses:', loadedOffers.map(o => ({ id: o.offerId, status: o.status })));
+      console.log('Real offers loaded count:', loadedOffers.length);
+      console.log('Real offers details:', loadedOffers.map(o => ({ 
+        id: o.offerId, 
+        status: o.status,
+        influencer: o.influencerId,
+        advertiser: o.advertiserId
+      })));
       
       // Load applications and transform them
-      console.log('Loading applications...');
+      console.log('=== LOADING APPLICATIONS FROM APPLICATIONS TABLE ===');
       const transformedApplications = await loadApplications();
-      console.log('Applications loaded:', transformedApplications.length);
-      console.log('Applications statuses:', transformedApplications.map(o => ({ id: o.offerId, status: o.status })));
+      console.log('Applications loaded count:', transformedApplications.length);
+      console.log('Applications details:', transformedApplications.map(o => ({ 
+        id: o.offerId, 
+        status: o.status,
+        type: o.type,
+        influencer: o.influencerId,
+        advertiser: o.advertiserId
+      })));
       
       // Combine real offers with transformed applications
-      // Filter out withdrawn/cancelled offers and applications
-      console.log('Filtering withdrawn/cancelled offers and applications...');
+      console.log('=== FILTERING OUT WITHDRAWN/CANCELLED ===');
       
       const activeOffers = loadedOffers.filter(offer => {
-        const isActive = offer.status !== 'withdrawn' && offer.status !== 'cancelled';
+        const isActive = offer.status !== 'withdrawn';
         if (!isActive) {
-          console.log(`Filtering out offer ${offer.offerId} with status: ${offer.status}`);
+          console.log(`❌ Filtering out REAL OFFER ${offer.offerId} with status: ${offer.status}`);
+        } else {
+          console.log(`✅ Keeping REAL OFFER ${offer.offerId} with status: ${offer.status}`);
         }
         return isActive;
       });
       
       const activeApplications = transformedApplications.filter(app => {
-        const isActive = app.status !== 'withdrawn' && app.status !== 'cancelled';
+        const isActive = app.status !== 'cancelled';
         if (!isActive) {
-          console.log(`Filtering out application ${app.offerId} with status: ${app.status}`);
+          console.log(`❌ Filtering out APPLICATION ${app.offerId} with status: ${app.status}`);
+        } else {
+          console.log(`✅ Keeping APPLICATION ${app.offerId} with status: ${app.status}`);
         }
         return isActive;
       });
       
       const allOffers = [...activeOffers, ...activeApplications];
-      console.log('Total combined offers:', allOffers.length);
-      console.log('Active offers only:', allOffers.map(o => ({ id: o.offerId, status: o.status, type: o.type })));
+      console.log('=== FINAL RESULT ===');
+      console.log('Total active offers after filtering:', allOffers.length);
+      console.log('Final offers list:', allOffers.map(o => ({ 
+        id: o.offerId, 
+        status: o.status, 
+        type: o.type || 'real_offer'
+      })));
       
       setOffers(allOffers);
-      console.log('=== LOAD OFFERS END ===');
+      console.log('=== LOAD OFFERS DEBUG END ===');
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
@@ -194,26 +214,43 @@ export function OffersPage() {
     if (!confirm('Вы уверены, что хотите отозвать это предложение?')) return;
 
     try {
-      console.log('=== WITHDRAW DEBUG START ===');
-      console.log('Withdrawing offer/application with ID:', offerId);
+      console.log('=== WITHDRAW OFFER DEBUG START ===');
+      console.log('Offer ID to withdraw:', offerId);
       console.log('Current user ID:', currentUserId);
+      console.log('Show my offers:', showMyOffers);
       
       // Find the offer to determine if it's a real offer or application
       const offer = offers.find(o => o.offerId === offerId);
-      console.log('Found offer/application:', offer);
-      console.log('Offer type:', offer?.type);
+      console.log('Found offer in current list:', offer);
+      console.log('Offer type:', offer?.type || 'real_offer');
+      console.log('Offer status before withdrawal:', offer?.status);
+      
+      // Check what's actually in the database BEFORE withdrawal
+      console.log('=== CHECKING DATABASE BEFORE WITHDRAWAL ===');
+      if (offer?.type === 'application') {
+        const { data: dbApp, error: dbError } = await supabase
+          .from(TABLES.APPLICATIONS)
+          .select('*')
+          .eq('id', offerId)
+          .maybeSingle();
+        console.log('Application in DB before withdrawal:', dbApp);
+        console.log('DB error:', dbError);
+      } else {
+        const { data: dbOffer, error: dbError } = await supabase
+          .from(TABLES.OFFERS)
+          .select('*')
+          .eq('offer_id', offerId)
+          .maybeSingle();
+        console.log('Offer in DB before withdrawal:', dbOffer);
+        console.log('DB error:', dbError);
+      }
       
       if (offer?.type === 'application') {
-        console.log('Processing as application withdrawal...');
+        console.log('=== PROCESSING AS APPLICATION WITHDRAWAL ===');
         // This is an application, use application service
         const { applicationService } = await import('../../applications/services/applicationService');
-        console.log('About to call withdrawApplication...');
         await applicationService.withdrawApplication(offerId);
-        console.log('withdrawApplication completed successfully');
         
-        // Send chat notification
-        console.log('Sending chat notification...');
-        console.log('SenderId:', currentUserId, 'ReceiverId:', offer.advertiserId);
         const { chatService } = await import('../../chat/services/chatService');
         await chatService.sendMessage({
           senderId: currentUserId,
@@ -225,11 +262,10 @@ export function OffersPage() {
             actionType: 'application_cancelled'
           }
         });
-        console.log('Chat notification sent successfully');
         
         toast.success('Заявка отменена успешно!');
       } else {
-        console.log('Processing as real offer withdrawal...');
+        console.log('=== PROCESSING AS REAL OFFER WITHDRAWAL ===');
         // This is a real offer
         await offerService.withdrawOffer(offerId);
         toast.success('Предложение отозвано успешно!');
@@ -239,18 +275,36 @@ export function OffersPage() {
       // Immediately remove from UI and then reload to ensure consistency
       console.log('Immediately removing offer from UI:', offerId);
       setOffers(prev => prev.filter(o => o.offerId !== offerId));
+      // Check what's in the database AFTER withdrawal
+      console.log('=== CHECKING DATABASE AFTER WITHDRAWAL ===');
+      if (offer?.type === 'application') {
+        const { data: dbApp, error: dbError } = await supabase
+          .from(TABLES.APPLICATIONS)
+          .select('*')
+          .eq('id', offerId)
+          .maybeSingle();
+        console.log('Application in DB after withdrawal:', dbApp);
+        console.log('New status in DB:', dbApp?.status);
+        console.log('DB error:', dbError);
+      } else {
+        const { data: dbOffer, error: dbError } = await supabase
+          .from(TABLES.OFFERS)
+          .select('*')
+          .eq('offer_id', offerId)
+          .maybeSingle();
+        console.log('Offer in DB after withdrawal:', dbOffer);
+        console.log('New status in DB:', dbOffer?.status);
+        console.log('DB error:', dbError);
+      }
       
-      // Force reload from database immediately
-      console.log('Force reloading offers from database...');
+      console.log('=== RELOADING OFFERS FROM DATABASE ===');
       await loadOffers();
       
-      console.log('Offers reloaded successfully');
-      console.log('=== WITHDRAW DEBUG END ===');
+      console.log('=== WITHDRAW OFFER DEBUG END ===');
     } catch (error: any) {
-      console.error('=== WITHDRAW ERROR ===');
+      console.error('=== WITHDRAW OFFER ERROR ===');
       console.error('Failed to withdraw offer:', error);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       toast.error(error.message || 'Не удалось отозвать заявку');
     }
   };

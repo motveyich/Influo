@@ -148,12 +148,19 @@ export class OfferService {
 
   async withdrawOffer(offerId: string): Promise<Offer> {
     try {
+      console.log('=== OFFER SERVICE: WITHDRAW START ===');
+      console.log('Withdrawing offer ID:', offerId);
+      
       // First, fetch the offer to verify its existence and status
       const { data: existingOffer, error: fetchError } = await supabase
         .from(TABLES.OFFERS)
         .select('*')
         .eq('offer_id', offerId)
         .maybeSingle();
+
+      console.log('Found offer in DB:', existingOffer);
+      console.log('Current status in DB:', existingOffer?.status);
+      console.log('Fetch error:', fetchError);
 
       if (fetchError) throw fetchError;
       
@@ -164,6 +171,8 @@ export class OfferService {
       if (existingOffer.status !== 'pending') {
         throw new Error(`Нельзя отозвать предложение со статусом "${existingOffer.status}"`);
       }
+
+      console.log('Updating offer status from', existingOffer.status, 'to withdrawn');
 
       const { data, error } = await supabase
         .from(TABLES.OFFERS)
@@ -179,7 +188,11 @@ export class OfferService {
         .select()
         .single();
 
+      console.log('Database update error:', error);
       if (error) throw error;
+
+      console.log('Updated offer data:', data);
+      console.log('New status after update:', data?.status);
 
       const withdrawnOffer = this.transformFromDatabase(data);
 
@@ -200,6 +213,7 @@ export class OfferService {
         advertiser_id: withdrawnOffer.advertiserId
       });
 
+      console.log('=== OFFER SERVICE: WITHDRAW END ===');
       return withdrawnOffer;
     } catch (error) {
       console.error('Failed to withdraw offer:', error);
