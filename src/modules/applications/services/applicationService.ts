@@ -278,7 +278,7 @@ export class ApplicationService {
   async withdrawApplication(applicationId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('applications')
+        .from(TABLES.APPLICATIONS)
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString()

@@ -100,7 +100,8 @@ export function OffersPage() {
       const transformedApplications = await loadApplications();
       
       // Combine real offers with transformed applications
-      setOffers([...loadedOffers, ...transformedApplications]);
+      const allOffers = [...loadedOffers, ...transformedApplications];
+      setOffers(allOffers);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
@@ -188,10 +189,7 @@ export function OffersPage() {
         toast.success('Предложение отозвано успешно!');
       }
       
-      // Remove the withdrawn offer/application from the UI immediately
-      setOffers(prev => prev.filter(o => o.offerId !== offerId));
-      
-      // Force reload the offers list to ensure consistency
+      // Force reload the offers list to get fresh data from database
       await loadOffers();
     } catch (error: any) {
       console.error('Failed to withdraw offer:', error);
