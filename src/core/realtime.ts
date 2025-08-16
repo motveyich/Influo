@@ -4,13 +4,15 @@ import { REALTIME_CONFIG } from './config';
 
 export class RealtimeService {
   private subscriptions = new Map();
+  private broadcastChannel: any;
 
   constructor() {
+    this.broadcastChannel = supabase.channel(REALTIME_CONFIG.BROADCAST_CHANNEL_NAME);
   }
 
   private sendEvent(event: RealtimeEvent) {
     try {
-      supabase.realtime.send({
+      this.broadcastChannel.send({
         type: 'broadcast',
         event: event.type,
         payload: event,
@@ -106,6 +108,10 @@ export class RealtimeService {
       supabase.removeChannel(channel);
     });
     this.subscriptions.clear();
+    
+    if (this.broadcastChannel) {
+      supabase.removeChannel(this.broadcastChannel);
+    }
   }
 }
 

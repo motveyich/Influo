@@ -337,7 +337,7 @@ export class OfferService {
 
       if (messageContent && receiverId) {
         await chatService.sendMessage({
-          senderId: type === 'new_offer' ? offer.advertiserId : offer.influencerId,
+          senderId: type === 'offer_withdrawn' ? offer.advertiserId : (type === 'new_offer' ? offer.advertiserId : offer.influencerId),
           receiverId: receiverId,
           messageContent: messageContent,
           messageType: 'offer',
