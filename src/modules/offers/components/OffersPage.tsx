@@ -10,6 +10,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useAuth } from '../../../hooks/useAuth';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import toast from 'react-hot-toast';
+import { supabase, TABLES } from '../../../core/supabase';
 
 export function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
