@@ -126,6 +126,8 @@ export function OffersPage() {
       ));
     } else if (update.eventType === 'INSERT') {
       setOffers(prev => [...prev, update.new]);
+    } else if (update.eventType === 'DELETE') {
+      setOffers(prev => prev.filter(offer => offer.offerId !== update.old.offerId));
     }
   };
 

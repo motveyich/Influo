@@ -19,6 +19,20 @@ export class OfferService {
       this.validateOfferData(offerData);
 
       const newOffer = {
+    // Send chat notification to the partner
+    try {
+      const { chatService } = await import('../../chat/services/chatService');
+      await chatService.sendMessage({
+        senderId: offer.advertiserId,
+        receiverId: offer.influencerId,
+        content: `Предложение о сотрудничестве было отозвано отправителем.`,
+        messageType: 'text'
+      });
+    } catch (chatError) {
+      console.error('Failed to send chat notification:', chatError);
+      // Don't fail the withdrawal if chat notification fails
+    }
+
         influencer_id: offerData.influencerId,
         campaign_id: offerData.campaignId,
         advertiser_id: offerData.advertiserId,
