@@ -37,8 +37,18 @@ export function ChatPage() {
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for userId parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const userIdParam = urlParams.get('userId');
+    if (userIdParam) {
+      setTargetUserId(userIdParam);
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/chat');
+    }
+    
     if (currentUserId && !loading) {
       loadConversations();
     }
@@ -71,7 +81,18 @@ export function ChatPage() {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
       setConversations(loadedConversations);
-      if (!selectedConversation && loadedConversations.length > 0) {
+      
+      // If we have a target user ID, try to find or create that conversation
+      if (targetUserId) {
+        const existingConversation = loadedConversations.find(conv => conv.participantId === targetUserId);
+        if (existingConversation) {
+          setSelectedConversation(existingConversation);
+        } else {
+          // Create a new conversation entry for the target user
+          await createNewConversation(targetUserId);
+        }
+        setTargetUserId(null); // Clear after processing
+      } else if (!selectedConversation && loadedConversations.length > 0) {
         setSelectedConversation(loadedConversations[0]);
       }
     } catch (error) {
@@ -79,6 +100,34 @@ export function ChatPage() {
       setConversations([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const createNewConversation = async (userId: string) => {
+    try {
+      // Get user profile to create conversation entry
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', userId)
+        .single();
+      
+      if (userProfile) {
+        const newConversation: Conversation = {
+          id: userId,
+          participantId: userId,
+          participantName: userProfile.full_name || 'Пользователь',
+          participantAvatar: userProfile.avatar,
+          unreadCount: 0,
+          isOnline: false
+        };
+        
+        setConversations(prev => [newConversation, ...prev]);
+        setSelectedConversation(newConversation);
+      }
+    } catch (error) {
+      console.error('Failed to create new conversation:', error);
+      toast.error('Не удалось создать диалог');
     }
   };
 

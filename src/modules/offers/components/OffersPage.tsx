@@ -19,6 +19,7 @@ export function OffersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showMyOffers, setShowMyOffers] = useState(false);
+  const [applications, setApplications] = useState<any[]>([]);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ export function OffersPage() {
   useEffect(() => {
     if (currentUserId && !loading) {
       loadOffers();
+      loadApplications();
     }
     
     // Subscribe to real-time offer updates
@@ -43,6 +45,68 @@ export function OffersPage() {
     }
   }, [currentUserId, loading, showMyOffers]);
 
+  const loadApplications = async () => {
+    try {
+      const { applicationService } = await import('../../applications/services/applicationService');
+      
+      // Load applications as offers
+      const sentApplications = await applicationService.getUserApplications(currentUserId, 'sent');
+      const receivedApplications = await applicationService.getUserApplications(currentUserId, 'received');
+      
+      // Transform applications to offer-like format for display
+      const transformedSent = sentApplications.map(app => ({
+        offerId: app.id,
+        influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
+        campaignId: app.targetReferenceId,
+        advertiserId: app.targetType === 'advertiser_card' ? app.targetId : app.applicantId,
+        details: {
+          rate: app.applicationData.proposedRate || 0,
+          currency: 'USD',
+          deliverables: app.applicationData.deliverables || [],
+          timeline: app.applicationData.timeline || '',
+          terms: app.applicationData.message || ''
+        },
+        status: app.status === 'sent' ? 'pending' : app.status,
+        timeline: {
+          createdAt: app.createdAt,
+          respondedAt: app.timeline?.respondedAt,
+          completedAt: app.timeline?.completedAt
+        },
+        messages: [],
+        metadata: app.metadata || { viewCount: 0 },
+        type: 'application'
+      }));
+      
+      const transformedReceived = receivedApplications.map(app => ({
+        offerId: app.id,
+        influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
+        campaignId: app.targetReferenceId,
+        advertiserId: app.targetType === 'advertiser_card' ? app.targetId : app.applicantId,
+        details: {
+          rate: app.applicationData.proposedRate || 0,
+          currency: 'USD',
+          deliverables: app.applicationData.deliverables || [],
+          timeline: app.applicationData.timeline || '',
+          terms: app.applicationData.message || ''
+        },
+        status: app.status === 'sent' ? 'pending' : app.status,
+        timeline: {
+          createdAt: app.createdAt,
+          respondedAt: app.timeline?.respondedAt,
+          completedAt: app.timeline?.completedAt
+        },
+        messages: [],
+        metadata: app.metadata || { viewCount: 0 },
+        type: 'application'
+      }));
+      
+      setApplications(showMyCampaigns ? transformedSent : transformedReceived);
+    } catch (error) {
+      console.error('Failed to load applications:', error);
+      setApplications([]);
+    }
+  };
+
   const loadOffers = async () => {
     try {
       setIsLoading(true);
@@ -56,7 +120,9 @@ export function OffersPage() {
         loadedOffers = await offerService.getUserOffers(currentUserId, 'received');
       }
       
-      setOffers(loadedOffers);
+      // Combine offers and applications
+      const combinedOffers = [...loadedOffers, ...applications];
+      setOffers(combinedOffers);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error(t('offers.errors.loadFailed'));
@@ -65,6 +131,13 @@ export function OffersPage() {
       setIsLoading(false);
     }
   };
+
+  // Update applications loading when showMyCampaigns changes
+  useEffect(() => {
+    if (currentUserId) {
+      loadApplications();
+    }
+  }, [showMyCampaigns]);
 
   const handleOfferUpdate = (update: any) => {
     console.log('Offer update received:', update);

@@ -12,6 +12,9 @@ interface OfferCardProps {
 export function OfferCard({ offer, onAction }: OfferCardProps) {
   const { t } = useTranslation();
 
+  // Check if this is an application (not a traditional offer)
+  const isApplication = (offer as any).type === 'application';
+
   const getStatusColor = (status: Offer['status']) => {
     switch (status) {
       case 'pending':
@@ -69,7 +72,7 @@ export function OfferCard({ offer, onAction }: OfferCardProps) {
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
               <h3 className="text-lg font-semibold text-gray-900">
-                Предложение о сотрудничестве
+                {isApplication ? 'Заявка на сотрудничество' : 'Предложение о сотрудничестве'}
               </h3>
               <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
                 <div className="flex items-center space-x-1">
@@ -87,7 +90,7 @@ export function OfferCard({ offer, onAction }: OfferCardProps) {
               </span>
             </div>
             <p className="text-sm text-gray-600">
-              ID кампании: {offer.campaignId} • ID предложения: {offer.offerId}
+              {isApplication ? 'ID заявки:' : 'ID кампании:'} {offer.campaignId} • {isApplication ? 'ID заявки:' : 'ID предложения:'} {offer.offerId}
             </p>
           </div>
           
