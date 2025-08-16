@@ -52,7 +52,7 @@ export function OffersPage() {
       // Load applications based on current view
       const userApplications = await applicationService.getUserApplications(
         currentUserId, 
-        showMyOffers ? 'received' : 'sent'
+        showMyOffers ? 'sent' : 'received'
       );
       
       // Transform applications to offer-like format for display
