@@ -101,14 +101,24 @@ export function OffersPage() {
         showMyOffers ? 'sent' : 'received'
       );
       console.log('Real offers loaded:', loadedOffers.length);
+      console.log('Real offers statuses:', loadedOffers.map(o => ({ id: o.offerId, status: o.status })));
       
       // Load applications and transform them
       console.log('Loading applications...');
       const transformedApplications = await loadApplications();
       console.log('Applications loaded:', transformedApplications.length);
+      console.log('Applications statuses:', transformedApplications.map(o => ({ id: o.offerId, status: o.status })));
       
       // Combine real offers with transformed applications
-      const allOffers = [...loadedOffers, ...transformedApplications];
+      // Filter out withdrawn/cancelled offers and applications
+      const activeOffers = loadedOffers.filter(offer => 
+        offer.status !== 'withdrawn' && offer.status !== 'cancelled'
+      );
+      const activeApplications = transformedApplications.filter(app => 
+        app.status !== 'withdrawn' && app.status !== 'cancelled'
+      );
+      
+      const allOffers = [...activeOffers, ...activeApplications];
       console.log('Total combined offers:', allOffers.length);
       console.log('All offers:', allOffers.map(o => ({ id: o.offerId, status: o.status, type: o.type })));
       
@@ -215,8 +225,20 @@ export function OffersPage() {
       }
       
       console.log('About to reload offers...');
-      // Force reload the offers list to get fresh data from database
-      await loadOffers();
+      // Immediately remove from UI and then reload to ensure consistency
+      setOffers(prev => {
+        console.log('Removing offer from UI:', offerId);
+        const filtered = prev.filter(o => o.offerId !== offerId);
+        console.log('Offers after removal:', filtered.length);
+        return filtered;
+      });
+      
+      // Also reload from database to ensure consistency
+      setTimeout(async () => {
+        console.log('Reloading offers from database...');
+        await loadOffers();
+      }, 500);
+      
       console.log('Offers reloaded successfully');
       console.log('=== WITHDRAW DEBUG END ===');
     } catch (error: any) {

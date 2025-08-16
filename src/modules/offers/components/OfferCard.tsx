@@ -186,6 +186,7 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
           <div className="flex space-x-3">
             <button
               onClick={() => onAction(offer.offerId, 'accept')}
+              disabled={offer.status === 'withdrawn' || offer.status === 'cancelled'}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
             >
               <CheckCircle className="w-4 h-4" />
@@ -193,6 +194,7 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
             </button>
             <button
               onClick={() => onAction(offer.offerId, 'counter')}
+              disabled={offer.status === 'withdrawn' || offer.status === 'cancelled'}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
             >
               <MessageCircle className="w-4 h-4" />
@@ -200,6 +202,7 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
             </button>
             <button
               onClick={() => onAction(offer.offerId, 'decline')}
+              disabled={offer.status === 'withdrawn' || offer.status === 'cancelled'}
               className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
             >
               <XCircle className="w-4 h-4" />
@@ -209,7 +212,7 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
         )}
 
         {/* Sender Actions (for sent offers) */}
-        {offer.status === 'pending' && showSenderActions && (
+        {offer.status === 'pending' && showSenderActions && offer.status !== 'withdrawn' && offer.status !== 'cancelled' && (
           <div className="flex space-x-3">
             <button
               onClick={() => onModify?.(offer.offerId)}
@@ -278,6 +281,17 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
               <MessageCircle className="w-5 h-5 text-orange-600" />
               <span className="text-sm font-medium text-orange-800">
                 Запрошена дополнительная информация. Проверьте сообщения.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {(offer.status === 'withdrawn' || offer.status === 'cancelled') && (
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <XCircle className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-800">
+                {offer.status === 'withdrawn' ? 'Это предложение было отозвано.' : 'Эта заявка была отменена.'}
               </span>
             </div>
           </div>
