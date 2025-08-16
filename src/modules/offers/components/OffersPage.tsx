@@ -100,7 +100,7 @@ export function OffersPage() {
         type: 'application'
       }));
       
-      setApplications(showMyCampaigns ? transformedSent : transformedReceived);
+      setApplications(showMyOffers ? transformedSent : transformedReceived);
     } catch (error) {
       console.error('Failed to load applications:', error);
       setApplications([]);
