@@ -401,6 +401,7 @@ export function AdvertiserCardDisplay({
 
       {/* Stats */}
         {/* Actions for own cards when showActions is true */}
+      <>
         {showActions && isOwnCard && (
           <div className="space-y-2">
             <div className="flex space-x-2">
@@ -429,7 +430,139 @@ export function AdvertiserCardDisplay({
                 <span>{card.isActive ? 'Активна' : 'Неактивна'}</span>
               </button>
             </div>
-      {card.campaignStats && (
+            {card.campaignStats && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => onViewAnalytics?.(card.id)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Аналитика</span>
+                </button>
+                
+                <button
+                  onClick={() => onDelete?.(card.id)}
+                  className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  title="Удалить карточку"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Удалить</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {card.campaignStats && (
+          <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-1 mb-1">
+                <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                <span className="text-sm font-semibold text-gray-900">
+                  {card.campaignStats.averageRating.toFixed(1)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600">Рейтинг</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-900">{card.campaignStats.completedCampaigns}</p>
+              <p className="text-xs text-gray-600">Кампании</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-900">{card.campaignStats.successRate}%</p>
+              <p className="text-xs text-gray-600">Успешность</p>
+            </div>
+          </div>
+        )}
+      </>
+
+      {/* Created Date */}
+      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-4">
+        <Clock className="w-3 h-3" />
+        <span>Создано {formatDistanceToNow(parseISO(card.createdAt), { addSuffix: true })}</span>
+      </div>
+
+      {/* Actions */}
+      {!showActions && !isDeadlinePassed() && !isOwnCard && (
+        <div className="space-y-2">
+          {/* Primary Actions */}
+          <div className="flex space-x-2">
+            <button
+              onClick={handleApply}
+              disabled={!card.isActive || isLoading}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
+                card.isActive && !isLoading
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <Send className="w-4 h-4" />
+              <span>{isLoading ? 'Отправка...' : 'Откликнуться'}</span>
+            </button>
+            
+            <button
+              onClick={handleToggleFavorite}
+              className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
+                isFavorite
+                  ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+              title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="flex space-x-2">
+            <button
+              onClick={handleSendMessage}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Написать</span>
+            </button>
+            
+            <button
+              onClick={() => onViewAnalytics?.(card.id)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Аналитика</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Own Card Message */}
+      {!showActions && isOwnCard && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <div className="flex items-center space-x-2">
+            <Building className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">
+              Это ваша карточка
+            </span>
+          </div>
+          <p className="text-sm text-blue-700 mt-1">
+            Перейдите в "Мои карточки" для редактирования
+          </p>
+        </div>
+      )}
+
+      {isDeadlinePassed() && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4 text-red-600" />
+            <span className="text-sm font-medium text-red-800">
+              Срок подачи заявок истек
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
             <div className="flex space-x-2">
               <button
                 onClick={() => onViewAnalytics?.(card.id)}
