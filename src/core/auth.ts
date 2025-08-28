@@ -59,14 +59,22 @@ class AuthService {
   }
 
   async signOut() {
-    const { error } = await supabase.auth.signOut();
-    
-    // If session doesn't exist, treat as successful logout
-    if (error && error.message?.includes('Session from session_id claim in JWT does not exist')) {
-      return { error: null };
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      // If session doesn't exist, treat as successful logout
+      if (error && error.message?.includes('Session from session_id claim in JWT does not exist')) {
+        return { error: null };
+      }
+      
+      return { error };
+    } catch (error: any) {
+      // Handle exceptions thrown by Supabase client
+      if (error.message?.includes('Session from session_id claim in JWT does not exist')) {
+        return { error: null };
+      }
+      return { error };
     }
-    
-    return { error };
   }
 
   getCurrentUser() {
