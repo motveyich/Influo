@@ -425,40 +425,6 @@ export function ProfilesPage() {
               <p className="text-sm text-gray-600">{currentUserProfile?.email}</p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 mb-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-lg font-semibold text-gray-900">{stats.rating}</span>
-                </div>
-                <p className="text-xs text-gray-600">Рейтинг аккаунта</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 mb-1">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-lg font-semibold text-gray-900">{stats.deals}</span>
-                </div>
-                <p className="text-xs text-gray-600">Успешные сделки</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 mb-1">
-                  <MessageCircle className="w-4 h-4 text-blue-600" />
-                  <span className="text-lg font-semibold text-gray-900">{stats.applications}</span>
-                </div>
-                <p className="text-xs text-gray-600">Всего заявок</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 mb-1">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                  <span className="text-lg font-semibold text-gray-900">{stats.responseTime} ч</span>
-                </div>
-                <p className="text-xs text-gray-600">Среднее время ответа</p>
-              </div>
-            </div>
 
             {/* Navigation */}
             <nav className="space-y-1">
