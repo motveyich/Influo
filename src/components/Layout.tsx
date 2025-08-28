@@ -30,6 +30,7 @@ export function Layout({ children }: LayoutProps) {
   const currentUserId = user?.id || '';
 
   const navigation = [
+    { name: 'Главная', href: '/', icon: Zap },
     { name: t('nav.profiles'), href: '/profiles', icon: Users },
     { name: t('nav.campaigns'), href: '/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },

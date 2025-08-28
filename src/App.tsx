@@ -7,6 +7,7 @@ import { CampaignsPage } from './modules/campaigns/components/CampaignsPage';
 import { ChatPage } from './modules/chat/components/ChatPage';
 import { OffersPage } from './modules/offers/components/OffersPage';
 import { InfluencerCardsPage } from './modules/influencer-cards/components/InfluencerCardsPage';
+import { HomePage } from './modules/home/components/HomePage';
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/profiles" replace />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/profiles" element={<ProfilesPage />} />
             <Route path="/campaigns" element={<CampaignsPage />} />
             <Route path="/influencer-cards" element={<InfluencerCardsPage />} />
