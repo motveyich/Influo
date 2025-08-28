@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Главная', href: '/', icon: Zap },
     { name: t('nav.profiles'), href: '/profiles', icon: Users },
-    { name: t('nav.campaigns'), href: '/campaigns', icon: Target },
+    { name: 'Автоматические кампании', href: '/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
     { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
     { name: t('nav.offers'), href: '/offers', icon: Handshake },
