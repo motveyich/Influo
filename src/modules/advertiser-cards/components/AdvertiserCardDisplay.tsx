@@ -400,7 +400,57 @@ export function AdvertiserCardDisplay({
       )}
 
       {/* Stats */}
+        {/* Actions for own cards when showActions is true */}
+        {showActions && isOwnCard && (
+          <div className="space-y-2">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => onEdit?.(card)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Редактировать</span>
+              </button>
+              
+              <button
+                onClick={() => onToggleStatus?.(card.id, !card.isActive)}
+                className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
+                  card.isActive
+                    ? 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                    : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+                }`}
+                title={card.isActive ? 'Деактивировать карточку' : 'Активировать карточку'}
+              >
+                {card.isActive ? (
+                  <ToggleRight className="w-4 h-4" />
+                ) : (
+                  <ToggleLeft className="w-4 h-4" />
+                )}
+                <span>{card.isActive ? 'Активна' : 'Неактивна'}</span>
+              </button>
+            </div>
       {card.campaignStats && (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => onViewAnalytics?.(card.id)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Аналитика</span>
+              </button>
+              
+              <button
+                onClick={() => onDelete?.(card.id)}
+                className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                title="Удалить карточку"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Удалить</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1 mb-1">

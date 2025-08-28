@@ -41,7 +41,10 @@ export function InfluencerCardsPage() {
   const [editingCard, setEditingCard] = useState<InfluencerCard | null>(null);
   const [editingAdvertiserCard, setEditingAdvertiserCard] = useState<AdvertiserCard | null>(null);
   const [showMyCards, setShowMyCards] = useState(false);
+  const [showMyCardsSection, setShowMyCardsSection] = useState(false);
   const [activeSection, setActiveSection] = useState<'all' | 'favorites'>('all');
+  const [myInfluencerCards, setMyInfluencerCards] = useState<InfluencerCard[]>([]);
+  const [myAdvertiserCards, setMyAdvertiserCards] = useState<AdvertiserCard[]>([]);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -58,6 +61,7 @@ export function InfluencerCardsPage() {
     if (currentUserId && !loading) {
       loadCards();
       loadAdvertiserCards();
+      loadMyCards();
       loadFavorites();
       
       // Listen for favorites changes
@@ -72,6 +76,20 @@ export function InfluencerCardsPage() {
       };
     }
   }, [showMyCards, currentUserId, loading]);
+
+  const loadMyCards = async () => {
+    try {
+      const myInfluencerCardsData = await influencerCardService.getUserCards(currentUserId);
+      const myAdvertiserCardsData = await advertiserCardService.getUserCards(currentUserId);
+      
+      setMyInfluencerCards(myInfluencerCardsData);
+      setMyAdvertiserCards(myAdvertiserCardsData);
+    } catch (error) {
+      console.error('Failed to load my cards:', error);
+      setMyInfluencerCards([]);
+      setMyAdvertiserCards([]);
+    }
+  };
 
   useEffect(() => {
     if (activeSection === 'favorites') {
@@ -362,8 +380,12 @@ export function InfluencerCardsPage() {
       setCards(prev => prev.map(card => 
         card.id === savedCard.id ? savedCard : card
       ));
+      setMyInfluencerCards(prev => prev.map(card => 
+        card.id === savedCard.id ? savedCard : card
+      ));
     } else {
       setCards(prev => [savedCard, ...prev]);
+      setMyInfluencerCards(prev => [savedCard, ...prev]);
     }
   };
 
@@ -372,8 +394,12 @@ export function InfluencerCardsPage() {
       setAdvertiserCards(prev => prev.map(card => 
         card.id === savedCard.id ? savedCard : card
       ));
+      setMyAdvertiserCards(prev => prev.map(card => 
+        card.id === savedCard.id ? savedCard : card
+      ));
     } else {
       setAdvertiserCards(prev => [savedCard, ...prev]);
+      setMyAdvertiserCards(prev => [savedCard, ...prev]);
     }
   };
 
@@ -553,6 +579,29 @@ export function InfluencerCardsPage() {
               </div>
             </button>
             
+            {/* My Cards Tab */}
+            <button
+              onClick={() => {
+                setShowMyCardsSection(true);
+                setActiveSection('all');
+              }}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                showMyCardsSection && activeSection === 'all'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Grid className="w-4 h-4" />
+                <span>Мои карточки</span>
+                {(myInfluencerCards.length > 0 || myAdvertiserCards.length > 0) && (
+                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+                    {myInfluencerCards.length + myAdvertiserCards.length}
+                  </span>
+                )}
+              </div>
+            </button>
+            
             {/* Favorites Tab */}
             <button
               onClick={() => setActiveSection('favorites')}
@@ -578,13 +627,17 @@ export function InfluencerCardsPage() {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {activeSection === 'favorites' 
+                  {showMyCardsSection
+                    ? 'Мои карточки'
+                    : activeSection === 'favorites' 
                     ? (showMyCards ? 'Избранные рекламодатели' : 'Избранные инфлюенсеры')
                     : (showMyCards ? 'Карточки рекламодателей' : 'Карточки инфлюенсеров')
                   }
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  {activeSection === 'favorites'
+                  {showMyCardsSection
+                    ? 'Управляйте вашими карточками и отслеживайте их эффективность'
+                    : activeSection === 'favorites'
                     ? (showMyCards 
                         ? 'Ваши избранные рекламодатели и их кампании'
                         : 'Ваши избранные инфлюенсеры для сотрудничества'
@@ -598,7 +651,7 @@ export function InfluencerCardsPage() {
               </div>
               
               {/* Bulk Actions for Favorites */}
-              {activeSection === 'favorites' && (
+              {activeSection === 'favorites' && !showMyCardsSection && (
                 <div className="flex space-x-2">
                   {!showMyCards && favoriteCards.length > 0 && (
                     <button
@@ -622,7 +675,8 @@ export function InfluencerCardsPage() {
         </div>
 
         {/* Show content only if user has access */}
-        {((showMyCards && currentUserProfile?.profileCompletion.influencerSetup) || 
+        {(showMyCardsSection || 
+          (showMyCards && currentUserProfile?.profileCompletion.influencerSetup) || 
           (!showMyCards && currentUserProfile?.profileCompletion.advertiserSetup)) ? (
           <>
             {/* Stats */}
@@ -631,11 +685,17 @@ export function InfluencerCardsPage() {
                 <div className="flex items-center">
                   <Grid className="w-5 h-5 text-purple-600" />
                   <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeSection === 'favorites' ? 'В избранном' : (showMyCards ? 'Всего карточек' : t('influencerCards.stats.totalCards'))}
+                    {showMyCardsSection 
+                      ? 'Мои карточки'
+                      : activeSection === 'favorites' ? 'В избранном' : (showMyCards ? 'Всего карточек' : t('influencerCards.stats.totalCards'))
+                    }
                   </span>
                 </div>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {showMyCards ? advertiserStats.total : influencerStats.total}
+                  {showMyCardsSection 
+                    ? myInfluencerCards.length + myAdvertiserCards.length
+                    : showMyCards ? advertiserStats.total : influencerStats.total
+                  }
                 </p>
               </div>
               
@@ -643,11 +703,17 @@ export function InfluencerCardsPage() {
                 <div className="flex items-center">
                   <TrendingUp className="w-5 h-5 text-green-600" />
                   <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeSection === 'favorites' ? 'Активные' : (showMyCards ? 'Активные' : t('influencerCards.stats.active'))}
+                    {showMyCardsSection
+                      ? 'Активные'
+                      : activeSection === 'favorites' ? 'Активные' : (showMyCards ? 'Активные' : t('influencerCards.stats.active'))
+                    }
                   </span>
                 </div>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {showMyCards ? advertiserStats.active : influencerStats.active}
+                  {showMyCardsSection
+                    ? myInfluencerCards.filter(c => c.isActive).length + myAdvertiserCards.filter(c => c.isActive).length
+                    : showMyCards ? advertiserStats.active : influencerStats.active
+                  }
                 </p>
               </div>
               
@@ -655,11 +721,17 @@ export function InfluencerCardsPage() {
                 <div className="flex items-center">
                   <Star className="w-5 h-5 text-yellow-600" />
                   <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeSection === 'favorites' ? 'Средний рейтинг' : (showMyCards ? 'Средний рейтинг' : t('influencerCards.stats.avgRating'))}
+                    {showMyCardsSection
+                      ? 'Средний рейтинг'
+                      : activeSection === 'favorites' ? 'Средний рейтинг' : (showMyCards ? 'Средний рейтинг' : t('influencerCards.stats.avgRating'))
+                    }
                   </span>
                 </div>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {showMyCards ? advertiserStats.avgRating.toFixed(1) : influencerStats.avgRating.toFixed(1)}
+                  {showMyCardsSection
+                    ? ((myInfluencerCards.reduce((sum, c) => sum + c.rating, 0) + myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.averageRating || 0), 0)) / Math.max(myInfluencerCards.length + myAdvertiserCards.length, 1)).toFixed(1)
+                    : showMyCards ? advertiserStats.avgRating.toFixed(1) : influencerStats.avgRating.toFixed(1)
+                  }
                 </p>
               </div>
               
@@ -667,17 +739,23 @@ export function InfluencerCardsPage() {
                 <div className="flex items-center">
                   <Users className="w-5 h-5 text-blue-600" />
                   <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeSection === 'favorites' ? 'Кампании' : (showMyCards ? 'Кампании' : t('influencerCards.stats.campaigns'))}
+                    {showMyCardsSection
+                      ? 'Кампании'
+                      : activeSection === 'favorites' ? 'Кампании' : (showMyCards ? 'Кампании' : t('influencerCards.stats.campaigns'))
+                    }
                   </span>
                 </div>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {showMyCards ? advertiserStats.totalCampaigns : influencerStats.totalCampaigns}
+                  {showMyCardsSection
+                    ? myInfluencerCards.reduce((sum, c) => sum + c.completedCampaigns, 0) + myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.completedCampaigns || 0), 0)
+                    : showMyCards ? advertiserStats.totalCampaigns : influencerStats.totalCampaigns
+                  }
                 </p>
               </div>
             </div>
 
             {/* Search and Filters - Hide for favorites */}
-            {activeSection !== 'favorites' && (
+            {activeSection !== 'favorites' && !showMyCardsSection && (
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="space-y-4">
                 {/* Search */}
@@ -928,7 +1006,38 @@ export function InfluencerCardsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {showMyCards ? (
+                {showMyCardsSection ? (
+                  /* My Cards Section */
+                  <>
+                    {/* My Influencer Cards */}
+                    {myInfluencerCards.map((card) => (
+                      <InfluencerCardDisplay
+                        key={card.id}
+                        card={card}
+                        showActions={true}
+                        currentUserId={currentUserId}
+                        onEdit={handleEditCard}
+                        onDelete={handleDeleteCard}
+                        onToggleStatus={handleToggleStatus}
+                        onViewAnalytics={handleViewAnalytics}
+                      />
+                    ))}
+                    
+                    {/* My Advertiser Cards */}
+                    {myAdvertiserCards.map((card) => (
+                      <AdvertiserCardDisplay
+                        key={card.id}
+                        card={card}
+                        showActions={true}
+                        onEdit={handleEditAdvertiserCard}
+                        onDelete={handleDeleteAdvertiserCard}
+                        onToggleStatus={handleToggleAdvertiserStatus}
+                        onViewAnalytics={handleViewAnalytics}
+                        currentUserId={currentUserId}
+                      />
+                    ))}
+                  </>
+                ) : showMyCards ? (
                   filteredAdvertiserCards.filter(card => card.userId !== currentUserId).map((card) => (
                     <AdvertiserCardDisplay
                       key={card.id}
@@ -959,8 +1068,8 @@ export function InfluencerCardsPage() {
           /* Show feature gate for specific section */
           <FeatureGate
             profile={currentUserProfile}
-            requiredSection={showMyCards ? "influencer" : "advertiser"}
-            featureName={showMyCards ? "карточки рекламодателей" : "карточки инфлюенсеров"}
+            requiredSection={showMyCardsSection ? "basic" : showMyCards ? "influencer" : "advertiser"}
+            featureName={showMyCardsSection ? "мои карточки" : showMyCards ? "карточки рекламодателей" : "карточки инфлюенсеров"}
             onCompleteProfile={() => window.location.href = '/profiles'}
           >
             <div></div>
@@ -969,22 +1078,29 @@ export function InfluencerCardsPage() {
 
         {/* No Results */}
         {!isLoading && 
-         ((showMyCards && currentUserProfile?.profileCompletion.influencerSetup && filteredAdvertiserCards.length === 0) ||
-          (!showMyCards && currentUserProfile?.profileCompletion.advertiserSetup && filteredCards.length === 0)) && (
+         ((showMyCardsSection && (myInfluencerCards.length === 0 && myAdvertiserCards.length === 0)) ||
+          (showMyCards && currentUserProfile?.profileCompletion.influencerSetup && filteredAdvertiserCards.length === 0) ||
+          (!showMyCards && !showMyCardsSection && currentUserProfile?.profileCompletion.advertiserSetup && filteredCards.length === 0)) && (
           <div className="text-center py-12">
-            {activeSection === 'favorites' ? (
+            {showMyCardsSection ? (
+              <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            ) : activeSection === 'favorites' ? (
               <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             ) : (
               <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             )}
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeSection === 'favorites' 
+              {showMyCardsSection
+                ? 'У вас пока нет карточек'
+                : activeSection === 'favorites' 
                 ? (showMyCards ? 'Нет избранных рекламодателей' : 'Нет избранных инфлюенсеров')
                 : (showMyCards ? 'Карточки рекламодателей не найдены' : 'Карточки инфлюенсеров не найдены')
               }
             </h3>
             <p className="text-gray-600">
-              {activeSection === 'favorites'
+              {showMyCardsSection
+                ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве'
+                : activeSection === 'favorites'
                 ? (showMyCards 
                     ? 'Добавляйте интересных рекламодателей в избранное для быстрого доступа'
                     : 'Добавляйте подходящих инфлюенсеров в избранное для массовых рассылок'
@@ -999,6 +1115,15 @@ export function InfluencerCardsPage() {
                   )
               }
             </p>
+            {showMyCardsSection && (
+              <button
+                onClick={handleCreateCard}
+                className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Создать первую карточку</span>
+              </button>
+            )}
           </div>
         )}
 
