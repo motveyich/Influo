@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { AdvertiserCard } from '../../../core/types';
 import { InfluencerCardDisplay } from './InfluencerCardDisplay';
+import { CardTypeSelectionModal } from './CardTypeSelectionModal';
 import { AdvertiserCardDisplay } from '../../advertiser-cards/components/AdvertiserCardDisplay';
 import { InfluencerCardModal } from './InfluencerCardModal';
 import { AdvertiserCardModal } from '../../advertiser-cards/components/AdvertiserCardModal';
@@ -36,6 +37,7 @@ export function InfluencerCardsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showAdvertiserModal, setShowAdvertiserModal] = useState(false);
+  const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
   const [editingCard, setEditingCard] = useState<InfluencerCard | null>(null);
   const [editingAdvertiserCard, setEditingAdvertiserCard] = useState<AdvertiserCard | null>(null);
   const [showMyCards, setShowMyCards] = useState(false);
@@ -271,28 +273,25 @@ export function InfluencerCardsPage() {
   };
 
   const handleCreateCard = () => {
-    // Check profile completion before allowing card creation
+    // Check basic profile completion
     if (!currentUserProfile?.profileCompletion.basicInfo) {
       toast.error('Заполните основную информацию профиля для создания карточек');
       return;
     }
 
-    if (showMyCards) {
-      // Creating advertiser card - check advertiser section
-      if (!currentUserProfile?.profileCompletion.advertiserSetup) {
-        toast.error('Заполните раздел "Рекламодатель" для создания карточек рекламодателя');
-        return;
-      }
-      setEditingAdvertiserCard(null);
-      setShowAdvertiserModal(true);
-    } else {
-      // Creating influencer card - check influencer section
-      if (!currentUserProfile?.profileCompletion.influencerSetup) {
-        toast.error('Заполните раздел "Инфлюенсер" для создания карточек инфлюенсера');
-        return;
-      }
+    // Show type selection modal
+    setShowTypeSelectionModal(true);
+  };
+
+  const handleCardTypeSelected = (type: 'influencer' | 'advertiser') => {
+    setShowTypeSelectionModal(false);
+    
+    if (type === 'influencer') {
       setEditingCard(null);
       setShowModal(true);
+    } else {
+      setEditingAdvertiserCard(null);
+      setShowAdvertiserModal(true);
     }
   };
 
@@ -488,6 +487,16 @@ export function InfluencerCardsPage() {
             <p className="mt-1 text-sm text-gray-600">
               {t('influencerCards.subtitle')}
             </p>
+          </div>
+          
+          <div className="mt-4 sm:mt-0">
+            <button
+              onClick={handleCreateCard}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 shadow-sm"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Создать карточку</span>
+            </button>
           </div>
         </div>
         
@@ -994,6 +1003,13 @@ export function InfluencerCardsPage() {
         )}
 
         {/* Modals */}
+        <CardTypeSelectionModal
+          isOpen={showTypeSelectionModal}
+          onClose={() => setShowTypeSelectionModal(false)}
+          onSelectType={handleCardTypeSelected}
+          profile={currentUserProfile}
+        />
+
         <InfluencerCardModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
