@@ -166,6 +166,42 @@ export class ChatService {
     }
   }
 
+  async hasReceiverResponded(userId1: string, userId2: string): Promise<boolean> {
+    try {
+      // Check if the receiver (userId1) has sent any messages to the sender (userId2)
+      const { data, error } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('id')
+        .eq('sender_id', userId1)
+        .eq('receiver_id', userId2)
+        .limit(1);
+
+      if (error) throw error;
+      return (data?.length || 0) > 0;
+    } catch (error) {
+      console.error('Failed to check receiver response:', error);
+      return false;
+    }
+  }
+
+  async getConversationInitiator(userId1: string, userId2: string): Promise<string | null> {
+    try {
+      // Get the first message in the conversation to determine who initiated
+      const { data, error } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('sender_id')
+        .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
+        .order('timestamp', { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+      return data?.[0]?.sender_id || null;
+    } catch (error) {
+      console.error('Failed to get conversation initiator:', error);
+      return null;
+    }
+  }
+
   private checkRateLimit(userId: string): boolean {
     const now = Date.now();
     const userLimit = this.rateLimitMap.get(userId);

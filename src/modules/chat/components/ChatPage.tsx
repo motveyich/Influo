@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../../../core/types';
-import { Send, Search, MoreVertical, Paperclip, Phone, Video, MessageCircle, Handshake, AlertTriangle } from 'lucide-react';
+import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { CollaborationRequestModal } from './CollaborationRequestModal';
@@ -20,7 +20,15 @@ interface Conversation {
   lastMessage?: ChatMessage;
   unreadCount: number;
   isOnline: boolean;
+  chatType: 'main' | 'new' | 'restricted';
+  canSendMessage: boolean;
+  isBlocked: boolean;
+  initiatedBy?: string;
+  hasReceiverResponded: boolean;
 }
+
+type ChatTab = 'main' | 'new' | 'restricted';
+
 export function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -28,10 +36,12 @@ export function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<ChatTab>('main');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -51,6 +61,7 @@ export function ChatPage() {
     
     if (currentUserId && !loading) {
       loadConversations();
+      loadBlockedUsers();
     }
     
     // Subscribe to real-time chat messages
@@ -76,15 +87,63 @@ export function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  const loadBlockedUsers = async () => {
+    try {
+      // Load blocked users from user profile or separate table
+      // For now, using localStorage as a simple implementation
+      const blocked = localStorage.getItem(`blocked_users_${currentUserId}`);
+      if (blocked) {
+        setBlockedUsers(new Set(JSON.parse(blocked)));
+      }
+    } catch (error) {
+      console.error('Failed to load blocked users:', error);
+    }
+  };
+
   const loadConversations = async () => {
     try {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
-      setConversations(loadedConversations);
+      
+      // Enhance conversations with chat type and restrictions
+      const enhancedConversations = await Promise.all(
+        loadedConversations.map(async (conv) => {
+          const isBlocked = blockedUsers.has(conv.participantId);
+          const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
+          const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
+          
+          let chatType: 'main' | 'new' | 'restricted' = 'main';
+          let canSendMessage = true;
+
+          if (isBlocked) {
+            chatType = 'restricted';
+            canSendMessage = false;
+          } else if (!hasReceiverResponded && initiatedBy !== currentUserId) {
+            // This is a new chat where current user is receiver and hasn't responded
+            chatType = 'new';
+            canSendMessage = true;
+          } else if (!hasReceiverResponded && initiatedBy === currentUserId) {
+            // This is a new chat where current user initiated and receiver hasn't responded
+            chatType = 'new';
+            canSendMessage = false; // Can't send more messages until receiver responds
+          }
+
+          return {
+            ...conv,
+            chatType,
+            canSendMessage,
+            isBlocked,
+            initiatedBy,
+            hasReceiverResponded
+          };
+        })
+      );
+      
+      setConversations(enhancedConversations);
       
       // If we have a target user ID, try to find or create that conversation
       if (targetUserId) {
-        const existingConversation = loadedConversations.find(conv => conv.participantId === targetUserId);
+        const existingConversation = enhancedConversations.find(conv => conv.participantId === targetUserId);
         if (existingConversation) {
           setSelectedConversation(existingConversation);
         } else {
@@ -92,8 +151,12 @@ export function ChatPage() {
           await createNewConversation(targetUserId);
         }
         setTargetUserId(null); // Clear after processing
-      } else if (!selectedConversation && loadedConversations.length > 0) {
-        setSelectedConversation(loadedConversations[0]);
+      } else if (!selectedConversation && enhancedConversations.length > 0) {
+        // Auto-select first conversation in current tab
+        const tabConversations = enhancedConversations.filter(conv => conv.chatType === activeTab);
+        if (tabConversations.length > 0) {
+          setSelectedConversation(tabConversations[0]);
+        }
       }
     } catch (error) {
       console.error('Failed to load conversations:', error);
@@ -119,7 +182,12 @@ export function ChatPage() {
           participantName: userProfile.full_name || 'Пользователь',
           participantAvatar: userProfile.avatar,
           unreadCount: 0,
-          isOnline: false
+          isOnline: false,
+          chatType: 'new',
+          canSendMessage: true, // Can send initial message
+          isBlocked: false,
+          initiatedBy: currentUserId,
+          hasReceiverResponded: false
         };
         
         setConversations(prev => [newConversation, ...prev]);
@@ -153,6 +221,33 @@ export function ChatPage() {
     if (message.new) {
       setMessages(prev => [...prev, message.new]);
       updateConversationLastMessage(message.new);
+      
+      // Check if this moves conversation from 'new' to 'main'
+      if (message.new.receiverId === currentUserId) {
+        // Current user received a message, check if this should move chat to main
+        updateConversationStatus(message.new.senderId);
+      }
+    }
+  };
+
+  const updateConversationStatus = async (partnerId: string) => {
+    try {
+      const hasResponded = await chatService.hasReceiverResponded(currentUserId, partnerId);
+      
+      setConversations(prev => prev.map(conv => {
+        if (conv.participantId === partnerId) {
+          const newChatType = hasResponded ? 'main' : conv.chatType;
+          return {
+            ...conv,
+            chatType: newChatType,
+            canSendMessage: !conv.isBlocked && (newChatType === 'main' || conv.initiatedBy !== currentUserId),
+            hasReceiverResponded: hasResponded
+          };
+        }
+        return conv;
+      }));
+    } catch (error) {
+      console.error('Failed to update conversation status:', error);
     }
   };
 
@@ -171,6 +266,16 @@ export function ChatPage() {
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
+
+    // Check if user can send message
+    if (!selectedConversation.canSendMessage) {
+      if (selectedConversation.isBlocked) {
+        toast.error('Переписка с этим пользователем ограничена');
+      } else if (selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId) {
+        toast.error('Дождитесь ответа получателя перед отправкой следующего сообщения');
+      }
+      return;
+    }
 
     // Check basic profile completion
     if (!currentUserProfile?.profileCompletion.basicInfo) {
@@ -196,6 +301,14 @@ export function ChatPage() {
 
       // Update conversation
       updateConversationLastMessage(sentMessage);
+      
+      // If this was the first message from initiator, disable further messages until response
+      if (selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId) {
+        setSelectedConversation(prev => prev ? {
+          ...prev,
+          canSendMessage: false
+        } : null);
+      }
     } catch (error: any) {
       console.error('Failed to send message:', error);
       
@@ -207,8 +320,70 @@ export function ChatPage() {
         setTimeout(() => setConnectionStatus('connected'), 3000);
       }
       
-      // Show user-friendly error message
       console.warn('Message delivery issue:', error.message);
+    }
+  };
+
+  const handleBlockUser = async (userId: string) => {
+    try {
+      const newBlockedUsers = new Set(blockedUsers);
+      newBlockedUsers.add(userId);
+      setBlockedUsers(newBlockedUsers);
+      
+      // Save to localStorage
+      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
+      
+      // Update conversation status
+      setConversations(prev => prev.map(conv => {
+        if (conv.participantId === userId) {
+          return {
+            ...conv,
+            chatType: 'restricted',
+            canSendMessage: false,
+            isBlocked: true
+          };
+        }
+        return conv;
+      }));
+
+      // Clear selected conversation if it's the blocked user
+      if (selectedConversation?.participantId === userId) {
+        setSelectedConversation(null);
+      }
+
+      toast.success('Пользователь заблокирован');
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      toast.error('Не удалось заблокировать пользователя');
+    }
+  };
+
+  const handleUnblockUser = async (userId: string) => {
+    try {
+      const newBlockedUsers = new Set(blockedUsers);
+      newBlockedUsers.delete(userId);
+      setBlockedUsers(newBlockedUsers);
+      
+      // Save to localStorage
+      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
+      
+      // Update conversation status
+      setConversations(prev => prev.map(conv => {
+        if (conv.participantId === userId) {
+          return {
+            ...conv,
+            chatType: 'main',
+            canSendMessage: true,
+            isBlocked: false
+          };
+        }
+        return conv;
+      }));
+
+      toast.success('Пользователь разблокирован');
+    } catch (error) {
+      console.error('Failed to unblock user:', error);
+      toast.error('Не удалось разблокировать пользователя');
     }
   };
 
@@ -235,9 +410,24 @@ export function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const filteredConversations = conversations.filter(conv =>
+  // Filter conversations by active tab
+  const getTabConversations = (tab: ChatTab) => {
+    return conversations.filter(conv => conv.chatType === tab);
+  };
+
+  const filteredConversations = getTabConversations(activeTab).filter(conv =>
     conv.participantName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getTabCounts = () => {
+    return {
+      main: getTabConversations('main').length,
+      new: getTabConversations('new').length,
+      restricted: getTabConversations('restricted').length
+    };
+  };
+
+  const tabCounts = getTabCounts();
 
   const formatMessageTime = (timestamp: string) => {
     const date = parseISO(timestamp);
@@ -253,10 +443,89 @@ export function ChatPage() {
     }
   };
 
+  const getTabIcon = (tab: ChatTab) => {
+    switch (tab) {
+      case 'main':
+        return <MessageCircle className="w-4 h-4" />;
+      case 'new':
+        return <Handshake className="w-4 h-4" />;
+      case 'restricted':
+        return <Shield className="w-4 h-4" />;
+    }
+  };
+
+  const getTabLabel = (tab: ChatTab) => {
+    switch (tab) {
+      case 'main':
+        return 'Основные';
+      case 'new':
+        return 'Новые';
+      case 'restricted':
+        return 'Ограниченные';
+    }
+  };
+
+  const getEmptyStateMessage = (tab: ChatTab) => {
+    switch (tab) {
+      case 'main':
+        return {
+          title: 'Нет активных чатов',
+          subtitle: 'Активные диалоги появятся здесь после первого ответа получателя',
+          tip: 'Отправьте заявку на карточку или кампанию, чтобы начать диалог'
+        };
+      case 'new':
+        return {
+          title: 'Нет новых чатов',
+          subtitle: 'Новые диалоги и предложения появятся здесь',
+          tip: 'Отправляйте заявки и предложения для начала новых диалогов'
+        };
+      case 'restricted':
+        return {
+          title: 'Нет ограниченных чатов',
+          subtitle: 'Заблокированные пользователи появятся здесь',
+          tip: 'Вы можете заблокировать пользователей из активных чатов'
+        };
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Conversations Sidebar */}
       <div className="w-1/3 border-r border-gray-300 flex flex-col">
+        {/* Chat Tabs */}
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            {(['main', 'new', 'restricted'] as ChatTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setSelectedConversation(null);
+                }}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === tab
+                    ? 'text-purple-600 border-purple-600 bg-purple-50'
+                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  {getTabIcon(tab)}
+                  <span>{getTabLabel(tab)}</span>
+                  {tabCounts[tab] > 0 && (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      activeTab === tab
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {tabCounts[tab]}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Search */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
@@ -285,20 +554,21 @@ export function ChatPage() {
                 </div>
               ))}
             </div>
-          ) : conversations.length === 0 ? (
+          ) : filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <MessageCircle className="w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Нет активных чатов</h3>
+              {getTabIcon(activeTab)}
+              <div className="w-12 h-12 text-gray-400 mb-4">
+                {getTabIcon(activeTab)}
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {getEmptyStateMessage(activeTab).title}
+              </h3>
               <p className="text-sm text-gray-600 mb-4">
-                У вас пока нет активных диалогов. Начните общение, отправив заявку на карточку или кампанию.
+                {getEmptyStateMessage(activeTab).subtitle}
               </p>
               <div className="space-y-2 text-sm text-gray-500">
-                <p>💡 Совет: Перейдите в раздел "Карточки" чтобы:</p>
-                <ul className="text-left space-y-1 ml-4">
-                  <li>• Найти подходящих партнеров</li>
-                  <li>• Отправить заявку на сотрудничество</li>
-                  <li>• Начать диалог</li>
-                </ul>
+                <p>💡 Совет:</p>
+                <p>{getEmptyStateMessage(activeTab).tip}</p>
               </div>
             </div>
           ) : (
@@ -307,7 +577,7 @@ export function ChatPage() {
                 <div
                   key={conversation.id}
                   onClick={() => setSelectedConversation(conversation)}
-                  className={`flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                  className={`flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors relative ${
                     selectedConversation?.id === conversation.id ? 'bg-purple-50 border-r-2 border-purple-500' : ''
                   }`}
                 >
@@ -328,6 +598,11 @@ export function ChatPage() {
                     {conversation.isOnline && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                     )}
+                    {conversation.isBlocked && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <UserX className="w-2 h-2 text-white" />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -345,6 +620,23 @@ export function ChatPage() {
                       <p className="text-sm text-gray-600 truncate mt-1">
                         {conversation.lastMessage.messageContent}
                       </p>
+                    )}
+                    
+                    {/* Chat type indicator */}
+                    {conversation.chatType === 'new' && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        <span className="text-xs text-yellow-600">
+                          {conversation.initiatedBy === currentUserId ? 'Ожидание ответа' : 'Новое предложение'}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {conversation.chatType === 'restricted' && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                        <span className="text-xs text-red-600">Заблокирован</span>
+                      </div>
                     )}
                   </div>
                   
@@ -380,9 +672,21 @@ export function ChatPage() {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">
-                    {selectedConversation.participantName}
-                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {selectedConversation.participantName}
+                    </h3>
+                    {selectedConversation.chatType === 'new' && (
+                      <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+                        Новый чат
+                      </span>
+                    )}
+                    {selectedConversation.isBlocked && (
+                      <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                        Заблокирован
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-600">
                     {selectedConversation.isOnline ? t('common.online') : `${t('chat.lastSeen')} ${formatDistanceToNow(parseISO(selectedConversation.lastMessage?.timestamp || ''), { addSuffix: true })}`}
                   </p>
@@ -390,22 +694,34 @@ export function ChatPage() {
               </div>
               
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
-                  <Phone className="w-5 h-5" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
-                  <Video className="w-5 h-5" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleSendCollaborationRequest}
-                  className="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-gray-100"
-                  title="Send collaboration request"
-                >
-                  <Handshake className="w-5 h-5" />
-                </button>
+                {selectedConversation.chatType !== 'restricted' && (
+                  <button
+                    onClick={handleSendCollaborationRequest}
+                    className="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-gray-100"
+                    title="Отправить запрос на сотрудничество"
+                  >
+                    <Handshake className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Block/Unblock button */}
+                {selectedConversation.isBlocked ? (
+                  <button
+                    onClick={() => handleUnblockUser(selectedConversation.participantId)}
+                    className="p-2 text-green-600 hover:text-green-700 rounded-md hover:bg-green-50"
+                    title="Разблокировать пользователя"
+                  >
+                    <UserCheck className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleBlockUser(selectedConversation.participantId)}
+                    className="p-2 text-red-600 hover:text-red-700 rounded-md hover:bg-red-50"
+                    title="Заблокировать пользователя"
+                  >
+                    <UserX className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -427,6 +743,25 @@ export function ChatPage() {
                 <div className="flex items-center space-x-2 text-sm text-red-800">
                   <AlertTriangle className="w-4 h-4" />
                   <span>{t('chat.rateLimitWarning')}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Chat Restrictions Notice */}
+            {selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId && !selectedConversation.canSendMessage && (
+              <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
+                <div className="flex items-center space-x-2 text-sm text-blue-800">
+                  <Handshake className="w-4 h-4" />
+                  <span>Дождитесь ответа получателя перед отправкой следующего сообщения</span>
+                </div>
+              </div>
+            )}
+
+            {selectedConversation.isBlocked && (
+              <div className="px-4 py-2 bg-red-50 border-b border-red-200">
+                <div className="flex items-center space-x-2 text-sm text-red-800">
+                  <Shield className="w-4 h-4" />
+                  <span>Переписка с этим пользователем ограничена</span>
                 </div>
               </div>
             )}
@@ -459,36 +794,53 @@ export function ChatPage() {
 
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200">
-              <div className="flex items-center space-x-3">
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <input
-                  type="text"
-                  placeholder={t('chat.typeMessage')}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim()}
-                  className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
+              {selectedConversation.canSendMessage ? (
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId
+                        ? "Отправьте приветственное сообщение..."
+                        : t('chat.typeMessage')
+                    }
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim()}
+                    className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="bg-gray-100 rounded-lg p-4">
+                    <Shield className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">
+                      {selectedConversation.isBlocked 
+                        ? 'Переписка ограничена'
+                        : 'Дождитесь ответа получателя'
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-gray-400" />
+                {getTabIcon(activeTab)}
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Разговор не выбран</h3>
-              <p className="text-gray-600">Выберите разговор из боковой панели, чтобы начать общение</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {getEmptyStateMessage(activeTab).title}
+              </h3>
+              <p className="text-gray-600">{getEmptyStateMessage(activeTab).subtitle}</p>
             </div>
           </div>
         )}
