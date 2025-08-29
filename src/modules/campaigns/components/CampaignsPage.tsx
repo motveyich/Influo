@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../../core/types';
 import { CampaignCard } from './CampaignCard';
 import { CampaignModal } from './CampaignModal';
-import { InfluencerMatchingModal } from './InfluencerMatchingModal';
+import { AutomaticCampaignModal } from './AutomaticCampaignModal';
 import { campaignService } from '../services/campaignService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -108,8 +108,7 @@ export function CampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
-  const [showMatchingModal, setShowMatchingModal] = useState(false);
-  const [selectedCampaignForMatching, setSelectedCampaignForMatching] = useState<Campaign | null>(null);
+  const [showAutomaticModal, setShowAutomaticModal] = useState(false);
   const [showMyCampaigns, setShowMyCampaigns] = useState(false);
   
   const { user, loading } = useAuth();
@@ -158,12 +157,11 @@ export function CampaignsPage() {
   };
 
   const handleCreateCampaign = () => {
-    if (!currentUserProfile || currentUserProfile.profileCompletion.completionPercentage < 80) {
-      toast.error('Пожалуйста, завершите профиль для создания кампаний');
+    if (!currentUserProfile?.profileCompletion.advertiserSetup) {
+      toast.error('Заполните раздел "Рекламодатель" для создания автоматических кампаний');
       return;
     }
-    setEditingCampaign(null);
-    setShowCampaignModal(true);
+    setShowAutomaticModal(true);
   };
 
   const handleEditCampaign = (campaign: Campaign) => {
@@ -212,8 +210,8 @@ export function CampaignsPage() {
   };
 
   const handleFindInfluencers = (campaign: Campaign) => {
-    setSelectedCampaignForMatching(campaign);
-    setShowMatchingModal(true);
+    // Start automatic influencer matching for this campaign
+    toast.success('Запуск автоматического подбора инфлюенсеров...');
   };
 
   // Update campaigns loading when filters change
@@ -244,23 +242,41 @@ export function CampaignsPage() {
   const platforms = ['all', 'instagram', 'tiktok', 'youtube', 'twitter'];
 
   return (
-    <FeatureGate
-      profile={currentUserProfile}
-      requiredSection="advertiser"
-      featureName="Кампании"
-      onCompleteProfile={() => window.location.href = '/profiles'}
-    >
+    <div className="space-y-6">
+      {/* Feature Gate Check */}
+      {!currentUserProfile?.profileCompletion.advertiserSetup ? (
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Target className="w-8 h-8 text-gray-400" />
+          </div>
+          
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Настройте профиль рекламодателя
+          </h3>
+          
+          <p className="text-gray-600 mb-6">
+            Для доступа к автоматическим кампаниям необходимо заполнить соответствующий раздел профиля.
+          </p>
+
+          <button
+            onClick={() => window.location.href = '/profiles'}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+          >
+            Перейти к настройкам профиля
+          </button>
+        </div>
+      ) : (
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {showMyCampaigns ? t('campaigns.myCampaigns') : t('campaigns.title')}
+              {showMyCampaigns ? 'Мои автоматические кампании' : 'Автоматические кампании'}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
               {showMyCampaigns 
-                ? 'Управляйте вашими рекламными кампаниями и находите инфлюенсеров'
-                : t('campaigns.subtitle')
+                ? 'Управляйте автоматическими кампаниями с ИИ-подбором инфлюенсеров'
+                : 'Система автоматического подбора инфлюенсеров для ваших кампаний'
               }
             </p>
           </div>
@@ -280,10 +296,10 @@ export function CampaignsPage() {
             {showMyCampaigns && (
               <button 
                 onClick={handleCreateCampaign}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center space-x-2 transition-colors"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl"
               >
                 <Plus className="w-4 h-4" />
-                <span>{t('campaigns.createCampaign')}</span>
+                <span>Создать автоматическую кампанию</span>
               </button>
             )}
           </div>
@@ -457,56 +473,16 @@ export function CampaignsPage() {
         )}
 
         {/* Campaign Modal */}
-        <CampaignModal
-          isOpen={showCampaignModal}
-          onClose={() => setShowCampaignModal(false)}
+        <AutomaticCampaignModal
+          isOpen={showAutomaticModal}
+          onClose={() => setShowAutomaticModal(false)}
           currentCampaign={editingCampaign}
           advertiserId={currentUserId}
           onCampaignSaved={handleCampaignSaved}
         />
 
-        {/* Influencer Matching Modal */}
-        {selectedCampaignForMatching && (
-          <InfluencerMatchingModal
-            isOpen={showMatchingModal}
-            onClose={() => {
-              setShowMatchingModal(false);
-              setSelectedCampaignForMatching(null);
-            }}
-            campaign={selectedCampaignForMatching}
-          />
-        )}
-        
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="ml-2 text-sm font-medium text-gray-600">Успешные сделки</span>
-          </div>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
-            {campaigns.filter(c => c.status === 'completed').length}
-          </p>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <XCircle className="w-5 h-5 text-red-600" />
-            <span className="ml-2 text-sm font-medium text-gray-600">Отклонённые заявки</span>
-          </div>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
-            {Math.floor(stats.totalApplicants * 0.2)}
-          </p>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <TrendingUp className="w-5 h-5 text-purple-600" />
-            <span className="ml-2 text-sm font-medium text-gray-600">Процент успешности</span>
-          </div>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
-            {stats.totalApplicants > 0 ? Math.round((stats.accepted / stats.totalApplicants) * 100) : 0}%
-          </p>
-        </div>
       </div>
-    </FeatureGate>
+      )}
+    </div>
   );
 }

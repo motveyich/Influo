@@ -2,7 +2,7 @@ import React from 'react';
 import { Campaign } from '../../../core/types';
 import { CreateOfferModal } from '../../offers/components/CreateOfferModal';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical } from 'lucide-react';
+import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface CampaignCardProps {
@@ -27,6 +27,10 @@ export function CampaignCard({
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const { t } = useTranslation();
 
+  // Check if this is an automatic campaign
+  const isAutomaticCampaign = (campaign as any).metadata?.isAutomatic;
+  const automaticSettings = (campaign as any).metadata?.automaticSettings;
+
   const getStatusColor = (status: Campaign['status']) => {
     switch (status) {
       case 'active':
@@ -39,8 +43,23 @@ export function CampaignCard({
         return 'bg-blue-100 text-blue-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
+      case 'paused':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: Campaign['status']) => {
+    switch (status) {
+      case 'active':
+        return <Play className="w-3 h-3" />;
+      case 'paused':
+        return <Pause className="w-3 h-3" />;
+      case 'completed':
+        return <Target className="w-3 h-3" />;
+      default:
+        return null;
     }
   };
 
@@ -77,16 +96,27 @@ export function CampaignCard({
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
+            {isAutomaticCampaign && (
+              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-md">
+                <Zap className="w-3 h-3" />
+                <span className="text-xs font-medium">Автоматическая</span>
+              </div>
+            )}
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {campaign.title}
             </h3>
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status)}`}>
-              {campaign.status === 'active' ? 'Активная' :
+              <div className="flex items-center space-x-1">
+                {getStatusIcon(campaign.status)}
+                <span>
+                  {campaign.status === 'active' ? 'Активная' :
                campaign.status === 'draft' ? 'Черновик' :
                campaign.status === 'paused' ? 'Приостановлена' :
                campaign.status === 'completed' ? 'Завершена' :
                campaign.status === 'cancelled' ? 'Отменена' :
-               campaign.status}
+                   campaign.status}
+                </span>
+              </div>
             </span>
           </div>
           <p className="text-sm font-medium text-purple-600 mb-2">{campaign.brand}</p>
@@ -196,8 +226,12 @@ export function CampaignCard({
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200">
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">{campaign.metrics.applicants}</p>
-          <p className="text-xs text-gray-600">{t('campaigns.stats.applicants')}</p>
+          <p className="text-lg font-semibold text-gray-900">
+            {isAutomaticCampaign ? 'Авто' : campaign.metrics.applicants}
+          </p>
+          <p className="text-xs text-gray-600">
+            {isAutomaticCampaign ? 'Подбор' : t('campaigns.stats.applicants')}
+          </p>
         </div>
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-900">{campaign.metrics.accepted}</p>
@@ -210,6 +244,22 @@ export function CampaignCard({
           <p className="text-xs text-gray-600">{t('campaigns.stats.impressions')}</p>
         </div>
       </div>
+
+      {/* Automatic Campaign Info */}
+      {isAutomaticCampaign && automaticSettings && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Zap className="w-4 h-4 text-purple-600" />
+            <span className="text-sm font-medium text-purple-800">Автоматические настройки</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs text-purple-700">
+            <span>Цель: {automaticSettings.targetInfluencerCount} инфлюенсеров</span>
+            <span>Овербукинг: {automaticSettings.overbookingPercentage}%</span>
+            <span>Размер пакета: {automaticSettings.batchSize}</span>
+            <span>Задержка: {automaticSettings.batchDelay} мин</span>
+          </div>
+        </div>
+      )}
 
       {/* Created Date */}
       <div className="flex items-center space-x-2 text-xs text-gray-500 mb-4">
@@ -245,10 +295,15 @@ export function CampaignCard({
         <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-200">
           <button
             onClick={() => onFindInfluencers?.(campaign)}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+            disabled={!isAutomaticCampaign}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
+              isAutomaticCampaign
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
           >
-            <Search className="w-4 h-4" />
-            <span>{t('campaigns.findInfluencers')}</span>
+            <Zap className="w-4 h-4" />
+            <span>{isAutomaticCampaign ? 'Перезапустить подбор' : 'Только для автоматических'}</span>
           </button>
           <button
             onClick={() => onEdit?.(campaign)}
