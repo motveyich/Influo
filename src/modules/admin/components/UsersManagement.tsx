@@ -13,7 +13,8 @@ import {
   Crown,
   User,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -365,7 +366,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                   </button>
                 ))}
               </div>
-                      {(user as any).is_deleted ? (
+            </div>
           </div>
         </div>
       )}
