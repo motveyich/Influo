@@ -436,7 +436,7 @@ export function AdvertiserCardDisplay({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span>Аналитика</span>
+                <span>Подробнее</span>
               </button>
               
               <button

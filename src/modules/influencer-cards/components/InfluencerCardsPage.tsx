@@ -437,9 +437,8 @@ export function InfluencerCardsPage() {
   };
 
   const handleViewAnalytics = (cardId: string) => {
-    // Open analytics modal or navigate to analytics page
-    console.log('View analytics for card:', cardId);
-    toast.success('Переход к аналитике...');
+    // Navigate to card detail page
+    navigate(`/influencer-cards/${cardId}`);
   };
 
   const handleBulkApplications = async () => {

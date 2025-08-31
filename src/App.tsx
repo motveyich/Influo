@@ -7,6 +7,7 @@ import { CampaignsPage } from './modules/campaigns/components/CampaignsPage';
 import { ChatPage } from './modules/chat/components/ChatPage';
 import { OffersPage } from './modules/offers/components/OffersPage';
 import { InfluencerCardsPage } from './modules/influencer-cards/components/InfluencerCardsPage';
+import { InfluencerCardDetailPage } from './modules/influencer-cards/components/InfluencerCardDetailPage';
 import { HomePage } from './modules/home/components/HomePage';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/profiles" element={<ProfilesPage />} />
             <Route path="/campaigns" element={<CampaignsPage />} />
             <Route path="/influencer-cards" element={<InfluencerCardsPage />} />
+            <Route path="/influencer-cards/:cardId" element={<InfluencerCardDetailPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/offers" element={<OffersPage />} />
           </Routes>
