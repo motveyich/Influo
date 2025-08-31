@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../hooks/useAuth';
 import { Offer } from '../../../core/types';
 import { offerService } from '../services/offerService';
+import { applicationService } from '../../applications/services/applicationService';
 import { X, Check, XCircle, MessageCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +19,7 @@ export function OfferResponseModal({
   offer,
   onResponseSent
 }: OfferResponseModalProps) {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [responseType, setResponseType] = useState<'accepted' | 'declined' | 'counter' | 'info' | null>(null);
   const [counterOffer, setCounterOffer] = useState({
@@ -54,7 +57,14 @@ export function OfferResponseModal({
         };
       }
 
-      await offerService.respondToOffer(offer.offerId, response, responseData);
+      // Check if this is an application or an offer
+      if ((offer as any).type === 'application') {
+        // Map counter response to in_progress for applications
+        const applicationResponse = response === 'counter' ? 'in_progress' : response;
+        await applicationService.respondToApplication(offer.offerId, applicationResponse, responseData);
+      } else {
+        await offerService.respondToOffer(offer.offerId, response, responseData, user?.id);
+      }
       
       toast.success(`Offer ${response} successfully!`);
       onResponseSent?.(response);
