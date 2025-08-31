@@ -55,7 +55,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            toast.error(t('auth.invalidCredentials'));
+            toast.error('Неверный email или пароль. Проверьте данные и попробуйте снова.');
           } else if (error.message.includes('Email not confirmed')) {
             toast.error(t('auth.emailNotConfirmed'));
           } else {
