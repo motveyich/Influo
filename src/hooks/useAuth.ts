@@ -24,16 +24,6 @@ export function useAuth() {
 
   const loadUserRole = async () => {
     try {
-      // Check if role column exists
-      const { data: columnExists } = await supabase
-        .from('information_schema.columns')
-        .select('column_name')
-        .eq('table_name', 'user_profiles')
-        .eq('column_name', 'role')
-        .maybeSingle();
-
-      const selectFields = columnExists ? 'role' : '*';
-      
       setRoleLoading(true);
       const role = await roleService.getUserRole(authState.user!.id);
       setUserRole(role);
@@ -41,7 +31,7 @@ export function useAuth() {
       console.error('Failed to load user role:', error);
       setUserRole('user');
     } finally {
-        .select(selectFields)
+      setRoleLoading(false);
     }
   };
 
@@ -53,10 +43,8 @@ export function useAuth() {
     isAuthenticated: !!authState.user,
     isAdmin: userRole === 'admin',
     isModerator: userRole === 'moderator' || userRole === 'admin',
-      setUserRole(data?.role || 'user');
     signIn: authService.signIn.bind(authService),
     signOut: authService.signOut.bind(authService),
-      setUserRole('user');
     refreshRole: loadUserRole,
   };
 }
