@@ -256,7 +256,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        {(user as any).isDeleted ? (
+                        {(user as any).isDeleted === true ? (
                           <>
                             <AlertTriangle className="w-4 h-4 text-red-600" />
                             <span className="text-sm text-red-600">Удален</span>
@@ -287,7 +287,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                           </button>
                         )}
                         
-                        {(user as any).isDeleted ? (
+                        {(user as any).isDeleted === true ? (
                           <button
                             onClick={() => handleRestoreUser(user.userId)}
                             className="text-green-600 hover:text-green-900 transition-colors"

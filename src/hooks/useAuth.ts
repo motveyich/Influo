@@ -32,11 +32,12 @@ export function useAuth() {
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)
-        .single();
+        .maybeSingle();
       
-      if (profile?.is_deleted) {
+      if (profile?.is_deleted === true) {
         // User is blocked, sign them out
         await authService.signOut();
+        alert('Ваш аккаунт был заблокирован администратором. Вы будете перенаправлены на страницу входа.');
         window.location.reload();
       }
     } catch (error) {

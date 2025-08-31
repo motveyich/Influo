@@ -287,7 +287,7 @@ export class AdminService {
   }
 
   private transformUserFromDatabase(dbData: any): UserProfile {
-    return {
+    const baseProfile = {
       userId: dbData.user_id,
       email: dbData.email,
       fullName: dbData.full_name,
@@ -307,10 +307,18 @@ export class AdminService {
       },
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
+    };
+    
+    // Add deletion fields
+    return {
+      ...baseProfile,
+      isDeleted: dbData.is_deleted || false,
+      deletedAt: dbData.deleted_at,
+      deletedBy: dbData.deleted_by
     } as UserProfile & {
-      is_deleted: boolean;
-      deleted_at: string | null;
-      deleted_by: string | null;
+      isDeleted: boolean;
+      deletedAt: string | null;
+      deletedBy: string | null;
     };
   }
 

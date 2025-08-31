@@ -63,9 +63,9 @@ class AuthService {
           .from('user_profiles')
           .select('is_deleted, deleted_at')
           .eq('user_id', data.user.id)
-          .single();
+          .maybeSingle();
         
-        if (profile?.is_deleted) {
+        if (profile?.is_deleted === true) {
           // Sign out the user immediately
           await supabase.auth.signOut();
           return { 

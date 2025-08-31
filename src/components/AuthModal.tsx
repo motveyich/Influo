@@ -55,13 +55,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.name === 'AccountBlockedError') {
-            toast.error(error.message);
+            setErrors({ email: error.message });
           } else if (error.message.includes('Invalid login credentials')) {
-            toast.error(t('auth.invalidCredentials'));
+            setErrors({ email: t('auth.invalidCredentials') });
           } else if (error.message.includes('Email not confirmed')) {
-            toast.error(t('auth.emailNotConfirmed'));
+            setErrors({ email: t('auth.emailNotConfirmed') });
           } else {
-            toast.error(error.message);
+            setErrors({ email: error.message });
           }
         } else {
           toast.success(t('auth.signInSuccess'));
