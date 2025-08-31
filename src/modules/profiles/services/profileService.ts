@@ -103,6 +103,7 @@ export class ProfileService {
       if (updates.fullName !== undefined) updateData.full_name = updates.fullName;
       if (updates.email !== undefined) updateData.email = updates.email;
       if (updates.phone !== undefined) updateData.phone = updates.phone || null;
+      if (updates.username !== undefined) updateData.username = updates.username || null;
       if (updates.bio !== undefined) updateData.bio = updates.bio || null;
       if (updates.location !== undefined) updateData.location = updates.location || null;
       if (updates.website !== undefined) updateData.website = updates.website || null;
@@ -296,6 +297,7 @@ export class ProfileService {
       userId: dbData.user_id,
       email: dbData.email,
       fullName: dbData.full_name,
+      username: dbData.username || '',
       phone: dbData.phone || '',
       userType: dbData.user_type,
       avatar: dbData.avatar,
@@ -320,6 +322,7 @@ export class ProfileService {
     if (profileData.userId) dbData.user_id = profileData.userId;
     if (profileData.email) dbData.email = profileData.email;
     if (profileData.fullName) dbData.full_name = profileData.fullName;
+    if (profileData.username !== undefined) dbData.username = profileData.username || null;
     if (profileData.phone !== undefined) dbData.phone = profileData.phone || null;
     // Always set user_type to avoid NOT NULL constraint violation
     dbData.user_type = profileData.userType || 'influencer';
