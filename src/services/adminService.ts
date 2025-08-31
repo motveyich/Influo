@@ -83,7 +83,8 @@ export class AdminService {
 
       console.log('✅ [AdminService] Permission check passed, proceeding with blocking');
 
-      // Soft delete user
+      // Block user by setting is_deleted to true
+      console.log('🔧 [AdminService] Updating user_profiles table...');
       const { error } = await supabase
         .from(TABLES.USER_PROFILES)
         .update({
@@ -101,16 +102,23 @@ export class AdminService {
       console.log('✅ [AdminService] User blocked successfully in database');
       
       // Verify the update worked
+      console.log('🔧 [AdminService] Verifying database update...');
       const { data: verifyData, error: verifyError } = await supabase
         .from(TABLES.USER_PROFILES)
         .select('is_deleted, deleted_at, deleted_by')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
       
       if (verifyError) {
         console.error('❌ [AdminService] Verification failed:', verifyError);
+        throw new Error(`Failed to verify user blocking: ${verifyError.message}`);
       } else {
         console.log('✅ [AdminService] Verification successful:', verifyData);
+        
+        if (!verifyData.is_deleted) {
+          console.error('❌ [AdminService] User was not actually blocked in database!');
+          throw new Error('User blocking failed - database was not updated');
+        }
       }
 
       // Log the action

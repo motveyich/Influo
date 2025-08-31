@@ -71,7 +71,12 @@ export function useAuth() {
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)
-        .maybeSingle();
+        .single();
+      
+      if (error) {
+        console.error('❌ [useAuth] Failed to check user status:', error);
+        return;
+      }
       
       console.log('✅ [useAuth] User status check result:', { 
         userId: authState.user.id, 
@@ -84,7 +89,7 @@ export function useAuth() {
         setIsBlocked(true);
         // Force logout for blocked users
         await authService.signOut();
-        alert('Ваш аккаунт был заблокирован администратором. Вы будете перенаправлены на страницу входа.');
+        alert('Ваш аккаунт был заблокирован администратором.');
       } else {
         console.log('✅ [useAuth] User is not blocked');
         setIsBlocked(false);

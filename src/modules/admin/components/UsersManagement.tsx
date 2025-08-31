@@ -77,13 +77,30 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
       console.log('✅ [UsersManagement] User confirmed blocking, calling adminService');
       await adminService.deleteUser(userId, currentUser!.id);
       console.log('✅ [UsersManagement] AdminService call completed, reloading users');
+      
+      // Force reload users to see the change
       await loadUsers();
       onStatsUpdate();
-      toast.success('Пользователь удален');
-      console.log('✅ [UsersManagement] UI updated successfully');
+      
+      // Verify the user was actually blocked
+      const updatedUsers = await adminService.getAllUsers({
+        role: roleFilter !== 'all' ? roleFilter : undefined,
+        searchQuery: searchQuery || undefined,
+        isDeleted: false // Check active users
+      });
+      
+      const blockedUser = updatedUsers.find(u => u.userId === userId);
+      if (blockedUser) {
+        console.error('❌ [UsersManagement] User was not actually blocked!');
+        toast.error('Ошибка: пользователь не был заблокирован');
+        return;
+      }
+      
+      console.log('✅ [UsersManagement] User successfully blocked and removed from active list');
+      toast.success('Пользователь заблокирован');
     } catch (error: any) {
       console.error('Failed to delete user:', error);
-      toast.error(error.message || 'Не удалось удалить пользователя');
+      toast.error(error.message || 'Не удалось заблокировать пользователя');
     }
   };
 
