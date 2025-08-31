@@ -44,6 +44,7 @@ export function useAuth() {
     isAdmin: userRole === 'admin',
     isModerator: userRole === 'moderator' || userRole === 'admin',
     signIn: authService.signIn.bind(authService),
+    signUp: authService.signUp.bind(authService),
     signOut: authService.signOut.bind(authService),
     refreshRole: loadUserRole,
   };
