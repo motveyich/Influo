@@ -220,6 +220,7 @@ export class ApplicationService {
       });
     } catch (error) {
       console.error('Failed to send application notification:', error);
+      throw error;
     }
   }
 
@@ -251,6 +252,7 @@ export class ApplicationService {
       });
     } catch (error) {
       console.error('Failed to send response notification:', error);
+      throw error;
     }
   }
 

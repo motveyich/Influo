@@ -76,15 +76,41 @@ export class OfferService {
   async respondToOffer(
     offerId: string, 
     response: 'accepted' | 'declined' | 'counter',
-    responseData?: any
+    responseData?: any,
+    currentUserId?: string
   ): Promise<Offer> {
     let attempt = 0;
     
     while (attempt < this.retryAttempts) {
       try {
+        // First, fetch the offer to verify its existence and status
+        const { data: existingOffer, error: fetchError } = await supabase
+          .from(TABLES.OFFERS)
+          .select('*')
+          .eq('offer_id', offerId)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        
+        if (!existingOffer) {
+          throw new Error('Предложение не найдено');
+        }
+
+        // Check if user has permission to respond (must be the influencer)
+        if (currentUserId && existingOffer.influencer_id !== currentUserId) {
+          throw new Error('У вас нет прав для ответа на это предложение');
+        }
+
+        // Check if offer is in a valid state for response
+        const validStatuses = ['pending', 'info_requested'];
+        if (!validStatuses.includes(existingOffer.status)) {
+          throw new Error(`Нельзя ответить на предложение со статусом "${existingOffer.status}"`);
+        }
+
         const updateData: any = {
           status: response,
           timeline: {
+            ...existingOffer.timeline,
             respondedAt: new Date().toISOString()
           },
           updated_at: new Date().toISOString()
@@ -103,9 +129,13 @@ export class OfferService {
           .update(updateData)
           .eq('offer_id', offerId)
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
+        
+        if (!data) {
+          throw new Error('Не удалось обновить предложение');
+        }
 
         const updatedOffer = this.transformFromDatabase(data);
 
@@ -179,9 +209,13 @@ export class OfferService {
         })
         .eq('offer_id', offerId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Не удалось отозвать предложение. Возможно, оно уже было изменено.');
+      }
 
 
       const withdrawnOffer = this.transformFromDatabase(data);
@@ -219,7 +253,10 @@ export class OfferService {
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) return null;
+      
+      if (!data) {
+        return null;
+      }
 
       return this.transformFromDatabase(data);
     } catch (error) {
@@ -352,7 +389,7 @@ export class OfferService {
       }
     } catch (error) {
       console.error('Failed to send offer notification:', error);
-      // Don't throw - this is a fallback notification
+      throw error;
     }
   }
 

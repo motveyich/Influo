@@ -72,7 +72,9 @@ export function OfferResponseModal({
     } catch (error: any) {
       console.error('Failed to respond to offer:', error);
       
-      if (error.message.includes('multiple attempts')) {
+      if (error.message.includes('Rate limit exceeded')) {
+        toast.error('Вы отправляете сообщения слишком быстро. Подождите немного.');
+      } else if (error.message.includes('multiple attempts')) {
         toast.error('Failed to save response. Please check your connection and try again.');
       } else {
         toast.error(error.message || 'Failed to send response');
