@@ -107,7 +107,7 @@ export class AdminService {
 
       // Block user by setting is_deleted to true
       console.log('🔧 [AdminService] Updating user_profiles table...');
-      const { data: updateData, error } = await supabase
+      const { data, error } = await supabase
         .from(TABLES.USER_PROFILES)
         .update({
           is_deleted: true,
@@ -119,17 +119,15 @@ export class AdminService {
 
       if (error) {
         console.error('❌ [AdminService] Database update failed:', error);
-        throw new Error(`Database update failed: ${error.message}`);
+        throw new Error(`Database update failed: ${error.message}. This usually indicates RLS policy restrictions.`);
       }
 
       console.log('✅ [AdminService] User blocked successfully in database');
       
       // Verify the update worked
       console.log('🔧 [AdminService] Verifying database update...');
-      const verifyData = updateData?.[0];
-      if (!verifyData || !verifyData.is_deleted) {
-        console.error('❌ [AdminService] User was not actually blocked!');
-        throw new Error('User blocking failed - RLS policy prevented database update. Check Supabase policies.');
+      if (!data || data.length === 0 || !data[0].is_deleted) {
+        throw new Error('User blocking failed - RLS policy prevented database update. Please check Supabase RLS policies for user_profiles table.');
       }
 
       // Log the action
