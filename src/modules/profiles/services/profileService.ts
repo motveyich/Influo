@@ -29,30 +29,32 @@ export class ProfileService {
       const completion = this.calculateProfileCompletion(profileData);
 
       const newProfile = {
-        userId: user.id,
+        user_id: user.id,
         email: profileData.email,
-        fullName: profileData.fullName,
+        full_name: profileData.fullName,
+        username: profileData.username || null,
+        phone: profileData.phone || null,
         bio: profileData.bio,
         location: profileData.location,
         website: profileData.website,
         avatar: profileData.avatar,
-        influencerData: profileData.influencerData,
-        advertiserData: profileData.advertiserData,
-        userType,
-        profileCompletion: completion,
-        unifiedAccountInfo: {
+        influencer_data: profileData.influencerData,
+        advertiser_data: profileData.advertiserData,
+        user_type: userType,
+        profile_completion: completion,
+        unified_account_info: {
           isVerified: false,
           joinedAt: new Date().toISOString(),
           lastActive: new Date().toISOString(),
           accountType: userType
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase
         .from(TABLES.USER_PROFILES)
-        .insert([this.transformToDatabase(newProfile)])
+        .insert([newProfile])
         .select()
         .single();
 
@@ -102,8 +104,8 @@ export class ProfileService {
       // Handle basic fields
       if (updates.fullName !== undefined) updateData.full_name = updates.fullName;
       if (updates.email !== undefined) updateData.email = updates.email;
-      if (updates.phone !== undefined) updateData.phone = updates.phone || null;
       if (updates.username !== undefined) updateData.username = updates.username || null;
+      if (updates.phone !== undefined) updateData.phone = updates.phone || null;
       if (updates.bio !== undefined) updateData.bio = updates.bio || null;
       if (updates.location !== undefined) updateData.location = updates.location || null;
       if (updates.website !== undefined) updateData.website = updates.website || null;

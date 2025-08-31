@@ -75,7 +75,7 @@ export function ProfilesPage() {
     if (currentUserProfile) {
       setBasicInfo({
         fullName: currentUserProfile.fullName || '',
-        username: '', // Keep username independent from fullName
+        username: currentUserProfile.username || '',
         email: currentUserProfile.email || user?.email || '',
         phone: currentUserProfile.phone || '',
         location: currentUserProfile.location || '',
@@ -163,6 +163,7 @@ export function ProfilesPage() {
           userId: currentUserId,
           email: basicInfo.email || user?.email || '',
           fullName: basicInfo.fullName,
+          username: basicInfo.username,
           phone: basicInfo.phone,
           location: basicInfo.location,
           bio: basicInfo.bio,
@@ -173,6 +174,7 @@ export function ProfilesPage() {
         await updateProfile({
           fullName: basicInfo.fullName,
           email: basicInfo.email,
+          username: basicInfo.username,
           phone: basicInfo.phone,
           location: basicInfo.location,
           bio: basicInfo.bio,
