@@ -74,14 +74,24 @@ export class AdminService {
     try {
       console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
       
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'admin');
-      if (!hasPermission) {
-        console.error('❌ [AdminService] Permission denied for user:', deletedBy);
+      // Get current admin user to verify role
+      const { data: adminUser, error: adminError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('role')
+        .eq('user_id', deletedBy)
+        .single();
+
+      if (adminError || !adminUser) {
+        console.error('❌ [AdminService] Failed to verify admin user:', adminError);
+        throw new Error('Failed to verify admin permissions');
+      }
+
+      if (!['admin', 'moderator'].includes(adminUser.role)) {
+        console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', adminUser.role);
         throw new Error('Insufficient permissions');
       }
 
-      console.log('✅ [AdminService] Permission check passed, proceeding with blocking');
+      console.log('✅ [AdminService] Permission check passed, admin role:', adminUser.role);
 
       // Block user by setting is_deleted to true
       console.log('🔧 [AdminService] Updating user_profiles table...');
@@ -96,7 +106,7 @@ export class AdminService {
 
       if (error) {
         console.error('❌ [AdminService] Database update failed:', error);
-        throw error;
+        throw new Error(`Database update failed: ${error.message}`);
       }
 
       console.log('✅ [AdminService] User blocked successfully in database');
@@ -112,20 +122,21 @@ export class AdminService {
       if (verifyError) {
         console.error('❌ [AdminService] Verification failed:', verifyError);
         throw new Error(`Failed to verify user blocking: ${verifyError.message}`);
-      } else {
-        console.log('✅ [AdminService] Verification successful:', verifyData);
-        
-        if (!verifyData.is_deleted) {
-          console.error('❌ [AdminService] User was not actually blocked in database!');
-          throw new Error('User blocking failed - database was not updated');
-        }
+      }
+      
+      console.log('✅ [AdminService] Verification successful:', verifyData);
+      
+      if (!verifyData.is_deleted) {
+        console.error('❌ [AdminService] User was not actually blocked in database!');
+        console.error('❌ [AdminService] This indicates RLS policy is blocking the update');
+        throw new Error('User blocking failed - RLS policy prevented database update. Check Supabase policies.');
       }
 
       // Log the action
       await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
       console.log('✅ [AdminService] Action logged successfully');
     } catch (error) {
-      console.error('Failed to delete user:', error);
+      console.error('❌ [AdminService] Complete failure in deleteUser:', error);
       throw error;
     }
   }
