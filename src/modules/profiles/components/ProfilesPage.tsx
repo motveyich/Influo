@@ -36,7 +36,6 @@ export function ProfilesPage() {
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
     fullName: '',
-    username: '',
     email: '',
     phone: '',
     location: '',
@@ -75,7 +74,6 @@ export function ProfilesPage() {
     if (currentUserProfile) {
       setBasicInfo({
         fullName: currentUserProfile.fullName || '',
-        username: currentUserProfile.username || '',
         email: currentUserProfile.email || user?.email || '',
         phone: currentUserProfile.phone || '',
         location: currentUserProfile.location || '',
