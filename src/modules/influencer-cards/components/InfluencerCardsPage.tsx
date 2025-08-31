@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { InfluencerCard } from '../../../core/types';
 import { AdvertiserCard } from '../../../core/types';
 import { InfluencerCardDisplay } from './InfluencerCardDisplay';
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
 
 export function InfluencerCardsPage() {
+  const navigate = useNavigate();
   const [cards, setCards] = useState<InfluencerCard[]>([]);
   const [advertiserCards, setAdvertiserCards] = useState<AdvertiserCard[]>([]);
   const [favoriteCards, setFavoriteCards] = useState<InfluencerCard[]>([]);
