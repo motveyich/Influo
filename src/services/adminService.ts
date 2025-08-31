@@ -105,7 +105,7 @@ export class AdminService {
         .from(TABLES.USER_PROFILES)
         .select('is_deleted, deleted_at, deleted_by')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (verifyError) {
         console.error('❌ [AdminService] Verification failed:', verifyError);

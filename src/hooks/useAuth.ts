@@ -80,10 +80,11 @@ export function useAuth() {
       });
       
       if (profile?.is_deleted === true) {
-        console.log('🚨 [useAuth] User is blocked, setting blocked state');
+        console.log('🚨 [useAuth] User is blocked, setting blocked state and forcing logout');
         setIsBlocked(true);
         // Force logout for blocked users
         await authService.signOut();
+        alert('Ваш аккаунт был заблокирован администратором. Вы будете перенаправлены на страницу входа.');
       } else {
         console.log('✅ [useAuth] User is not blocked');
         setIsBlocked(false);

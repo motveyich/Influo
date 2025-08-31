@@ -59,13 +59,17 @@ class AuthService {
     // Check if user is blocked after successful authentication
     if (data.user && !error) {
       try {
+        console.log('🔧 [AuthService] Checking if user is blocked after login:', data.user.id);
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('is_deleted, deleted_at')
           .eq('user_id', data.user.id)
           .maybeSingle();
         
+        console.log('✅ [AuthService] User profile check result:', profile);
+        
         if (profile?.is_deleted === true) {
+          console.log('🚨 [AuthService] User is blocked, preventing login');
           // Sign out the user immediately
           await supabase.auth.signOut();
           return { 
@@ -75,6 +79,8 @@ class AuthService {
               name: 'AccountBlockedError'
             } 
           };
+        } else {
+          console.log('✅ [AuthService] User is not blocked, allowing login');
         }
       } catch (profileError) {
         console.error('Failed to check user status:', profileError);
