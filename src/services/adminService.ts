@@ -70,28 +70,17 @@ export class AdminService {
     }
   }
 
-  async deleteUser(userId: string, deletedBy: string): Promise<void> {
+  async deleteUser(userId: string, deletedBy: string, deleterUserRole: UserRole): Promise<void> {
     try {
       console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
       
-      // Get current admin user to verify role
-      const { data: adminUser, error: adminError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('role')
-        .eq('user_id', deletedBy)
-        .single();
-
-      if (adminError || !adminUser) {
-        console.error('❌ [AdminService] Failed to verify admin user:', adminError);
-        throw new Error('Failed to verify admin permissions');
-      }
-
-      if (!['admin', 'moderator'].includes(adminUser.role)) {
-        console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', adminUser.role);
+      // Check permissions using provided role
+      if (!['admin', 'moderator'].includes(deleterUserRole)) {
+        console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', deleterUserRole);
         throw new Error('Insufficient permissions');
       }
 
-      console.log('✅ [AdminService] Permission check passed, admin role:', adminUser.role);
+      console.log('✅ [AdminService] Permission check passed, admin role:', deleterUserRole);
 
       // Block user by setting is_deleted to true
       console.log('🔧 [AdminService] Updating user_profiles table...');

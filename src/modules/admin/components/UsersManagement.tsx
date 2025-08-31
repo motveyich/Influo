@@ -75,7 +75,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
 
     try {
       console.log('✅ [UsersManagement] User confirmed blocking, calling adminService');
-      await adminService.deleteUser(userId, currentUser!.id);
+      await adminService.deleteUser(userId, currentUser!.id, userRole!);
       console.log('✅ [UsersManagement] AdminService call completed, reloading users');
       
       // Force reload users to see the change
