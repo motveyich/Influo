@@ -277,9 +277,6 @@ export class ApplicationService {
 
   async withdrawApplication(applicationId: string): Promise<void> {
     try {
-      console.log('=== APPLICATION SERVICE: WITHDRAW START ===');
-      console.log('Withdrawing application ID:', applicationId);
-      
       // First check if application exists
       const { data: existingApp, error: fetchError } = await supabase
         .from(TABLES.APPLICATIONS)
@@ -287,21 +284,13 @@ export class ApplicationService {
         .eq('id', applicationId)
         .maybeSingle();
       
-      console.log('Found application in DB:', existingApp);
-      console.log('Current status in DB:', existingApp?.status);
-      console.log('Fetch error:', fetchError);
-      
       if (fetchError) {
-        console.error('Database fetch error:', fetchError);
         throw fetchError;
       }
       
       if (!existingApp) {
-        console.error('Application not found in database');
         throw new Error('Заявка не найдена в базе данных');
       }
-      
-      console.log('Updating status from', existingApp.status, 'to cancelled');
       
       const { error } = await supabase
         .from(TABLES.APPLICATIONS)
@@ -311,26 +300,12 @@ export class ApplicationService {
         })
         .eq('id', applicationId);
 
-      console.log('Database update error:', error);
       if (error) throw error;
-      
-      // Verify the update worked
-      const { data: updatedApp, error: verifyError } = await supabase
-        .from(TABLES.APPLICATIONS)
-        .select('*')
-        .eq('id', applicationId)
-        .maybeSingle();
-      
-      console.log('Verification - updated application:', updatedApp);
-      console.log('New status after update:', updatedApp?.status);
-      console.log('Verify error:', verifyError);
 
       // Track analytics
       analytics.track('application_withdrawn', {
         application_id: applicationId
       });
-      
-      console.log('=== APPLICATION SERVICE: WITHDRAW END ===');
     } catch (error) {
       console.error('Failed to withdraw application:', error);
       throw error;
