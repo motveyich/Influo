@@ -148,25 +148,13 @@ export class AdminService {
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-        
-        // Check if it's an RLS policy error
-        if (error.code === '42501' || error.message.includes('policy')) {
-          throw new Error(`RLS policy blocked the update. Admin role: ${deleterUserRole}. Error: ${error.message}`);
-        }
-        
-        throw new Error(`Database update failed: ${error.message}`);
       const hasPermission = await roleService.checkPermission(restoredBy, 'admin');
       if (!hasPermission) {
-      console.log('✅ [AdminService] Update response:', updateData);
-
-      // Check if any rows were actually updated
-      if (!updateData || updateData.length === 0) {
-        console.error('❌ [AdminService] No rows were updated - RLS policy likely blocked the operation');
-        throw new Error('No rows were updated - RLS policy prevented the operation');
-      }
-
         throw new Error('Insufficient permissions');
       }
+
+      const { error } = await supabase
+        .from(TABLES.USER_PROFILES)
         .update({
           is_deleted: false,
           deleted_at: null,
