@@ -56,8 +56,11 @@ export function OffersPage() {
         showMyOffers ? 'sent' : 'received'
       );
       
+      // Filter out cancelled applications
+      const activeApplications = userApplications.filter(app => app.status !== 'cancelled');
+      
       // Transform applications to offer-like format for display
-      const transformedApplications = userApplications.map(app => ({
+      const transformedApplications = activeApplications.map(app => ({
         offerId: app.id,
         influencerId: showMyOffers ? app.applicantId : app.targetId,
         campaignId: app.targetReferenceId,
@@ -102,14 +105,10 @@ export function OffersPage() {
       
       // Combine real offers with transformed applications
       const activeOffers = loadedOffers.filter(offer => {
-        return offer.status !== 'withdrawn';
+        return offer.status !== 'withdrawn' && offer.status !== 'cancelled';
       });
       
-      const activeApplications = transformedApplications.filter(app => {
-        return app.status !== 'cancelled';
-      });
-      
-      const allOffers = [...activeOffers, ...activeApplications];
+      const allOffers = [...activeOffers, ...transformedApplications];
       
       setOffers(allOffers);
     } catch (error) {
@@ -173,15 +172,17 @@ export function OffersPage() {
     try {
       // Find the offer to determine if it's a real offer or application
       const offer = offers.find(o => o.offerId === offerId);
+      if (!offer) {
+        toast.error('Предложение не найдено');
+        return;
+      }
       
-      // Immediately remove from UI for better UX
-      setOffers(prev => prev.filter(o => o.offerId !== offerId));
-      
-      if (offer?.type === 'application') {
+      if (offer.type === 'application') {
         // This is an application, use application service
         const { applicationService } = await import('../../applications/services/applicationService');
         await applicationService.withdrawApplication(offerId);
         
+        // Send notification message
         const { chatService } = await import('../../chat/services/chatService');
         await chatService.sendMessage({
           senderId: currentUserId,
@@ -200,11 +201,11 @@ export function OffersPage() {
         await offerService.withdrawOffer(offerId);
         toast.success('Предложение отозвано успешно!');
       }
+      
+      // Remove from UI only after successful withdrawal
+      setOffers(prev => prev.filter(o => o.offerId !== offerId));
     } catch (error: any) {
       console.error('Failed to withdraw offer:', error);
-      
-      // If error occurred, reload the list to restore correct state
-      await loadOffers();
       toast.error(error.message || 'Не удалось отозвать заявку');
     }
   };

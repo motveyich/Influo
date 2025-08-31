@@ -143,6 +143,7 @@ export class ApplicationService {
         .from('applications')
         .select('*')
         .eq(column, userId)
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -277,9 +278,9 @@ export class ApplicationService {
 
   async withdrawApplication(applicationId: string): Promise<void> {
     try {
-      // First check if application exists
+      // First check if application exists and is withdrawable
       const { data: existingApp, error: fetchError } = await supabase
-        .from(TABLES.APPLICATIONS)
+        .from('applications')
         .select('*')
         .eq('id', applicationId)
         .maybeSingle();
@@ -292,8 +293,16 @@ export class ApplicationService {
         throw new Error('Заявка не найдена в базе данных');
       }
       
+      if (existingApp.status === 'cancelled') {
+        throw new Error('Заявка уже была отозвана');
+      }
+      
+      if (existingApp.status !== 'sent' && existingApp.status !== 'pending') {
+        throw new Error('Нельзя отозвать заявку со статусом: ' + existingApp.status);
+      }
+      
       const { error } = await supabase
-        .from(TABLES.APPLICATIONS)
+        .from('applications')
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString()
