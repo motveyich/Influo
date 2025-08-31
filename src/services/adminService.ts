@@ -72,13 +72,16 @@ export class AdminService {
 
   async deleteUser(userId: string, deletedBy: string): Promise<void> {
     try {
+      console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
+      
       // Check permissions
       const hasPermission = await roleService.checkPermission(deletedBy, 'admin');
       if (!hasPermission) {
+        console.error('❌ [AdminService] Permission denied for user:', deletedBy);
         throw new Error('Insufficient permissions');
       }
 
-      console.log('Deleting user:', userId, 'by:', deletedBy);
+      console.log('✅ [AdminService] Permission check passed, proceeding with blocking');
 
       // Soft delete user
       const { error } = await supabase
@@ -90,12 +93,29 @@ export class AdminService {
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [AdminService] Database update failed:', error);
+        throw error;
+      }
 
-      console.log('User deleted successfully in database');
+      console.log('✅ [AdminService] User blocked successfully in database');
+      
+      // Verify the update worked
+      const { data: verifyData, error: verifyError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('is_deleted, deleted_at, deleted_by')
+        .eq('user_id', userId)
+        .single();
+      
+      if (verifyError) {
+        console.error('❌ [AdminService] Verification failed:', verifyError);
+      } else {
+        console.log('✅ [AdminService] Verification successful:', verifyData);
+      }
 
       // Log the action
       await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
+      console.log('✅ [AdminService] Action logged successfully');
     } catch (error) {
       console.error('Failed to delete user:', error);
       throw error;

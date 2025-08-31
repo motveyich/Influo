@@ -71,6 +71,7 @@ export function Layout({ children }: LayoutProps) {
 
   // Show blocked notice if user is blocked
   if (isAuthenticated && isBlocked) {
+    console.log('🚨 [Layout] User is blocked, showing blocked notice');
     return <BlockedUserNotice />;
   }
   

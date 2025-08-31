@@ -32,6 +32,8 @@ export function useAuth() {
   const subscribeToUserUpdates = () => {
     if (!authState.user) return;
 
+    console.log('🔧 [useAuth] Setting up real-time subscription for user:', authState.user.id);
+    
     // Subscribe to real-time updates for user profile
     const channel = supabase
       .channel(`user_profile_${authState.user.id}`)
@@ -41,16 +43,19 @@ export function useAuth() {
         table: 'user_profiles',
         filter: `user_id=eq.${authState.user.id}`,
       }, (payload) => {
-        console.log('User profile updated:', payload);
+        console.log('🔄 [useAuth] Real-time profile update received:', payload);
         if (payload.new && payload.new.is_deleted === true) {
+          console.log('🚨 [useAuth] User blocked via real-time update, forcing logout');
           setIsBlocked(true);
           // Force logout
           authService.signOut();
+          alert('Ваш аккаунт был заблокирован администратором. Вы будете перенаправлены на страницу входа.');
         }
       })
       .subscribe();
 
     return () => {
+      console.log('🔧 [useAuth] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   };
@@ -60,17 +65,27 @@ export function useAuth() {
       setBlockCheckLoading(true);
       if (!authState.user) return;
       
+      console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
+      
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)
         .maybeSingle();
       
-      console.log('User status check:', { userId: authState.user.id, profile });
+      console.log('✅ [useAuth] User status check result:', { 
+        userId: authState.user.id, 
+        profile,
+        isDeleted: profile?.is_deleted 
+      });
       
       if (profile?.is_deleted === true) {
+        console.log('🚨 [useAuth] User is blocked, setting blocked state');
         setIsBlocked(true);
+        // Force logout for blocked users
+        await authService.signOut();
       } else {
+        console.log('✅ [useAuth] User is not blocked');
         setIsBlocked(false);
       }
     } catch (error) {

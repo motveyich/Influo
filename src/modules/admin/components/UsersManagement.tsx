@@ -70,13 +70,17 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    console.log('🔧 [UsersManagement] Block button clicked for user:', userId);
     if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
 
     try {
+      console.log('✅ [UsersManagement] User confirmed blocking, calling adminService');
       await adminService.deleteUser(userId, currentUser!.id);
+      console.log('✅ [UsersManagement] AdminService call completed, reloading users');
       await loadUsers();
       onStatsUpdate();
       toast.success('Пользователь удален');
+      console.log('✅ [UsersManagement] UI updated successfully');
     } catch (error: any) {
       console.error('Failed to delete user:', error);
       toast.error(error.message || 'Не удалось удалить пользователя');
