@@ -34,13 +34,15 @@ export function useProfileCompletion(userId: string) {
       const userProfile = await profileService.getProfile(userId);
       setProfile(userProfile);
     } catch (err: any) {
-      // Handle network errors
-      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setError('Ошибка подключения к базе данных. Проверьте настройки Supabase.');
+      // Handle different types of errors
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+        setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
         setError('База данных не настроена. Пожалуйста, настройте Supabase.');
+      } else if (err.message?.includes('Invalid API key')) {
+        setError('Неверный API ключ Supabase. Проверьте настройки.');
       } else {
-        setError(err.message || 'Failed to load profile');
+        setError(err.message || 'Не удалось загрузить профиль');
       }
       console.error('Failed to load profile:', err);
     } finally {
