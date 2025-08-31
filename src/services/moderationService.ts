@@ -1,4 +1,5 @@
 import { supabase, TABLES } from '../core/supabase';
+import { isSupabaseConfigured } from '../core/supabase';
 import { ContentReport, ModerationQueueItem, ContentFilter, ReportType, ModerationStatus } from '../core/types';
 import { adminService } from './adminService';
 import { roleService } from './roleService';
@@ -7,11 +8,21 @@ export class ModerationService {
   private contentFilters: ContentFilter[] = [];
 
   constructor() {
-    this.loadContentFilters();
+    // Only load filters if Supabase is configured
+    if (isSupabaseConfigured()) {
+      this.loadContentFilters();
+    }
   }
 
   async loadContentFilters(): Promise<void> {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase не настроен. Content filters недоступны.');
+        this.contentFilters = [];
+        return;
+      }
+
       const { data, error } = await supabase
         .from(TABLES.CONTENT_FILTERS)
         .select('*')
@@ -22,13 +33,17 @@ export class ModerationService {
           console.warn('Content filters table does not exist yet');
           this.contentFilters = [];
           return;
+        } else if (error.message?.includes('Failed to fetch')) {
+          console.warn('Supabase connection failed. Content filters недоступны.');
+          this.contentFilters = [];
+          return;
         }
         throw error;
       }
 
       this.contentFilters = data.map(filter => this.transformFilterFromDatabase(filter));
     } catch (error) {
-      console.error('Failed to load content filters:', error);
+      console.warn('Failed to load content filters, using empty filters:', error);
       this.contentFilters = [];
     }
   }
