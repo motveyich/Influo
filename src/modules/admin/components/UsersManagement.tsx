@@ -278,7 +278,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                           </button>
                         )}
                         
-                        {(user as any).isDeleted ? (
+                        {(user as any).is_deleted ? (
                           <button
                             onClick={() => handleRestoreUser(user.userId)}
                             className="text-green-600 hover:text-green-900 transition-colors"
@@ -365,7 +365,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                   </button>
                 ))}
               </div>
-            </div>
+                      {(user as any).is_deleted ? (
           </div>
         </div>
       )}

@@ -305,6 +305,10 @@ export class AdminService {
         ...dbData.unified_account_info,
         accountType: dbData.user_type
       },
+      // Add deletion fields for admin interface
+      is_deleted: dbData.is_deleted,
+      deleted_at: dbData.deleted_at,
+      deleted_by: dbData.deleted_by,
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
