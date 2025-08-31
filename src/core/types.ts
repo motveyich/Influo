@@ -40,6 +40,7 @@ export interface UserProfile {
   userId: string;
   email: string;
   fullName: string;
+  username?: string;
   phone?: string;
   avatar?: string;
   bio?: string;

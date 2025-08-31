@@ -36,6 +36,7 @@ export function ProfilesPage() {
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
     fullName: '',
+    username: '',
     email: '',
     phone: '',
     location: '',
@@ -74,6 +75,7 @@ export function ProfilesPage() {
     if (currentUserProfile) {
       setBasicInfo({
         fullName: currentUserProfile.fullName || '',
+        username: currentUserProfile.username || '',
         email: currentUserProfile.email || user?.email || '',
         phone: currentUserProfile.phone || '',
         location: currentUserProfile.location || '',
@@ -171,8 +173,8 @@ export function ProfilesPage() {
       } else {
         await updateProfile({
           fullName: basicInfo.fullName,
-          email: basicInfo.email,
           username: basicInfo.username,
+          email: basicInfo.email,
           phone: basicInfo.phone,
           location: basicInfo.location,
           bio: basicInfo.bio,
