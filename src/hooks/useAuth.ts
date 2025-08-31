@@ -67,7 +67,7 @@ export function useAuth() {
       
       console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
       
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)
