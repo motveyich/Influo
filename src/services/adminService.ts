@@ -114,7 +114,8 @@ export class AdminService {
           deleted_at: new Date().toISOString(),
           deleted_by: deletedBy
         })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (error) {
         console.error('❌ [AdminService] Database update failed:', error);
@@ -125,14 +126,10 @@ export class AdminService {
       
       // Verify the update worked
       console.log('🔧 [AdminService] Verifying database update...');
-      const { data: verifyData, error: verifyError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('is_deleted, deleted_at, deleted_by')
-      // Verify the first updated record
-      const verifyData = updateData[0];
+      const verifyData = updateData?.[0];
       if (!verifyData || !verifyData.is_deleted) {
         console.error('❌ [AdminService] User was not actually blocked!');
-        throw new Error('User blocking failed - update did not take effect');
+        throw new Error('User blocking failed - RLS policy prevented database update. Check Supabase policies.');
       }
 
       // Log the action
