@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
+import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
 import { AuthModal } from './AuthModal';
 import { EngagementTracker } from '../modules/analytics/components/EngagementTracker';
 import toast from 'react-hot-toast';
@@ -28,6 +29,7 @@ export function Layout({ children }: LayoutProps) {
   const { user, loading, isAuthenticated, signOut } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
+  const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
   const navigation = [
     { name: 'Главная', href: '/', icon: Zap },
@@ -140,7 +142,7 @@ export function Layout({ children }: LayoutProps) {
               {/* User info and mobile menu button */}
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-600">
-                  {user?.email}
+                  {currentUserProfile?.fullName || user?.email}
                 </span>
                 <button
                   onClick={handleSignOut}

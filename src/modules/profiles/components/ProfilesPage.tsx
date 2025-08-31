@@ -75,7 +75,7 @@ export function ProfilesPage() {
     if (currentUserProfile) {
       setBasicInfo({
         fullName: currentUserProfile.fullName || '',
-        username: currentUserProfile.fullName?.toLowerCase().replace(/\s+/g, '') || '',
+        username: '', // Keep username independent from fullName
         email: currentUserProfile.email || user?.email || '',
         phone: currentUserProfile.phone || '',
         location: currentUserProfile.location || '',
