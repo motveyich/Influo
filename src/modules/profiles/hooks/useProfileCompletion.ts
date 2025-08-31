@@ -34,6 +34,8 @@ export function useProfileCompletion(userId: string) {
       const userProfile = await profileService.getProfile(userId);
       setProfile(userProfile);
     } catch (err: any) {
+      console.error('Failed to load profile:', err);
+      
       // Handle different types of errors
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
         setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
@@ -41,10 +43,11 @@ export function useProfileCompletion(userId: string) {
         setError('База данных не настроена. Пожалуйста, настройте Supabase.');
       } else if (err.message?.includes('Invalid API key')) {
         setError('Неверный API ключ Supabase. Проверьте настройки.');
+      } else if (err.message?.includes('Failed to fetch')) {
+        setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
       } else {
         setError(err.message || 'Не удалось загрузить профиль');
       }
-      console.error('Failed to load profile:', err);
     } finally {
       setIsLoading(false);
     }
