@@ -74,7 +74,10 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
 
     try {
       await adminService.deleteUser(userId, currentUser!.id);
-      await loadUsers();
+      // Force reload to get updated data
+      setTimeout(async () => {
+        await loadUsers();
+      }, 500);
       onStatsUpdate();
       toast.success('Пользователь удален');
     } catch (error: any) {
@@ -86,7 +89,10 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
   const handleRestoreUser = async (userId: string) => {
     try {
       await adminService.restoreUser(userId, currentUser!.id);
-      await loadUsers();
+      // Force reload to get updated data
+      setTimeout(async () => {
+        await loadUsers();
+      }, 500);
       onStatsUpdate();
       toast.success('Пользователь восстановлен');
     } catch (error: any) {

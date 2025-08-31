@@ -16,6 +16,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
 import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
 import { AuthModal } from './AuthModal';
+import { BlockedUserNotice } from './BlockedUserNotice';
 import { EngagementTracker } from '../modules/analytics/components/EngagementTracker';
 import toast from 'react-hot-toast';
 
@@ -27,7 +28,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [showAuthModal, setShowAuthModal] = React.useState(false);
-  const { user, loading, isAuthenticated, signOut, userRole, isModerator } = useAuth();
+  const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
@@ -57,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   // Show loading state
-  if (loading) {
+  if (loading || blockCheckLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -68,6 +69,10 @@ export function Layout({ children }: LayoutProps) {
     );
   }
 
+  // Show blocked notice if user is blocked
+  if (isAuthenticated && isBlocked) {
+    return <BlockedUserNotice />;
+  }
   // Show auth modal if not authenticated
   if (!isAuthenticated) {
     return (
