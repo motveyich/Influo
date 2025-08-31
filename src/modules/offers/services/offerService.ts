@@ -443,7 +443,7 @@ export class OfferService {
     }
   }
 
-  private transformFromDatabase(dbData: any): Offer {
+  public transformOfferFromDatabase(dbData: any): Offer {
     return {
       offerId: dbData.offer_id,
       influencerId: dbData.influencer_id,
@@ -455,6 +455,10 @@ export class OfferService {
       messages: dbData.messages || [],
       metadata: dbData.metadata || { viewCount: 0 }
     };
+  }
+
+  private transformFromDatabase(dbData: any): Offer {
+    return this.transformOfferFromDatabase(dbData);
   }
 }
 

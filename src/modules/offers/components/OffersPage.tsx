@@ -136,13 +136,16 @@ export function OffersPage() {
     console.log('Offer update received:', update);
     // Update offers list based on real-time changes
     if (update.eventType === 'UPDATE') {
+      const transformedOffer = offerService.transformOfferFromDatabase(update.new);
       setOffers(prev => prev.map(offer => 
-        offer.offerId === update.new.offerId ? update.new : offer
+        offer.offerId === transformedOffer.offerId ? transformedOffer : offer
       ));
     } else if (update.eventType === 'INSERT') {
-      setOffers(prev => [...prev, update.new]);
+      const transformedOffer = offerService.transformOfferFromDatabase(update.new);
+      setOffers(prev => [...prev, transformedOffer]);
     } else if (update.eventType === 'DELETE') {
-      setOffers(prev => prev.filter(offer => offer.offerId !== update.old.offerId));
+      const transformedOffer = offerService.transformOfferFromDatabase(update.old);
+      setOffers(prev => prev.filter(offer => offer.offerId !== transformedOffer.offerId));
     }
   };
 

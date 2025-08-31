@@ -270,7 +270,7 @@ export class ChatService {
     }
   }
 
-  private transformFromDatabase(dbData: any): ChatMessage {
+  public transformMessageFromDatabase(dbData: any): ChatMessage {
     return {
       id: dbData.id,
       senderId: dbData.sender_id,
@@ -281,6 +281,10 @@ export class ChatService {
       isRead: dbData.is_read,
       metadata: dbData.metadata || {}
     };
+  }
+
+  private transformFromDatabase(dbData: any): ChatMessage {
+    return this.transformMessageFromDatabase(dbData);
   }
 }
 

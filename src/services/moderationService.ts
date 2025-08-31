@@ -12,6 +12,20 @@ export class ModerationService {
 
   async loadContentFilters(): Promise<void> {
     try {
+      // Check if content_filters table exists
+      const { data: tableExists } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_schema', 'public')
+        .eq('table_name', 'content_filters')
+        .maybeSingle();
+
+      if (!tableExists) {
+        console.warn('Content filters table does not exist yet');
+        this.contentFilters = [];
+        return;
+      }
+
       const { data, error } = await supabase
         .from(TABLES.CONTENT_FILTERS)
         .select('*')
@@ -22,6 +36,7 @@ export class ModerationService {
       this.contentFilters = data.map(filter => this.transformFilterFromDatabase(filter));
     } catch (error) {
       console.error('Failed to load content filters:', error);
+      this.contentFilters = [];
     }
   }
 

@@ -219,13 +219,14 @@ export function ChatPage() {
     console.log('New message received:', message);
     // Update messages list and conversations
     if (message.new) {
-      setMessages(prev => [...prev, message.new]);
-      updateConversationLastMessage(message.new);
+      const transformedMessage = chatService.transformMessageFromDatabase(message.new);
+      setMessages(prev => [...prev, transformedMessage]);
+      updateConversationLastMessage(transformedMessage);
       
       // Check if this moves conversation from 'new' to 'main'
-      if (message.new.receiverId === currentUserId) {
+      if (transformedMessage.receiverId === currentUserId) {
         // Current user received a message, check if this should move chat to main
-        updateConversationStatus(message.new.senderId);
+        updateConversationStatus(transformedMessage.senderId);
       }
     }
   };
