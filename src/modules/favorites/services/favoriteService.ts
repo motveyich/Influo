@@ -159,6 +159,7 @@ export class FavoriteService {
             .eq('applicant_id', userId)
             .eq('target_id', influencerCard.user_id)
             .eq('target_type', 'influencer_card')
+            .neq('status', 'cancelled')
             .maybeSingle();
 
           if (existingApplication) {
