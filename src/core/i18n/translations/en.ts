@@ -69,7 +69,7 @@ export const en: TranslationKeys = {
     signOutSuccess: 'Signed out successfully',
     signInSuccess: 'Signed in successfully!',
     accountCreated: 'Account created! Please check your email for a confirmation link.',
-    invalidCredentials: 'Invalid email or password. Please check your credentials and try again.',
+    invalidCredentials: 'Invalid email or password. If you recently registered, please check your email for a confirmation link first.',
     emailNotConfirmed: 'Please check your email and click the confirmation link before signing in.',
     userAlreadyExists: 'An account with this email already exists. Try signing in instead.',
     passwordTooShort: 'Password must be at least 6 characters long.',
