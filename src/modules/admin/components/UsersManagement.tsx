@@ -74,10 +74,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
 
     try {
       await adminService.deleteUser(userId, currentUser!.id);
-      // Force reload to get updated data
-      setTimeout(async () => {
-        await loadUsers();
-      }, 500);
+      await loadUsers();
       onStatsUpdate();
       toast.success('Пользователь удален');
     } catch (error: any) {
@@ -89,10 +86,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
   const handleRestoreUser = async (userId: string) => {
     try {
       await adminService.restoreUser(userId, currentUser!.id);
-      // Force reload to get updated data
-      setTimeout(async () => {
-        await loadUsers();
-      }, 500);
+      await loadUsers();
       onStatsUpdate();
       toast.success('Пользователь восстановлен');
     } catch (error: any) {
@@ -262,10 +256,10 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        {(user as any).isDeleted === true ? (
+                        {(user as any).is_deleted === true ? (
                           <>
                             <AlertTriangle className="w-4 h-4 text-red-600" />
-                            <span className="text-sm text-red-600">Удален</span>
+                            <span className="text-sm text-red-600">Заблокирован</span>
                           </>
                         ) : (
                           <>
@@ -293,11 +287,11 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                           </button>
                         )}
                         
-                        {(user as any).isDeleted === true ? (
+                        {(user as any).is_deleted === true ? (
                           <button
                             onClick={() => handleRestoreUser(user.userId)}
                             className="text-green-600 hover:text-green-900 transition-colors"
-                            title="Восстановить пользователя"
+                            title="Разблокировать пользователя"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
@@ -305,7 +299,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                           <button
                             onClick={() => handleDeleteUser(user.userId)}
                             className="text-red-600 hover:text-red-900 transition-colors"
-                            title="Удалить пользователя"
+                            title="Заблокировать пользователя"
                             disabled={user.userId === currentUser?.id}
                           >
                             <Trash2 className="w-4 h-4" />

@@ -63,7 +63,7 @@ export function BlockedUserNotice() {
           {/* Additional Info */}
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
-              ID сессии для поддержки: {Date.now().toString(36)}
+              Время блокировки: {new Date().toLocaleString('ru-RU')}
             </p>
           </div>
         </div>

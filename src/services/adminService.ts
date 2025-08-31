@@ -78,7 +78,7 @@ export class AdminService {
         throw new Error('Insufficient permissions');
       }
 
-      console.log('Blocking user:', userId, 'by:', deletedBy);
+      console.log('Deleting user:', userId, 'by:', deletedBy);
 
       // Soft delete user
       const { error } = await supabase
@@ -92,18 +92,10 @@ export class AdminService {
 
       if (error) throw error;
 
-      console.log('User blocked successfully in database');
+      console.log('User deleted successfully in database');
 
       // Log the action
       await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
-
-      // Force user logout if they're currently signed in
-      try {
-        // This would ideally be done through admin API, but for now we'll rely on real-time updates
-        console.log('User should be logged out via real-time subscription');
-      } catch (logoutError) {
-        console.warn('Could not force user logout:', logoutError);
-      }
     } catch (error) {
       console.error('Failed to delete user:', error);
       throw error;
@@ -324,13 +316,13 @@ export class AdminService {
     // Add deletion fields
     return {
       ...baseProfile,
-      isDeleted: dbData.is_deleted || false,
-      deletedAt: dbData.deleted_at,
-      deletedBy: dbData.deleted_by
+      is_deleted: dbData.is_deleted || false,
+      deleted_at: dbData.deleted_at,
+      deleted_by: dbData.deleted_by
     } as UserProfile & {
-      isDeleted: boolean;
-      deletedAt: string | null;
-      deletedBy: string | null;
+      is_deleted: boolean;
+      deleted_at: string | null;
+      deleted_by: string | null;
     };
   }
 

@@ -73,6 +73,7 @@ export function Layout({ children }: LayoutProps) {
   if (isAuthenticated && isBlocked) {
     return <BlockedUserNotice />;
   }
+  
   // Show auth modal if not authenticated
   if (!isAuthenticated) {
     return (
@@ -82,8 +83,9 @@ export function Layout({ children }: LayoutProps) {
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('auth.welcomeTitle')}</h1>
             <p className="text-xl text-gray-600 mb-8">{t('auth.welcomeSubtitle')}</p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('chat.noConversationSelected')}</h3>
-            <p className="text-gray-600">{t('chat.selectConversation')}</p>
+              <p className="text-sm text-blue-800">
+                <strong>Новый пользователь?</strong> {t('auth.newUserInfo')}
+              </p>
               <p className="text-sm text-blue-800 mt-2">
                 <strong>Уже есть аккаунт?</strong> {t('auth.existingUserInfo')}
               </p>

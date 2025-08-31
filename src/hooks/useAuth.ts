@@ -3,14 +3,13 @@ import { authService, AuthState } from '../core/auth';
 import { UserRole } from '../core/types';
 import { roleService } from '../services/roleService';
 import { supabase } from '../core/supabase';
-import { realtimeService } from '../core/realtime';
 
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({ user: null, loading: true });
   const [userRole, setUserRole] = useState<UserRole>('user');
   const [roleLoading, setRoleLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [blockCheckLoading, setBlockCheckLoading] = useState(true);
+  const [blockCheckLoading, setBlockCheckLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
@@ -43,12 +42,10 @@ export function useAuth() {
         filter: `user_id=eq.${authState.user.id}`,
       }, (payload) => {
         console.log('User profile updated:', payload);
-        if (payload.new.is_deleted === true) {
+        if (payload.new && payload.new.is_deleted === true) {
           setIsBlocked(true);
           // Force logout
           authService.signOut();
-          alert('Ваш аккаунт был заблокирован администратором.');
-          window.location.reload();
         }
       })
       .subscribe();
@@ -57,6 +54,7 @@ export function useAuth() {
       supabase.removeChannel(channel);
     };
   };
+  
   const checkUserStatus = async () => {
     try {
       setBlockCheckLoading(true);
@@ -68,16 +66,16 @@ export function useAuth() {
         .eq('user_id', authState.user.id)
         .maybeSingle();
       
+      console.log('User status check:', { userId: authState.user.id, profile });
+      
       if (profile?.is_deleted === true) {
         setIsBlocked(true);
-        await authService.signOut();
-        alert('Ваш аккаунт был заблокирован администратором.');
-        window.location.reload();
       } else {
         setIsBlocked(false);
       }
     } catch (error) {
       console.error('Failed to check user status:', error);
+      setIsBlocked(false);
     } finally {
       setBlockCheckLoading(false);
     }
