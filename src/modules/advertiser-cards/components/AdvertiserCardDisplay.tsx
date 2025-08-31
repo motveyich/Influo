@@ -74,7 +74,7 @@ export function AdvertiserCardDisplay({
         .eq('applicant_id', currentUserId)
         .eq('target_id', card.userId)
         .eq('target_type', 'advertiser_card')
-        .neq('status', 'cancelled')
+        .not('status', 'in', '(cancelled,withdrawn)')
         .maybeSingle();
 
       if (existingApplication) {

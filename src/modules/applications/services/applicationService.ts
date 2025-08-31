@@ -143,7 +143,7 @@ export class ApplicationService {
         .from('applications')
         .select('*')
         .eq(column, userId)
-        .neq('status', 'cancelled')
+        .not('status', 'in', '(cancelled,withdrawn)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -293,18 +293,18 @@ export class ApplicationService {
         throw new Error('Заявка не найдена в базе данных');
       }
       
-      if (existingApp.status === 'cancelled') {
+      if (existingApp.status === 'cancelled' || existingApp.status === 'withdrawn') {
         throw new Error('Заявка уже была отозвана');
       }
       
-      if (existingApp.status !== 'sent' && existingApp.status !== 'pending') {
+      if (!['sent', 'pending'].includes(existingApp.status)) {
         throw new Error('Нельзя отозвать заявку со статусом: ' + existingApp.status);
       }
       
       const { error } = await supabase
         .from('applications')
         .update({
-          status: 'cancelled',
+          status: 'withdrawn',
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);

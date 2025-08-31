@@ -56,8 +56,10 @@ export function OffersPage() {
         showMyOffers ? 'sent' : 'received'
       );
       
-      // Filter out cancelled applications
-      const activeApplications = userApplications.filter(app => app.status !== 'cancelled');
+      // Filter out cancelled and withdrawn applications
+      const activeApplications = userApplications.filter(app => 
+        app.status !== 'cancelled' && app.status !== 'withdrawn'
+      );
       
       // Transform applications to offer-like format for display
       const transformedApplications = activeApplications.map(app => ({
@@ -105,7 +107,10 @@ export function OffersPage() {
       
       // Combine real offers with transformed applications
       const activeOffers = loadedOffers.filter(offer => {
-        return offer.status !== 'withdrawn' && offer.status !== 'cancelled';
+        // Filter out withdrawn and cancelled offers/applications
+        return offer.status !== 'withdrawn' && 
+               offer.status !== 'cancelled' && 
+               offer.status !== 'canceled'; // Handle both spellings
       });
       
       const allOffers = [...activeOffers, ...transformedApplications];
