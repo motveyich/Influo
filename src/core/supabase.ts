@@ -36,4 +36,9 @@ export const TABLES = {
   FAVORITES: 'favorites',
   CARD_ANALYTICS: 'card_analytics',
   APPLICATION_ANALYTICS: 'application_analytics',
+  USER_ROLES: 'user_roles',
+  CONTENT_REPORTS: 'content_reports',
+  MODERATION_QUEUE: 'moderation_queue',
+  ADMIN_LOGS: 'admin_logs',
+  CONTENT_FILTERS: 'content_filters',
 } as const;

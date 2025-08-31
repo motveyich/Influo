@@ -2,8 +2,9 @@ import React from 'react';
 import { Campaign } from '../../../core/types';
 import { CreateOfferModal } from '../../offers/components/CreateOfferModal';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play } from 'lucide-react';
+import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ReportModal } from '../../../components/ReportModal';
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -25,6 +26,7 @@ export function CampaignCard({
   currentUserId
 }: CampaignCardProps) {
   const [showOfferModal, setShowOfferModal] = React.useState(false);
+  const [showReportModal, setShowReportModal] = React.useState(false);
   const { t } = useTranslation();
 
   // Check if this is an automatic campaign
@@ -288,6 +290,13 @@ export function CampaignCard({
           >
             Отправить предложение
           </button>
+          <button
+            onClick={() => setShowReportModal(true)}
+            className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors"
+            title="Пожаловаться"
+          >
+            <Flag className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -325,6 +334,15 @@ export function CampaignCard({
           setShowOfferModal(false);
           // Could show success message or redirect
         }}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="campaign"
+        targetId={campaign.campaignId}
+        targetTitle={campaign.title}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { InfluencerCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
+import { moderationService } from '../../../services/moderationService';
 
 export class InfluencerCardService {
   async createCard(cardData: Partial<InfluencerCard>): Promise<InfluencerCard> {
@@ -17,6 +18,8 @@ export class InfluencerCardService {
         rating: 0,
         completed_campaigns: 0,
         is_active: true,
+        moderation_status: 'pending',
+        is_deleted: false,
         last_updated: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -29,6 +32,24 @@ export class InfluencerCardService {
         .single();
 
       if (error) throw error;
+
+      // Check content for violations
+      const description = cardData.serviceDetails?.description || '';
+      const violations = await moderationService.checkContentForViolations(description, 'influencer_card');
+      
+      if (violations.shouldFlag) {
+        await moderationService.addToModerationQueue('influencer_card', data.id, {
+          auto_flagged: true,
+          filter_matches: violations.matches,
+          priority: Math.max(...violations.matches.map(m => m.severity))
+        });
+      } else {
+        // Auto-approve if no violations
+        await supabase
+          .from(TABLES.INFLUENCER_CARDS)
+          .update({ moderation_status: 'approved' })
+          .eq('id', data.id);
+      }
 
       // Track card creation
       analytics.track('influencer_card_created', {
@@ -122,7 +143,9 @@ export class InfluencerCardService {
     try {
       let query = supabase
         .from(TABLES.INFLUENCER_CARDS)
-        .select('*');
+        .select('*')
+        .eq('is_deleted', false)
+        .in('moderation_status', ['approved', 'pending']);
 
       if (filters?.platform && filters.platform !== 'all') {
         query = query.eq('platform', filters.platform);

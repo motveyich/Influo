@@ -1,6 +1,7 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { Campaign } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
+import { moderationService } from '../../../services/moderationService';
 
 export class CampaignService {
   async createCampaign(campaignData: Partial<Campaign>): Promise<Campaign> {
@@ -17,6 +18,8 @@ export class CampaignService {
         preferences: campaignData.preferences,
         status: campaignData.status || 'draft',
         timeline: campaignData.timeline,
+        moderation_status: 'pending',
+        is_deleted: false,
         metrics: {
           applicants: 0,
           accepted: 0,
@@ -34,6 +37,24 @@ export class CampaignService {
         .single();
 
       if (error) throw error;
+
+      // Check content for violations
+      const content = `${campaignData.title} ${campaignData.description}`;
+      const violations = await moderationService.checkContentForViolations(content, 'campaign');
+      
+      if (violations.shouldFlag) {
+        await moderationService.addToModerationQueue('campaign', data.campaign_id, {
+          auto_flagged: true,
+          filter_matches: violations.matches,
+          priority: Math.max(...violations.matches.map(m => m.severity))
+        });
+      } else {
+        // Auto-approve if no violations
+        await supabase
+          .from(TABLES.CAMPAIGNS)
+          .update({ moderation_status: 'approved' })
+          .eq('campaign_id', data.campaign_id);
+      }
 
       // Track campaign creation
       analytics.trackCampaignCreated(data.campaign_id, campaignData.advertiserId!);
@@ -122,7 +143,9 @@ export class CampaignService {
     try {
       let query = supabase
         .from(TABLES.CAMPAIGNS)
-        .select('*');
+        .select('*')
+        .eq('is_deleted', false)
+        .in('moderation_status', ['approved', 'pending']);
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);

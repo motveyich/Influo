@@ -1,11 +1,12 @@
 import React from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3 } from 'lucide-react';
+import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag } from 'lucide-react';
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import { supabase } from '../../../core/supabase';
+import { ReportModal } from '../../../components/ReportModal';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -30,6 +31,7 @@ export function InfluencerCardDisplay({
   const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showReportModal, setShowReportModal] = React.useState(false);
   
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
@@ -423,6 +425,14 @@ export function InfluencerCardDisplay({
                 <BarChart3 className="w-4 h-4" />
                 <span>Подробнее</span>
               </button>
+              
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                title="Пожаловаться"
+              >
+                <Flag className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )}
@@ -493,6 +503,15 @@ export function InfluencerCardDisplay({
           </div>
         )}
       </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="influencer_card"
+        targetId={card.id}
+        targetTitle={`Карточка инфлюенсера на ${card.platform}`}
+      />
     </div>
   );
 }

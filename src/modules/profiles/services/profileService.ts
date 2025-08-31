@@ -1,6 +1,7 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
+import { moderationService } from '../../../services/moderationService';
 
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
@@ -41,6 +42,7 @@ export class ProfileService {
         influencer_data: profileData.influencerData,
         advertiser_data: profileData.advertiserData,
         user_type: userType,
+        role: 'user',
         profile_completion: completion,
         unified_account_info: {
           isVerified: false,
@@ -48,6 +50,7 @@ export class ProfileService {
           lastActive: new Date().toISOString(),
           accountType: userType
         },
+        is_deleted: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -59,6 +62,18 @@ export class ProfileService {
         .single();
 
       if (error) throw error;
+
+      // Check content for violations
+      const bioContent = profileData.bio || '';
+      const violations = await moderationService.checkContentForViolations(bioContent, 'user_profile');
+      
+      if (violations.shouldFlag) {
+        await moderationService.addToModerationQueue('user_profile', data.user_id, {
+          auto_flagged: true,
+          filter_matches: violations.matches,
+          priority: Math.max(...violations.matches.map(m => m.severity))
+        });
+      }
 
       // Track profile creation
       analytics.track('profile_created', {

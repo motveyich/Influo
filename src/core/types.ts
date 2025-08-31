@@ -390,3 +390,85 @@ export interface CardAnalytics {
   createdAt: string;
   updatedAt: string;
 }
+
+// Role system types
+export type UserRole = 'user' | 'moderator' | 'admin';
+export type ModerationStatus = 'pending' | 'approved' | 'rejected' | 'flagged';
+export type ReportType = 'spam' | 'inappropriate' | 'fake' | 'harassment' | 'copyright' | 'other';
+
+export interface UserRoleData {
+  id: string;
+  userId: string;
+  role: UserRole;
+  assignedBy?: string;
+  assignedAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentReport {
+  id: string;
+  reporterId: string;
+  targetType: 'user_profile' | 'influencer_card' | 'campaign' | 'chat_message' | 'offer';
+  targetId: string;
+  reportType: ReportType;
+  description: string;
+  evidence: Record<string, any>;
+  status: 'pending' | 'investigating' | 'resolved' | 'dismissed';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  resolutionNotes?: string;
+  priority: number;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModerationQueueItem {
+  id: string;
+  contentType: 'user_profile' | 'influencer_card' | 'campaign' | 'chat_message' | 'offer';
+  contentId: string;
+  contentData: Record<string, any>;
+  moderationStatus: ModerationStatus;
+  flaggedReasons: string[];
+  autoFlagged: boolean;
+  filterMatches: Record<string, any>;
+  assignedModerator?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  priority: number;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminLog {
+  id: string;
+  adminId: string;
+  actionType: string;
+  targetType?: string;
+  targetId?: string;
+  details: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  sessionId?: string;
+  createdAt: string;
+}
+
+export interface ContentFilter {
+  id: string;
+  filterName: string;
+  filterType: 'profanity' | 'contact_info' | 'spam' | 'custom';
+  pattern: string;
+  isRegex: boolean;
+  isActive: boolean;
+  severity: number;
+  action: 'flag' | 'block' | 'review';
+  createdBy?: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}

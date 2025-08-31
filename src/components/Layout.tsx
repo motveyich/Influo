@@ -9,7 +9,8 @@ import {
   Grid,
   Menu,
   X,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
@@ -26,12 +27,12 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [showAuthModal, setShowAuthModal] = React.useState(false);
-  const { user, loading, isAuthenticated, signOut } = useAuth();
+  const { user, loading, isAuthenticated, signOut, userRole, isModerator } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
-  const navigation = [
+  const baseNavigation = [
     { name: 'Главная', href: '/', icon: Zap },
     { name: t('nav.profiles'), href: '/profiles', icon: Users },
     { name: 'Автоматические кампании', href: '/campaigns', icon: Target },
@@ -39,6 +40,12 @@ export function Layout({ children }: LayoutProps) {
     { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
     { name: t('nav.offers'), href: '/offers', icon: Handshake },
   ];
+
+  const adminNavigation = [
+    { name: 'Админ-панель', href: '/admin', icon: Shield }
+  ];
+
+  const navigation = isModerator ? [...baseNavigation, ...adminNavigation] : baseNavigation;
 
   const handleSignOut = async () => {
     const { error } = await signOut();
