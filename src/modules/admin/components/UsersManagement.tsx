@@ -46,6 +46,14 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
         isDeleted: showDeleted
       });
       setUsers(loadedUsers);
+      
+      // Debug log to check user data structure
+      console.log('Loaded users:', loadedUsers.map(u => ({ 
+        name: u.fullName, 
+        email: u.email, 
+        isDeleted: (u as any).is_deleted,
+        deletedAt: (u as any).deleted_at 
+      })));
     } catch (error) {
       console.error('Failed to load users:', error);
       toast.error('Не удалось загрузить пользователей');

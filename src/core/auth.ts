@@ -55,6 +55,32 @@ class AuthService {
       email,
       password,
     });
+    
+    // Check if user is blocked after successful authentication
+    if (data.user && !error) {
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('is_deleted, deleted_at')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        if (profile?.is_deleted) {
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          return { 
+            data: null, 
+            error: { 
+              message: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для получения дополнительной информации.',
+              name: 'AccountBlockedError'
+            } 
+          };
+        }
+      } catch (profileError) {
+        console.error('Failed to check user status:', profileError);
+      }
+    }
+    
     return { data, error };
   }
 
