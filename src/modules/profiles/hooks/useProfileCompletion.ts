@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
 import { profileService } from '../services/profileService';
+import { isSupabaseConfigured } from '../../../core/supabase';
 
 export function useProfileCompletion(userId: string) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -20,13 +21,27 @@ export function useProfileCompletion(userId: string) {
       return;
     }
     
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
       const userProfile = await profileService.getProfile(userId);
       setProfile(userProfile);
     } catch (err: any) {
-      setError(err.message || 'Failed to load profile');
+      // Handle network errors
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        setError('Ошибка подключения к базе данных. Проверьте настройки Supabase.');
+      } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
+        setError('База данных не настроена. Пожалуйста, настройте Supabase.');
+      } else {
+        setError(err.message || 'Failed to load profile');
+      }
       console.error('Failed to load profile:', err);
     } finally {
       setIsLoading(false);

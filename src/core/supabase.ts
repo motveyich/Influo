@@ -16,6 +16,10 @@ if (!isSupabaseConfigured()) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
   realtime: {
     params: {
       eventsPerSecond: 10,

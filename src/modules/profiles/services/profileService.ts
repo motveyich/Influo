@@ -1,11 +1,16 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
-import { moderationService } from '../../../services/moderationService';
+import { isSupabaseConfigured } from '../../../core/supabase';
 
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, настройте подключение к базе данных.');
+      }
+      
       // Get current authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -63,16 +68,21 @@ export class ProfileService {
 
       if (error) throw error;
 
-      // Check content for violations
-      const bioContent = profileData.bio || '';
-      const violations = await moderationService.checkContentForViolations(bioContent, 'user_profile');
-      
-      if (violations.shouldFlag) {
-        await moderationService.addToModerationQueue('user_profile', data.user_id, {
-          auto_flagged: true,
-          filter_matches: violations.matches,
-          priority: Math.max(...violations.matches.map(m => m.severity))
-        });
+      // Check content for violations (with error handling)
+      try {
+        const { moderationService } = await import('../../../services/moderationService');
+        const bioContent = profileData.bio || '';
+        const violations = await moderationService.checkContentForViolations(bioContent, 'user_profile');
+        
+        if (violations.shouldFlag) {
+          await moderationService.addToModerationQueue('user_profile', data.user_id, {
+            auto_flagged: true,
+            filter_matches: violations.matches,
+            priority: Math.max(...violations.matches.map(m => m.severity))
+          });
+        }
+      } catch (moderationError) {
+        console.warn('Moderation check failed, continuing without it:', moderationError);
       }
 
       // Track profile creation
@@ -90,6 +100,11 @@ export class ProfileService {
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, настройте подключение к базе данных.');
+      }
+      
       // Calculate updated profile completion
       const { data: currentProfile } = await supabase
         .from(TABLES.USER_PROFILES)
@@ -161,6 +176,11 @@ export class ProfileService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, настройте подключение к базе данных.');
+      }
+      
       const { data, error } = await supabase
         .from(TABLES.USER_PROFILES)
         .select('*')
