@@ -71,10 +71,22 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
 
   const handleDeleteUser = async (userId: string) => {
     console.log('🔧 [UsersManagement] Block button clicked for user:', userId);
-    if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
+    if (!confirm('Вы уверены, что хотите заблокировать этого пользователя?')) return;
 
     try {
       console.log('✅ [UsersManagement] User confirmed blocking, calling adminService');
+      
+      // Additional validation
+      if (userId === currentUser?.id) {
+        toast.error('Нельзя заблокировать самого себя');
+        return;
+      }
+      
+      if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+        toast.error('У вас недостаточно прав для блокировки пользователей');
+        return;
+      }
+      
       await adminService.deleteUser(userId, currentUser!.id, userRole!);
       console.log('✅ [UsersManagement] AdminService call completed, reloading users');
       
@@ -82,25 +94,20 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
       await loadUsers();
       onStatsUpdate();
       
-      // Verify the user was actually blocked
-      const updatedUsers = await adminService.getAllUsers({
-        role: roleFilter !== 'all' ? roleFilter : undefined,
-        searchQuery: searchQuery || undefined,
-        isDeleted: false // Check active users
-      });
-      
-      const blockedUser = updatedUsers.find(u => u.userId === userId);
-      if (blockedUser) {
-        console.error('❌ [UsersManagement] User was not actually blocked!');
-        toast.error('Ошибка: пользователь не был заблокирован');
-        return;
-      }
-      
       console.log('✅ [UsersManagement] User successfully blocked and removed from active list');
       toast.success('Пользователь заблокирован');
     } catch (error: any) {
       console.error('Failed to delete user:', error);
-      toast.error(error.message || 'Не удалось заблокировать пользователя');
+      
+      if (error.message.includes('RLS policy')) {
+        toast.error('Ошибка прав доступа. Проверьте настройки Supabase RLS политик.');
+      } else if (error.message.includes('already blocked')) {
+        toast.error('Пользователь уже заблокирован');
+      } else if (error.message.includes('Cannot block yourself')) {
+        toast.error('Нельзя заблокировать самого себя');
+      } else {
+        toast.error(error.message || 'Не удалось заблокировать пользователя');
+      }
     }
   };
 

@@ -71,10 +71,18 @@ export function useAuth() {
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('❌ [useAuth] Failed to check user status:', error);
+        // Don't set blocked state if we can't check
+        setIsBlocked(false);
+        return;
+      }
+      
+      if (!profile) {
+        console.log('⚠️ [useAuth] No profile found for user, assuming not blocked');
+        setIsBlocked(false);
         return;
       }
       

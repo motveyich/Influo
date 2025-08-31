@@ -82,9 +82,32 @@ export class AdminService {
 
       console.log('✅ [AdminService] Permission check passed, admin role:', deleterUserRole);
 
+      // Prevent self-blocking
+      if (userId === deletedBy) {
+        throw new Error('Cannot block yourself');
+      }
+
+      // Check if user is already blocked
+      console.log('🔧 [AdminService] Checking if user is already blocked...');
+      const { data: currentUser, error: checkError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('is_deleted, deleted_at')
+        .eq('user_id', userId)
+        .single();
+
+      if (checkError) {
+        console.error('❌ [AdminService] Failed to check user status:', checkError);
+        throw new Error(`Failed to check user status: ${checkError.message}`);
+      }
+
+      if (currentUser.is_deleted === true) {
+        console.log('⚠️ [AdminService] User is already blocked');
+        throw new Error('User is already blocked');
+      }
+
       // Block user by setting is_deleted to true
       console.log('🔧 [AdminService] Updating user_profiles table...');
-      const { error } = await supabase
+      const { data: updateData, error } = await supabase
         .from(TABLES.USER_PROFILES)
         .update({
           is_deleted: true,
@@ -105,24 +128,20 @@ export class AdminService {
       const { data: verifyData, error: verifyError } = await supabase
         .from(TABLES.USER_PROFILES)
         .select('is_deleted, deleted_at, deleted_by')
-        .eq('user_id', userId)
-        .single();
-      
-      if (verifyError) {
-        console.error('❌ [AdminService] Verification failed:', verifyError);
-        throw new Error(`Failed to verify user blocking: ${verifyError.message}`);
-      }
-      
-      console.log('✅ [AdminService] Verification successful:', verifyData);
-      
-      if (!verifyData.is_deleted) {
-        console.error('❌ [AdminService] User was not actually blocked in database!');
-        console.error('❌ [AdminService] This indicates RLS policy is blocking the update');
-        throw new Error('User blocking failed - RLS policy prevented database update. Check Supabase policies.');
+      // Verify the first updated record
+      const verifyData = updateData[0];
+      if (!verifyData || !verifyData.is_deleted) {
+        console.error('❌ [AdminService] User was not actually blocked!');
+        throw new Error('User blocking failed - update did not take effect');
       }
 
       // Log the action
-      await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
+      try {
+        await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
+      } catch (logError) {
+        console.warn('⚠️ [AdminService] Failed to log action, but user was blocked successfully:', logError);
+      }
+      
       console.log('✅ [AdminService] Action logged successfully');
     } catch (error) {
       console.error('❌ [AdminService] Complete failure in deleteUser:', error);
@@ -132,15 +151,25 @@ export class AdminService {
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-      // Check permissions
+        
+        // Check if it's an RLS policy error
+        if (error.code === '42501' || error.message.includes('policy')) {
+          throw new Error(`RLS policy blocked the update. Admin role: ${deleterUserRole}. Error: ${error.message}`);
+        }
+        
+        throw new Error(`Database update failed: ${error.message}`);
       const hasPermission = await roleService.checkPermission(restoredBy, 'admin');
       if (!hasPermission) {
-        throw new Error('Insufficient permissions');
+      console.log('✅ [AdminService] Update response:', updateData);
+
+      // Check if any rows were actually updated
+      if (!updateData || updateData.length === 0) {
+        console.error('❌ [AdminService] No rows were updated - RLS policy likely blocked the operation');
+        throw new Error('No rows were updated - RLS policy prevented the operation');
       }
 
-      // Restore user
-      const { error } = await supabase
-        .from(TABLES.USER_PROFILES)
+        throw new Error('Insufficient permissions');
+      }
         .update({
           is_deleted: false,
           deleted_at: null,
