@@ -74,6 +74,7 @@ export function InfluencerCardDisplay({
         .eq('applicant_id', currentUserId)
         .eq('target_id', card.userId)
         .eq('target_type', 'influencer_card')
+        .neq('status', 'cancelled')
         .maybeSingle();
 
       if (existingApplication) {
