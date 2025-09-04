@@ -394,6 +394,8 @@ CREATE TRIGGER update_moderation_queue_updated_at
   BEFORE UPDATE ON moderation_queue
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_content_filters_updated_at ON content_filters;
+
 CREATE TRIGGER update_content_filters_updated_at
   BEFORE UPDATE ON content_filters
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
