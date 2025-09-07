@@ -1,6 +1,7 @@
 import { supabase, TABLES } from '../core/supabase';
 import { UserProfile, Campaign, InfluencerCard, ContentReport, ModerationQueueItem, AdminLog, UserRole } from '../core/types';
 import { roleService } from './roleService';
+import { Newspaper, Bell, Calendar } from 'lucide-react';
 
 export class AdminService {
   async logAction(

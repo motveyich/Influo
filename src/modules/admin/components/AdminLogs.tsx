@@ -107,6 +107,9 @@ export function AdminLogs() {
           <option value="role_assigned">Назначение ролей</option>
           <option value="content_moderated">Модерация контента</option>
           <option value="report_resolved">Решение жалоб</option>
+          <option value="news_created">Создание новостей</option>
+          <option value="update_created">Создание обновлений</option>
+          <option value="event_created">Создание событий</option>
         </select>
       </div>
 
