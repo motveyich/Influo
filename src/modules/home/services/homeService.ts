@@ -1,5 +1,6 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { analytics } from '../../../core/analytics';
+import { contentManagementService } from '../../../services/contentManagementService';
 
 interface NewsItem {
   id: string;
@@ -54,9 +55,22 @@ interface CampaignStats {
 export class HomeService {
   async getNews(): Promise<NewsItem[]> {
     try {
-      // В реальном приложении здесь был бы API для новостей
-      // Пока возвращаем моковые данные
-      return this.getMockNews();
+      // Получаем новости из базы данных
+      const dbNews = await contentManagementService.getPublishedNews();
+      
+      // Преобразуем в формат NewsItem
+      const transformedNews = dbNews.map(news => ({
+        id: news.id,
+        title: news.title,
+        summary: news.summary,
+        url: news.url || '#',
+        publishedAt: news.publishedAt,
+        source: news.source,
+        category: news.category as 'industry' | 'platform' | 'trends'
+      }));
+      
+      // Если нет новостей в БД, возвращаем моковые данные
+      return transformedNews.length > 0 ? transformedNews : this.getMockNews();
     } catch (error) {
       console.error('Failed to fetch news:', error);
       return this.getMockNews();
@@ -65,8 +79,21 @@ export class HomeService {
 
   async getPlatformUpdates(): Promise<PlatformUpdate[]> {
     try {
-      // В реальном приложении здесь были бы обновления из админ-панели
-      return this.getMockPlatformUpdates();
+      // Получаем обновления из базы данных
+      const dbUpdates = await contentManagementService.getPublishedUpdates();
+      
+      // Преобразуем в формат PlatformUpdate
+      const transformedUpdates = dbUpdates.map(update => ({
+        id: update.id,
+        title: update.title,
+        description: update.description,
+        type: update.type as 'feature' | 'improvement' | 'announcement',
+        publishedAt: update.publishedAt,
+        isImportant: update.isImportant
+      }));
+      
+      // Если нет обновлений в БД, возвращаем моковые данные
+      return transformedUpdates.length > 0 ? transformedUpdates : this.getMockPlatformUpdates();
     } catch (error) {
       console.error('Failed to fetch platform updates:', error);
       return this.getMockPlatformUpdates();
@@ -75,11 +102,28 @@ export class HomeService {
 
   async getPlatformEvents(): Promise<PlatformEvent[]> {
     try {
-      // Получаем реальные события из базы данных
+      // Получаем события из базы данных
+      const dbEvents = await contentManagementService.getPublishedEvents();
+      
+      // Преобразуем в формат PlatformEvent
+      const transformedEvents = dbEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        type: event.type as 'campaign_launch' | 'achievement' | 'contest' | 'milestone',
+        participantCount: event.participantCount,
+        publishedAt: event.publishedAt
+      }));
+      
+      // Получаем реальные события из базы данных (кампании и достижения)
       const recentCampaigns = await this.getRecentCampaignLaunches();
       const achievements = await this.getRecentAchievements();
       
-      return [...recentCampaigns, ...achievements, ...this.getMockEvents()];
+      // Объединяем все события
+      const allEvents = [...transformedEvents, ...recentCampaigns, ...achievements];
+      
+      // Если мало событий, добавляем моковые данные
+      return allEvents.length > 0 ? allEvents : [...allEvents, ...this.getMockEvents()];
     } catch (error) {
       console.error('Failed to fetch platform events:', error);
       return this.getMockEvents();

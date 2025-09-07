@@ -6,6 +6,7 @@ import { CampaignsManagement } from './CampaignsManagement';
 import { ModerationQueue } from './ModerationQueue';
 import { ReportsManagement } from './ReportsManagement';
 import { AdminLogs } from './AdminLogs';
+import { ContentManagement } from './ContentManagement';
 import { 
   Users, 
   Target, 
@@ -13,6 +14,7 @@ import {
   Shield, 
   BarChart3, 
   Settings,
+  Newspaper,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -22,6 +24,7 @@ import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
 type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'settings';
+type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'content' | 'settings';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -79,6 +82,7 @@ export function AdminPanel() {
     { id: 'moderation', label: 'Модерация', icon: Shield, count: stats.moderationQueue },
     { id: 'reports', label: 'Жалобы', icon: Flag, count: stats.pendingReports },
     { id: 'logs', label: 'Логи', icon: BarChart3, count: stats.todayActions },
+    { id: 'content', label: 'Контент', icon: Newspaper, count: 0 },
     { id: 'settings', label: 'Настройки', icon: Settings, count: 0 }
   ];
 
@@ -194,6 +198,7 @@ export function AdminPanel() {
               {activeTab === 'moderation' && <ModerationQueue onStatsUpdate={loadStats} />}
               {activeTab === 'reports' && <ReportsManagement onStatsUpdate={loadStats} />}
               {activeTab === 'logs' && <AdminLogs />}
+              {activeTab === 'content' && <ContentManagement onStatsUpdate={loadStats} />}
               {activeTab === 'settings' && (
                 <div className="text-center py-12">
                   <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />

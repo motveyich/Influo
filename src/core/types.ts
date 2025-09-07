@@ -472,3 +472,47 @@ export interface ContentFilter {
   createdAt: string;
   updatedAt: string;
 }
+
+// Platform content management types
+export interface PlatformNews {
+  id: string;
+  title: string;
+  summary: string;
+  content?: string;
+  url?: string;
+  source: string;
+  category: 'industry' | 'platform' | 'trends';
+  publishedAt: string;
+  isPublished: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformUpdate {
+  id: string;
+  title: string;
+  description: string;
+  content?: string;
+  type: 'feature' | 'improvement' | 'announcement' | 'maintenance';
+  isImportant: boolean;
+  publishedAt: string;
+  isPublished: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformEvent {
+  id: string;
+  title: string;
+  description: string;
+  content?: string;
+  type: 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
+  participantCount?: number;
+  publishedAt: string;
+  isPublished: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}

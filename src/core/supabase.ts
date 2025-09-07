@@ -45,4 +45,7 @@ export const TABLES = {
   MODERATION_QUEUE: 'moderation_queue',
   ADMIN_LOGS: 'admin_logs',
   CONTENT_FILTERS: 'content_filters',
+  PLATFORM_NEWS: 'platform_news',
+  PLATFORM_UPDATES: 'platform_updates',
+  PLATFORM_EVENTS: 'platform_events',
 } as const;
