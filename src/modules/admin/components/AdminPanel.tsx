@@ -23,7 +23,6 @@ import {
 import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
-type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'settings';
 type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'content' | 'settings';
 
 export function AdminPanel() {
