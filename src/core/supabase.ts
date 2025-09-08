@@ -1,21 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+// Get environment variables with validation
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return import.meta.env.VITE_SUPABASE_URL && 
-         import.meta.env.VITE_SUPABASE_ANON_KEY &&
-         import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-         import.meta.env.VITE_SUPABASE_ANON_KEY !== 'placeholder-anon-key';
+  return supabaseUrl && 
+         supabaseAnonKey &&
+         supabaseUrl.startsWith('https://') &&
+         supabaseUrl.includes('.supabase.co') &&
+         supabaseAnonKey.length > 20; // Supabase anon keys are typically longer
 };
 
-if (!isSupabaseConfigured()) {
-  console.warn('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
-}
+// Use safe defaults if not configured
+const safeSupabaseUrl = isSupabaseConfigured() ? supabaseUrl! : 'https://placeholder.supabase.co';
+const safeSupabaseAnonKey = isSupabaseConfigured() ? supabaseAnonKey! : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxMjM0NTYsImV4cCI6MTk2MDY5OTQ1Nn0.placeholder';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (!isSupabaseConfigured()) {
+  console.warn('Supabase is not configured. Please click "Connect to Supabase" in the top right corner or check your .env file.');
+}
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -27,6 +31,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
 // Database tables
 export const TABLES = {
   USER_PROFILES: 'user_profiles',
