@@ -20,6 +20,8 @@ const safeSupabaseAnonKey = isSupabaseConfigured() ? supabaseAnonKey! : 'eyJhbGc
 if (!isSupabaseConfigured()) {
   console.warn('Supabase is not configured. Please click "Connect to Supabase" in the top right corner or check your .env file.');
 }
+
+export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -31,7 +33,6 @@ if (!isSupabaseConfigured()) {
   },
 });
 
-export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
 // Database tables
 export const TABLES = {
   USER_PROFILES: 'user_profiles',
