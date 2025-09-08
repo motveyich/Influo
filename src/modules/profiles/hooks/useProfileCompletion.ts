@@ -23,7 +23,7 @@ export function useProfileCompletion(userId: string) {
     
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
+      setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection, or check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values.');
       setIsLoading(false);
       return;
     }
@@ -38,13 +38,13 @@ export function useProfileCompletion(userId: string) {
       
       // Handle different types of errors
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to database. Please ensure Supabase is properly configured by clicking "Connect to Supabase" in the top right corner.');
+        setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner, or 2) Check that your .env file exists and contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
         setError('Database tables are not set up. Please configure Supabase properly.');
       } else if (err.message?.includes('Invalid API key')) {
         setError('Invalid Supabase API key. Please check your configuration.');
       } else if (err.message?.includes('Failed to fetch')) {
-        setError('Unable to connect to database. Please ensure Supabase is properly configured by clicking "Connect to Supabase" in the top right corner.');
+        setError('Network connection failed. Please check your internet connection and Supabase configuration.');
       } else {
         setError(err.message || 'Failed to load profile. Please check your database connection.');
       }
@@ -55,7 +55,7 @@ export function useProfileCompletion(userId: string) {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!isSupabaseConfigured()) {
-      throw new Error('Supabase is not configured. Please set up your database connection first.');
+      throw new Error('Supabase is not configured. Please click "Connect to Supabase" or check your .env file configuration.');
     }
     
     try {
