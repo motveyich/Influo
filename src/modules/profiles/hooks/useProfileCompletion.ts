@@ -23,7 +23,7 @@ export function useProfileCompletion(userId: string) {
     
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
       setIsLoading(false);
       return;
     }
@@ -38,15 +38,15 @@ export function useProfileCompletion(userId: string) {
       
       // Handle different types of errors
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
+        setError('Unable to connect to database. Please ensure Supabase is properly configured by clicking "Connect to Supabase" in the top right corner.');
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
-        setError('База данных не настроена. Пожалуйста, настройте Supabase.');
+        setError('Database tables are not set up. Please configure Supabase properly.');
       } else if (err.message?.includes('Invalid API key')) {
-        setError('Неверный API ключ Supabase. Проверьте настройки.');
+        setError('Invalid Supabase API key. Please check your configuration.');
       } else if (err.message?.includes('Failed to fetch')) {
-        setError('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу для настройки.');
+        setError('Unable to connect to database. Please ensure Supabase is properly configured by clicking "Connect to Supabase" in the top right corner.');
       } else {
-        setError(err.message || 'Не удалось загрузить профиль');
+        setError(err.message || 'Failed to load profile. Please check your database connection.');
       }
     } finally {
       setIsLoading(false);
@@ -54,6 +54,10 @@ export function useProfileCompletion(userId: string) {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase is not configured. Please set up your database connection first.');
+    }
+    
     try {
       if (!profile) throw new Error('No profile loaded');
       
@@ -61,7 +65,11 @@ export function useProfileCompletion(userId: string) {
       setProfile(updatedProfile);
       return updatedProfile;
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+        setError('Unable to connect to database. Please ensure Supabase is properly configured.');
+      } else {
+        setError(err.message || 'Failed to update profile');
+      }
       throw err;
     }
   };
