@@ -1,4 +1,5 @@
 import { supabase, TABLES } from '../core/supabase';
+import { isSupabaseConfigured } from '../core/supabase';
 import { UserProfile, Campaign, InfluencerCard, ContentReport, ModerationQueueItem, AdminLog, UserRole } from '../core/types';
 import { roleService } from './roleService';
 import { Newspaper, Bell, Calendar } from 'lucide-react';
@@ -302,6 +303,12 @@ export class AdminService {
     limit?: number;
   }): Promise<AdminLog[]> {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, returning empty admin logs');
+        return [];
+      }
+
       let query = supabase
         .from(TABLES.ADMIN_LOGS)
         .select('*');
@@ -327,7 +334,15 @@ export class AdminService {
       return data.map(log => this.transformLogFromDatabase(log));
     } catch (error) {
       console.error('Failed to get admin logs:', error);
-      throw error;
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed, returning empty logs');
+        return [];
+      }
+      
+      // For other errors, still return empty array to prevent crashes
+      return [];
     }
   }
 
