@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { isSupabaseConfigured } from './supabase';
 import { User } from '@supabase/supabase-js';
 
 export interface AuthState {
@@ -43,6 +44,17 @@ class AuthService {
   }
 
   async signUp(email: string, password: string) {
+    // Check if Supabase is configured before attempting authentication
+    if (!isSupabaseConfigured()) {
+      return {
+        data: null,
+        error: {
+          message: 'Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.',
+          name: 'ConfigurationError'
+        }
+      };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,6 +63,17 @@ class AuthService {
   }
 
   async signIn(email: string, password: string) {
+    // Check if Supabase is configured before attempting authentication
+    if (!isSupabaseConfigured()) {
+      return {
+        data: null,
+        error: {
+          message: 'Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.',
+          name: 'ConfigurationError'
+        }
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
