@@ -443,16 +443,17 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         )}
 
-          <div className="flex items-center space-x-1">
-            <XCircle className="w-5 h-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-800">
-              {offer.status === 'withdrawn' ? 'Это предложение было отозвано.' : 'Эта заявка была отменена.'}
-            </span>
+        {(offer.status === 'withdrawn' || offer.status === 'cancelled') && (
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+            <div className="flex items-center space-x-2">
+              <XCircle className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-800">
+                {offer.status === 'withdrawn' ? 'Это предложение было отозвано.' : 'Эта заявка была отменена.'}
+              </span>
+            </div>
           </div>
         )}
       </div>
     </div>
-  );
-}
   );
 }
