@@ -254,8 +254,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                     <span>Оплата</span>
                   </button>
                 )}
-                  <span>Оплата</span>
-                </button>
                 <button
                   onClick={() => onManageDeal?.(offer.offerId)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
