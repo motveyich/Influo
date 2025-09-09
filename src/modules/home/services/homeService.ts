@@ -42,14 +42,13 @@ interface TopUser {
 }
 
 interface CampaignStats {
-  totalCampaigns: number;
   activeCampaigns: number;
-  averageBudget: number;
-  averageConversion: number;
-  newApplicationsThisWeek: number;
-  totalBudgetThisMonth: number;
-  successfulDeals: number;
-  averageResponseTime: number;
+  pendingApplications: number;
+  unreadMessages: number;
+  pendingPayouts: number;
+  accountRating: number;
+  totalReviews: number;
+  completedDeals: number;
 }
 
 export class HomeService {
@@ -234,62 +233,102 @@ export class HomeService {
 
   async getCampaignStats(userId: string): Promise<CampaignStats> {
     try {
-      // Получаем статистику кампаний из базы данных
-      const { data: allCampaigns, error: campaignsError } = await supabase
-        .from(TABLES.CAMPAIGNS)
-        .select('status, budget, metrics, created_at');
-
-      if (campaignsError) throw campaignsError;
-
-      const { data: allApplications, error: applicationsError } = await supabase
-        .from(TABLES.APPLICATIONS)
-        .select('created_at, status');
-
-      if (applicationsError) throw applicationsError;
-
-      // Вычисляем статистику
-      const totalCampaigns = allCampaigns?.length || 0;
-      const activeCampaigns = allCampaigns?.filter(c => c.status === 'active').length || 0;
-      const completedCampaigns = allCampaigns?.filter(c => c.status === 'completed').length || 0;
-      
-      const totalBudget = allCampaigns?.reduce((sum, c) => {
-        return sum + (c.budget?.max || c.budget?.amount || 0);
-      }, 0) || 0;
-      
-      const averageBudget = totalCampaigns > 0 ? totalBudget / totalCampaigns : 0;
-
-      // Заявки за последнюю неделю
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      
-      const newApplicationsThisWeek = allApplications?.filter(app => 
-        new Date(app.created_at) >= oneWeekAgo
-      ).length || 0;
-
-      // Бюджет за текущий месяц
-      const currentMonth = new Date();
-      currentMonth.setDate(1);
-      
-      const totalBudgetThisMonth = allCampaigns?.filter(c => 
-        new Date(c.created_at) >= currentMonth
-      ).reduce((sum, c) => {
-        return sum + (c.budget?.max || c.budget?.amount || 0);
-      }, 0) || 0;
-
-      return {
-        totalCampaigns,
-        activeCampaigns,
-        averageBudget,
-        averageConversion: Math.round(65 + Math.random() * 20), // Моковая конверсия
-        newApplicationsThisWeek,
-        totalBudgetThisMonth,
-        successfulDeals: completedCampaigns,
-        averageResponseTime: Math.round(2 + Math.random() * 4) // Моковое время ответа
-      };
+      return await this.getUserActualStats(userId);
     } catch (error) {
       console.error('Failed to fetch campaign stats:', error);
-      return this.getMockCampaignStats();
+      return this.getEmptyStats();
     }
+  }
+
+  async getUserActualStats(userId: string): Promise<CampaignStats> {
+    try {
+      // 1. Активные кампании (если пользователь - рекламодатель)
+      const { data: userProfile } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('user_type')
+        .eq('user_id', userId)
+        .single();
+
+      let activeCampaigns = 0;
+      if (userProfile?.user_type === 'advertiser') {
+        const { data: campaigns } = await supabase
+          .from(TABLES.CAMPAIGNS)
+          .select('campaign_id')
+          .eq('advertiser_id', userId)
+          .eq('status', 'active')
+          .eq('is_deleted', false);
+        activeCampaigns = campaigns?.length || 0;
+      }
+
+      // 2. Заявки на сотрудничество (полученные пользователем)
+      const { data: applications } = await supabase
+        .from(TABLES.APPLICATIONS)
+        .select('id')
+        .eq('target_id', userId)
+        .eq('status', 'sent');
+      const pendingApplications = applications?.length || 0;
+
+      // 3. Неотвеченные сообщения
+      const { data: unreadMessages } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('id')
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+      const unreadCount = unreadMessages?.length || 0;
+
+      // 4. Ждут выплат (deals в статусе pending payout)
+      const { data: pendingPayouts } = await supabase
+        .from('deals')
+        .select('id')
+        .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
+        .in('deal_status', ['prepay_pending', 'postpay_pending']);
+      const pendingPayoutsCount = pendingPayouts?.length || 0;
+
+      // 5. Рейтинг аккаунта
+      const { data: reviews } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('reviewee_id', userId)
+        .eq('is_public', true);
+      
+      const totalReviews = reviews?.length || 0;
+      const averageRating = totalReviews > 0 
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+        : 0;
+
+      // 6. Завершенные сделки
+      const { data: completedDeals } = await supabase
+        .from('deals')
+        .select('id')
+        .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
+        .eq('deal_status', 'completed');
+      const completedDealsCount = completedDeals?.length || 0;
+
+      return {
+        activeCampaigns,
+        pendingApplications,
+        unreadMessages: unreadCount,
+        pendingPayouts: pendingPayoutsCount,
+        accountRating: Number(averageRating.toFixed(1)),
+        totalReviews,
+        completedDeals: completedDealsCount
+      };
+    } catch (error) {
+      console.error('Failed to get user actual stats:', error);
+      return this.getEmptyStats();
+    }
+  }
+
+  private getEmptyStats(): CampaignStats {
+    return {
+      activeCampaigns: 0,
+      pendingApplications: 0,
+      unreadMessages: 0,
+      pendingPayouts: 0,
+      accountRating: 0,
+      totalReviews: 0,
+      completedDeals: 0
+    };
   }
 
   private async getRecentCampaignLaunches(): Promise<PlatformEvent[]> {

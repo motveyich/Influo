@@ -260,94 +260,130 @@ export function HomePage() {
 
       {/* Campaign Statistics */}
       {campaignStats && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Статистика кампаний</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Ваша статистика</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Activity className="w-4 h-4" />
               <span>Обновлено сегодня</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
-                <Target className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-600">Всего кампаний</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.totalCampaigns}</p>
-              <p className="text-sm text-green-600">+{Math.floor(campaignStats.totalCampaigns * 0.1)} за месяц</p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-600">Активные</span>
+                <Target className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-gray-600">Активные кампании</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campaignStats.activeCampaigns}</p>
               <p className="text-sm text-blue-600">
-                {campaignStats.totalCampaigns > 0 ? Math.round((campaignStats.activeCampaigns / campaignStats.totalCampaigns) * 100) : 0}% от общего числа
+                {campaignStats.activeCampaigns === 0 ? 'Нет активных' : 'Запущено'}
               </p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">Средний бюджет</span>
+                <Users className="w-5 h-5 text-orange-600" />
+                <span className="text-sm font-medium text-gray-600">Заявки</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(campaignStats.averageBudget)}</p>
-              <p className="text-sm text-purple-600">Бюджет за месяц: {formatCurrency(campaignStats.totalBudgetThisMonth)}</p>
+              <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingApplications}</p>
+              <p className="text-sm text-orange-600">
+                {campaignStats.pendingApplications === 0 ? 'Нет новых' : 'Ожидают ответа'}
+              </p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium text-gray-600">Заявки за неделю</span>
+                <MessageCircle className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-gray-600">Неотвеченные</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.newApplicationsThisWeek}</p>
-              <p className="text-sm text-green-600">+{Math.floor(campaignStats.newApplicationsThisWeek * 0.2)} с прошлой недели</p>
+              <p className="text-2xl font-bold text-gray-900">{campaignStats.unreadMessages}</p>
+              <p className="text-sm text-green-600">
+                {campaignStats.unreadMessages === 0 ? 'Все прочитано' : 'Новые сообщения'}
+              </p>
             </div>
-          </div>
+            
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 mb-2">
+                <DollarSign className="w-5 h-5 text-red-600" />
+                <span className="text-sm font-medium text-gray-600">Ждут выплат</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingPayouts}</p>
+              <p className="text-sm text-red-600">
+                {campaignStats.pendingPayouts === 0 ? 'Нет ожидающих' : 'Требуют внимания'}
+              </p>
+            </div>
           
-          {/* Additional metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
-                <Trophy className="w-5 h-5 text-yellow-600" />
-                <span className="text-sm font-medium text-gray-600">Успешные сделки</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.successfulDeals}</p>
-              <p className="text-sm text-green-600">{Math.round((campaignStats.successfulDeals / Math.max(campaignStats.totalCampaigns, 1)) * 100)}% успешность</p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">Время ответа</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.averageResponseTime}ч</p>
-              <p className="text-sm text-blue-600">Среднее время</p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-600">Конверсия</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.averageConversion.toFixed(1)}%</p>
-              <p className="text-sm text-purple-600">Средняя по платформе</p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-600">Активность</span>
+                <Star className="w-5 h-5 text-yellow-600" />
+                <span className="text-sm font-medium text-gray-600">Рейтинг</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.round((campaignStats.activeCampaigns + campaignStats.newApplicationsThisWeek) / 7)}
+                {campaignStats.accountRating > 0 ? campaignStats.accountRating : '—'}
               </p>
-              <p className="text-sm text-green-600">Событий в день</p>
+              <p className="text-sm text-yellow-600">
+                {campaignStats.totalReviews === 0 ? (
+                  <span className="text-gray-500">Нет отзывов</span>
+                ) : (
+                  `Из ${campaignStats.totalReviews} отзывов`
+                )}
+              </p>
             </div>
+          </div>
+            
+          {/* Call to actions для пустых метрик */}
+          <div className="mt-6 space-y-3">
+            {campaignStats.totalReviews === 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Star className="w-5 h-5 text-yellow-600" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-yellow-800">Получите первый отзыв</h4>
+                    <p className="text-sm text-yellow-700">Завершите сделку и попросите клиента оставить отзыв для повышения доверия.</p>
+                  </div>
+                  <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md text-sm transition-colors">
+                    Узнать как
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {campaignStats.activeCampaigns === 0 && currentUserProfile?.profileCompletion.advertiserSetup && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Target className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-blue-800">Создайте первую кампанию</h4>
+                    <p className="text-sm text-blue-700">Запустите автоматическую кампанию для поиска инфлюенсеров.</p>
+                  </div>
+                  <button 
+                    onClick={() => window.location.href = '/campaigns'}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
+                  >
+                    Создать
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {campaignStats.pendingApplications > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Bell className="w-5 h-5 text-orange-600" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-orange-800">У вас {campaignStats.pendingApplications} новых заявок</h4>
+                    <p className="text-sm text-orange-700">Рассмотрите заявки и ответьте инфлюенсерам.</p>
+                  </div>
+                  <button 
+                    onClick={() => window.location.href = '/offers'}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
+                  >
+                    Просмотреть
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

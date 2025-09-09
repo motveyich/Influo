@@ -56,4 +56,7 @@ export const TABLES = {
   PLATFORM_EVENTS: 'platform_events',
   AI_CHAT_THREADS: 'ai_chat_threads',
   AI_CHAT_MESSAGES: 'ai_chat_messages',
+  DEALS: 'deals',
+  REVIEWS: 'reviews',
+  PAYMENT_CONFIRMATIONS: 'payment_confirmations',
 } as const;
