@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// Import OpenAI API
+const OPENAI_API_KEY = 'sk-xt65xSFFBM7YJhwEpao5pSY5i7CZR9O9eETafskJmACFXS8KPSGwtJKfNXPZ';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,22 +24,27 @@ interface AnalysisResponse {
   riskFactors?: string[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { messages, analysisType }: AnalysisRequest = await req.json()
+    const { messages, analysisType, question, context }: AnalysisRequest & { question?: string; context?: string } = await req.json()
 
-    // Validate input
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      throw new Error('Invalid messages array')
+    let analysis: AnalysisResponse;
+    
+    if (question) {
+      // Handle direct user question
+      analysis = await handleUserQuestion(question, context || '');
+    } else {
+      // Handle conversation analysis
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        throw new Error('Invalid messages array')
+      }
+      analysis = await analyzeConversation(messages, analysisType);
     }
-
-    // Analyze conversation
-    const analysis = await analyzeConversation(messages, analysisType)
 
     return new Response(
       JSON.stringify(analysis),
@@ -72,8 +78,171 @@ serve(async (req) => {
   }
 })
 
+async function handleUserQuestion(question: string, context: string): Promise<AnalysisResponse> {
+  try {
+    // Call OpenAI API for user questions
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `Ты - AI-помощник для платформы сотрудничества инфлюенсеров и рекламодателей. Твоя задача - помогать пользователям эффективно общаться и развивать деловые отношения. 
+            
+Контекст диалога: ${context}
+
+Отвечай кратко, по делу, на русском языке. Давай практические советы для улучшения коммуникации и развития сотрудничества.`
+          },
+          {
+            role: 'user',
+            content: question
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiContent = data.choices[0]?.message?.content || 'Не удалось получить ответ от AI';
+
+    return {
+      conversationStatus: 'neutral',
+      sentiment: 'neutral',
+      suggestions: [aiContent],
+      nextSteps: [],
+      confidence: 0.9
+    };
+  } catch (error) {
+    console.error('OpenAI API failed:', error);
+    return getIntelligentFallbackResponse(question);
+  }
+}
+
 async function analyzeConversation(messages: any[], analysisType: string): Promise<AnalysisResponse> {
-  // Enhanced AI analysis with better logic
+  try {
+    // Prepare messages for OpenAI
+    const conversationText = messages.map(m => `${m.senderId}: ${m.content}`).join('\n');
+    
+    // Call OpenAI API for conversation analysis
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `Ты - AI-аналитик диалогов на платформе сотрудничества инфлюенсеров и рекламодателей. 
+            
+Проанализируй диалог и верни JSON в следующем формате:
+{
+  "conversationStatus": "constructive|neutral|concerning",
+  "sentiment": "positive|neutral|negative", 
+  "suggestions": ["краткие наблюдения о диалоге"],
+  "nextSteps": ["конкретные рекомендации"],
+  "confidence": 0.8,
+  "riskFactors": ["потенциальные проблемы"]
+}
+
+Анализируй:
+- Тональность общения
+- Готовность к сотрудничеству
+- Потенциальные проблемы
+- Этап переговоров
+
+Отвечай только JSON, без дополнительного текста.`
+          },
+          {
+            role: 'user',
+            content: `Диалог для анализа:\n${conversationText}`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiContent = data.choices[0]?.message?.content || '';
+    
+    try {
+      // Parse JSON response from AI
+      const analysis = JSON.parse(aiContent);
+      return {
+        conversationStatus: analysis.conversationStatus || 'neutral',
+        sentiment: analysis.sentiment || 'neutral',
+        suggestions: analysis.suggestions || [],
+        nextSteps: analysis.nextSteps || [],
+        confidence: analysis.confidence || 0.8,
+        riskFactors: analysis.riskFactors
+      };
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      throw new Error('Invalid AI response format');
+    }
+  } catch (error) {
+    console.error('OpenAI analysis failed:', error);
+    return getEnhancedFallbackAnalysis(messages);
+  }
+}
+
+function getIntelligentFallbackResponse(question: string): AnalysisResponse {
+  const questionLower = question.toLowerCase();
+  
+  if (questionLower.includes('бюджет') || questionLower.includes('цена') || questionLower.includes('стоимость')) {
+    return {
+      conversationStatus: 'neutral',
+      sentiment: 'neutral',
+      suggestions: ['Обсуждение бюджета - важный этап переговоров'],
+      nextSteps: ['Уточните диапазон бюджета', 'Обсудите условия оплаты', 'Предложите варианты пакетов'],
+      confidence: 0.8
+    };
+  } else if (questionLower.includes('сроки') || questionLower.includes('время') || questionLower.includes('дедлайн')) {
+    return {
+      conversationStatus: 'neutral',
+      sentiment: 'neutral',
+      suggestions: ['Планирование сроков критично для успеха проекта'],
+      nextSteps: ['Установите реалистичные дедлайны', 'Обсудите этапы работы', 'Согласуйте график'],
+      confidence: 0.8
+    };
+  } else if (questionLower.includes('портфолио') || questionLower.includes('примеры') || questionLower.includes('работы')) {
+    return {
+      conversationStatus: 'neutral',
+      sentiment: 'neutral',
+      suggestions: ['Демонстрация портфолио повышает доверие'],
+      nextSteps: ['Покажите релевантные работы', 'Расскажите о подходе к проектам', 'Поделитесь результатами'],
+      confidence: 0.8
+    };
+  } else {
+    return {
+      conversationStatus: 'neutral',
+      sentiment: 'neutral',
+      suggestions: ['Для эффективного сотрудничества важно открытое общение'],
+      nextSteps: ['Задайте уточняющие вопросы', 'Поделитесь ожиданиями', 'Обсудите детали проекта'],
+      confidence: 0.7
+    };
+  }
+}
+
+function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
+  // Enhanced fallback analysis with better logic
   const conversationText = messages.map(m => m.content).join('\n')
   
   // Enhanced keyword analysis
