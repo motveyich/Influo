@@ -42,6 +42,9 @@ export class CardAnalyticsService {
     interactionType: 'application' | 'message' | 'favorite'
   ): Promise<void> {
     try {
+      // Get the card owner
+      const ownerId = await this.getCardOwnerId(cardType, cardId);
+      
       // Track interaction in analytics
       analytics.track('card_interaction', {
         card_type: cardType,
@@ -50,8 +53,11 @@ export class CardAnalyticsService {
         interaction_type: interactionType
       });
 
-      // Update card analytics
-      await this.updateCardMetrics(cardType, cardId, interactionType);
+      // Only update card analytics if the user is the card owner
+      // This prevents RLS policy violations
+      if (ownerId && userId === ownerId) {
+        await this.updateCardMetrics(cardType, cardId, interactionType);
+      }
     } catch (error) {
       console.error('Failed to track card interaction:', error);
     }
@@ -120,6 +126,12 @@ export class CardAnalyticsService {
     try {
       const today = new Date().toISOString().split('T')[0];
       const ownerId = await this.getCardOwnerId(cardType, cardId);
+      
+      // Double-check that we have an owner_id to prevent RLS violations
+      if (!ownerId) {
+        console.warn('Cannot update metrics: owner_id not found');
+        return;
+      }
       
       // Prepare the upsert data
       const baseRecord = {
