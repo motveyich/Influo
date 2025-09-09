@@ -3,6 +3,7 @@ import { Offer } from '../../../core/types';
 import { OfferCard } from './OfferCard';
 import { OfferResponseModal } from './OfferResponseModal';
 import { CreateOfferModal } from './CreateOfferModal';
+import { DetailedOfferModal } from './DetailedOfferModal';
 import { DealManagementModal } from '../../deals/components/DealManagementModal';
 import { PaymentModal } from '../../deals/components/PaymentModal';
 import { ReviewModal } from '../../deals/components/ReviewModal';
@@ -30,6 +31,8 @@ export function OffersPage() {
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailOffer, setDetailOffer] = useState<Offer | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -330,6 +333,11 @@ export function OffersPage() {
     toast('Функция изменения условий будет доступна в следующем обновлении');
   };
 
+  const handleViewDetails = (offer: Offer) => {
+    setDetailOffer(offer);
+    setShowDetailModal(true);
+  };
+
   const filteredOffers = offers.filter(offer => {
     if (selectedFilter === 'all') return true;
     return offer.status === selectedFilter;
@@ -506,6 +514,7 @@ export function OffersPage() {
               onCreatePayment={handleCreatePayment}
               showSenderActions={showMyOffers}
               currentUserId={currentUserId}
+              onViewDetails={handleViewDetails}
             />
           ))}
         </div>
@@ -536,6 +545,20 @@ export function OffersPage() {
           }}
           offer={selectedOffer}
           onResponseSent={handleResponseSent}
+        />
+      )}
+
+      {/* Detailed Offer Modal */}
+      {detailOffer && (
+        <DetailedOfferModal
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setDetailOffer(null);
+          }}
+          offer={detailOffer}
+          currentUserId={currentUserId}
+          showSenderActions={showMyOffers}
         />
       )}
 
