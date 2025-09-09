@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Offer } from '../../../core/types';
 import { offerService } from '../services/offerService';
+import { dealService } from '../../../services/dealService';
 import { applicationService } from '../../applications/services/applicationService';
 import { X, Check, XCircle, MessageCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -60,10 +61,63 @@ export function OfferResponseModal({
       // Check if this is an application or an offer
       if ((offer as any).type === 'application') {
         // Map counter response to in_progress for applications
-        const applicationResponse = response === 'counter' ? 'in_progress' : response;
-        await applicationService.respondToApplication(offer.offerId, applicationResponse, responseData);
+        const applicationResponse = response === 'counter' ? 'in_progress' : 
+                                  response === 'accepted' ? 'accepted' : response;
+        const updatedApplication = await applicationService.respondToApplication(offer.offerId, applicationResponse, responseData);
+        
+        // Create deal when application is accepted
+        if (response === 'accepted') {
+          try {
+            const deal = await dealService.createDeal({
+              applicationId: offer.offerId,
+              payerId: offer.advertiserId, // Advertiser pays
+              payeeId: offer.influencerId, // Influencer receives
+              totalAmount: responseData?.rate || offer.details.rate,
+              currency: 'USD',
+              paymentType: 'full_prepay',
+              prepayAmount: responseData?.rate || offer.details.rate,
+              postpayAmount: 0,
+              paymentDetails: {},
+              workDetails: {
+                deliverables: responseData?.deliverables || offer.details.deliverables,
+                timeline: responseData?.timeline || offer.details.timeline
+              }
+            });
+            
+            // Store deal ID for later reference
+            (offer as any).dealId = deal.id;
+          } catch (dealError) {
+            console.warn('Failed to create deal, but application was accepted:', dealError);
+          }
+        }
       } else {
-        await offerService.respondToOffer(offer.offerId, response, responseData, user?.id);
+        const updatedOffer = await offerService.respondToOffer(offer.offerId, response, responseData, user?.id);
+        
+        // Create deal when offer is accepted
+        if (response === 'accepted') {
+          try {
+            const deal = await dealService.createDeal({
+              offerId: offer.offerId,
+              payerId: offer.advertiserId, // Advertiser pays
+              payeeId: offer.influencerId, // Influencer receives
+              totalAmount: offer.details.rate,
+              currency: offer.details.currency || 'USD',
+              paymentType: 'full_prepay',
+              prepayAmount: offer.details.rate,
+              postpayAmount: 0,
+              paymentDetails: {},
+              workDetails: {
+                deliverables: offer.details.deliverables,
+                timeline: offer.details.timeline
+              }
+            });
+            
+            // Store deal ID for later reference
+            (offer as any).dealId = deal.id;
+          } catch (dealError) {
+            console.warn('Failed to create deal, but offer was accepted:', dealError);
+          }
+        }
       }
       
       toast.success(`Offer ${response} successfully!`);

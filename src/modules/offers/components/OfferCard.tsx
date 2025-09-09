@@ -1,19 +1,21 @@
 import React from 'react';
 import { Offer } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye, Star } from 'lucide-react';
+import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye, Star, Settings, Handshake } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface OfferCardProps {
   offer: Offer;
   onAction?: (offerId: string, action: 'accept' | 'decline' | 'counter') => void;
+  onManageDeal?: (offerId: string) => void;
+  onCreatePayment?: (offerId: string) => void;
   onWithdraw?: (offerId: string) => void;
   onModify?: (offerId: string) => void;
   onLeaveReview?: (offerId: string) => void;
   showSenderActions?: boolean;
 }
 
-export function OfferCard({ offer, onAction, onWithdraw, onModify, onLeaveReview, showSenderActions = false }: OfferCardProps) {
+export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false }: OfferCardProps) {
   const { t } = useTranslation();
 
   // Check if this is an application (not a traditional offer)
@@ -235,7 +237,8 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, onLeaveReview
 
         {offer.status === 'accepted' && (
           <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="text-sm font-medium text-green-800">
                 Предложение принято! Проверьте сообщения для следующих шагов.
@@ -250,8 +253,54 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, onLeaveReview
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium text-green-800">
-                  Сотрудничество завершено!
+                  Предложение принято! Управляйте сделкой.
                 </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => onCreatePayment?.(offer.offerId)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                >
+                  <DollarSign className="w-3 h-3" />
+                  <span>Оплата</span>
+                </button>
+                <button
+                  onClick={() => onManageDeal?.(offer.offerId)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Управление</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* In Progress Status with Management Options */}
+        {(offer.status === 'in_progress' || offer.status === 'accepted') && (offer as any).dealId && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Handshake className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  Сотрудничество в процессе
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => onCreatePayment?.(offer.offerId)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                >
+                  <DollarSign className="w-3 h-3" />
+                  <span>Оплата</span>
+                </button>
+                <button
+                  onClick={() => onManageDeal?.(offer.offerId)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Управление</span>
+                </button>
               </div>
               <button
                 onClick={() => onLeaveReview?.(offer.offerId)}

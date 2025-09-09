@@ -239,6 +239,40 @@ export class DealService {
     }
   }
 
+  async updateDealStatus(dealId: string, status: DealStatus, metadata?: Record<string, any>): Promise<Deal> {
+    try {
+      const updateData: any = {
+        deal_status: status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (metadata) {
+        updateData.metadata = metadata;
+      }
+
+      const { data, error } = await supabase
+        .from('deals')
+        .update(updateData)
+        .eq('id', dealId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Track status update
+      analytics.track('deal_status_updated', {
+        deal_id: dealId,
+        new_status: status,
+        metadata: metadata
+      });
+
+      return this.transformFromDatabase(data);
+    } catch (error) {
+      console.error('Failed to update deal status:', error);
+      throw error;
+    }
+  }
+
   async markWorkCompleted(dealId: string, userId: string, workDetails: Record<string, any>): Promise<Deal> {
     try {
       const { data, error } = await supabase

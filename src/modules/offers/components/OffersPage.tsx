@@ -3,6 +3,8 @@ import { Offer } from '../../../core/types';
 import { OfferCard } from './OfferCard';
 import { OfferResponseModal } from './OfferResponseModal';
 import { CreateOfferModal } from './CreateOfferModal';
+import { DealManagementModal } from '../../deals/components/DealManagementModal';
+import { PaymentModal } from '../../deals/components/PaymentModal';
 import { ReviewModal } from '../../deals/components/ReviewModal';
 import { offerService } from '../services/offerService';
 import { Handshake, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
@@ -20,6 +22,9 @@ export function OffersPage() {
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [showDealModal, setShowDealModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [showMyOffers, setShowMyOffers] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
