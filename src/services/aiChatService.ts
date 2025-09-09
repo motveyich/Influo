@@ -373,13 +373,19 @@ export class AIChatService {
   ): Promise<AIAnalysisResult> {
     try {
       // Call real AI analysis service
-      const response = await fetch('/api/ai-chat-analysis', {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-analysis`;
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          formattedMessages,
+          messages: formattedMessages.map(msg => ({
+            content: msg,
+            senderId: 'user',
+            timestamp: new Date().toISOString()
+          })),
           userRoles,
           analysisType: 'conversation_flow'
         })

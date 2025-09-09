@@ -352,7 +352,7 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
 
         {/* Status indicator */}
         <div className="mt-2 text-xs text-gray-500 text-center">
-          GPT-5 анализирует диалог в реальном времени
+          DeepSeek V3 анализирует диалог в реальном времени
         </div>
       </div>
     </div>
