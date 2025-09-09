@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { authService, AuthState } from '../core/auth';
 import { UserRole } from '../core/types';
 import { roleService } from '../services/roleService';
-import { supabase } from '../core/supabase';
+import { supabase, isSupabaseConfigured } from '../core/supabase';
 
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({ user: null, loading: true });
@@ -64,6 +64,13 @@ export function useAuth() {
     try {
       setBlockCheckLoading(true);
       if (!authState.user) return;
+      
+      // Check if Supabase is configured before attempting request
+      if (!isSupabaseConfigured()) {
+        console.log('⚠️ [useAuth] Supabase not configured, skipping user status check');
+        setIsBlocked(false);
+        return;
+      }
       
       console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
       
