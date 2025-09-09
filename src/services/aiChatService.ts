@@ -370,6 +370,9 @@ export class AIChatService {
   private async callAIAnalysis(
     formattedMessages: string[], 
     userRoles?: { user1: string; user2: string }
+  private async callAIAnalysis(
+    formattedMessages: string[], 
+    userRoles?: { user1: string; user2: string }
   ): Promise<AIAnalysisResult> {
     try {
       // Call real AI analysis service
@@ -379,6 +382,7 @@ export class AIChatService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          formattedMessages,
           formattedMessages,
           userRoles,
           analysisType: 'conversation_flow'
@@ -419,11 +423,17 @@ export class AIChatService {
         `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
         'Диалог между участниками';
       
+      // Add role-specific analysis
+      const roleContext = userRoles ? 
+        `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
+        'Диалог между участниками';
+      
       // Determine status based on analysis
       if (positiveCount > negativeCount && businessCount > 0) {
         conversationStatus = 'constructive';
         sentiment = 'positive';
         suggestions = [
+          roleContext,
           roleContext,
           'Диалог развивается позитивно',
           'Обе стороны проявляют заинтересованность',
@@ -439,6 +449,7 @@ export class AIChatService {
         sentiment = 'negative';
         suggestions = [
           roleContext,
+          roleContext,
           'Возможны разногласия в ожиданиях',
           'Стоит прояснить спорные моменты'
         ];
@@ -451,6 +462,7 @@ export class AIChatService {
       } else if (questionCount > 2) {
         conversationStatus = 'neutral';
         suggestions = [
+          roleContext,
           roleContext,
           'Активно задаются вопросы',
           'Стороны изучают возможности'
