@@ -28,11 +28,23 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
   }, [user1Id, user2Id, isVisible]);
 
   useEffect(() => {
-    // Trigger analysis when conversation messages change
-    if (thread && conversationMessages.length > 0 && conversationMessages.length % 3 === 0) {
-      triggerAnalysis();
+    // Listen for manual analysis triggers
+    const handleAnalysisTrigger = (event: any) => {
+      if (event.detail?.messages && thread) {
+        triggerAnalysis(event.detail.messages);
+      }
+    };
+
+    window.addEventListener('triggerAIAnalysis', handleAnalysisTrigger);
+    
+    // Auto-trigger analysis when conversation messages change
+    if (thread && conversationMessages.length >= 2) {
+      const shouldAnalyze = conversationMessages.length % 3 === 0 || 
+                           (conversationMessages.length >= 2 && messages.length === 1); // First analysis
+      if (shouldAnalyze) {
+        triggerAnalysis(conversationMessages);
+      }
     }
-  }, [conversationMessages.length, thread]);
 
   useEffect(() => {
     scrollToBottom();
@@ -301,22 +313,28 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
         {/* Quick Actions */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
-            onClick={() => setNewMessage('Как лучше развить этот диалог?')}
+            onClick={() => setNewMessage('Проанализируй текущий диалог и дай рекомендации')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Как развить диалог?
+            Анализ диалога
           </button>
           <button
-            onClick={() => setNewMessage('Оцени ситуацию в переговорах')}
+            onClick={() => setNewMessage('Какие риски видишь в этом диалоге?')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Оценка ситуации
+            Оценка рисков
           </button>
           <button
-            onClick={() => setNewMessage('Какие следующие шаги посоветуешь?')}
+            onClick={() => setNewMessage('Что делать дальше для успешного сотрудничества?')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
             Следующие шаги
+          </button>
+          <button
+            onClick={() => triggerAnalysis()})}
+            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors"
+          >
+            Анализировать сейчас
           </button>
         </div>
 

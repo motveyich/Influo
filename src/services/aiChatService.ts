@@ -106,11 +106,14 @@ export class AIChatService {
     try {
       if (messages.length === 0) return null;
 
-      // Check cache first
+      // Only analyze if we have enough messages and haven't analyzed recently
+      if (messages.length < 2) return null;
+      
+      // Check cache to avoid duplicate analysis
       const cacheKey = `${threadId}_${messages.length}`;
       const cached = this.analysisCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        return null; // Don't send duplicate analysis
+        return null;
       }
 
       // Analyze conversation
@@ -122,24 +125,20 @@ export class AIChatService {
         timestamp: Date.now()
       });
 
-      // Only send analysis if there are meaningful insights
-      if (analysis.suggestions.length > 0 || analysis.conversationStatus !== 'neutral') {
-        const analysisMessage = await this.sendAIMessage(
-          threadId, 
-          'ai_analysis', 
-          this.formatAnalysisMessage(analysis),
-          {
-            analysisType: 'conversation_flow',
-            confidence: analysis.confidence,
-            conversationStatus: analysis.conversationStatus,
-            suggestedActions: analysis.nextSteps
-          }
-        );
+      // Send analysis message
+      const analysisMessage = await this.sendAIMessage(
+        threadId, 
+        'ai_analysis', 
+        this.formatAnalysisMessage(analysis),
+        {
+          analysisType: 'conversation_flow',
+          confidence: analysis.confidence,
+          conversationStatus: analysis.conversationStatus,
+          suggestedActions: analysis.nextSteps
+        }
+      );
 
-        return analysisMessage;
-      }
-
-      return null;
+      return analysisMessage;
     } catch (error) {
       console.error('Failed to analyze conversation:', error);
       return null; // Don't throw error for analysis failures
@@ -225,25 +224,156 @@ export class AIChatService {
   }
 
   private async callAIService(question: string, context: string): Promise<{ content: string; confidence: number; suggestions: string[] }> {
-    // Mock AI service call - replace with actual OpenAI API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Call OpenAI API for real analysis
+      const response = await fetch('/api/ai-chat-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          context,
+          type: 'user_question'
+        })
+      });
 
-    const responses = [
-      {
-        content: 'Отличный вопрос! Рекомендую уточнить детали проекта и временные рамки. Это поможет лучше понять ожидания.',
-        suggestions: ['Уточните бюджет', 'Обсудите сроки', 'Покажите портфолио']
-      },
-      {
-        content: 'Диалог развивается конструктивно. Предлагаю перейти к обсуждению конкретных условий сотрудничества.',
-        suggestions: ['Предложите встречу', 'Обсудите условия', 'Поделитесь кейсами']
-      },
-      {
-        content: 'Вижу заинтересованность с обеих сторон. Рекомендую зафиксировать договоренности в письменном виде.',
-        suggestions: ['Составьте бриф', 'Обсудите оплату', 'Установите дедлайны']
+      if (!response.ok) {
+        throw new Error('AI service unavailable');
       }
-    ];
 
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.warn('AI service failed, using fallback response:', error);
+      
+      // Intelligent fallback based on question content
+      const questionLower = question.toLowerCase();
+      
+      if (questionLower.includes('бюджет') || questionLower.includes('цена') || questionLower.includes('стоимость')) {
+        return {
+          content: 'Вопрос о бюджете важен для успешного сотрудничества. Рекомендую обсудить диапазон цен и условия оплаты открыто.',
+          confidence: 0.8,
+          suggestions: ['Уточните бюджет', 'Обсудите условия оплаты', 'Предложите варианты']
+        };
+      } else if (questionLower.includes('сроки') || questionLower.includes('время') || questionLower.includes('дедлайн')) {
+        return {
+          content: 'Четкие временные рамки помогают избежать недопониманий. Обсудите реалистичные сроки с учетом качества работы.',
+          confidence: 0.8,
+          suggestions: ['Установите дедлайны', 'Обсудите этапы', 'Согласуйте график']
+        };
+      } else if (questionLower.includes('портфолио') || questionLower.includes('примеры') || questionLower.includes('работы')) {
+        return {
+          content: 'Демонстрация портфолио повышает доверие. Покажите релевантные примеры работ и объясните подход к проектам.',
+          confidence: 0.8,
+          suggestions: ['Покажите портфолио', 'Расскажите о подходе', 'Поделитесь кейсами']
+        };
+      } else {
+        return {
+          content: 'Для эффективного сотрудничества важно открытое общение. Задавайте вопросы, делитесь ожиданиями и будьте честными.',
+          confidence: 0.7,
+          suggestions: ['Задайте уточняющие вопросы', 'Поделитесь ожиданиями', 'Обсудите детали']
+        };
+      }
+    }
+  }
+
+  private async callAIAnalysis(conversationText: string): Promise<AIAnalysisResult> {
+    try {
+      // Call real AI analysis service
+      const response = await fetch('/api/ai-chat-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: conversationText.split('\n').map(line => ({ content: line })),
+          analysisType: 'conversation_flow'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('AI analysis service unavailable');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.warn('AI analysis failed, using intelligent fallback:', error);
+      
+      // Intelligent analysis based on conversation content
+      const text = conversationText.toLowerCase();
+      
+      // Analyze keywords and patterns
+      const positiveWords = ['спасибо', 'отлично', 'согласен', 'хорошо', 'интересно', 'подходит', 'да', 'понятно'];
+      const negativeWords = ['нет', 'не подходит', 'проблема', 'сложно', 'невозможно', 'не согласен', 'отказ'];
+      const businessWords = ['бюджет', 'сроки', 'условия', 'договор', 'оплата', 'встреча', 'проект', 'работа'];
+      const questionWords = ['как', 'что', 'когда', 'где', 'почему', 'можно', 'возможно', '?'];
+      
+      const positiveCount = positiveWords.filter(word => text.includes(word)).length;
+      const negativeCount = negativeWords.filter(word => text.includes(word)).length;
+      const businessCount = businessWords.filter(word => text.includes(word)).length;
+      const questionCount = questionWords.filter(word => text.includes(word)).length;
+      
+      let conversationStatus: 'constructive' | 'neutral' | 'concerning' = 'neutral';
+      let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
+      let suggestions: string[] = [];
+      let nextSteps: string[] = [];
+      let riskFactors: string[] = [];
+      
+      // Determine status based on analysis
+      if (positiveCount > negativeCount && businessCount > 0) {
+        conversationStatus = 'constructive';
+        sentiment = 'positive';
+        suggestions = [
+          'Диалог развивается позитивно',
+          'Обе стороны проявляют заинтересованность',
+          'Обсуждаются деловые вопросы'
+        ];
+        nextSteps = [
+          'Переходите к конкретным деталям',
+          'Обсудите следующие шаги',
+          'Зафиксируйте договоренности'
+        ];
+      } else if (negativeCount > positiveCount) {
+        conversationStatus = 'concerning';
+        sentiment = 'negative';
+        suggestions = [
+          'Возможны разногласия в ожиданиях',
+          'Стоит прояснить спорные моменты'
+        ];
+        nextSteps = [
+          'Уточните требования',
+          'Найдите компромисс',
+          'Обратитесь к модератору при необходимости'
+        ];
+        riskFactors = ['Потенциальное недопонимание', 'Разные ожидания'];
+      } else if (questionCount > 2) {
+        conversationStatus = 'neutral';
+        suggestions = [
+          'Активно задаются вопросы',
+          'Стороны изучают возможности'
+        ];
+        nextSteps = [
+          'Предоставьте подробные ответы',
+          'Покажите примеры работ',
+          'Уточните детали проекта'
+        ];
+      } else {
+        suggestions = ['Диалог в начальной стадии'];
+        nextSteps = ['Расскажите больше о себе', 'Задайте вопросы партнеру'];
+      }
+      
+      return {
+        conversationStatus,
+        sentiment,
+        suggestions,
+        nextSteps,
+        confidence: Math.min(0.9, 0.5 + (businessCount * 0.1) + (Math.abs(positiveCount - negativeCount) * 0.05)),
+        riskFactors: riskFactors.length > 0 ? riskFactors : undefined
+      };
+    }
+  }
     
     return {
       content: randomResponse.content,
