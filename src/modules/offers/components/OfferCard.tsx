@@ -239,10 +239,11 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           <div className="bg-green-50 border border-green-200 rounded-md p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-green-800">
-                Предложение принято! Проверьте сообщения для следующих шагов.
-              </span>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-green-800">
+                  Предложение принято! Проверьте сообщения для следующих шагов.
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -301,14 +302,14 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                   <Settings className="w-3 h-3" />
                   <span>Управление</span>
                 </button>
+                <button
+                  onClick={() => onLeaveReview?.(offer.offerId)}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                >
+                  <Star className="w-4 h-4" />
+                  <span>Оставить отзыв</span>
+                </button>
               </div>
-              <button
-                onClick={() => onLeaveReview?.(offer.offerId)}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
-              >
-                <Star className="w-4 h-4" />
-                <span>Оставить отзыв</span>
-              </button>
             </div>
           </div>
         )}
