@@ -256,9 +256,15 @@ function getIntelligentFallbackResponse(question: string): AnalysisResponse {
   }
 }
 
-function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
+function getEnhancedFallbackAnalysis(
+  formattedMessages: string[], 
+  userRoles?: { user1: string; user2: string }
+): AnalysisResponse {
   // Enhanced fallback analysis with better logic
-  const conversationText = messages.map(m => m.content).join('\n')
+  const conversationText = formattedMessages.join('\n').toLowerCase();
+  const roleContext = userRoles ? 
+    `Анализ диалога между ${userRoles.user1} и ${userRoles.user2}` : 
+    'Анализ диалога между участниками';
   
   // Enhanced keyword analysis
   const positiveKeywords = ['спасибо', 'отлично', 'согласен', 'хорошо', 'интересно', 'подходит', 'да', 'понравилось', 'впечатляет', 'качественно']
@@ -267,7 +273,7 @@ function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
   const urgencyKeywords = ['срочно', 'быстро', 'скоро', 'завтра', 'сегодня', 'немедленно']
   const questionKeywords = ['как', 'что', 'когда', 'где', 'почему', 'можно ли', 'возможно ли', '?']
   
-  const text = conversationText.toLowerCase()
+  const text = conversationText;
   
   // Count keyword matches
   const positiveCount = positiveKeywords.filter(word => text.includes(word)).length
@@ -296,6 +302,9 @@ function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
   const suggestions: string[] = []
   const nextSteps: string[] = []
   const riskFactors: string[] = []
+  
+  // Always include role context
+  suggestions.push(roleContext);
   
   // Business discussion detected
   if (businessCount >= 2) {
@@ -338,7 +347,7 @@ function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
     riskFactors.push('Разные ожидания или требования')
   } else {
     // Neutral status recommendations
-    if (messages.length < 5) {
+    if (formattedMessages.length < 5) {
       suggestions.push('Диалог в начальной стадии')
       nextSteps.push('Расскажите больше о своих услугах')
       nextSteps.push('Узнайте больше о потребностях партнера')
@@ -360,7 +369,7 @@ function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
   }
   
   // Calculate confidence based on various factors
-  const messageCountFactor = Math.min(0.3, messages.length * 0.05)
+  const messageCountFactor = Math.min(0.3, formattedMessages.length * 0.05)
   const keywordFactor = Math.min(0.4, (positiveCount + negativeCount + businessCount) * 0.08)
   const baseFactor = 0.3
   

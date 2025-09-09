@@ -318,6 +318,13 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
         {/* Quick Actions */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
+            onClick={triggerManualAnalysis}
+            disabled={isLoading || conversationMessages.length === 0}
+            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors disabled:opacity-50 font-medium"
+          >
+            Анализировать сейчас
+          </button>
+          <button
             onClick={() => setNewMessage('Проанализируй текущий статус переговоров и дай рекомендации')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >

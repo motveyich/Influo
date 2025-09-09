@@ -336,40 +336,63 @@ export class AIChatService {
     } catch (error) {
       console.warn('AI service failed, using fallback response:', error);
       
-      // Intelligent fallback based on question content
-      const questionLower = question.toLowerCase();
-      
-      if (questionLower.includes('бюджет') || questionLower.includes('цена') || questionLower.includes('стоимость')) {
-        return {
-          content: 'Вопрос о бюджете важен для успешного сотрудничества. Рекомендую обсудить диапазон цен и условия оплаты открыто.',
-          confidence: 0.8,
-          suggestions: ['Уточните бюджет', 'Обсудите условия оплаты', 'Предложите варианты']
-        };
-      } else if (questionLower.includes('сроки') || questionLower.includes('время') || questionLower.includes('дедлайн')) {
-        return {
-          content: 'Четкие временные рамки помогают избежать недопониманий. Обсудите реалистичные сроки с учетом качества работы.',
-          confidence: 0.8,
-          suggestions: ['Установите дедлайны', 'Обсудите этапы', 'Согласуйте график']
-        };
-      } else if (questionLower.includes('портфолио') || questionLower.includes('примеры') || questionLower.includes('работы')) {
-        return {
-          content: 'Демонстрация портфолио повышает доверие. Покажите релевантные примеры работ и объясните подход к проектам.',
-          confidence: 0.8,
-          suggestions: ['Покажите портфолио', 'Расскажите о подходе', 'Поделитесь кейсами']
-        };
-      } else {
-        return {
-          content: 'Для эффективного сотрудничества важно открытое общение. Задавайте вопросы, делитесь ожиданиями и будьте честными.',
-          confidence: 0.7,
-          suggestions: ['Задайте уточняющие вопросы', 'Поделитесь ожиданиями', 'Обсудите детали']
-        };
-      }
+      // Use intelligent fallback
+      return this.getIntelligentFallbackResponse(question, conversationHistory, userRoles);
     }
   }
 
-  private async callAIAnalysis(
-    formattedMessages: string[], 
-    userRoles?: { user1: string; user2: string }
+  private getIntelligentFallbackResponse(
+    question: string, 
+    conversationHistory: string, 
+    userRoles: { user1: string; user2: string }
+  ): { content: string; confidence: number; suggestions: string[] } {
+    const questionLower = question.toLowerCase();
+    const historyLower = conversationHistory.toLowerCase();
+    
+    // Role-specific context
+    const roleContext = `В диалоге участвуют ${userRoles.user1} и ${userRoles.user2}.`;
+    
+    if (questionLower.includes('бюджет') || questionLower.includes('цена') || questionLower.includes('стоимость')) {
+      const hasInfluencer = userRoles.user1 === 'influencer' || userRoles.user2 === 'influencer';
+      return {
+        content: `${roleContext} Вопрос о бюджете критичен для успешного сотрудничества. ${
+          hasInfluencer 
+            ? 'Инфлюенсеру важно честно обозначить свои расценки, а рекламодателю - реалистично оценить бюджет.' 
+            : 'Рекомендую обсудить диапазон цен открыто.'
+        }`,
+        confidence: 0.8,
+        suggestions: ['Уточните бюджет', 'Обсудите условия оплаты', 'Предложите варианты пакетов']
+      };
+    } else if (questionLower.includes('сроки') || questionLower.includes('время') || questionLower.includes('дедлайн')) {
+      return {
+        content: `${roleContext} Четкие временные рамки помогают избежать недопониманий. Обсудите реалистичные сроки с учетом качества работы.`,
+        confidence: 0.8,
+        suggestions: ['Установите дедлайны', 'Обсудите этапы', 'Согласуйте график']
+      };
+    } else if (questionLower.includes('портфолио') || questionLower.includes('примеры') || questionLower.includes('работы')) {
+      return {
+        content: `${roleContext} Демонстрация портфолио повышает доверие. Покажите релевантные примеры работ и объясните подход к проектам.`,
+        confidence: 0.8,
+        suggestions: ['Покажите портфолио', 'Расскажите о подходе', 'Поделитесь кейсами']
+      };
+    } else {
+      // Analyze conversation history for context
+      let contextualAdvice = 'Для эффективного сотрудничества важно открытое общение.';
+      
+      if (historyLower.includes('бюджет') || historyLower.includes('цена')) {
+        contextualAdvice = 'Вижу, что обсуждаются финансовые вопросы. Важно найти баланс между ожиданиями сторон.';
+      } else if (historyLower.includes('время') || historyLower.includes('срок')) {
+        contextualAdvice = 'Замечаю обсуждение сроков. Убедитесь, что все временные рамки реалистичны.';
+      }
+      
+      return {
+        content: `${roleContext} ${contextualAdvice} Задавайте вопросы, делитесь ожиданиями и будьте честными.`,
+        confidence: 0.7,
+        suggestions: ['Задайте уточняющие вопросы', 'Поделитесь ожиданиями', 'Обсудите детали']
+      };
+    }
+  }
+
   private async callAIAnalysis(
     formattedMessages: string[], 
     userRoles?: { user1: string; user2: string }
@@ -382,7 +405,6 @@ export class AIChatService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          formattedMessages,
           formattedMessages,
           userRoles,
           analysisType: 'conversation_flow'
@@ -423,17 +445,11 @@ export class AIChatService {
         `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
         'Диалог между участниками';
       
-      // Add role-specific analysis
-      const roleContext = userRoles ? 
-        `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
-        'Диалог между участниками';
-      
       // Determine status based on analysis
       if (positiveCount > negativeCount && businessCount > 0) {
         conversationStatus = 'constructive';
         sentiment = 'positive';
         suggestions = [
-          roleContext,
           roleContext,
           'Диалог развивается позитивно',
           'Обе стороны проявляют заинтересованность',
@@ -449,7 +465,6 @@ export class AIChatService {
         sentiment = 'negative';
         suggestions = [
           roleContext,
-          roleContext,
           'Возможны разногласия в ожиданиях',
           'Стоит прояснить спорные моменты'
         ];
@@ -462,7 +477,6 @@ export class AIChatService {
       } else if (questionCount > 2) {
         conversationStatus = 'neutral';
         suggestions = [
-          roleContext,
           roleContext,
           'Активно задаются вопросы',
           'Стороны изучают возможности'
