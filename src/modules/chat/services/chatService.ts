@@ -235,7 +235,7 @@ export class ChatService {
       errors.push('Message content cannot exceed 1000 characters');
     }
 
-    if (messageData.messageType && !['text', 'image', 'file', 'offer'].includes(messageData.messageType)) {
+    if (messageData.messageType && !['text', 'image', 'file', 'offer', 'payment_window', 'payment_confirmation'].includes(messageData.messageType)) {
       errors.push('Invalid message type');
     }
 

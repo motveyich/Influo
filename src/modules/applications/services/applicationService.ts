@@ -1,4 +1,5 @@
 import { supabase, TABLES } from '../../../core/supabase';
+import { isSupabaseConfigured } from '../../../core/supabase';
 import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
@@ -7,6 +8,10 @@ import { chatService } from '../../chat/services/chatService';
 export class ApplicationService {
   async createApplication(applicationData: Partial<Application>): Promise<Application> {
     try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+
       // Prevent creating applications to self
       if (applicationData.applicantId === applicationData.targetId) {
         throw new Error('Cannot create application to yourself');
@@ -86,6 +91,10 @@ export class ApplicationService {
     responseData?: any
   ): Promise<Application> {
     try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+
       const updateData: any = {
         status: response,
         response_data: responseData || {},
@@ -137,6 +146,11 @@ export class ApplicationService {
 
   async getUserApplications(userId: string, type: 'sent' | 'received'): Promise<Application[]> {
     try {
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, returning empty applications list');
+        return [];
+      }
+
       const column = type === 'sent' ? 'applicant_id' : 'target_id';
       
       const { data, error } = await supabase
@@ -147,16 +161,27 @@ export class ApplicationService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      if (!data) return [];
 
       return data.map(app => this.transformFromDatabase(app));
     } catch (error) {
+      // Handle specific Supabase errors
+      if (error.code === '42P01') {
+        console.warn('Applications table does not exist, returning empty list');
+        return [];
+      }
       console.error('Failed to get user applications:', error);
-      throw error;
+      return [];
     }
   }
 
   async getApplication(applicationId: string): Promise<Application | null> {
     try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+
       const { data, error } = await supabase
         .from('applications')
         .select('*')
@@ -175,6 +200,11 @@ export class ApplicationService {
 
   async markApplicationAsViewed(applicationId: string): Promise<void> {
     try {
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping application view tracking');
+        return;
+      }
+
       const { error } = await supabase
         .from('applications')
         .update({
@@ -280,6 +310,10 @@ export class ApplicationService {
 
   async withdrawApplication(applicationId: string): Promise<void> {
     try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+
       // First check if application exists and is withdrawable
       const { data: existingApp, error: fetchError } = await supabase
         .from('applications')
