@@ -64,14 +64,6 @@ export function useAuth() {
     try {
       setBlockCheckLoading(true);
       if (!authState.user) return;
-        console.warn('Supabase not configured - skipping user status check');
-        setAuthState(prev => ({ ...prev, user: null, loading: false }));
-      // Check if Supabase is configured before attempting request
-      if (!isSupabaseConfigured()) {
-        console.log('⚠️ [useAuth] Supabase not configured, skipping user status check');
-        setIsBlocked(false);
-        return;
-      }
       
       console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
       
