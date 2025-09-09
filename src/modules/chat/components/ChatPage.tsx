@@ -5,6 +5,7 @@ import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { CollaborationRequestModal } from './CollaborationRequestModal';
 import { AIChatPanel } from './AIChatPanel';
+import { MessageBubble } from './MessageBubble';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
