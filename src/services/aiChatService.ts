@@ -84,13 +84,16 @@ export class AIChatService {
         throw new Error('Слишком много запросов к AI. Попробуйте позже.');
       }
 
+      // Get user roles and conversation history
+      const { userRoles, conversationHistory } = await this.getConversationContext(threadId);
+
       // Save user question
       const userMessage = await this.sendAIMessage(threadId, 'user_question', question, {
         userId: userId
       });
 
       // Generate AI response
-      const aiResponse = await this.generateAIResponse(threadId, question);
+      const aiResponse = await this.generateAIResponse(threadId, question, conversationHistory, userRoles);
       
       // Save AI response
       const aiMessage = await this.sendAIMessage(threadId, 'ai_response', aiResponse.content, aiResponse.metadata);
@@ -116,8 +119,11 @@ export class AIChatService {
         return null;
       }
 
+      // Get user roles for context
+      const { userRoles } = await this.getConversationContext(threadId);
+      
       // Analyze conversation
-      const analysis = await this.performConversationAnalysis(messages);
+      const analysis = await this.performConversationAnalysis(messages, userRoles);
       
       // Cache result
       this.analysisCache.set(cacheKey, {
@@ -175,14 +181,85 @@ export class AIChatService {
     }
   }
 
-  private async generateAIResponse(threadId: string, question: string): Promise<{ content: string; metadata: Record<string, any> }> {
+  async getConversationContext(threadId: string): Promise<{ userRoles: { user1: string; user2: string }; conversationHistory: ChatMessage[] }> {
+    try {
+      // Get thread info to identify users
+      const { data: thread } = await supabase
+        .from(TABLES.AI_CHAT_THREADS)
+        .select('user1_id, user2_id')
+        .eq('id', threadId)
+        .single();
+      
+      if (!thread) throw new Error('Thread not found');
+      
+      // Get user profiles to determine roles
+      const { data: profiles } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('user_id, full_name, user_type')
+        .in('user_id', [thread.user1_id, thread.user2_id]);
+      
+      const user1Profile = profiles?.find(p => p.user_id === thread.user1_id);
+      const user2Profile = profiles?.find(p => p.user_id === thread.user2_id);
+      
+      // Get conversation messages (last 15 messages)
+      const { data: messages } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('*')
+        .or(`and(sender_id.eq.${thread.user1_id},receiver_id.eq.${thread.user2_id}),and(sender_id.eq.${thread.user2_id},receiver_id.eq.${thread.user1_id})`)
+        .order('timestamp', { ascending: false })
+        .limit(15);
+      
+      const conversationHistory = (messages || [])
+        .reverse()
+        .map(msg => ({
+          id: msg.id,
+          senderId: msg.sender_id,
+          receiverId: msg.receiver_id,
+          messageContent: msg.message_content,
+          messageType: msg.message_type,
+          timestamp: msg.timestamp,
+          isRead: msg.is_read,
+          metadata: msg.metadata || {}
+        }));
+      
+      return {
+        userRoles: {
+          user1: user1Profile?.user_type || 'пользователь',
+          user2: user2Profile?.user_type || 'пользователь'
+        },
+        conversationHistory
+      };
+    } catch (error) {
+      console.error('Failed to get conversation context:', error);
+      return {
+        userRoles: { user1: 'пользователь', user2: 'пользователь' },
+        conversationHistory: []
+      };
+    }
+  }
+
+  private async generateAIResponse(
+    threadId: string, 
+    question: string, 
+    conversationHistory: ChatMessage[],
+    userRoles: { user1: string; user2: string }
+  ): Promise<{ content: string; metadata: Record<string, any> }> {
     try {
       // Get conversation context
       const messages = await this.getThreadMessages(threadId);
-      const context = messages.slice(-10).map(m => `${m.messageType}: ${m.content}`).join('\n');
+      
+      // Build comprehensive context
+      const historyContext = conversationHistory.length > 0 
+        ? conversationHistory.map(msg => {
+            const role = msg.senderId === threadId ? userRoles.user1 : userRoles.user2;
+            return `${role}: ${msg.messageContent}`;
+          }).join('\n')
+        : 'Диалог только начался';
+      
+      const aiContext = messages.slice(-5).map(m => `${m.messageType}: ${m.content}`).join('\n');
 
       // Simulate AI response (in real implementation, call OpenAI API)
-      const response = await this.callAIService(question, context);
+      const response = await this.callAIService(question, historyContext, userRoles);
       
       return {
         content: response.content,
@@ -201,14 +278,21 @@ export class AIChatService {
     }
   }
 
-  private async performConversationAnalysis(messages: ChatMessage[]): Promise<AIAnalysisResult> {
+  private async performConversationAnalysis(messages: ChatMessage[], userRoles?: { user1: string; user2: string }): Promise<AIAnalysisResult> {
     try {
       // Get recent messages for analysis
-      const recentMessages = messages.slice(-5);
-      const conversationText = recentMessages.map(m => m.messageContent).join('\n');
+      const recentMessages = messages.slice(-10); // Увеличиваем до 10 последних сообщений
+      
+      // Format messages with roles for better analysis
+      const formattedMessages = recentMessages.map(msg => {
+        const senderRole = userRoles ? 
+          (userRoles.user1 === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель') + ' (' + msg.senderId.substring(0, 8) + ')' :
+          'Пользователь (' + msg.senderId.substring(0, 8) + ')';
+        return `${senderRole}: ${msg.messageContent}`;
+      });
 
       // Simulate AI analysis (in real implementation, call OpenAI API)
-      const analysis = await this.callAIAnalysis(conversationText);
+      const analysis = await this.callAIAnalysis(formattedMessages, userRoles);
       
       return analysis;
     } catch (error) {
@@ -223,7 +307,11 @@ export class AIChatService {
     }
   }
 
-  private async callAIService(question: string, context: string): Promise<{ content: string; confidence: number; suggestions: string[] }> {
+  private async callAIService(
+    question: string, 
+    conversationHistory: string, 
+    userRoles: { user1: string; user2: string }
+  ): Promise<{ content: string; confidence: number; suggestions: string[] }> {
     try {
       // Call OpenAI API for real analysis
       const response = await fetch('/api/ai-chat-analysis', {
@@ -233,7 +321,8 @@ export class AIChatService {
         },
         body: JSON.stringify({
           question,
-          context,
+          conversationHistory,
+          userRoles,
           type: 'user_question'
         })
       });
@@ -278,7 +367,10 @@ export class AIChatService {
     }
   }
 
-  private async callAIAnalysis(conversationText: string): Promise<AIAnalysisResult> {
+  private async callAIAnalysis(
+    formattedMessages: string[], 
+    userRoles?: { user1: string; user2: string }
+  ): Promise<AIAnalysisResult> {
     try {
       // Call real AI analysis service
       const response = await fetch('/api/ai-chat-analysis', {
@@ -287,7 +379,8 @@ export class AIChatService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: conversationText.split('\n').map(line => ({ content: line })),
+          formattedMessages,
+          userRoles,
           analysisType: 'conversation_flow'
         })
       });
@@ -302,7 +395,7 @@ export class AIChatService {
       console.warn('AI analysis failed, using intelligent fallback:', error);
       
       // Intelligent analysis based on conversation content
-      const text = conversationText.toLowerCase();
+      const text = formattedMessages.join('\n').toLowerCase();
       
       // Analyze keywords and patterns
       const positiveWords = ['спасибо', 'отлично', 'согласен', 'хорошо', 'интересно', 'подходит', 'да', 'понятно'];
@@ -321,11 +414,17 @@ export class AIChatService {
       let nextSteps: string[] = [];
       let riskFactors: string[] = [];
       
+      // Add role-specific analysis
+      const roleContext = userRoles ? 
+        `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
+        'Диалог между участниками';
+      
       // Determine status based on analysis
       if (positiveCount > negativeCount && businessCount > 0) {
         conversationStatus = 'constructive';
         sentiment = 'positive';
         suggestions = [
+          roleContext,
           'Диалог развивается позитивно',
           'Обе стороны проявляют заинтересованность',
           'Обсуждаются деловые вопросы'
@@ -339,6 +438,7 @@ export class AIChatService {
         conversationStatus = 'concerning';
         sentiment = 'negative';
         suggestions = [
+          roleContext,
           'Возможны разногласия в ожиданиях',
           'Стоит прояснить спорные моменты'
         ];
@@ -351,6 +451,7 @@ export class AIChatService {
       } else if (questionCount > 2) {
         conversationStatus = 'neutral';
         suggestions = [
+          roleContext,
           'Активно задаются вопросы',
           'Стороны изучают возможности'
         ];
@@ -360,7 +461,7 @@ export class AIChatService {
           'Уточните детали проекта'
         ];
       } else {
-        suggestions = ['Диалог в начальной стадии'];
+        suggestions = [roleContext, 'Диалог в начальной стадии'];
         nextSteps = ['Расскажите больше о себе', 'Задайте вопросы партнеру'];
       }
       
@@ -369,7 +470,7 @@ export class AIChatService {
         sentiment,
         suggestions,
         nextSteps,
-        confidence: Math.min(0.9, 0.5 + (businessCount * 0.1) + (Math.abs(positiveCount - negativeCount) * 0.05)),
+        confidence: Math.min(0.9, 0.5 + (businessCount * 0.1) + (Math.abs(positiveCount - negativeCount) * 0.05) + (formattedMessages.length * 0.02)),
         riskFactors: riskFactors.length > 0 ? riskFactors : undefined
       };
     }
