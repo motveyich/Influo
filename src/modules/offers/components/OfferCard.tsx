@@ -13,9 +13,10 @@ interface OfferCardProps {
   onModify?: (offerId: string) => void;
   onLeaveReview?: (offerId: string) => void;
   showSenderActions?: boolean;
+  currentUserId?: string;
 }
 
-export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false }: OfferCardProps) {
+export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false, currentUserId }: OfferCardProps) {
   const { t } = useTranslation();
 
   // Check if this is an application (not a traditional offer)
@@ -243,13 +244,16 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <span className="text-sm font-medium text-green-800">
                   Предложение принято! Управляйте сделкой.
                 </span>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => onCreatePayment?.(offer.offerId)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                >
-                  <DollarSign className="w-3 h-3" />
+                {/* Кнопка оплаты только для инфлюенсера в сделке */}
+                {currentUserId === offer.influencerId && (
+                  <button
+                    onClick={() => onCreatePayment?.(offer.offerId)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <DollarSign className="w-3 h-3" />
+                    <span>Оплата</span>
+                  </button>
+                )}
                   <span>Оплата</span>
                 </button>
                 <button
@@ -275,13 +279,16 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 </span>
               </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={() => onCreatePayment?.(offer.offerId)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                >
-                  <DollarSign className="w-3 h-3" />
-                  <span>Оплата</span>
-                </button>
+                {/* Кнопка оплаты только для инфлюенсера в сделке */}
+                {currentUserId === offer.influencerId && (
+                  <button
+                    onClick={() => onCreatePayment?.(offer.offerId)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <DollarSign className="w-3 h-3" />
+                    <span>Оплата</span>
+                  </button>
+                )}
                 <button
                   onClick={() => onManageDeal?.(offer.offerId)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
