@@ -71,12 +71,12 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
     }
   };
 
-  const triggerAnalysis = async (messages?: any[]) => {
+  const triggerAnalysis = async (messages: any[]) => {
     if (!thread || isAnalyzing) return;
 
     try {
       setIsAnalyzing(true);
-      const analysisMessage = await aiChatService.analyzeConversation(thread.id, messages || conversationMessages);
+      const analysisMessage = await aiChatService.analyzeConversation(thread.id, messages);
       
       if (analysisMessage) {
         setMessages(prev => [...prev, analysisMessage]);
@@ -318,28 +318,22 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
         {/* Quick Actions */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
-            onClick={() => setNewMessage('Проанализируй текущий диалог и дай рекомендации')}
+            onClick={() => setNewMessage('Как лучше развить этот диалог?')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Анализ диалога
+            Как развить диалог?
           </button>
           <button
-            onClick={() => setNewMessage('Какие риски видишь в этом диалоге?')}
+            onClick={() => setNewMessage('Оцени ситуацию в переговорах')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Оценка рисков
+            Оценка ситуации
           </button>
           <button
-            onClick={() => setNewMessage('Что делать дальше для успешного сотрудничества?')}
+            onClick={() => setNewMessage('Какие следующие шаги посоветуешь?')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
             Следующие шаги
-          </button>
-          <button
-            onClick={() => triggerAnalysis()}
-            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors"
-          >
-            Анализировать сейчас
           </button>
         </div>
 
