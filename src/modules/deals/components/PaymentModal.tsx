@@ -102,6 +102,28 @@ export function PaymentModal({
           amount: totalAmount
         }
       });
+
+      // Send payment details in a separate message
+      const paymentDetailsMessage = `💳 Реквизиты для оплаты:\n\n` +
+        `💰 Сумма: ${formatCurrency(totalAmount)}\n` +
+        `📋 Тип оплаты: ${getPaymentTypeLabel(paymentType)}\n\n` +
+        `📄 Инструкции:\n${paymentDetails.instructions}\n\n` +
+        (paymentDetails.cardNumber ? `💳 Карта: ${paymentDetails.cardNumber}\n` : '') +
+        (paymentDetails.bankAccount ? `🏦 Счет: ${paymentDetails.bankAccount}\n` : '') +
+        (paymentDetails.paypalEmail ? `📧 PayPal: ${paymentDetails.paypalEmail}\n` : '') +
+        `\n⚠️ Важно: Подтвердите оплату в системе после перевода средств.`;
+
+      await chatService.sendMessage({
+        senderId: currentUserId,
+        receiverId: partnerId,
+        messageContent: paymentDetailsMessage,
+        messageType: 'text',
+        metadata: {
+          dealId: configuredDeal.id,
+          actionType: 'payment_details_sent',
+          containsPaymentInfo: true
+        }
+      });
     } catch (error: any) {
       console.error('Failed to create deal:', error);
       toast.error(error.message || 'Не удалось создать сделку');
