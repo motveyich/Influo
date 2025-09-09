@@ -251,10 +251,22 @@ export function OffersPage() {
   };
 
   const handleCreatePayment = async (offerId: string) => {
+    // Проверяем, что только инфлюенсер может создавать окна оплаты
+    if (!currentUserProfile?.profileCompletion.influencerSetup) {
+      toast.error('Только инфлюенсеры могут создавать окна оплаты');
+      return;
+    }
+    
     // Find the offer to create payment
     const offer = offers.find(o => o.offerId === offerId);
     if (!offer) {
       toast.error('Предложение не найдено');
+      return;
+    }
+    
+    // Проверяем, что текущий пользователь - это инфлюенсер в сделке
+    if (currentUserId !== offer.influencerId) {
+      toast.error('Только инфлюенсер может создать окно оплаты');
       return;
     }
     

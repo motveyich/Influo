@@ -90,38 +90,27 @@ export function PaymentModal({
       // Send notification in chat
       const partnerId = payerId === currentUserId ? payeeId : payerId;
       const { chatService } = await import('../../chat/services/chatService');
+      // Отправляем интерактивное сообщение с кнопкой оплаты
       await chatService.sendMessage({
         senderId: currentUserId,
         receiverId: partnerId,
-        messageContent: `💳 Создано окно оплаты на сумму ${formatCurrency(totalAmount)}. Тип оплаты: ${getPaymentTypeLabel(paymentType)}. Проверьте детали оплаты.`,
-        messageType: 'text',
+        messageContent: `💳 Окно оплаты создано на сумму ${formatCurrency(totalAmount)}`,
+        messageType: 'payment_window',
         metadata: {
           dealId: configuredDeal.id,
           actionType: 'payment_window_created',
           paymentType: paymentType,
-          amount: totalAmount
-        }
-      });
-
-      // Send payment details in a separate message
-      const paymentDetailsMessage = `💳 Реквизиты для оплаты:\n\n` +
-        `💰 Сумма: ${formatCurrency(totalAmount)}\n` +
-        `📋 Тип оплаты: ${getPaymentTypeLabel(paymentType)}\n\n` +
-        `📄 Инструкции:\n${paymentDetails.instructions}\n\n` +
-        (paymentDetails.cardNumber ? `💳 Карта: ${paymentDetails.cardNumber}\n` : '') +
-        (paymentDetails.bankAccount ? `🏦 Счет: ${paymentDetails.bankAccount}\n` : '') +
-        (paymentDetails.paypalEmail ? `📧 PayPal: ${paymentDetails.paypalEmail}\n` : '') +
-        `\n⚠️ Важно: Подтвердите оплату в системе после перевода средств.`;
-
-      await chatService.sendMessage({
-        senderId: currentUserId,
-        receiverId: partnerId,
-        messageContent: paymentDetailsMessage,
-        messageType: 'text',
-        metadata: {
-          dealId: configuredDeal.id,
-          actionType: 'payment_details_sent',
-          containsPaymentInfo: true
+          amount: totalAmount,
+          paymentDetails: paymentDetails,
+          isInteractive: true,
+          buttons: [
+            {
+              id: 'pay_now',
+              label: 'Оплачено',
+              action: 'confirm_payment',
+              dealId: configuredDeal.id
+            }
+          ]
         }
       });
     } catch (error: any) {
