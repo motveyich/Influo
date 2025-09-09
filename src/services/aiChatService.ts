@@ -1,20 +1,24 @@
 import { supabase, TABLES } from '../core/supabase';
-import { AIChatThread, AIChatMessage, AIAnalysisResult, ChatMessage } from '../core/types';
+import { AIChatThread, AIChatMessage, ChatMessage } from '../core/types';
 import { analytics } from '../core/analytics';
 
 export class AIChatService {
+  private activeThreads = new Map<string, AIChatThread>();
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-  private readonly RATE_LIMIT_MAX = 10; // requests per hour
+  private readonly RATE_LIMIT_MAX = 15; // requests per hour
   private readonly RATE_LIMIT_WINDOW = 3600000; // 1 hour
-  private analysisCache = new Map<string, { result: AIAnalysisResult; timestamp: number }>();
-  private readonly CACHE_DURATION = 300000; // 5 minutes
 
   async getOrCreateThread(user1Id: string, user2Id: string): Promise<AIChatThread> {
     try {
-      // Create consistent conversation ID regardless of user order
+      // Create consistent conversation ID
       const conversationId = [user1Id, user2Id].sort().join('_');
       
-      // Try to get existing thread
+      // Check if thread is cached
+      if (this.activeThreads.has(conversationId)) {
+        return this.activeThreads.get(conversationId)!;
+      }
+
+      // Try to get existing thread from database
       const { data: existingThread, error: fetchError } = await supabase
         .from(TABLES.AI_CHAT_THREADS)
         .select('*')
@@ -24,7 +28,9 @@ export class AIChatService {
       if (fetchError) throw fetchError;
 
       if (existingThread) {
-        return this.transformThreadFromDatabase(existingThread);
+        const thread = this.transformThreadFromDatabase(existingThread);
+        this.activeThreads.set(conversationId, thread);
+        return thread;
       }
 
       // Create new thread
@@ -32,7 +38,10 @@ export class AIChatService {
         conversation_id: conversationId,
         user1_id: user1Id,
         user2_id: user2Id,
-        metadata: {},
+        metadata: {
+          created_by_service: true,
+          conversation_type: 'influencer_advertiser'
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -46,11 +55,11 @@ export class AIChatService {
       if (error) throw error;
 
       const thread = this.transformThreadFromDatabase(data);
+      this.activeThreads.set(conversationId, thread);
 
-      // Send welcome message from AI
-      await this.sendAIMessage(thread.id, 'ai_response', 
-        'Привет! Я ваш AI-помощник. Я буду анализировать ваш диалог и предлагать полезные рекомендации для эффективного общения. Задавайте вопросы, если нужна помощь!',
-        { analysisType: 'welcome', confidence: 1.0 }
+      // Send initial AI message
+      await this.sendSystemMessage(thread.id, 
+        'Привет! Я ваш AI-ассистент. Буду анализировать ваш диалог и предлагать персональные рекомендации для эффективного сотрудничества.'
       );
 
       return thread;
@@ -66,7 +75,8 @@ export class AIChatService {
         .from(TABLES.AI_CHAT_MESSAGES)
         .select('*')
         .eq('thread_id', threadId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(50); // Limit to last 50 AI messages
 
       if (error) throw error;
 
@@ -77,84 +87,195 @@ export class AIChatService {
     }
   }
 
-  async sendUserQuestion(threadId: string, question: string, userId: string): Promise<AIChatMessage> {
+  async analyzeConversationWithAI(threadId: string, chatMessages: ChatMessage[]): Promise<AIChatMessage> {
     try {
-      // Check rate limit
-      if (!this.checkRateLimit(userId)) {
-        throw new Error('Слишком много запросов к AI. Попробуйте позже.');
+      if (chatMessages.length < 2) {
+        throw new Error('Недостаточно сообщений для анализа');
       }
 
-      // Get user roles and conversation history
-      const { userRoles, conversationHistory } = await this.getConversationContext(threadId);
+      // Get user roles
+      const userRoles = await this.getUserRoles(threadId);
+      
+      // Prepare messages for AI analysis
+      const formattedMessages = await this.formatMessagesForAI(chatMessages, userRoles);
 
-      // Save user question
-      const userMessage = await this.sendAIMessage(threadId, 'user_question', question, {
-        userId: userId
+      // Call DeepSeek API through Edge Function
+      const analysisResponse = await this.callDeepSeekAPI({
+        messages: formattedMessages,
+        threadId,
+        user1Role: userRoles.user1Role,
+        user2Role: userRoles.user2Role,
+        analysisType: 'conversation_analysis'
       });
 
-      // Generate AI response
-      const aiResponse = await this.generateAIResponse(threadId, question, conversationHistory, userRoles);
-      
-      // Save AI response
-      const aiMessage = await this.sendAIMessage(threadId, 'ai_response', aiResponse.content, aiResponse.metadata);
+      // Save AI analysis message
+      const aiMessage = await this.saveAIMessage(threadId, 'ai_analysis', analysisResponse, {
+        analysis_type: 'conversation_analysis',
+        message_count: chatMessages.length,
+        confidence: 0.9
+      });
+
+      // Track analytics
+      analytics.track('ai_conversation_analyzed', {
+        thread_id: threadId,
+        message_count: chatMessages.length,
+        analysis_length: analysisResponse.length
+      });
 
       return aiMessage;
     } catch (error) {
-      console.error('Failed to send user question:', error);
+      console.error('Failed to analyze conversation with AI:', error);
       throw error;
     }
   }
 
-  async analyzeConversation(threadId: string, messages: ChatMessage[]): Promise<AIChatMessage | null> {
+  async askAIQuestion(threadId: string, question: string, userId: string, chatMessages: ChatMessage[]): Promise<AIChatMessage> {
     try {
-      if (messages.length === 0) return null;
-
-      // Only analyze if we have enough messages and haven't analyzed recently
-      if (messages.length < 2) return null;
-      
-      // Check cache to avoid duplicate analysis
-      const cacheKey = `${threadId}_${messages.length}`;
-      const cached = this.analysisCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        return null;
+      // Check rate limit
+      if (!this.checkRateLimit(userId)) {
+        throw new Error('Слишком много запросов к AI. Попробуйте позже (лимит: 15 запросов в час).');
       }
 
-      // Get user roles for context
-      const { userRoles } = await this.getConversationContext(threadId);
-      
-      // Analyze conversation
-      const analysis = await this.performConversationAnalysis(messages, userRoles);
-      
-      // Cache result
-      this.analysisCache.set(cacheKey, {
-        result: analysis,
-        timestamp: Date.now()
+      // Save user question first
+      await this.saveAIMessage(threadId, 'user_question', question, {
+        user_id: userId,
+        timestamp: new Date().toISOString()
       });
 
-      // Send analysis message
-      const analysisMessage = await this.sendAIMessage(
-        threadId, 
-        'ai_analysis', 
-        this.formatAnalysisMessage(analysis),
-        {
-          analysisType: 'conversation_flow',
-          confidence: analysis.confidence,
-          conversationStatus: analysis.conversationStatus,
-          suggestedActions: analysis.nextSteps
-        }
-      );
+      // Get user roles
+      const userRoles = await this.getUserRoles(threadId);
+      
+      // Prepare context with real chat messages
+      const formattedMessages = await this.formatMessagesForAI(chatMessages, userRoles);
 
-      return analysisMessage;
+      // Call DeepSeek API
+      const aiResponse = await this.callDeepSeekAPI({
+        messages: formattedMessages,
+        userQuestion: question,
+        threadId,
+        user1Role: userRoles.user1Role,
+        user2Role: userRoles.user2Role,
+        analysisType: 'user_question'
+      });
+
+      // Save AI response
+      const aiMessage = await this.saveAIMessage(threadId, 'ai_response', aiResponse, {
+        question: question,
+        user_id: userId,
+        context_messages: formattedMessages.length
+      });
+
+      // Track analytics
+      analytics.track('ai_question_asked', {
+        thread_id: threadId,
+        user_id: userId,
+        question_length: question.length,
+        context_messages: formattedMessages.length
+      });
+
+      return aiMessage;
     } catch (error) {
-      console.error('Failed to analyze conversation:', error);
-      return null; // Don't throw error for analysis failures
+      console.error('Failed to ask AI question:', error);
+      throw error;
     }
   }
 
-  private async sendAIMessage(
-    threadId: string, 
-    messageType: AIChatMessage['messageType'], 
-    content: string, 
+  private async getUserRoles(threadId: string): Promise<{ user1Role: string; user2Role: string; user1Id: string; user2Id: string }> {
+    try {
+      // Get thread info
+      const { data: thread } = await supabase
+        .from(TABLES.AI_CHAT_THREADS)
+        .select('user1_id, user2_id')
+        .eq('id', threadId)
+        .single();
+      
+      if (!thread) throw new Error('Thread not found');
+      
+      // Get user profiles
+      const { data: profiles } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('user_id, user_type, full_name')
+        .in('user_id', [thread.user1_id, thread.user2_id]);
+      
+      const user1Profile = profiles?.find(p => p.user_id === thread.user1_id);
+      const user2Profile = profiles?.find(p => p.user_id === thread.user2_id);
+      
+      return {
+        user1Role: this.getUserTypeLabel(user1Profile?.user_type || 'user'),
+        user2Role: this.getUserTypeLabel(user2Profile?.user_type || 'user'),
+        user1Id: thread.user1_id,
+        user2Id: thread.user2_id
+      };
+    } catch (error) {
+      console.error('Failed to get user roles:', error);
+      return {
+        user1Role: 'Пользователь',
+        user2Role: 'Пользователь',
+        user1Id: '',
+        user2Id: ''
+      };
+    }
+  }
+
+  private getUserTypeLabel(userType: string): string {
+    switch (userType) {
+      case 'influencer':
+        return 'Инфлюенсер';
+      case 'advertiser':
+        return 'Рекламодатель';
+      default:
+        return 'Пользователь';
+    }
+  }
+
+  private async formatMessagesForAI(chatMessages: ChatMessage[], userRoles: any): Promise<ChatMessage[]> {
+    // Take only last 15 messages for optimal context
+    const recentMessages = chatMessages.slice(-15);
+    
+    return recentMessages.map(msg => ({
+      content: msg.messageContent,
+      senderId: msg.senderId,
+      receiverId: msg.receiverId,
+      timestamp: msg.timestamp,
+      senderRole: msg.senderId === userRoles.user1Id ? userRoles.user1Role : userRoles.user2Role,
+      receiverRole: msg.senderId === userRoles.user1Id ? userRoles.user2Role : userRoles.user1Role
+    }));
+  }
+
+  private async callDeepSeekAPI(request: AnalysisRequest): Promise<string> {
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-analysis`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Edge function error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'AI analysis failed');
+      }
+
+      return result.response;
+    } catch (error) {
+      console.error('Failed to call DeepSeek API:', error);
+      throw error;
+    }
+  }
+
+  private async saveAIMessage(
+    threadId: string,
+    messageType: AIChatMessage['messageType'],
+    content: string,
     metadata: Record<string, any> = {}
   ): Promise<AIChatMessage> {
     try {
@@ -162,7 +283,11 @@ export class AIChatService {
         thread_id: threadId,
         message_type: messageType,
         content: content,
-        metadata: metadata,
+        metadata: {
+          ...metadata,
+          generated_at: new Date().toISOString(),
+          model: 'deepseek-reasoner'
+        },
         created_at: new Date().toISOString()
       };
 
@@ -176,351 +301,16 @@ export class AIChatService {
 
       return this.transformMessageFromDatabase(data);
     } catch (error) {
-      console.error('Failed to send AI message:', error);
+      console.error('Failed to save AI message:', error);
       throw error;
     }
   }
 
-  async getConversationContext(threadId: string): Promise<{ userRoles: { user1: string; user2: string }; conversationHistory: ChatMessage[] }> {
-    try {
-      // Get thread info to identify users
-      const { data: thread } = await supabase
-        .from(TABLES.AI_CHAT_THREADS)
-        .select('user1_id, user2_id')
-        .eq('id', threadId)
-        .single();
-      
-      if (!thread) throw new Error('Thread not found');
-      
-      // Get user profiles to determine roles
-      const { data: profiles } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('user_id, full_name, user_type')
-        .in('user_id', [thread.user1_id, thread.user2_id]);
-      
-      const user1Profile = profiles?.find(p => p.user_id === thread.user1_id);
-      const user2Profile = profiles?.find(p => p.user_id === thread.user2_id);
-      
-      // Get conversation messages (last 15 messages)
-      const { data: messages } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('*')
-        .or(`and(sender_id.eq.${thread.user1_id},receiver_id.eq.${thread.user2_id}),and(sender_id.eq.${thread.user2_id},receiver_id.eq.${thread.user1_id})`)
-        .order('timestamp', { ascending: false })
-        .limit(15);
-      
-      const conversationHistory = (messages || [])
-        .reverse()
-        .map(msg => ({
-          id: msg.id,
-          senderId: msg.sender_id,
-          receiverId: msg.receiver_id,
-          messageContent: msg.message_content,
-          messageType: msg.message_type,
-          timestamp: msg.timestamp,
-          isRead: msg.is_read,
-          metadata: msg.metadata || {}
-        }));
-      
-      return {
-        userRoles: {
-          user1: user1Profile?.user_type || 'пользователь',
-          user2: user2Profile?.user_type || 'пользователь'
-        },
-        conversationHistory
-      };
-    } catch (error) {
-      console.error('Failed to get conversation context:', error);
-      return {
-        userRoles: { user1: 'пользователь', user2: 'пользователь' },
-        conversationHistory: []
-      };
-    }
-  }
-
-  private async generateAIResponse(
-    threadId: string, 
-    question: string, 
-    conversationHistory: ChatMessage[],
-    userRoles: { user1: string; user2: string }
-  ): Promise<{ content: string; metadata: Record<string, any> }> {
-    try {
-      // Get conversation context
-      const messages = await this.getThreadMessages(threadId);
-      
-      // Build comprehensive context
-      const historyContext = conversationHistory.length > 0 
-        ? conversationHistory.map(msg => {
-            const role = msg.senderId === threadId ? userRoles.user1 : userRoles.user2;
-            return `${role}: ${msg.messageContent}`;
-          }).join('\n')
-        : 'Диалог только начался';
-      
-      const aiContext = messages.slice(-5).map(m => `${m.messageType}: ${m.content}`).join('\n');
-
-      // Simulate AI response (in real implementation, call OpenAI API)
-      const response = await this.callAIService(question, historyContext, userRoles);
-      
-      return {
-        content: response.content,
-        metadata: {
-          confidence: response.confidence,
-          analysisType: 'user_question',
-          suggestedActions: response.suggestions
-        }
-      };
-    } catch (error) {
-      console.error('Failed to generate AI response:', error);
-      return {
-        content: 'Извините, произошла ошибка при обработке вашего вопроса. Попробуйте переформулировать или задать вопрос позже.',
-        metadata: { error: true }
-      };
-    }
-  }
-
-  private async performConversationAnalysis(messages: ChatMessage[], userRoles?: { user1: string; user2: string }): Promise<AIAnalysisResult> {
-    try {
-      // Get recent messages for analysis
-      const recentMessages = messages.slice(-10); // Увеличиваем до 10 последних сообщений
-      
-      // Format messages with roles for better analysis
-      const formattedMessages = recentMessages.map(msg => {
-        const senderRole = userRoles ? 
-          (userRoles.user1 === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель') + ' (' + msg.senderId.substring(0, 8) + ')' :
-          'Пользователь (' + msg.senderId.substring(0, 8) + ')';
-        return `${senderRole}: ${msg.messageContent}`;
-      });
-
-      // Simulate AI analysis (in real implementation, call OpenAI API)
-      const analysis = await this.callAIAnalysis(formattedMessages, userRoles);
-      
-      return analysis;
-    } catch (error) {
-      console.error('Failed to perform conversation analysis:', error);
-      return {
-        conversationStatus: 'neutral',
-        sentiment: 'neutral',
-        suggestions: [],
-        nextSteps: [],
-        confidence: 0
-      };
-    }
-  }
-
-  private async callAIService(
-    question: string, 
-    conversationHistory: string, 
-    userRoles: { user1: string; user2: string }
-  ): Promise<{ content: string; confidence: number; suggestions: string[] }> {
-    try {
-      // Call OpenAI API for real analysis
-      const response = await fetch('/api/ai-chat-analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question,
-          conversationHistory,
-          userRoles,
-          type: 'user_question'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('AI service unavailable');
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.warn('AI service failed, using fallback response:', error);
-      
-      // Intelligent fallback based on question content
-      const questionLower = question.toLowerCase();
-      
-      if (questionLower.includes('бюджет') || questionLower.includes('цена') || questionLower.includes('стоимость')) {
-        return {
-          content: 'Вопрос о бюджете важен для успешного сотрудничества. Рекомендую обсудить диапазон цен и условия оплаты открыто.',
-          confidence: 0.8,
-          suggestions: ['Уточните бюджет', 'Обсудите условия оплаты', 'Предложите варианты']
-        };
-      } else if (questionLower.includes('сроки') || questionLower.includes('время') || questionLower.includes('дедлайн')) {
-        return {
-          content: 'Четкие временные рамки помогают избежать недопониманий. Обсудите реалистичные сроки с учетом качества работы.',
-          confidence: 0.8,
-          suggestions: ['Установите дедлайны', 'Обсудите этапы', 'Согласуйте график']
-        };
-      } else if (questionLower.includes('портфолио') || questionLower.includes('примеры') || questionLower.includes('работы')) {
-        return {
-          content: 'Демонстрация портфолио повышает доверие. Покажите релевантные примеры работ и объясните подход к проектам.',
-          confidence: 0.8,
-          suggestions: ['Покажите портфолио', 'Расскажите о подходе', 'Поделитесь кейсами']
-        };
-      } else {
-        return {
-          content: 'Для эффективного сотрудничества важно открытое общение. Задавайте вопросы, делитесь ожиданиями и будьте честными.',
-          confidence: 0.7,
-          suggestions: ['Задайте уточняющие вопросы', 'Поделитесь ожиданиями', 'Обсудите детали']
-        };
-      }
-    }
-  }
-
-  private async callAIAnalysis(
-    formattedMessages: string[], 
-    userRoles?: { user1: string; user2: string }
-  ): Promise<AIAnalysisResult> {
-    try {
-      // Call real AI analysis service
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-analysis`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: formattedMessages.map(msg => ({
-            content: msg,
-            senderId: 'user',
-            timestamp: new Date().toISOString()
-          })),
-          userRoles,
-          analysisType: 'conversation_flow'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('AI analysis service unavailable');
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.warn('AI analysis failed, using intelligent fallback:', error);
-      
-      // Intelligent analysis based on conversation content
-      const text = formattedMessages.join('\n').toLowerCase();
-      
-      // Analyze keywords and patterns
-      const positiveWords = ['спасибо', 'отлично', 'согласен', 'хорошо', 'интересно', 'подходит', 'да', 'понятно'];
-      const negativeWords = ['нет', 'не подходит', 'проблема', 'сложно', 'невозможно', 'не согласен', 'отказ'];
-      const businessWords = ['бюджет', 'сроки', 'условия', 'договор', 'оплата', 'встреча', 'проект', 'работа'];
-      const questionWords = ['как', 'что', 'когда', 'где', 'почему', 'можно', 'возможно', '?'];
-      
-      const positiveCount = positiveWords.filter(word => text.includes(word)).length;
-      const negativeCount = negativeWords.filter(word => text.includes(word)).length;
-      const businessCount = businessWords.filter(word => text.includes(word)).length;
-      const questionCount = questionWords.filter(word => text.includes(word)).length;
-      
-      let conversationStatus: 'constructive' | 'neutral' | 'concerning' = 'neutral';
-      let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
-      let suggestions: string[] = [];
-      let nextSteps: string[] = [];
-      let riskFactors: string[] = [];
-      
-      // Add role-specific analysis
-      const roleContext = userRoles ? 
-        `Диалог между ${userRoles.user1} и ${userRoles.user2}` : 
-        'Диалог между участниками';
-      
-      // Determine status based on analysis
-      if (positiveCount > negativeCount && businessCount > 0) {
-        conversationStatus = 'constructive';
-        sentiment = 'positive';
-        suggestions = [
-          roleContext,
-          'Диалог развивается позитивно',
-          'Обе стороны проявляют заинтересованность',
-          'Обсуждаются деловые вопросы'
-        ];
-        nextSteps = [
-          'Переходите к конкретным деталям',
-          'Обсудите следующие шаги',
-          'Зафиксируйте договоренности'
-        ];
-      } else if (negativeCount > positiveCount) {
-        conversationStatus = 'concerning';
-        sentiment = 'negative';
-        suggestions = [
-          roleContext,
-          'Возможны разногласия в ожиданиях',
-          'Стоит прояснить спорные моменты'
-        ];
-        nextSteps = [
-          'Уточните требования',
-          'Найдите компромисс',
-          'Обратитесь к модератору при необходимости'
-        ];
-        riskFactors = ['Потенциальное недопонимание', 'Разные ожидания'];
-      } else if (questionCount > 2) {
-        conversationStatus = 'neutral';
-        suggestions = [
-          roleContext,
-          'Активно задаются вопросы',
-          'Стороны изучают возможности'
-        ];
-        nextSteps = [
-          'Предоставьте подробные ответы',
-          'Покажите примеры работ',
-          'Уточните детали проекта'
-        ];
-      } else {
-        suggestions = [roleContext, 'Диалог в начальной стадии'];
-        nextSteps = ['Расскажите больше о себе', 'Задайте вопросы партнеру'];
-      }
-      
-      return {
-        conversationStatus,
-        sentiment,
-        suggestions,
-        nextSteps,
-        confidence: Math.min(0.9, 0.5 + (businessCount * 0.1) + (Math.abs(positiveCount - negativeCount) * 0.05) + (formattedMessages.length * 0.02)),
-        riskFactors: riskFactors.length > 0 ? riskFactors : undefined
-      };
-    }
-  }
-
-  private formatAnalysisMessage(analysis: AIAnalysisResult): string {
-    let message = '';
-
-    // Status
-    if (analysis.conversationStatus === 'constructive') {
-      message += '✅ Диалог развивается конструктивно\n\n';
-    } else if (analysis.conversationStatus === 'concerning') {
-      message += '⚠️ Обнаружены потенциальные проблемы\n\n';
-    } else {
-      message += 'ℹ️ Диалог в нейтральной стадии\n\n';
-    }
-
-    // Suggestions
-    if (analysis.suggestions.length > 0) {
-      message += '💡 Наблюдения:\n';
-      analysis.suggestions.forEach(suggestion => {
-        message += `• ${suggestion}\n`;
-      });
-      message += '\n';
-    }
-
-    // Next steps
-    if (analysis.nextSteps.length > 0) {
-      message += '🎯 Рекомендации:\n';
-      analysis.nextSteps.forEach(step => {
-        message += `• ${step}\n`;
-      });
-      message += '\n';
-    }
-
-    // Risk factors
-    if (analysis.riskFactors && analysis.riskFactors.length > 0) {
-      message += '⚠️ Факторы риска:\n';
-      analysis.riskFactors.forEach(risk => {
-        message += `• ${risk}\n`;
-      });
-    }
-
-    return message.trim();
+  private async sendSystemMessage(threadId: string, content: string): Promise<AIChatMessage> {
+    return this.saveAIMessage(threadId, 'ai_response', content, {
+      system_message: true,
+      welcome: true
+    });
   }
 
   private checkRateLimit(userId: string): boolean {
@@ -528,7 +318,6 @@ export class AIChatService {
     const userLimit = this.rateLimitMap.get(userId);
 
     if (!userLimit || now > userLimit.resetTime) {
-      // Reset or create new limit
       this.rateLimitMap.set(userId, {
         count: 1,
         resetTime: now + this.RATE_LIMIT_WINDOW
@@ -567,23 +356,18 @@ export class AIChatService {
     };
   }
 
-  // Public method for external analysis triggers
-  async triggerConversationAnalysis(user1Id: string, user2Id: string, messages: ChatMessage[]): Promise<void> {
+  // Auto-trigger analysis when new messages are added
+  async triggerAutoAnalysis(user1Id: string, user2Id: string, chatMessages: ChatMessage[]): Promise<void> {
     try {
+      // Only auto-analyze every 3 messages to avoid spam
+      if (chatMessages.length % 3 !== 0) return;
+      
       const thread = await this.getOrCreateThread(user1Id, user2Id);
-      await this.analyzeConversation(thread.id, messages);
+      await this.analyzeConversationWithAI(thread.id, chatMessages);
     } catch (error) {
-      console.error('Failed to trigger conversation analysis:', error);
+      console.error('Failed to trigger auto analysis:', error);
+      // Don't throw error for auto-analysis failures
     }
-  }
-
-  // Track analytics
-  private trackAIInteraction(type: string, userId: string, metadata: Record<string, any> = {}) {
-    analytics.track('ai_chat_interaction', {
-      interaction_type: type,
-      user_id: userId,
-      ...metadata
-    });
   }
 }
 

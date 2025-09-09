@@ -864,7 +864,7 @@ export function ChatPage() {
       </div>
 
       {/* AI Chat Panel */}
-      {selectedConversation && (
+      {selectedConversation && showAIPanel && (
         <AIChatPanel
           user1Id={currentUserId}
           user2Id={selectedConversation.participantId}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AIChatMessage, AIChatThread } from '../../../core/types';
+import { AIChatMessage, AIChatThread, ChatMessage } from '../../../core/types';
 import { aiChatService } from '../../../services/aiChatService';
-import { Bot, Send, Lightbulb, TrendingUp, AlertTriangle, MessageCircle, Minimize2, Maximize2, HelpCircle } from 'lucide-react';
+import { Bot, Send, Brain, Minimize2, Maximize2, Zap, BarChart3, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -10,59 +10,56 @@ interface AIChatPanelProps {
   user2Id: string;
   isVisible: boolean;
   onToggleVisibility: () => void;
-  conversationMessages: any[];
+  conversationMessages: ChatMessage[];
 }
 
-export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, conversationMessages }: AIChatPanelProps) {
+export function AIChatPanel({ 
+  user1Id, 
+  user2Id, 
+  isVisible, 
+  onToggleVisibility, 
+  conversationMessages 
+}: AIChatPanelProps) {
   const [thread, setThread] = useState<AIChatThread | null>(null);
-  const [messages, setMessages] = useState<AIChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [aiMessages, setAiMessages] = useState<AIChatMessage[]>([]);
+  const [userQuestion, setUserQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Initialize AI thread when panel opens
   useEffect(() => {
     if (user1Id && user2Id && isVisible) {
-      initializeThread();
+      initializeAIThread();
     }
   }, [user1Id, user2Id, isVisible]);
 
+  // Auto-trigger analysis when conversation messages change
   useEffect(() => {
-    // Listen for manual analysis triggers
-    const handleAnalysisTrigger = (event: any) => {
-      if (event.detail?.messages && thread) {
-        triggerAnalysis(event.detail.messages);
-      }
-    };
-
-    window.addEventListener('triggerAIAnalysis', handleAnalysisTrigger);
-    
-    // Auto-trigger analysis when conversation messages change
-    if (thread && conversationMessages.length >= 2) {
-      const shouldAnalyze = conversationMessages.length % 3 === 0 || 
-                           (conversationMessages.length >= 2 && messages.length === 1); // First analysis
+    if (thread && conversationMessages.length >= 2 && autoAnalysisEnabled) {
+      // Trigger analysis every 3 new messages
+      const shouldAnalyze = conversationMessages.length % 3 === 0;
       if (shouldAnalyze) {
-        triggerAnalysis(conversationMessages);
+        triggerConversationAnalysis();
       }
     }
+  }, [conversationMessages, thread, autoAnalysisEnabled]);
 
-    return () => {
-      window.removeEventListener('triggerAIAnalysis', handleAnalysisTrigger);
-    };
-  }, [thread, conversationMessages, messages.length]);
-
+  // Scroll to bottom when new AI messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [aiMessages]);
 
-  const initializeThread = async () => {
+  const initializeAIThread = async () => {
     try {
       setIsLoading(true);
       const aiThread = await aiChatService.getOrCreateThread(user1Id, user2Id);
       setThread(aiThread);
       
-      const threadMessages = await aiChatService.getThreadMessages(aiThread.id);
-      setMessages(threadMessages);
+      // Load existing AI messages for this thread
+      const existingMessages = await aiChatService.getThreadMessages(aiThread.id);
+      setAiMessages(existingMessages);
     } catch (error) {
       console.error('Failed to initialize AI thread:', error);
       toast.error('Не удалось инициализировать AI-помощника');
@@ -71,56 +68,59 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
     }
   };
 
-  const triggerAnalysis = async (messages: any[]) => {
-    if (!thread || isAnalyzing) return;
+  const triggerConversationAnalysis = async () => {
+    if (!thread || isAnalyzing || conversationMessages.length < 2) return;
 
     try {
       setIsAnalyzing(true);
-      const analysisMessage = await aiChatService.analyzeConversation(thread.id, messages);
       
-      if (analysisMessage) {
-        setMessages(prev => [...prev, analysisMessage]);
-      }
+      // Analyze conversation using real messages
+      const analysisMessage = await aiChatService.analyzeConversationWithAI(
+        thread.id, 
+        conversationMessages
+      );
+      
+      // Add analysis message to UI
+      setAiMessages(prev => [...prev, analysisMessage]);
+      
     } catch (error) {
-      console.error('Failed to trigger analysis:', error);
+      console.error('Failed to analyze conversation:', error);
+      toast.error('Не удалось проанализировать диалог');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const sendQuestion = async () => {
-    if (!newMessage.trim() || !thread) return;
+  const sendUserQuestion = async () => {
+    if (!userQuestion.trim() || !thread) return;
 
     try {
       setIsLoading(true);
-      const userMessage = {
-        id: `temp_${Date.now()}`,
+      
+      // Save user question and get AI response
+      const aiResponse = await aiChatService.askAIQuestion(
+        thread.id,
+        userQuestion,
+        user1Id, // Current user asking the question
+        conversationMessages
+      );
+      
+      // Add both user question and AI response to UI
+      const userQuestionMessage: AIChatMessage = {
+        id: `user_${Date.now()}`,
         threadId: thread.id,
-        messageType: 'user_question' as const,
-        content: newMessage,
-        metadata: {},
+        messageType: 'user_question',
+        content: userQuestion,
+        metadata: { user_id: user1Id },
         createdAt: new Date().toISOString()
       };
-
-      // Optimistically add user message
-      setMessages(prev => [...prev, userMessage]);
-      setNewMessage('');
-
-      // Send to AI service
-      const aiResponse = await aiChatService.sendUserQuestion(thread.id, newMessage, user1Id);
       
-      // Replace temp message and add AI response
-      setMessages(prev => [
-        ...prev.filter(m => m.id !== userMessage.id),
-        userMessage,
-        aiResponse
-      ]);
+      setAiMessages(prev => [...prev, userQuestionMessage, aiResponse]);
+      setUserQuestion('');
+      
     } catch (error: any) {
-      console.error('Failed to send question:', error);
+      console.error('Failed to send user question:', error);
       toast.error(error.message || 'Не удалось отправить вопрос AI');
-      
-      // Remove temp message on error
-      setMessages(prev => prev.filter(m => m.id !== `temp_${Date.now()}`));
     } finally {
       setIsLoading(false);
     }
@@ -130,29 +130,29 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const getMessageIcon = (messageType: AIChatMessage['messageType']) => {
+  const getMessageTypeIcon = (messageType: AIChatMessage['messageType']) => {
     switch (messageType) {
       case 'user_question':
-        return <HelpCircle className="w-4 h-4 text-blue-600" />;
+        return '🙋‍♂️';
       case 'ai_response':
-        return <Bot className="w-4 h-4 text-purple-600" />;
+        return '🤖';
       case 'ai_analysis':
-        return <TrendingUp className="w-4 h-4 text-green-600" />;
+        return '📊';
       case 'ai_suggestion':
-        return <Lightbulb className="w-4 h-4 text-yellow-600" />;
+        return '💡';
       default:
-        return <MessageCircle className="w-4 h-4 text-gray-600" />;
+        return '💬';
     }
   };
 
   const getMessageTypeLabel = (messageType: AIChatMessage['messageType']) => {
     switch (messageType) {
       case 'user_question':
-        return 'Вопрос';
+        return 'Ваш вопрос';
       case 'ai_response':
         return 'AI Ответ';
       case 'ai_analysis':
-        return 'Анализ';
+        return 'Анализ диалога';
       case 'ai_suggestion':
         return 'Рекомендация';
       default:
@@ -160,43 +160,43 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
     }
   };
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'constructive':
-        return 'text-green-600 bg-green-50';
-      case 'concerning':
-        return 'text-red-600 bg-red-50';
-      default:
-        return 'text-blue-600 bg-blue-50';
-    }
-  };
-
+  // Collapsed view when panel is hidden
   if (!isVisible) {
     return (
       <div className="w-12 bg-white border-l border-gray-300 flex flex-col items-center py-4">
         <button
           onClick={onToggleVisibility}
-          className="p-2 text-gray-400 hover:text-purple-600 transition-colors"
-          title="Открыть AI-помощника"
+          className="p-2 text-gray-400 hover:text-purple-600 transition-colors relative"
+          title="Открыть AI-ассистента"
         >
           <Bot className="w-6 h-6" />
+          {aiMessages.length > 0 && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full"></div>
+          )}
         </button>
+        {conversationMessages.length >= 2 && (
+          <div className="mt-2 text-xs text-gray-500 text-center px-1">
+            AI готов к анализу
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="w-80 bg-white border-l border-gray-300 flex flex-col">
-      {/* Header */}
+    <div className="w-96 bg-white border-l border-gray-300 flex flex-col">
+      {/* AI Panel Header */}
       <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
+              <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">AI-Помощник</h3>
-              <p className="text-xs text-gray-600">Анализ диалога и рекомендации</p>
+              <h3 className="text-sm font-semibold text-gray-900">DeepSeek AI Ассистент</h3>
+              <p className="text-xs text-gray-600">
+                Анализ диалога • {conversationMessages.length} сообщений
+              </p>
             </div>
           </div>
           <button
@@ -208,85 +208,92 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
           </button>
         </div>
         
-        {isAnalyzing && (
-          <div className="mt-2 flex items-center space-x-2 text-xs text-purple-600">
-            <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-600"></div>
-            <span>Анализирую диалог...</span>
+        {/* Status indicators */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {isAnalyzing && (
+              <div className="flex items-center space-x-2 text-xs text-purple-600">
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-600"></div>
+                <span>Анализирую диалог...</span>
+              </div>
+            )}
+            {!isAnalyzing && conversationMessages.length >= 2 && (
+              <div className="flex items-center space-x-2 text-xs text-green-600">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>Готов к анализу</span>
+              </div>
+            )}
           </div>
-        )}
+          
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={autoAnalysisEnabled}
+              onChange={(e) => setAutoAnalysisEnabled(e.target.checked)}
+              className="w-3 h-3 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+            />
+            <span className="text-xs text-gray-600">Авто-анализ</span>
+          </label>
+        </div>
       </div>
 
-      {/* Messages */}
+      {/* AI Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {isLoading && messages.length === 0 ? (
+        {isLoading && aiMessages.length === 0 ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-sm text-gray-600">Инициализация AI-помощника...</p>
+            <p className="text-sm text-gray-600">Инициализация AI...</p>
+          </div>
+        ) : aiMessages.length === 0 ? (
+          <div className="text-center py-8">
+            <Bot className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-sm text-gray-600 mb-4">AI-ассистент готов к работе</p>
+            {conversationMessages.length >= 2 && (
+              <button
+                onClick={triggerConversationAnalysis}
+                disabled={isAnalyzing}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm transition-colors disabled:opacity-50"
+              >
+                {isAnalyzing ? 'Анализирую...' : 'Анализировать диалог'}
+              </button>
+            )}
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`${
-                message.messageType === 'user_question' ? 'ml-4' : 'mr-4'
-              }`}
-            >
-              <div
-                className={`p-3 rounded-lg ${
-                  message.messageType === 'user_question'
-                    ? 'bg-blue-600 text-white'
-                    : message.messageType === 'ai_analysis'
-                    ? 'bg-green-100 text-green-800 border border-green-200'
-                    : message.messageType === 'ai_suggestion'
-                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                    : 'bg-white text-gray-900 border border-gray-200'
-                }`}
-              >
-                {/* Message Header */}
-                {message.messageType !== 'user_question' && (
-                  <div className="flex items-center space-x-2 mb-2">
-                    {getMessageIcon(message.messageType)}
-                    <span className="text-xs font-medium">
-                      {getMessageTypeLabel(message.messageType)}
-                    </span>
-                    {message.metadata.conversationStatus && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(message.metadata.conversationStatus)}`}>
-                        {message.metadata.conversationStatus === 'constructive' ? 'Конструктивно' :
-                         message.metadata.conversationStatus === 'concerning' ? 'Требует внимания' : 'Нейтрально'}
-                      </span>
-                    )}
-                  </div>
-                )}
+          aiMessages.map((message) => (
+            <div key={message.id} className="space-y-2">
+              {/* Message header */}
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">
+                  {getMessageTypeIcon(message.messageType)}
+                </span>
+                <span className="text-xs font-medium text-gray-600">
+                  {getMessageTypeLabel(message.messageType)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {formatDistanceToNow(parseISO(message.createdAt), { addSuffix: true })}
+                </span>
+              </div>
 
-                {/* Message Content */}
-                <div className="text-sm whitespace-pre-line">
+              {/* Message content */}
+              <div className={`p-3 rounded-lg ${
+                message.messageType === 'user_question'
+                  ? 'bg-blue-600 text-white ml-8'
+                  : message.messageType === 'ai_analysis'
+                  ? 'bg-green-100 text-green-800 border border-green-200'
+                  : message.messageType === 'ai_suggestion'
+                  ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                  : 'bg-white text-gray-900 border border-gray-200'
+              }`}>
+                <div className="text-sm whitespace-pre-line leading-relaxed">
                   {message.content}
                 </div>
-
-                {/* Suggested Actions */}
-                {message.metadata.suggestedActions && message.metadata.suggestedActions.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-2">Предлагаемые действия:</p>
-                    <div className="space-y-1">
-                      {message.metadata.suggestedActions.map((action: string, index: number) => (
-                        <button
-                          key={index}
-                          className="block w-full text-left px-2 py-1 text-xs bg-white bg-opacity-50 rounded hover:bg-opacity-75 transition-colors"
-                          onClick={() => setNewMessage(action)}
-                        >
-                          {action}
-                        </button>
-                      ))}
-                    </div>
+                
+                {/* Metadata */}
+                {message.metadata.confidence && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+                    Уверенность: {(message.metadata.confidence * 100).toFixed(0)}%
                   </div>
                 )}
-
-                {/* Timestamp */}
-                <p className={`text-xs mt-2 ${
-                  message.messageType === 'user_question' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {formatDistanceToNow(parseISO(message.createdAt), { addSuffix: true })}
-                </p>
               </div>
             </div>
           ))
@@ -294,65 +301,76 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-gray-200 bg-white">
+      {/* AI Input & Controls */}
+      <div className="p-4 border-t border-gray-200 bg-white space-y-3">
+        {/* Main input */}
         <div className="flex items-center space-x-2">
           <input
             type="text"
-            placeholder="Задайте вопрос AI-помощнику..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendQuestion()}
+            placeholder="Задайте вопрос о диалоге..."
+            value={userQuestion}
+            onChange={(e) => setUserQuestion(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendUserQuestion()}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
             disabled={isLoading}
           />
           <button
-            onClick={sendQuestion}
-            disabled={!newMessage.trim() || isLoading}
+            onClick={sendUserQuestion}
+            disabled={!userQuestion.trim() || isLoading}
             className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Отправить вопрос"
           >
             <Send className="w-4 h-4" />
           </button>
         </div>
         
-        {/* Quick Actions */}
-        <div className="mt-3 flex flex-wrap gap-2">
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => triggerAnalysis(conversationMessages)}
-            disabled={isLoading || conversationMessages.length === 0}
-            className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors disabled:opacity-50 font-medium"
+            onClick={triggerConversationAnalysis}
+            disabled={isAnalyzing || conversationMessages.length < 2}
+            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
           >
-            Анализировать сейчас
+            <BarChart3 className="w-3 h-3" />
+            <span>{isAnalyzing ? 'Анализирую...' : 'Анализ диалога'}</span>
           </button>
+          
           <button
-            onClick={() => setNewMessage('Проанализируй текущий статус переговоров и дай рекомендации')}
-            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+            onClick={() => setUserQuestion('Какие риски ты видишь в нашем диалоге?')}
+            className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1"
           >
-            Анализ переговоров
-          </button>
-          <button
-            onClick={() => setNewMessage('Какие риски ты видишь в этом диалоге?')}
-            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-          >
-            Оценка рисков
-          </button>
-          <button
-            onClick={() => setNewMessage('Предложи конкретные следующие шаги для успешного сотрудничества')}
-            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-          >
-            План действий
-          </button>
-          <button
-            onClick={() => setNewMessage('Как лучше сформулировать свое предложение?')}
-            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
-          >
-            Помощь с предложением
+            <Zap className="w-3 h-3" />
+            <span>Оценка рисков</span>
           </button>
         </div>
 
-        {/* Status indicator */}
-        <div className="mt-2 text-xs text-gray-500 text-center">
-          DeepSeek V3 анализирует диалог в реальном времени
+        {/* Quick questions */}
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => setUserQuestion('Как развивать этот диалог дальше?')}
+            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
+          >
+            Следующие шаги?
+          </button>
+          <button
+            onClick={() => setUserQuestion('Проанализируй тональность нашего общения')}
+            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
+          >
+            Тональность
+          </button>
+          <button
+            onClick={() => setUserQuestion('Какие условия стоит обсудить?')}
+            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
+          >
+            Условия
+          </button>
+        </div>
+
+        {/* Status */}
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            🧠 DeepSeek V3 • {conversationMessages.length < 2 ? 'Ожидание диалога' : 'Анализирует диалог'}
+          </p>
         </div>
       </div>
     </div>
