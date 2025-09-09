@@ -1,5 +1,7 @@
-// Import OpenAI API
-const OPENAI_API_KEY = 'sk-xt65xSFFBM7YJhwEpao5pSY5i7CZR9O9eETafskJmACFXS8KPSGwtJKfNXPZ';
+// DeepSeek API configuration
+const DEEPSEEK_API_KEY = 'sk-5bf05a3087234e848c1588f1ce75b49e';
+const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
+const DEEPSEEK_MODEL = 'deepseek-reasoner'; // Using thinking mode for better analysis
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,15 +82,15 @@ Deno.serve(async (req) => {
 
 async function handleUserQuestion(question: string, context: string): Promise<AnalysisResponse> {
   try {
-    // Call OpenAI API for user questions
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call DeepSeek API for user questions
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5',
+        model: DEEPSEEK_MODEL,
         messages: [
           {
             role: 'system',
@@ -118,11 +120,11 @@ async function handleUserQuestion(question: string, context: string): Promise<An
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const aiContent = data.choices[0]?.message?.content || 'Не удалось получить ответ от AI';
+    const aiContent = data.choices[0]?.message?.content || 'Не удалось получить ответ от DeepSeek';
 
     return {
       conversationStatus: 'neutral',
@@ -132,7 +134,7 @@ async function handleUserQuestion(question: string, context: string): Promise<An
       confidence: 0.9
     };
   } catch (error) {
-    console.error('OpenAI API failed:', error);
+    console.error('DeepSeek API failed:', error);
     return getIntelligentFallbackResponse(question);
   }
 }
@@ -142,15 +144,15 @@ async function analyzeConversation(messages: any[], analysisType: string): Promi
     // Prepare messages for OpenAI
     const conversationText = messages.map(m => `${m.senderId}: ${m.content}`).join('\n');
     
-    // Call OpenAI API for conversation analysis
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call DeepSeek API for conversation analysis
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5',
+        model: DEEPSEEK_MODEL,
         messages: [
           {
             role: 'system',
@@ -191,7 +193,7 @@ async function analyzeConversation(messages: any[], analysisType: string): Promi
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -213,7 +215,7 @@ async function analyzeConversation(messages: any[], analysisType: string): Promi
       throw new Error('Invalid AI response format');
     }
   } catch (error) {
-    console.error('OpenAI analysis failed:', error);
+    console.error('DeepSeek analysis failed:', error);
     return getEnhancedFallbackAnalysis(messages);
   }
 }
