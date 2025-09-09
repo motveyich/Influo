@@ -505,6 +505,7 @@ export function OffersPage() {
               onManageDeal={handleManageDeal}
               onCreatePayment={handleCreatePayment}
               showSenderActions={showMyOffers}
+              currentUserId={currentUserId}
             />
           ))}
         </div>

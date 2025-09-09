@@ -281,6 +281,80 @@ export function ChatPage() {
     }));
   };
 
+  const handleMessageInteraction = async (action: string, messageId: string, dealId?: string) => {
+    try {
+      if (action === 'confirm_payment' && dealId) {
+        // Отправляем уведомление о том, что платеж был произведен
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: selectedConversation!.participantId,
+          messageContent: '✅ Оплачено! Ожидание подтверждения получения.',
+          messageType: 'payment_confirmation',
+          metadata: {
+            dealId: dealId,
+            actionType: 'payment_confirmed_by_payer',
+            originalMessageId: messageId,
+            isInteractive: true,
+            buttons: [
+              {
+                id: 'confirm_received',
+                label: 'Оплата поступила',
+                action: 'confirm_received',
+                dealId: dealId,
+                style: 'success'
+              },
+              {
+                id: 'payment_not_received',
+                label: 'Оплата не поступила',
+                action: 'payment_not_received',
+                dealId: dealId,
+                style: 'warning'
+              }
+            ]
+          }
+        });
+        
+        toast.success('Подтверждение оплаты отправлено');
+      } else if (action === 'confirm_received' && dealId) {
+        // Подтверждение получения оплаты
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: selectedConversation!.participantId,
+          messageContent: '💚 Оплата получена! Сотрудничество можно начинать.',
+          messageType: 'text',
+          metadata: {
+            dealId: dealId,
+            actionType: 'payment_received_confirmed'
+          }
+        });
+        
+        toast.success('Получение оплаты подтверждено');
+      } else if (action === 'payment_not_received' && dealId) {
+        // Сообщение о том, что оплата не поступила
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: selectedConversation!.participantId,
+          messageContent: '❌ Оплата не поступила. Свяжитесь для решения проблемы.',
+          messageType: 'text',
+          metadata: {
+            dealId: dealId,
+            actionType: 'payment_not_received'
+          }
+        });
+        
+        toast.error('Сообщение о проблеме с оплатой отправлено');
+      }
+      
+      // Обновляем сообщения
+      if (selectedConversation) {
+        await loadMessages(selectedConversation.id);
+      }
+    } catch (error: any) {
+      console.error('Failed to handle message interaction:', error);
+      toast.error('Не удалось обработать действие');
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
