@@ -182,22 +182,6 @@ export function OffersPage() {
     setOffers(prev => [offer, ...prev]);
   };
 
-  const handleManageDeal = (offerId: string) => {
-    const offer = offers.find(o => o.offerId === offerId);
-    if (offer) {
-      setSelectedDeal(offer);
-      setShowDealModal(true);
-    }
-  };
-
-  const handleCreatePayment = (offerId: string) => {
-    const offer = offers.find(o => o.offerId === offerId);
-    if (offer) {
-      setSelectedDeal(offer);
-      setShowPaymentModal(true);
-    }
-  };
-
   const handleLeaveReview = async (offerId: string) => {
     // Find the offer to get partner information
     const offer = offers.find(o => o.offerId === offerId);
@@ -431,8 +415,6 @@ export function OffersPage() {
               key={offer.offerId}
               offer={offer}
               onAction={!showMyOffers ? handleOfferAction : undefined}
-              onManageDeal={handleManageDeal}
-              onCreatePayment={handleCreatePayment}
               onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
               onModify={showMyOffers ? handleModifyOffer : undefined}
               onLeaveReview={handleLeaveReview}
@@ -479,40 +461,6 @@ export function OffersPage() {
         onOfferSent={handleOfferSent}
       />
 
-      {/* Deal Management Modal */}
-      {selectedDeal && (
-        <DealManagementModal
-          isOpen={showDealModal}
-          onClose={() => {
-            setShowDealModal(false);
-            setSelectedDeal(null);
-          }}
-          deal={selectedDeal}
-          onDealUpdated={() => {
-            loadOffers();
-            setShowDealModal(false);
-            setSelectedDeal(null);
-          }}
-        />
-      )}
-
-      {/* Payment Modal */}
-      {selectedDeal && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedDeal(null);
-          }}
-          deal={selectedDeal}
-          onPaymentCreated={() => {
-            loadOffers();
-            setShowPaymentModal(false);
-            setSelectedDeal(null);
-          }}
-        />
-      )}
-
       {/* Review Modal */}
       {reviewTargetOffer && (
         <ReviewModal
@@ -521,23 +469,7 @@ export function OffersPage() {
             setShowReviewModal(false);
             setReviewTargetOffer(null);
           }}
-          dealId={reviewTargetOffer.offerId} // Using offerId as dealId for now
-          reviewerId={currentUserId}
-          revieweeId={showMyOffers ? reviewTargetOffer.influencerId : reviewTargetOffer.advertiserId}
-          collaborationType={currentUserProfile?.userType === 'influencer' ? 'as_influencer' : 'as_advertiser'}
-          revieweeName="Партнер по сотрудничеству"
-          onReviewSubmitted={handleReviewSubmitted}
-        />
-      )}
-      {/* Review Modal */}
-      {reviewTargetOffer && (
-        <ReviewModal
-          isOpen={showReviewModal}
-          onClose={() => {
-            setShowReviewModal(false);
-            setReviewTargetOffer(null);
-          }}
-          dealId={reviewTargetOffer.offerId} // Using offerId as dealId for now
+          dealId={(reviewTargetOffer as any).dealId || reviewTargetOffer.offerId}
           reviewerId={currentUserId}
           revieweeId={showMyOffers ? reviewTargetOffer.influencerId : reviewTargetOffer.advertiserId}
           collaborationType={currentUserProfile?.userType === 'influencer' ? 'as_influencer' : 'as_advertiser'}
