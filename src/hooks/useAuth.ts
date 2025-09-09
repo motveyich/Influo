@@ -74,11 +74,24 @@ export function useAuth() {
       
       console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
       
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('is_deleted, deleted_at')
-        .eq('user_id', authState.user.id)
-        .maybeSingle();
+      let profile, error;
+      try {
+        const result = await supabase
+          .from('user_profiles')
+          .select('is_deleted, deleted_at')
+          .eq('user_id', authState.user.id)
+          .maybeSingle();
+        profile = result.data;
+        error = result.error;
+      } catch (fetchError) {
+        // Handle network/connection errors
+        if (fetchError instanceof TypeError && fetchError.message === 'Failed to fetch') {
+          console.warn('⚠️ [useAuth] Supabase connection failed (network error). User is assumed not blocked.');
+          setIsBlocked(false);
+          return;
+        }
+        throw fetchError;
+      }
       
       if (error) {
         console.error('❌ [useAuth] Failed to check user status:', error);
