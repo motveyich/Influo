@@ -20,23 +20,26 @@ export function DetailedOfferModal({ isOpen, onClose, offer, currentUserId, show
 
   const getSenderInfo = () => {
     if (isApplication) {
-      if (showSenderActions) {
-        // Current user is the sender of the application
+      // Determine roles by application target type
+      const targetType = (offer as any).applicationTargetType;
+      
+      if (targetType === 'influencer_card') {
+        // Advertiser applied to influencer card
         return {
-          role: currentUserId === offer.influencerId ? 'Инфлюенсер' : 'Рекламодатель',
-          direction: currentUserId === offer.influencerId ? 'Рекламодателю' : 'Инфлюенсеру',
-          description: currentUserId === offer.influencerId 
-            ? 'Вы отправили заявку как инфлюенсер рекламодателю'
-            : 'Вы отправили заявку как рекламодатель инфлюенсеру'
+          role: 'Рекламодатель',
+          direction: 'Инфлюенсеру',
+          description: showSenderActions 
+            ? 'Вы отправили заявку как рекламодатель инфлюенсеру'
+            : 'Заявка от рекламодателя на ваши услуги'
         };
       } else {
-        // Current user is the receiver of the application
+        // Influencer applied to advertiser card or campaign  
         return {
-          role: currentUserId === offer.advertiserId ? 'Инфлюенсер' : 'Рекламодатель',
-          direction: 'Вам',
-          description: currentUserId === offer.advertiserId
-            ? 'Заявка от инфлюенсера на ваши услуги'
-            : 'Заявка от рекламодателя на сотрудничество'
+          role: 'Инфлюенсер',
+          direction: 'Рекламодателю',
+          description: showSenderActions
+            ? 'Вы отправили заявку как инфлюенсер рекламодателю'
+            : 'Заявка от инфлюенсера на сотрудничество'
         };
       }
     } else {

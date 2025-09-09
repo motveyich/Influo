@@ -76,9 +76,9 @@ export function OffersPage() {
       // Transform applications to offer-like format for display
       const transformedApplications = activeApplications.map(app => ({
         offerId: app.id,
-        influencerId: showMyOffers ? app.applicantId : app.targetId,
+        influencerId: app.targetType === 'influencer_card' ? app.targetId : app.applicantId,
         campaignId: app.targetReferenceId,
-        advertiserId: showMyOffers ? app.targetId : app.applicantId,
+        advertiserId: app.targetType === 'influencer_card' ? app.applicantId : app.targetId,
         details: {
           rate: app.applicationData.proposedRate || 0,
           currency: 'USD',
@@ -94,7 +94,8 @@ export function OffersPage() {
         },
         messages: [],
         metadata: app.metadata || { viewCount: 0 },
-        type: 'application'
+        type: 'application',
+        applicationTargetType: app.targetType
       }));
       
       return transformedApplications;

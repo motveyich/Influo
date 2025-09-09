@@ -26,13 +26,19 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
   // Determine sender and receiver roles
   const getSenderRole = () => {
     if (isApplication) {
-      // For applications: applicant is the one who sent the application
-      if (showSenderActions) {
-        // Current user is the sender of the application
-        return currentUserId === offer.influencerId ? 'Инфлюенсер → Рекламодателю' : 'Рекламодатель → Инфлюенсеру';
+      // For applications: determine roles by target_type
+      const targetType = (offer as any).applicationTargetType;
+      
+      if (targetType === 'influencer_card') {
+        // Advertiser applied to influencer
+        return showSenderActions 
+          ? (currentUserId === offer.advertiserId ? 'Рекламодатель → Инфлюенсеру' : 'Неизвестная роль')
+          : 'От рекламодателя';
       } else {
-        // Current user is the receiver of the application
-        return currentUserId === offer.advertiserId ? 'От инфлюенсера' : 'От рекламодателя';
+        // Influencer applied to advertiser or campaign
+        return showSenderActions
+          ? (currentUserId === offer.influencerId ? 'Инфлюенсер → Рекламодателю' : 'Неизвестная роль') 
+          : 'От инфлюенсера';
       }
     } else {
       // For offers: advertiser sends to influencer
