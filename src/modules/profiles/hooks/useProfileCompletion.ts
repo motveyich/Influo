@@ -41,19 +41,32 @@ export function useProfileCompletion(userId: string) {
       try {
         userProfile = await profileService.getProfile(userId);
       } catch (profileError: any) {
+        // Handle specific fetch errors that indicate Supabase connection issues
         if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
-          throw new Error('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
+          throw new Error('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server with "npm run dev".');
+        } else if (profileError?.message?.includes('Failed to fetch') || profileError?.cause?.message === 'Failed to fetch') {
+          throw new Error('Database connection failed. Please verify your Supabase configuration and restart the development server.');
         }
+        // Re-throw other errors as-is
         throw profileError;
+      }
+      
+      if (!userProfile) {
+        // User doesn't have a profile yet, this is normal for new users
+        setProfile(null);
+        return;
       }
       
       setProfile(userProfile);
     } catch (err: any) {
       console.error('Failed to load profile:', err);
       
-      // Handle different types of errors
+      // Handle different types of errors with specific messages
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
         setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner, or 2) Check that your .env file exists and contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
+      } else if (err.message?.includes('Unable to connect to Supabase') || err.message?.includes('Database connection failed')) {
+        setError(err.message);
+      } catch (profileError: any) {
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
         setError('Database tables are not set up. Please configure Supabase properly.');
       } else if (err.message?.includes('Invalid API key')) {
