@@ -516,3 +516,38 @@ export interface PlatformEvent {
   createdAt: string;
   updatedAt: string;
 }
+
+// AI Chat Assistant types
+export interface AIChatThread {
+  id: string;
+  conversationId: string;
+  user1Id: string;
+  user2Id: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AIChatMessage {
+  id: string;
+  threadId: string;
+  messageType: 'user_question' | 'ai_response' | 'ai_analysis' | 'ai_suggestion';
+  content: string;
+  metadata: {
+    analysisType?: 'conversation_flow' | 'sentiment' | 'recommendation';
+    confidence?: number;
+    suggestedActions?: string[];
+    conversationStatus?: 'constructive' | 'neutral' | 'concerning';
+    originalMessageId?: string;
+  };
+  createdAt: string;
+}
+
+export interface AIAnalysisResult {
+  conversationStatus: 'constructive' | 'neutral' | 'concerning';
+  sentiment: 'positive' | 'neutral' | 'negative';
+  suggestions: string[];
+  nextSteps: string[];
+  confidence: number;
+  riskFactors?: string[];
+}

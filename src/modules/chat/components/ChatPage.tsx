@@ -4,6 +4,7 @@ import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { CollaborationRequestModal } from './CollaborationRequestModal';
+import { AIChatPanel } from './AIChatPanel';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -42,6 +43,7 @@ export function ChatPage() {
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  const [showAIPanel, setShowAIPanel] = useState(true);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -656,7 +658,7 @@ export function ChatPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`${showAIPanel ? 'flex-1' : 'flex-1'} flex flex-col`}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
@@ -846,6 +848,17 @@ export function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* AI Chat Panel */}
+      {selectedConversation && (
+        <AIChatPanel
+          user1Id={currentUserId}
+          user2Id={selectedConversation.participantId}
+          isVisible={showAIPanel}
+          onToggleVisibility={() => setShowAIPanel(!showAIPanel)}
+          conversationMessages={messages}
+        />
+      )}
 
       {/* Collaboration Request Modal */}
       <CollaborationRequestModal

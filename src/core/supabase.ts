@@ -54,4 +54,6 @@ export const TABLES = {
   PLATFORM_NEWS: 'platform_news',
   PLATFORM_UPDATES: 'platform_updates',
   PLATFORM_EVENTS: 'platform_events',
+  AI_CHAT_THREADS: 'ai_chat_threads',
+  AI_CHAT_MESSAGES: 'ai_chat_messages',
 } as const;
