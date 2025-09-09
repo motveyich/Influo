@@ -84,6 +84,22 @@ export function PaymentModal({
       onDealCreated?.(configuredDeal);
       toast.success('Сделка создана! Ожидание подтверждения оплаты.');
       setCurrentStep(2);
+      
+      // Send notification in chat
+      const partnerId = payerId === currentUserId ? payeeId : payerId;
+      const { chatService } = await import('../../chat/services/chatService');
+      await chatService.sendMessage({
+        senderId: currentUserId,
+        receiverId: partnerId,
+        messageContent: `💳 Создано окно оплаты на сумму ${formatCurrency(totalAmount)}. Тип оплаты: ${getPaymentTypeLabel(paymentType)}. Проверьте детали оплаты.`,
+        messageType: 'text',
+        metadata: {
+          dealId: configuredDeal.id,
+          actionType: 'payment_window_created',
+          paymentType: paymentType,
+          amount: totalAmount
+        }
+      });
     } catch (error: any) {
       console.error('Failed to create deal:', error);
       toast.error(error.message || 'Не удалось создать сделку');
@@ -107,6 +123,26 @@ export function PaymentModal({
 
       setCurrentDeal(confirmedDeal);
       toast.success(`${type === 'payment_sent' ? 'Оплата отправлена' : 'Получение оплаты подтверждено'}!`);
+      
+      // Send notification in chat
+      const partnerId = currentUserId === currentDeal.payerId ? currentDeal.payeeId : currentDeal.payerId;
+      const { chatService } = await import('../../chat/services/chatService');
+      const actionMessage = type === 'payment_sent' ? 
+        `💸 Оплата отправлена на сумму ${formatCurrency(confirmedDeal.prepayAmount || confirmedDeal.postpayAmount)}` :
+        `✅ Получение оплаты подтверждено на сумму ${formatCurrency(confirmedDeal.prepayAmount || confirmedDeal.postpayAmount)}`;
+      
+      await chatService.sendMessage({
+        senderId: currentUserId,
+        receiverId: partnerId,
+        messageContent: actionMessage,
+        messageType: 'text',
+        metadata: {
+          dealId: currentDeal.id,
+          actionType: 'payment_confirmed',
+          paymentStage: stage,
+          confirmationType: type
+        }
+      });
       
       // Check if we should move to next step
       if (stage === 'prepay' && confirmedDeal.prepayConfirmedByPayer && confirmedDeal.prepayConfirmedByPayee) {

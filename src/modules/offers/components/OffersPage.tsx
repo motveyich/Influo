@@ -201,19 +201,65 @@ export function OffersPage() {
   const handleManageDeal = async (offerId: string) => {
     // Find the offer to manage deal
     const offer = offers.find(o => o.offerId === offerId);
-    if (offer) {
+    if (!offer) {
+      toast.error('Предложение не найдено');
+      return;
+    }
+    
+    try {
+      // Get or create deal for this offer
+      const { dealService } = await import('../../../services/dealService');
+      
+      // Try to find existing deal
+      let deal = null;
+      if (offer.type === 'application') {
+        // For applications, check by application_id
+        const userDeals = await dealService.getUserDeals(currentUserId);
+        deal = userDeals.find(d => d.applicationId === offerId);
+      } else {
+        // For offers, check by offer_id
+        const userDeals = await dealService.getUserDeals(currentUserId);
+        deal = userDeals.find(d => d.offerId === offerId);
+      }
+      
+      if (!deal) {
+        // No deal exists yet, create one
+        deal = await dealService.createDeal({
+          offerId: offer.type === 'application' ? undefined : offerId,
+          applicationId: offer.type === 'application' ? offerId : undefined,
+          payerId: offer.advertiserId,
+          payeeId: offer.influencerId,
+          totalAmount: offer.details.rate,
+          currency: offer.details.currency || 'USD',
+          paymentType: 'full_prepay',
+          workDetails: {
+            deliverables: offer.details.deliverables,
+            timeline: offer.details.timeline
+          }
+        });
+        
+        toast.success('Сделка создана для управления сотрудничеством');
+      }
+      
+      setSelectedDeal(deal);
       setSelectedDealOffer(offer);
       setShowDealModal(true);
+    } catch (error: any) {
+      console.error('Failed to get or create deal:', error);
+      toast.error(error.message || 'Не удалось получить информацию о сделке');
     }
   };
 
   const handleCreatePayment = async (offerId: string) => {
     // Find the offer to create payment
     const offer = offers.find(o => o.offerId === offerId);
-    if (offer) {
-      setSelectedDealOffer(offer);
-      setShowPaymentModal(true);
+    if (!offer) {
+      toast.error('Предложение не найдено');
+      return;
     }
+    
+    setSelectedDealOffer(offer);
+    setShowPaymentModal(true);
   };
 
   const handleDealStatusUpdated = () => {
@@ -507,18 +553,20 @@ export function OffersPage() {
       )}
 
       {/* Deal Management Modal */}
-      {selectedDealOffer && (
+      {selectedDeal && selectedDealOffer && (
         <DealManagementModal
           isOpen={showDealModal}
           onClose={() => {
             setShowDealModal(false);
+            setSelectedDeal(null);
             setSelectedDealOffer(null);
           }}
-          deal={null} // Will be loaded inside modal
+          deal={selectedDeal}
           currentUserId={currentUserId}
           onStatusUpdated={handleDealStatusUpdated}
           onCreatePayment={() => {
             setShowDealModal(false);
+            setSelectedDeal(null);
             setShowPaymentModal(true);
           }}
         />

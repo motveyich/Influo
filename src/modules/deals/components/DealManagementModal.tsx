@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Deal } from '../../../services/dealService';
+import { Deal, dealService } from '../../../services/dealService';
+import { chatService } from '../../chat/services/chatService';
 import { X, CheckCircle, XCircle, DollarSign, AlertTriangle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,13 +31,24 @@ export function DealManagementModal({
     
     setIsLoading(true);
     try {
-      const { dealService } = await import('../../../services/dealService');
-      
       // Mark work as completed
       await dealService.markWorkCompleted(deal.id, currentUserId, {
         completed_by: currentUserId,
         completed_at: new Date().toISOString(),
         completion_notes: 'Работа выполнена согласно условиям сделки'
+      });
+
+      // Send notification in chat
+      const partnerId = deal.payerId === currentUserId ? deal.payeeId : deal.payerId;
+      await chatService.sendMessage({
+        senderId: currentUserId,
+        receiverId: partnerId,
+        messageContent: '✅ Сотрудничество отмечено как завершенное. Можно оставить отзыв о работе.',
+        messageType: 'text',
+        metadata: {
+          dealId: deal.id,
+          actionType: 'deal_completed'
+        }
       });
 
       toast.success('Сотрудничество отмечено как завершенное!');
@@ -55,8 +67,6 @@ export function DealManagementModal({
     
     setIsLoading(true);
     try {
-      const { dealService } = await import('../../../services/dealService');
-      
       // Update deal status to cancelled
       await dealService.updateDealStatus(deal.id, 'cancelled', {
         cancelled_by: currentUserId,
@@ -64,6 +74,18 @@ export function DealManagementModal({
         cancellation_reason: 'Расторжение по инициативе пользователя'
       });
 
+      // Send notification in chat
+      const partnerId = deal.payerId === currentUserId ? deal.payeeId : deal.payerId;
+      await chatService.sendMessage({
+        senderId: currentUserId,
+        receiverId: partnerId,
+        messageContent: '❌ Сотрудничество было расторгнуто. Если у вас есть вопросы, свяжитесь напрямую.',
+        messageType: 'text',
+        metadata: {
+          dealId: deal.id,
+          actionType: 'deal_cancelled'
+        }
+      });
       toast.success('Сотрудничество расторгнуто');
       onStatusUpdated?.();
       setConfirmAction(null);
@@ -119,6 +141,14 @@ export function DealManagementModal({
   const canCreatePaymentWindow = () => {
     return deal.dealStatus === 'created' || deal.dealStatus === 'work_completed';
   };
+
+  const isPayer = () => {
+    return deal.payerId === currentUserId;
+  };
+
+  const isPayee = () => {
+    return deal.payeeId === currentUserId;
+  }
 
   const statusInfo = getDealStatusInfo();
 
