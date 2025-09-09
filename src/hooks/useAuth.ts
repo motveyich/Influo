@@ -110,8 +110,20 @@ export function useAuth() {
         setIsBlocked(false);
       }
     } catch (error) {
-      console.error('Failed to check user status:', error);
-      setIsBlocked(false);
+      console.error('❌ [useAuth] Failed to check user status:', error);
+      
+      // Handle specific network errors more gracefully
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('⚠️ [useAuth] Network error during user status check (Supabase connection issue). Assuming user is not blocked.');
+        setIsBlocked(false);
+      } else if (error && (error as any).message?.includes('Failed to fetch')) {
+        console.warn('⚠️ [useAuth] Supabase fetch error, likely configuration issue. Assuming user is not blocked.');
+        setIsBlocked(false);
+      } else {
+        // For other errors, still assume not blocked to avoid blocking legitimate users
+        console.warn('⚠️ [useAuth] Unknown error during user status check. Assuming user is not blocked.');
+        setIsBlocked(false);
+      }
     } finally {
       setBlockCheckLoading(false);
     }
