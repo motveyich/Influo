@@ -88,7 +88,7 @@ async function handleUserQuestion(question: string, context: string): Promise<An
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-5',
         messages: [
           {
             role: 'system',
@@ -96,15 +96,24 @@ async function handleUserQuestion(question: string, context: string): Promise<An
             
 Контекст диалога: ${context}
 
-Отвечай кратко, по делу, на русском языке. Давай практические советы для улучшения коммуникации и развития сотрудничества.`
+Отвечай кратко, по делу, на русском языке. Давай практические советы для улучшения коммуникации и развития сотрудничества.
+
+Анализируй контекст и предоставляй:
+- Конкретные рекомендации по развитию диалога
+- Оценку текущего статуса переговоров  
+- Предупреждения о потенциальных проблемах
+- Предложения следующих шагов`
           },
           {
             role: 'user',
             content: question
           }
         ],
-        max_tokens: 300,
-        temperature: 0.7
+        max_tokens: 400,
+        temperature: 0.6,
+        top_p: 0.9,
+        frequency_penalty: 0.1,
+        presence_penalty: 0.1
       })
     });
 
@@ -141,37 +150,43 @@ async function analyzeConversation(messages: any[], analysisType: string): Promi
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-5',
         messages: [
           {
             role: 'system',
-            content: `Ты - AI-аналитик диалогов на платформе сотрудничества инфлюенсеров и рекламодателей. 
+            content: `Ты - экспертный AI-аналитик диалогов на платформе сотрудничества инфлюенсеров и рекламодателей. 
             
-Проанализируй диалог и верни JSON в следующем формате:
+Проанализируй диалог профессионально и верни ТОЛЬКО JSON в следующем формате:
 {
   "conversationStatus": "constructive|neutral|concerning",
   "sentiment": "positive|neutral|negative", 
-  "suggestions": ["краткие наблюдения о диалоге"],
-  "nextSteps": ["конкретные рекомендации"],
-  "confidence": 0.8,
+  "suggestions": ["конкретные наблюдения о диалоге", "анализ качества коммуникации"],
+  "nextSteps": ["практические следующие шаги", "рекомендации по улучшению"],
+  "confidence": 0.85,
   "riskFactors": ["потенциальные проблемы"]
 }
 
-Анализируй:
+ВАЖНО: Проводи глубокий анализ на основе:
 - Тональность общения
 - Готовность к сотрудничеству
 - Потенциальные проблемы
 - Этап переговоров
+- Профессионализм коммуникации
+- Ясность требований и ожиданий
+- Уровень заинтересованности сторон
 
-Отвечай только JSON, без дополнительного текста.`
+Отвечай СТРОГО только валидным JSON, без дополнительного текста или комментариев.`
           },
           {
             role: 'user',
             content: `Диалог для анализа:\n${conversationText}`
           }
         ],
-        max_tokens: 500,
-        temperature: 0.3
+        max_tokens: 600,
+        temperature: 0.2,
+        top_p: 0.95,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0
       })
     });
 
@@ -327,9 +342,11 @@ function getEnhancedFallbackAnalysis(messages: any[]): AnalysisResponse {
       suggestions.push('Диалог в начальной стадии')
       nextSteps.push('Расскажите больше о своих услугах')
       nextSteps.push('Узнайте больше о потребностях партнера')
+      nextSteps.push('Обменяйтесь контактной информацией')
     } else {
       suggestions.push('Стандартное развитие диалога')
       nextSteps.push('Задайте уточняющие вопросы')
+      nextSteps.push('Перейдите к обсуждению конкретных условий')
     }
   }
   

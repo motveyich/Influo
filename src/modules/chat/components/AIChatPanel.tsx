@@ -318,28 +318,34 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
         {/* Quick Actions */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
-            onClick={() => setNewMessage('Как лучше развить этот диалог?')}
+            onClick={() => setNewMessage('Проанализируй текущий статус переговоров и дай рекомендации')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Как развить диалог?
+            Анализ переговоров
           </button>
           <button
-            onClick={() => setNewMessage('Оцени ситуацию в переговорах')}
+            onClick={() => setNewMessage('Какие риски ты видишь в этом диалоге?')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Оценка ситуации
+            Оценка рисков
           </button>
           <button
-            onClick={() => setNewMessage('Какие следующие шаги посоветуешь?')}
+            onClick={() => setNewMessage('Предложи конкретные следующие шаги для успешного сотрудничества')}
             className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
           >
-            Следующие шаги
+            План действий
+          </button>
+          <button
+            onClick={() => setNewMessage('Как лучше сформулировать свое предложение?')}
+            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+          >
+            Помощь с предложением
           </button>
         </div>
 
         {/* Status indicator */}
         <div className="mt-2 text-xs text-gray-500 text-center">
-          AI анализирует диалог в реальном времени
+          GPT-5 анализирует диалог в реальном времени
         </div>
       </div>
     </div>
