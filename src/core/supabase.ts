@@ -10,7 +10,8 @@ export const isSupabaseConfigured = () => {
          supabaseAnonKey &&
          supabaseUrl.startsWith('https://') &&
          supabaseUrl.includes('.supabase.co') &&
-         supabaseAnonKey.length > 20; // Supabase anon keys are typically longer
+         supabaseAnonKey.startsWith('eyJ') &&
+         supabaseAnonKey.length > 100; // Supabase anon keys are JWT tokens starting with 'eyJ' and longer than 100 chars
 };
 
 // Use safe defaults if not configured
