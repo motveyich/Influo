@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CollaborationForm, Campaign } from '../../../core/types';
 import { collaborationService } from '../services/collaborationService';
+import { campaignService } from '../../campaigns/services/campaignService';
 import { X, Send, AlertCircle, DollarSign, Calendar, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,9 @@ export function CollaborationRequestModal({
 }: CollaborationRequestModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableCampaigns, setAvailableCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
 
   const [formData, setFormData] = useState({
     campaignTitle: campaign?.title || '',
@@ -41,8 +45,35 @@ export function CollaborationRequestModal({
         ...prev,
         campaignTitle: campaign.title
       }));
+      setSelectedCampaignId(campaign.campaignId);
+    } else if (isOpen && senderId) {
+      // Fetch sender's campaigns if no specific campaign is provided
+      fetchSenderCampaigns();
     }
-  }, [campaign]);
+  }, [campaign, isOpen, senderId]);
+
+  const fetchSenderCampaigns = async () => {
+    try {
+      setIsLoadingCampaigns(true);
+      const campaigns = await campaignService.getAdvertiserCampaigns(senderId);
+      setAvailableCampaigns(campaigns);
+      
+      // Auto-select first active campaign if available
+      const activeCampaign = campaigns.find(c => c.status === 'active');
+      if (activeCampaign) {
+        setSelectedCampaignId(activeCampaign.campaignId);
+        setFormData(prev => ({
+          ...prev,
+          campaignTitle: activeCampaign.title
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch campaigns:', error);
+      toast.error('Failed to load your campaigns');
+    } finally {
+      setIsLoadingCampaigns(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -69,6 +100,10 @@ export function CollaborationRequestModal({
       newErrors.timeline = 'Timeline is required';
     }
 
+    if (!campaign && !selectedCampaignId) {
+      newErrors.selectedCampaign = 'Please select a campaign to link this collaboration request';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -83,7 +118,7 @@ export function CollaborationRequestModal({
     try {
       const requestData: Partial<CollaborationForm> = {
         formFields: formData,
-        linkedCampaign: campaign?.campaignId,
+        linkedCampaign: campaign?.campaignId || selectedCampaignId,
         senderId,
         receiverId
       };
@@ -118,6 +153,17 @@ export function CollaborationRequestModal({
     setNewDeliverable('');
   };
 
+  const handleCampaignSelect = (campaignId: string) => {
+    setSelectedCampaignId(campaignId);
+    const selectedCampaign = availableCampaigns.find(c => c.campaignId === campaignId);
+    if (selectedCampaign) {
+      setFormData(prev => ({
+        ...prev,
+        campaignTitle: selectedCampaign.title
+      }));
+    }
+  };
+
   const removeDeliverable = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -145,6 +191,48 @@ export function CollaborationRequestModal({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[70vh] space-y-6">
+          {/* Campaign Selection - only show if no specific campaign provided */}
+          {!campaign && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Выберите кампанию *
+              </label>
+              {isLoadingCampaigns ? (
+                <div className="flex items-center justify-center p-4 border border-gray-300 rounded-md">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                  <span className="ml-2 text-gray-600">Загрузка кампаний...</span>
+                </div>
+              ) : availableCampaigns.length > 0 ? (
+                <select
+                  value={selectedCampaignId}
+                  onChange={(e) => handleCampaignSelect(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.selectedCampaign ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Выберите кампанию...</option>
+                  {availableCampaigns.map((campaign) => (
+                    <option key={campaign.campaignId} value={campaign.campaignId}>
+                      {campaign.title} ({campaign.status})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-4 border border-gray-300 rounded-md bg-gray-50">
+                  <p className="text-gray-600 text-center">
+                    У вас нет активных кампаний. Создайте кампанию, чтобы отправлять запросы на сотрудничество.
+                  </p>
+                </div>
+              )}
+              {errors.selectedCampaign && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.selectedCampaign}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Campaign Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -158,7 +246,7 @@ export function CollaborationRequestModal({
                 errors.campaignTitle ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Введите название кампании"
-              disabled={!!campaign}
+              disabled={!!campaign || !!selectedCampaignId}
             />
             {errors.campaignTitle && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
