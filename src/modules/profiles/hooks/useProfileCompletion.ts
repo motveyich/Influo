@@ -31,6 +31,12 @@ export function useProfileCompletion(userId: string) {
     try {
       setIsLoading(true);
       setError(null);
+      
+      // Double-check Supabase configuration before making database calls
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase configuration is invalid. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
+      }
+      
       const userProfile = await profileService.getProfile(userId);
       setProfile(userProfile);
     } catch (err: any) {
