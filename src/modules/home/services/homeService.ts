@@ -277,32 +277,55 @@ export class HomeService {
       const unreadCount = unreadMessages?.length || 0;
 
       // 4. Ждут выплат (deals в статусе pending payout)
-      const { data: pendingPayouts } = await supabase
-        .from('deals')
-        .select('id')
-        .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
-        .in('deal_status', ['prepay_pending', 'postpay_pending']);
-      const pendingPayoutsCount = pendingPayouts?.length || 0;
+      let pendingPayoutsCount = 0;
+      try {
+        const { data: pendingPayouts } = await supabase
+          .from('deals')
+          .select('id')
+          .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
+          .in('deal_status', ['prepay_pending', 'postpay_pending']);
+        pendingPayoutsCount = pendingPayouts?.length || 0;
+      } catch (dealsError) {
+        // Таблица deals еще не создана, возвращаем 0
+        console.log('Deals table not yet created:', dealsError);
+        pendingPayoutsCount = 0;
+      }
 
       // 5. Рейтинг аккаунта
-      const { data: reviews } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('reviewee_id', userId)
-        .eq('is_public', true);
-      
-      const totalReviews = reviews?.length || 0;
-      const averageRating = totalReviews > 0 
-        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
-        : 0;
+      let totalReviews = 0;
+      let averageRating = 0;
+      try {
+        const { data: reviews } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('reviewee_id', userId)
+          .eq('is_public', true);
+        
+        totalReviews = reviews?.length || 0;
+        averageRating = totalReviews > 0 
+          ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+          : 0;
+      } catch (reviewsError) {
+        // Таблица reviews еще не создана, возвращаем 0
+        console.log('Reviews table not yet created:', reviewsError);
+        totalReviews = 0;
+        averageRating = 0;
+      }
 
       // 6. Завершенные сделки
-      const { data: completedDeals } = await supabase
-        .from('deals')
-        .select('id')
-        .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
-        .eq('deal_status', 'completed');
-      const completedDealsCount = completedDeals?.length || 0;
+      let completedDealsCount = 0;
+      try {
+        const { data: completedDeals } = await supabase
+          .from('deals')
+          .select('id')
+          .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
+          .eq('deal_status', 'completed');
+        completedDealsCount = completedDeals?.length || 0;
+      } catch (dealsError) {
+        // Таблица deals еще не создана, возвращаем 0
+        console.log('Deals table not yet created:', dealsError);
+        completedDealsCount = 0;
+      }
 
       return {
         activeCampaigns,

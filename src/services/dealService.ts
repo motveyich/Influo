@@ -275,6 +275,11 @@ export class DealService {
 
       return this.transformFromDatabase(data);
     } catch (error) {
+      // Если таблица deals не существует, возвращаем null
+      if (error?.code === '42P01') {
+        console.log('Deals table not yet created');
+        return null;
+      }
       console.error('Failed to get deal:', error);
       throw error;
     }
@@ -292,6 +297,11 @@ export class DealService {
 
       return data.map(deal => this.transformFromDatabase(deal));
     } catch (error) {
+      // Если таблица deals не существует, возвращаем пустой массив
+      if (error?.code === '42P01') {
+        console.log('Deals table not yet created');
+        return [];
+      }
       console.error('Failed to get user deals:', error);
       throw error;
     }
@@ -355,6 +365,11 @@ export class DealService {
 
       return data.map(review => this.transformReviewFromDatabase(review));
     } catch (error) {
+      // Если таблица reviews не существует, возвращаем пустой массив
+      if (error?.code === '42P01') {
+        console.log('Reviews table not yet created');
+        return [];
+      }
       console.error('Failed to get user reviews:', error);
       throw error;
     }
@@ -380,6 +395,11 @@ export class DealService {
         totalReviews
       };
     } catch (error) {
+      // Если таблица reviews не существует, возвращаем значения по умолчанию
+      if (error?.code === '42P01') {
+        console.log('Reviews table not yet created');
+        return { rating: 0, totalReviews: 0 };
+      }
       console.error('Failed to get user rating:', error);
       return { rating: 0, totalReviews: 0 };
     }
