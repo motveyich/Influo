@@ -21,6 +21,28 @@ import toast from 'react-hot-toast';
 
 type ContentType = 'news' | 'updates' | 'events';
 
+const getTabIcon = (tab: ContentType) => {
+  switch (tab) {
+    case 'news':
+      return <Newspaper className="w-4 h-4" />;
+    case 'updates':
+      return <Bell className="w-4 h-4" />;
+    case 'events':
+      return <Calendar className="w-4 h-4" />;
+  }
+};
+
+const getTabLabel = (tab: ContentType) => {
+  switch (tab) {
+    case 'news':
+      return 'Новости';
+    case 'updates':
+      return 'Обновления';
+    case 'events':
+      return 'События';
+  }
+};
+
 interface ContentManagementProps {
   onStatsUpdate: () => void;
 }
@@ -136,28 +158,6 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
         );
       default:
         return [];
-    }
-  };
-
-  const getTabIcon = (tab: ContentType) => {
-    switch (tab) {
-      case 'news':
-        return <Newspaper className="w-4 h-4" />;
-      case 'updates':
-        return <Bell className="w-4 h-4" />;
-      case 'events':
-        return <Calendar className="w-4 h-4" />;
-    }
-  };
-
-  const getTabLabel = (tab: ContentType) => {
-    switch (tab) {
-      case 'news':
-        return 'Новости';
-      case 'updates':
-        return 'Обновления';
-      case 'events':
-        return 'События';
     }
   };
 
