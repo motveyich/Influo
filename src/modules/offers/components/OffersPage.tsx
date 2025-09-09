@@ -182,6 +182,22 @@ export function OffersPage() {
     setOffers(prev => [offer, ...prev]);
   };
 
+  const handleManageDeal = (offerId: string) => {
+    const offer = offers.find(o => o.offerId === offerId);
+    if (offer) {
+      setSelectedDeal(offer);
+      setShowDealModal(true);
+    }
+  };
+
+  const handleCreatePayment = (offerId: string) => {
+    const offer = offers.find(o => o.offerId === offerId);
+    if (offer) {
+      setSelectedDeal(offer);
+      setShowPaymentModal(true);
+    }
+  };
+
   const handleLeaveReview = async (offerId: string) => {
     // Find the offer to get partner information
     const offer = offers.find(o => o.offerId === offerId);
@@ -415,6 +431,8 @@ export function OffersPage() {
               key={offer.offerId}
               offer={offer}
               onAction={!showMyOffers ? handleOfferAction : undefined}
+              onManageDeal={handleManageDeal}
+              onCreatePayment={handleCreatePayment}
               onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
               onModify={showMyOffers ? handleModifyOffer : undefined}
               onLeaveReview={handleLeaveReview}
@@ -460,6 +478,40 @@ export function OffersPage() {
         advertiserId={currentUserId}
         onOfferSent={handleOfferSent}
       />
+
+      {/* Deal Management Modal */}
+      {selectedDeal && (
+        <DealManagementModal
+          isOpen={showDealModal}
+          onClose={() => {
+            setShowDealModal(false);
+            setSelectedDeal(null);
+          }}
+          deal={selectedDeal}
+          onDealUpdated={() => {
+            loadOffers();
+            setShowDealModal(false);
+            setSelectedDeal(null);
+          }}
+        />
+      )}
+
+      {/* Payment Modal */}
+      {selectedDeal && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedDeal(null);
+          }}
+          deal={selectedDeal}
+          onPaymentCreated={() => {
+            loadOffers();
+            setShowPaymentModal(false);
+            setSelectedDeal(null);
+          }}
+        />
+      )}
 
       {/* Review Modal */}
       {reviewTargetOffer && (
