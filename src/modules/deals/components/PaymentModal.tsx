@@ -88,31 +88,41 @@ export function PaymentModal({
       setCurrentStep(2);
       
       // Send notification in chat
-      const partnerId = payerId === currentUserId ? payeeId : payerId;
-      const { chatService } = await import('../../chat/services/chatService');
-      // Отправляем интерактивное сообщение с кнопкой оплаты
-      await chatService.sendMessage({
-        senderId: currentUserId,
-        receiverId: partnerId,
-        messageContent: `💳 Окно оплаты создано на сумму ${formatCurrency(totalAmount)}`,
-        messageType: 'payment_window',
-        metadata: {
-          dealId: configuredDeal.id,
-          actionType: 'payment_window_created',
-          paymentType: paymentType,
-          amount: totalAmount,
-          paymentDetails: paymentDetails,
-          isInteractive: true,
-          buttons: [
-            {
-              id: 'pay_now',
-              label: 'Оплачено',
-              action: 'confirm_payment',
-              dealId: configuredDeal.id
-            }
-          ]
+      try {
+        const partnerId = payerId === currentUserId ? payeeId : payerId;
+        const { chatService } = await import('../../chat/services/chatService');
+        // Отправляем интерактивное сообщение с кнопкой оплаты
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: partnerId,
+          messageContent: `💳 Окно оплаты создано на сумму ${formatCurrency(totalAmount)}`,
+          messageType: 'text', // Use 'text' type until database schema is updated
+          metadata: {
+            dealId: configuredDeal.id,
+            actionType: 'payment_window_created',
+            paymentType: paymentType,
+            amount: totalAmount,
+            paymentDetails: paymentDetails,
+            isInteractive: true,
+            buttons: [
+              {
+                id: 'pay_now',
+                label: 'Оплачено',
+                action: 'confirm_payment',
+                dealId: configuredDeal.id
+              }
+            ]
+          }
+        });
+      } catch (chatError: any) {
+        // Don't fail deal creation if chat message is just queued
+        if (chatError.message?.includes('queued due to delivery delay')) {
+          toast('Уведомление будет доставлено с задержкой', { icon: '⏰' });
+        } else {
+          console.warn('Failed to send chat notification:', chatError);
+          toast('Сделка создана, но уведомление не отправлено', { icon: '⚠️' });
         }
-      });
+      }
     } catch (error: any) {
       console.error('Failed to create deal:', error);
       toast.error(error.message || 'Не удалось создать сделку');
@@ -148,7 +158,7 @@ export function PaymentModal({
         senderId: currentUserId,
         receiverId: partnerId,
         messageContent: actionMessage,
-        messageType: 'text',
+        messageType: 'text', // Use 'text' type until database schema is updated
         metadata: {
           dealId: currentDeal.id,
           actionType: 'payment_confirmed',

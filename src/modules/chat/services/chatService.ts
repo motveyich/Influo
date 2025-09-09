@@ -263,9 +263,23 @@ export class ChatService {
       try {
         await this.sendMessage(message);
       } catch (error) {
-        console.error('Failed to process queued message:', error);
-        // Re-queue if still failing
-        this.messageQueue.push(message);
+        const errorMessage = (error as Error).message || '';
+        
+        // Check if this is a permanent validation error that shouldn't be retried
+        const isPermanentError = errorMessage.includes('Cannot send message to yourself') ||
+                               errorMessage.includes('Sender ID is required') ||
+                               errorMessage.includes('Receiver ID is required') ||
+                               errorMessage.includes('Invalid message type') ||
+                               errorMessage.includes('Message content is required');
+        
+        if (isPermanentError) {
+          console.warn('Removing invalid message from queue:', errorMessage);
+          // Don't re-queue permanently invalid messages
+        } else {
+          console.error('Failed to process queued message:', error);
+          // Re-queue only for temporary errors (network issues, etc.)
+          this.messageQueue.push(message);
+        }
       }
     }
   }
