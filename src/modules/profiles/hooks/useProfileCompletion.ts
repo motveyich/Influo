@@ -37,7 +37,16 @@ export function useProfileCompletion(userId: string) {
         throw new Error('Supabase configuration is invalid. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
       }
       
-      const userProfile = await profileService.getProfile(userId);
+      let userProfile;
+      try {
+        userProfile = await profileService.getProfile(userId);
+      } catch (profileError: any) {
+        if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
+          throw new Error('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
+        }
+        throw profileError;
+      }
+      
       setProfile(userProfile);
     } catch (err: any) {
       console.error('Failed to load profile:', err);
