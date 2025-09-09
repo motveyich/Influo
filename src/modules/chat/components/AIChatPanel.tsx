@@ -46,6 +46,11 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
       }
     }
 
+    return () => {
+      window.removeEventListener('triggerAIAnalysis', handleAnalysisTrigger);
+    };
+  }, [thread, conversationMessages, messages.length]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -66,12 +71,12 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
     }
   };
 
-  const triggerAnalysis = async () => {
+  const triggerAnalysis = async (messages?: any[]) => {
     if (!thread || isAnalyzing) return;
 
     try {
       setIsAnalyzing(true);
-      const analysisMessage = await aiChatService.analyzeConversation(thread.id, conversationMessages);
+      const analysisMessage = await aiChatService.analyzeConversation(thread.id, messages || conversationMessages);
       
       if (analysisMessage) {
         setMessages(prev => [...prev, analysisMessage]);
@@ -331,7 +336,7 @@ export function AIChatPanel({ user1Id, user2Id, isVisible, onToggleVisibility, c
             Следующие шаги
           </button>
           <button
-            onClick={() => triggerAnalysis()})}
+            onClick={() => triggerAnalysis()}
             className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors"
           >
             Анализировать сейчас
