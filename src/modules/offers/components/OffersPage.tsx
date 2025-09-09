@@ -3,6 +3,7 @@ import { Offer } from '../../../core/types';
 import { OfferCard } from './OfferCard';
 import { OfferResponseModal } from './OfferResponseModal';
 import { CreateOfferModal } from './CreateOfferModal';
+import { ReviewModal } from '../../deals/components/ReviewModal';
 import { offerService } from '../services/offerService';
 import { Handshake, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
@@ -20,6 +21,8 @@ export function OffersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showMyOffers, setShowMyOffers] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   
   const { user, loading } = useAuth();
@@ -172,6 +175,21 @@ export function OffersPage() {
   const handleOfferSent = (offer: Offer) => {
     // Add new offer to list
     setOffers(prev => [offer, ...prev]);
+  };
+
+  const handleLeaveReview = async (offerId: string) => {
+    // Find the offer to get partner information
+    const offer = offers.find(o => o.offerId === offerId);
+    if (offer) {
+      setReviewTargetOffer(offer);
+      setShowReviewModal(true);
+    }
+  };
+
+  const handleReviewSubmitted = () => {
+    setShowReviewModal(false);
+    setReviewTargetOffer(null);
+    toast.success('Отзыв отправлен! Спасибо за обратную связь.');
   };
 
   const handleWithdrawOffer = async (offerId: string) => {
@@ -394,6 +412,7 @@ export function OffersPage() {
               onAction={!showMyOffers ? handleOfferAction : undefined}
               onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
               onModify={showMyOffers ? handleModifyOffer : undefined}
+              onLeaveReview={handleLeaveReview}
               showSenderActions={showMyOffers}
             />
           ))}
@@ -436,6 +455,39 @@ export function OffersPage() {
         advertiserId={currentUserId}
         onOfferSent={handleOfferSent}
       />
+
+      {/* Review Modal */}
+      {reviewTargetOffer && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewTargetOffer(null);
+          }}
+          dealId={reviewTargetOffer.offerId} // Using offerId as dealId for now
+          reviewerId={currentUserId}
+          revieweeId={showMyOffers ? reviewTargetOffer.influencerId : reviewTargetOffer.advertiserId}
+          collaborationType={currentUserProfile?.userType === 'influencer' ? 'as_influencer' : 'as_advertiser'}
+          revieweeName="Партнер по сотрудничеству"
+          onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
+      {/* Review Modal */}
+      {reviewTargetOffer && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewTargetOffer(null);
+          }}
+          dealId={reviewTargetOffer.offerId} // Using offerId as dealId for now
+          reviewerId={currentUserId}
+          revieweeId={showMyOffers ? reviewTargetOffer.influencerId : reviewTargetOffer.advertiserId}
+          collaborationType={currentUserProfile?.userType === 'influencer' ? 'as_influencer' : 'as_advertiser'}
+          revieweeName="Партнер по сотрудничеству"
+          onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
     </div>
   );
 }

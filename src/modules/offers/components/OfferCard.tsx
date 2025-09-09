@@ -1,7 +1,7 @@
 import React from 'react';
 import { Offer } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye } from 'lucide-react';
+import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye, Star } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface OfferCardProps {
@@ -9,10 +9,12 @@ interface OfferCardProps {
   onAction?: (offerId: string, action: 'accept' | 'decline' | 'counter') => void;
   onWithdraw?: (offerId: string) => void;
   onModify?: (offerId: string) => void;
+  onLeaveReview?: (offerId: string) => void;
   showSenderActions?: boolean;
 }
 
 export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderActions = false }: OfferCardProps) {
+export function OfferCard({ offer, onAction, onWithdraw, onModify, onLeaveReview, showSenderActions = false }: OfferCardProps) {
   const { t } = useTranslation();
 
   // Check if this is an application (not a traditional offer)
@@ -239,6 +241,26 @@ export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderAct
               <span className="text-sm font-medium text-green-800">
                 Предложение принято! Проверьте сообщения для следующих шагов.
               </span>
+            </div>
+          </div>
+        )}
+        {/* Review Section for Completed Offers */}
+        {offer.status === 'completed' && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-green-800">
+                  Сотрудничество завершено!
+                </span>
+              </div>
+              <button
+                onClick={() => onLeaveReview?.(offer.offerId)}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+              >
+                <Star className="w-4 h-4" />
+                <span>Оставить отзыв</span>
+              </button>
             </div>
           </div>
         )}

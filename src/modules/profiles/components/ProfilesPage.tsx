@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
+import { dealService } from '../../../services/dealService';
 import { ProfileCompletionBanner } from './ProfileCompletionBanner';
 import { useProfileCompletion } from '../hooks/useProfileCompletion';
 import { useAuth } from '../../../hooks/useAuth';
@@ -24,10 +25,12 @@ import {
 import toast from 'react-hot-toast';
 
 export function ProfilesPage() {
-  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'reviews'>('basic');
   const [isLoading, setIsLoading] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearSection, setClearSection] = useState<'basic' | 'influencer' | 'advertiser' | null>(null);
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [userRating, setUserRating] = useState({ rating: 0, totalReviews: 0 });
   
   const { user, loading, signOut } = useAuth();
   const currentUserId = user?.id || '';
@@ -70,6 +73,11 @@ export function ProfilesPage() {
         ...prev,
         email: user.email || ''
       }));
+    }
+    
+    // Load user reviews and rating
+    if (currentUserId) {
+      loadUserReviews();
     }
     
     if (currentUserProfile) {
@@ -303,6 +311,19 @@ export function ProfilesPage() {
     }
   };
 
+  const loadUserReviews = async () => {
+    try {
+      const [reviews, rating] = await Promise.all([
+        dealService.getUserReviews(currentUserId, false), // Reviews about this user
+        dealService.getUserRating(currentUserId)
+      ]);
+      setUserReviews(reviews);
+      setUserRating(rating);
+    } catch (error) {
+      console.error('Failed to load user reviews:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
@@ -488,6 +509,35 @@ export function ProfilesPage() {
               >
                 <Bell className="w-4 h-4" />
                 <span>Уведомления</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'reviews'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Star className="w-4 h-4" />
+                <span>Отзывы и рейтинг</span>
+                {userRating.totalReviews > 0 && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                    {userRating.rating.toFixed(1)} ★
+                  </span>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'reviews'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Star className="w-4 h-4" />
+                <span>Отзывы и рейтинг</span>
               </button>
               
               <button
@@ -849,6 +899,130 @@ export function ProfilesPage() {
                       placeholder="https://portfolio.com"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reviews Tab */}
+            {activeTab === 'reviews' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Отзывы и рейтинг</h3>
+                
+                {/* Rating Summary */}
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center space-x-1 mb-2">
+                        <Star className="w-8 h-8 text-yellow-500 fill-current" />
+                        <span className="text-3xl font-bold text-gray-900">
+                          {userRating.rating > 0 ? userRating.rating.toFixed(1) : '—'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {userRating.totalReviews > 0 
+                          ? `Из ${userRating.totalReviews} отзывов`
+                          : 'Пока нет отзывов'
+                        }
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 mb-2">Рейтинг вашего аккаунта</h4>
+                      {userRating.totalReviews === 0 ? (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-3">
+                            У вас пока нет отзывов. Завершите сотрудничество, чтобы получить первые отзывы и повысить доверие.
+                          </p>
+                          <button
+                            onClick={() => window.location.href = '/offers'}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                          >
+                            Найти сотрудничество
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {[5, 4, 3, 2, 1].map((stars) => {
+                            const count = userReviews.filter(r => Math.round(r.rating) === stars).length;
+                            const percentage = userRating.totalReviews > 0 ? (count / userRating.totalReviews) * 100 : 0;
+                            return (
+                              <div key={stars} className="flex items-center space-x-2">
+                                <span className="text-sm w-8">{stars} ★</span>
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${percentage}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-gray-600 w-8">{count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reviews List */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-4">Отзывы о вас ({userReviews.length})</h4>
+                  
+                  {userReviews.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Star className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Пока нет отзывов</h3>
+                      <p className="text-gray-600 mb-4">
+                        Завершите первое сотрудничество, чтобы получить отзывы и повысить рейтинг
+                      </p>
+                      <div className="space-y-2 text-sm text-gray-500">
+                        <p>💡 Советы для получения отзывов:</p>
+                        <p>• Качественно выполняйте условия сделок</p>
+                        <p>• Соблюдайте сроки и требования</p>
+                        <p>• Поддерживайте хорошую коммуникацию</p>
+                        <p>• Просите клиентов оставлять отзывы</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {userReviews.map((review) => (
+                        <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <div className="flex">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-4 h-4 ${
+                                      star <= review.rating
+                                        ? 'text-yellow-400 fill-current'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">{review.rating}/5</span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                            </span>
+                          </div>
+                          <h5 className="font-medium text-gray-900 mb-2">{review.title}</h5>
+                          <p className="text-sm text-gray-600">{review.comment}</p>
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                            <span className="text-xs text-gray-500">
+                              Сотрудничество {review.collaborationType === 'as_influencer' ? 'как инфлюенсер' : 'как рекламодатель'}
+                            </span>
+                            {review.helpfulVotes > 0 && (
+                              <span className="text-xs text-gray-500">
+                                👍 {review.helpfulVotes} полезных
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
