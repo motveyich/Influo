@@ -14,6 +14,7 @@ interface PaymentModalProps {
   totalAmount: number;
   currency?: string;
   onDealCreated?: (deal: Deal) => void;
+  currentUserId: string;
 }
 
 export function PaymentModal({
@@ -26,7 +27,8 @@ export function PaymentModal({
   payeeId,
   totalAmount,
   currency = 'USD',
-  onDealCreated
+  onDealCreated,
+  currentUserId
 }: PaymentModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentType, setPaymentType] = useState<PaymentType>('full_prepay');

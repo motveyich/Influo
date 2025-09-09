@@ -586,6 +586,7 @@ export function OffersPage() {
           payeeId={selectedDealOffer.influencerId}
           totalAmount={selectedDealOffer.details.rate}
           currency={selectedDealOffer.details.currency || 'USD'}
+          currentUserId={currentUserId}
           onDealCreated={(deal) => {
             toast.success('Сделка создана! Теперь можно управлять оплатой.');
             setShowPaymentModal(false);
