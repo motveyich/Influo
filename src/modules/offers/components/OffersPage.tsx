@@ -29,9 +29,6 @@ export function OffersPage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
-  const [showDealModal, setShowDealModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
