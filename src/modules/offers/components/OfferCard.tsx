@@ -13,7 +13,6 @@ interface OfferCardProps {
   showSenderActions?: boolean;
 }
 
-export function OfferCard({ offer, onAction, onWithdraw, onModify, showSenderActions = false }: OfferCardProps) {
 export function OfferCard({ offer, onAction, onWithdraw, onModify, onLeaveReview, showSenderActions = false }: OfferCardProps) {
   const { t } = useTranslation();
 
