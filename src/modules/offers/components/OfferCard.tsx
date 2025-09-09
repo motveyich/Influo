@@ -1,7 +1,7 @@
 import React from 'react';
 import { Offer } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye, Star, Settings, Handshake } from 'lucide-react';
+import { Clock, DollarSign, CheckCircle, XCircle, MessageCircle, Eye, Star, Settings, Handshake, User, Target, FileText } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface OfferCardProps {
@@ -14,13 +14,48 @@ interface OfferCardProps {
   onLeaveReview?: (offerId: string) => void;
   showSenderActions?: boolean;
   currentUserId?: string;
+  onViewDetails?: (offer: Offer) => void;
 }
 
-export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false, currentUserId }: OfferCardProps) {
+export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false, currentUserId, onViewDetails }: OfferCardProps) {
   const { t } = useTranslation();
 
   // Check if this is an application (not a traditional offer)
   const isApplication = (offer as any).type === 'application';
+  
+  // Determine sender and receiver roles
+  const getSenderRole = () => {
+    if (isApplication) {
+      // For applications: applicant is the one who sent the application
+      if (showSenderActions) {
+        // Current user is the sender of the application
+        return currentUserId === offer.influencerId ? 'Инфлюенсер → Рекламодателю' : 'Рекламодатель → Инфлюенсеру';
+      } else {
+        // Current user is the receiver of the application
+        return currentUserId === offer.advertiserId ? 'От инфлюенсера' : 'От рекламодателя';
+      }
+    } else {
+      // For offers: advertiser sends to influencer
+      return showSenderActions ? 'Рекламодатель → Инфлюенсеру' : 'От рекламодателя';
+    }
+  };
+  
+  // Get what is required/offered
+  const getRequirements = () => {
+    const deliverables = offer.details.deliverables || [];
+    const rate = offer.details.rate;
+    const timeline = offer.details.timeline;
+    
+    return {
+      deliverables,
+      rate,
+      timeline,
+      summary: deliverables.length > 0 ? deliverables.slice(0, 2).join(', ') + (deliverables.length > 2 ? '...' : '') : 'Не указано'
+    };
+  };
+  
+  const senderRole = getSenderRole();
+  const requirements = getRequirements();
 
   const getStatusColor = (status: Offer['status']) => {
     switch (status) {
@@ -81,6 +116,10 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
               <h3 className="text-lg font-semibold text-gray-900">
                 {isApplication ? 'Заявка на сотрудничество' : 'Предложение о сотрудничестве'}
               </h3>
+              <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md flex items-center space-x-1">
+                <User className="w-3 h-3" />
+                <span>{senderRole}</span>
+              </span>
               <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
                 <div className="flex items-center space-x-1">
                   {getStatusIcon(offer.status)}
@@ -99,6 +138,17 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
             <p className="text-sm text-gray-600">
               {isApplication ? 'ID заявки:' : 'ID кампании:'} {offer.campaignId} • {isApplication ? 'ID заявки:' : 'ID предложения:'} {offer.offerId}
             </p>
+            
+            {/* Requirements summary */}
+            <div className="mt-2 p-3 bg-gray-50 rounded-md">
+              <div className="flex items-center space-x-2 mb-1">
+                <Target className="w-4 h-4 text-purple-600" />
+                <span className="text-sm font-medium text-gray-900">
+                  {isApplication ? 'Предлагаемые услуги:' : 'Требования:'}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">{requirements.summary}</p>
+            </div>
           </div>
           
           <div className="text-right">
@@ -111,26 +161,38 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
         </div>
 
         {/* Metadata */}
-        <div className="flex items-center space-x-4 text-sm text-gray-500">
-          <div className="flex items-center space-x-1">
-            <Eye className="w-4 h-4" />
-            <span>{offer.metadata.viewCount} {t('offers.stats.views')}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <div className="flex items-center space-x-1">
+              <Eye className="w-4 h-4" />
+              <span>{offer.metadata.viewCount} {t('offers.stats.views')}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <MessageCircle className="w-4 h-4" />
+              <span>{offer.messages.length} {t('offers.stats.messages')}</span>
+            </div>
+            <span>
+              Создано {formatDistanceToNow(parseISO(offer.timeline.createdAt), { addSuffix: true })}
+            </span>
           </div>
-          <div className="flex items-center space-x-1">
-            <MessageCircle className="w-4 h-4" />
-            <span>{offer.messages.length} {t('offers.stats.messages')}</span>
-          </div>
-          <span>
-            Создано {formatDistanceToNow(parseISO(offer.timeline.createdAt), { addSuffix: true })}
-          </span>
+          
+          <button
+            onClick={() => onViewDetails?.(offer)}
+            className="flex items-center space-x-1 px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Подробнее</span>
+          </button>
         </div>
       </div>
 
       {/* Details */}
       <div className="p-6">
-        {/* Deliverables */}
+        {/* Requirements Details */}
         <div className="mb-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.deliverables')}</h4>
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">
+            {isApplication ? 'Что предлагается:' : t('offers.deliverables')}
+          </h4>
           <div className="flex flex-wrap gap-2">
             {offer.details.deliverables.map((deliverable, index) => (
               <span
@@ -141,17 +203,30 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
               </span>
             ))}
           </div>
+          
+          <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-700">Ставка:</span>
+              <span className="ml-2 text-gray-900">{formatCurrency(offer.details.rate, offer.details.currency)}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Сроки:</span>
+              <span className="ml-2 text-gray-900">{offer.details.timeline}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Terms */}
+        {/* Original terms/message */}
         <div className="mb-6">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.terms')}</h4>
-          <p className="text-sm text-gray-600 leading-relaxed">
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">
+            {isApplication ? 'Сообщение:' : t('offers.terms')}
+          </h4>
+          <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
             {offer.details.terms}
           </p>
         </div>
 
-        {/* Timeline */}
+        {/* Timeline moved to after details */}
         {(offer.timeline.respondedAt || offer.timeline.completedAt) && (
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.timeline')}</h4>
@@ -244,6 +319,8 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <span className="text-sm font-medium text-green-800">
                   Предложение принято! Управляйте сделкой.
                 </span>
+              </div>
+              <div className="flex space-x-2">
                 {/* Кнопка оплаты только для инфлюенсера в сделке */}
                 {currentUserId === offer.influencerId && (
                   <button
@@ -367,14 +444,13 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
         )}
 
         {(offer.status === 'withdrawn' || offer.status === 'cancelled') && (
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-            <div className="flex items-center space-x-2">
-              <XCircle className="w-5 h-5 text-gray-600" />
-              <span className="text-sm font-medium text-gray-800">
-                {offer.status === 'withdrawn' ? 'Это предложение было отозвано.' : 'Эта заявка была отменена.'}
-              </span>
-            </div>
+          <div className="flex items-center space-x-1">
+            <XCircle className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-medium text-gray-800">
+              {offer.status === 'withdrawn' ? 'Это предложение было отозвано.' : 'Эта заявка была отменена.'}
+            </span>
           </div>
+      </div>
         )}
       </div>
     </div>
