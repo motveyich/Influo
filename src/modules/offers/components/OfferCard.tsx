@@ -241,19 +241,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium text-green-800">
-                  Предложение принято! Проверьте сообщения для следующих шагов.
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Review Section for Completed Offers */}
-        {offer.status === 'completed' && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
                   Предложение принято! Управляйте сделкой.
                 </span>
               </div>
@@ -276,7 +263,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
             </div>
           </div>
         )}
-        
+
         {/* In Progress Status with Management Options */}
         {(offer.status === 'in_progress' || offer.status === 'accepted') && (offer as any).dealId && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -302,6 +289,22 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                   <Settings className="w-3 h-3" />
                   <span>Управление</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Review Section for Completed Offers */}
+        {offer.status === 'completed' && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-green-800">
+                  Сотрудничество завершено!
+                </span>
+              </div>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => onLeaveReview?.(offer.offerId)}
                   className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"

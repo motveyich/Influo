@@ -29,6 +29,9 @@ export function OffersPage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
+  const [showDealModal, setShowDealModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -195,6 +198,31 @@ export function OffersPage() {
     setShowReviewModal(false);
     setReviewTargetOffer(null);
     toast.success('Отзыв отправлен! Спасибо за обратную связь.');
+  };
+
+  const handleManageDeal = async (offerId: string) => {
+    // Find the offer to manage deal
+    const offer = offers.find(o => o.offerId === offerId);
+    if (offer) {
+      setSelectedDealOffer(offer);
+      setShowDealModal(true);
+    }
+  };
+
+  const handleCreatePayment = async (offerId: string) => {
+    // Find the offer to create payment
+    const offer = offers.find(o => o.offerId === offerId);
+    if (offer) {
+      setSelectedDealOffer(offer);
+      setShowPaymentModal(true);
+    }
+  };
+
+  const handleDealStatusUpdated = () => {
+    // Refresh offers to see updated statuses
+    loadOffers();
+    setShowDealModal(false);
+    setSelectedDealOffer(null);
   };
 
   const handleWithdrawOffer = async (offerId: string) => {
@@ -418,6 +446,8 @@ export function OffersPage() {
               onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
               onModify={showMyOffers ? handleModifyOffer : undefined}
               onLeaveReview={handleLeaveReview}
+              onManageDeal={handleManageDeal}
+              onCreatePayment={handleCreatePayment}
               showSenderActions={showMyOffers}
             />
           ))}
@@ -475,6 +505,47 @@ export function OffersPage() {
           collaborationType={currentUserProfile?.userType === 'influencer' ? 'as_influencer' : 'as_advertiser'}
           revieweeName="Партнер по сотрудничеству"
           onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
+
+      {/* Deal Management Modal */}
+      {selectedDealOffer && (
+        <DealManagementModal
+          isOpen={showDealModal}
+          onClose={() => {
+            setShowDealModal(false);
+            setSelectedDealOffer(null);
+          }}
+          deal={null} // Will be loaded inside modal
+          currentUserId={currentUserId}
+          onStatusUpdated={handleDealStatusUpdated}
+          onCreatePayment={() => {
+            setShowDealModal(false);
+            setShowPaymentModal(true);
+          }}
+        />
+      )}
+
+      {/* Payment Modal */}
+      {selectedDealOffer && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedDealOffer(null);
+          }}
+          offerId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
+          applicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
+          payerId={selectedDealOffer.advertiserId}
+          payeeId={selectedDealOffer.influencerId}
+          totalAmount={selectedDealOffer.details.rate}
+          currency={selectedDealOffer.details.currency || 'USD'}
+          onDealCreated={(deal) => {
+            toast.success('Сделка создана! Теперь можно управлять оплатой.');
+            setShowPaymentModal(false);
+            setSelectedDealOffer(null);
+            loadOffers();
+          }}
         />
       )}
     </div>
