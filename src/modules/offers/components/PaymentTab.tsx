@@ -167,6 +167,19 @@ export function PaymentTab() {
     return 'Участник';
   };
 
+  const getPaymentTypeLabel = (paymentType: string) => {
+    switch (paymentType) {
+      case 'full_prepay':
+        return 'Полная предоплата';
+      case 'partial_prepay_postpay':
+        return 'Частичная предоплата';
+      case 'postpay':
+        return 'Постоплата';
+      default:
+        return paymentType;
+    }
+  };
+
   const stats = {
     total: paymentWindows.length,
     pending: paymentWindows.filter(w => w.status === 'pending').length,
@@ -289,8 +302,7 @@ export function PaymentTab() {
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <span>ID: {window.id.substring(0, 8)}...</span>
-                    <span>Тип: {window.paymentType === 'full_prepay' ? 'Полная предоплата' : 
-                              window.paymentType === 'partial_prepay_postpay' ? 'Частичная предоплата' : 'Постоплата'}</span>
+                    <span>Тип: {getPaymentTypeLabel(window.paymentType)}</span>
                     <span>Создано {formatDistanceToNow(parseISO(window.createdAt), { addSuffix: true })}</span>
                   </div>
                 </div>
@@ -401,7 +413,7 @@ export function PaymentTab() {
                           {getStatusIcon(history.status)}
                           <span className="text-sm text-gray-900">{getStatusLabel(history.status)}</span>
                           {history.note && (
-                            <span className="text-sm text-gray-600">- {history.note}</span>
+                          <strong>📋 Инструкции:</strong>
                           )}
                         </div>
                         <span className="text-xs text-gray-500">
