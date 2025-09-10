@@ -395,7 +395,7 @@ export function PaymentTab() {
                 {canUpdateStatus(window, 'confirmed') && window.status === 'paid' && (
                   <button
                     onClick={() => handleStatusUpdate(window.id, 'confirmed')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
                   >
                     Получено
                   </button>
