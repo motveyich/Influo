@@ -37,6 +37,7 @@ export function PaymentWindowModal({
     currency: 'USD',
     paymentType: 'full_prepay' as PaymentWindowType,
     paymentStage: 'prepay' as 'prepay' | 'postpay',
+    prepayPercentage: 50,
     paymentDetails: {
       bankAccount: '',
       cardNumber: '',
@@ -53,6 +54,7 @@ export function PaymentWindowModal({
         currency: currentWindow.currency,
         paymentType: currentWindow.paymentType,
         paymentStage: currentWindow.paymentStage,
+        prepayPercentage: currentWindow.metadata?.prepayPercentage || 50,
         paymentDetails: currentWindow.paymentDetails
       });
     } else {
@@ -61,6 +63,7 @@ export function PaymentWindowModal({
         currency: 'USD',
         paymentType: 'full_prepay',
         paymentStage: 'prepay',
+        prepayPercentage: 50,
         paymentDetails: {
           bankAccount: '',
           cardNumber: '',
@@ -113,7 +116,12 @@ export function PaymentWindowModal({
         applicationId,
         payerId,
         payeeId,
-        ...formData
+        ...formData,
+        metadata: {
+          prepayPercentage: formData.paymentType === 'partial_prepay_postpay' ? formData.prepayPercentage : undefined,
+          totalAmount: formData.amount,
+          isPartialPayment: formData.paymentType === 'partial_prepay_postpay'
+        }
       };
 
       let savedWindow: PaymentWindow;
@@ -245,7 +253,36 @@ export function PaymentWindowModal({
                 />
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">Частичная предоплата</h4>
-                  <p className="text-sm text-gray-600">Часть до работы, часть после</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">Часть до работы, часть после</p>
+                    {formData.paymentType === 'partial_prepay_postpay' && (
+                      <div>
+                        <div className="flex justify-between text-sm text-gray-700 mb-2">
+                          <span>Предоплата: {formData.prepayPercentage}% ({formatCurrency(formData.amount * formData.prepayPercentage / 100)})</span>
+                          <span>Постоплата: {100 - formData.prepayPercentage}% ({formatCurrency(formData.amount * (100 - formData.prepayPercentage) / 100)})</span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="range"
+                            min="10"
+                            max="90"
+                            step="5"
+                            value={formData.prepayPercentage}
+                            onChange={(e) => setFormData(prev => ({ ...prev, prepayPercentage: parseInt(e.target.value) }))}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            style={{
+                              background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${formData.prepayPercentage}%, #e5e7eb ${formData.prepayPercentage}%, #e5e7eb 100%)`
+                            }}
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>10%</span>
+                            <span>{formData.prepayPercentage}%</span>
+                            <span>90%</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </label>
 
