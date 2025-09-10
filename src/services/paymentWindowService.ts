@@ -264,6 +264,10 @@ export class PaymentWindowService {
         console.log('Payment windows table not yet created');
         return [];
       }
+      if (error?.code === '42P01') {
+        console.log('Payment windows table not yet created');
+        return [];
+      }
       console.error('Failed to get pending payment windows:', error);
       return [];
     }
