@@ -218,6 +218,7 @@ export function PaymentWindowModal({
           </div>
 
           {/* Payment Type */}
+          {!isPostpayWindow && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Тип оплаты *
@@ -246,33 +247,6 @@ export function PaymentWindowModal({
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">Частичная предоплата</h4>
                   <p className="text-sm text-gray-600">Часть до работы, часть после</p>
-                  {formData.paymentType === 'partial_prepay_postpay' && (
-                    <div className="mt-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Предоплата: {formData.prepayPercentage}%</span>
-                        <span className="text-sm text-gray-600">{formatCurrency(formData.amount * (formData.prepayPercentage / 100))}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="10"
-                        max="90"
-                        step="5"
-                        value={formData.prepayPercentage}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          prepayPercentage: parseInt(e.target.value) 
-                        }))}
-                        className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                        style={{
-                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${formData.prepayPercentage}%, #cbd5e1 ${formData.prepayPercentage}%, #cbd5e1 100%)`
-                        }}
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>Предоплата: {formatCurrency(formData.amount * (formData.prepayPercentage / 100))}</span>
-                        <span>Постоплата: {formatCurrency(formData.amount * ((100 - formData.prepayPercentage) / 100))}</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </label>
 
@@ -289,7 +263,6 @@ export function PaymentWindowModal({
                 </div>
               </label>
             </div>
-          </div>
 
           {/* Payment Details */}
           <div>
