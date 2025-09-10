@@ -289,6 +289,8 @@ export class PaymentWindowService {
         messageType: 'payment_window',
         metadata: {
           paymentWindowId: window.id,
+          payerId: window.payerId,
+          payeeId: window.payeeId,
           paymentType: window.paymentType,
           amount: window.amount,
           currency: window.currency,
@@ -373,6 +375,8 @@ export class PaymentWindowService {
         messageType: 'payment_confirmation',
         metadata: {
           paymentWindowId: window.id,
+          payerId: window.payerId,
+          payeeId: window.payeeId,
           status: newStatus,
           actionType: 'status_update',
           isInteractive: buttons.length > 0,

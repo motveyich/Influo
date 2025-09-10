@@ -160,9 +160,13 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
         </div>
 
         {/* Interactive buttons */}
-        {isInteractive && !isOwnMessage && message.metadata?.buttons && (
+        {isInteractive && message.metadata?.buttons && (
           <div className="mt-2 space-y-2">
-            {message.metadata.buttons.map((button: any) => (
+            {message.metadata.buttons.filter((button: any) => {
+              // Фильтруем кнопки на основе роли пользователя
+              const userRole = getUserRole(currentUserId, message.metadata);
+              return shouldShowButton(button, userRole);
+            }).map((button: any) => (
               <button
                 key={button.id}
                 onClick={() => onInteraction(button.action, message.id, button.dealId)}
@@ -174,21 +178,30 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
           </div>
         )}
 
-        {/* Show buttons for sender when payment is confirmed */}
-        {isInteractive && isOwnMessage && message.messageType === 'payment_confirmation' && message.metadata?.buttons && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {message.metadata.buttons.map((button: any) => (
-              <button
-                key={button.id}
-                onClick={() => onInteraction(button.action, message.id, button.dealId)}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${getButtonStyle(button.style)}`}
-              >
-                {button.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
+
+  function getUserRole(userId: string, metadata: any): 'payer' | 'payee' | 'none' {
+    if (metadata?.payerId === userId) return 'payer';
+    if (metadata?.payeeId === userId) return 'payee';
+    return 'none';
+  }
+
+  function shouldShowButton(button: any, userRole: 'payer' | 'payee' | 'none'): boolean {
+    // Кнопки для плательщика (рекламодателя)
+    const payerButtons = ['paying', 'paid', 'failed'];
+    // Кнопки для получателя (инфлюенсера)
+    const payeeButtons = ['confirmed'];
+
+    if (userRole === 'payer' && payerButtons.includes(button.id)) {
+      return true;
+    }
+    
+    if (userRole === 'payee' && payeeButtons.includes(button.id)) {
+      return true;
+    }
+
+    return false;
+  }
 }
