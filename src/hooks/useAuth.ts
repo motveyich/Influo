@@ -10,6 +10,7 @@ export function useAuth() {
   const [roleLoading, setRoleLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockCheckLoading, setBlockCheckLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
@@ -84,25 +85,31 @@ export function useAuth() {
         profile = result.data;
         error = result.error;
       } catch (fetchError) {
-        // Handle network/connection errors
+        // Handle network/connection errors gracefully
         if (fetchError instanceof TypeError && fetchError.message === 'Failed to fetch') {
           console.warn('⚠️ [useAuth] Supabase connection failed (network error). User is assumed not blocked.');
           setIsBlocked(false);
+          setError(null);
           return;
         }
-        throw fetchError;
+        console.warn('⚠️ [useAuth] Database fetch error:', fetchError);
+        setIsBlocked(false);
+        setError(null);
+        return;
       }
       
       if (error) {
         console.error('❌ [useAuth] Failed to check user status:', error);
         // Don't set blocked state if we can't check
         setIsBlocked(false);
+        setError(null);
         return;
       }
       
       if (!profile) {
         console.log('⚠️ [useAuth] No profile found for user, assuming not blocked');
         setIsBlocked(false);
+        setError(null);
         return;
       }
       
@@ -121,22 +128,21 @@ export function useAuth() {
       } else {
         console.log('✅ [useAuth] User is not blocked');
         setIsBlocked(false);
+        setError(null);
       }
     } catch (error) {
-      console.error('❌ [useAuth] Failed to check user status:', error);
+      console.warn('⚠️ [useAuth] Failed to check user status, assuming user is not blocked:', error);
       
       // Handle specific network errors more gracefully
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         console.warn('⚠️ [useAuth] Network error during user status check (Supabase connection issue). Assuming user is not blocked.');
-        setIsBlocked(false);
       } else if (error && (error as any).message?.includes('Failed to fetch')) {
         console.warn('⚠️ [useAuth] Supabase fetch error, likely configuration issue. Assuming user is not blocked.');
-        setIsBlocked(false);
-      } else {
-        // For other errors, still assume not blocked to avoid blocking legitimate users
-        console.warn('⚠️ [useAuth] Unknown error during user status check. Assuming user is not blocked.');
-        setIsBlocked(false);
       }
+      
+      // Always assume user is not blocked for any error to prevent false blocks
+      setIsBlocked(false);
+      setError(null);
     } finally {
       setBlockCheckLoading(false);
     }
