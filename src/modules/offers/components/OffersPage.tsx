@@ -286,11 +286,19 @@ export function OffersPage() {
       return;
     }
     
-    // Check for existing payment info
-    const existingPaymentInfoData = (offer as any).metadata?.paymentStatus === 'prepaid' ? {
-      paidAmount: (offer as any).metadata.paidAmount,
-      remainingAmount: (offer as any).metadata.remainingAmount,
-      paymentStatus: (offer as any).metadata.paymentStatus
+    // Calculate payment info based on current status
+    const paymentStatus = (offer as any).metadata?.paymentStatus;
+    const totalAmount = (offer as any).metadata?.totalAmount || offer.details.rate;
+    const paidAmount = (offer as any).metadata?.paidAmount || 0;
+    const remainingAmount = (offer as any).metadata?.remainingAmount || totalAmount;
+    
+    const existingPaymentInfoData = paymentStatus === 'prepaid' ? {
+      totalAmount,
+      paidAmount,
+      remainingAmount,
+      paymentStatus,
+      paymentStage: (offer as any).metadata?.paymentStage,
+      paymentType: (offer as any).metadata?.paymentType
     } : undefined;
     
     setPaymentModalExistingInfo(existingPaymentInfoData);

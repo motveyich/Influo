@@ -60,11 +60,11 @@ export function PaymentWindowModal({
         paymentDetails: currentWindow.paymentDetails
       });
     } else if (existingPaymentInfo?.paymentStatus === 'prepaid') {
-      // Auto-configure for postpay if prepayment exists
+      // Auto-configure for postpay if prepayment exists - LOCK to postpay only
       setFormData({
         amount: existingPaymentInfo.remainingAmount,
         currency: 'USD',
-        paymentType: 'postpay',
+        paymentType: 'postpay', // Force postpay only
         paymentStage: 'postpay',
         prepayPercentage: 50,
         paymentDetails: {
@@ -72,7 +72,7 @@ export function PaymentWindowModal({
           cardNumber: '',
           paypalEmail: '',
           cryptoAddress: '',
-          instructions: `Постоплата. Уже получено: ${formatCurrency(existingPaymentInfo.paidAmount)}. К доплате: ${formatCurrency(existingPaymentInfo.remainingAmount)}`
+          instructions: `Постоплата за выполненную работу.\n\nСделка на сумму: ${formatCurrency(existingPaymentInfo.totalAmount || 0)}\nУже получено (предоплата): ${formatCurrency(existingPaymentInfo.paidAmount || 0)}\nК доплате: ${formatCurrency(existingPaymentInfo.remainingAmount || 0)}\n\nОплатите после завершения работы согласно условиям.`
         }
       });
     } else {
@@ -265,75 +265,118 @@ export function PaymentWindowModal({
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Тип оплаты *
             </label>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  value="full_prepay"
-                  checked={formData.paymentType === 'full_prepay'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">Полная предоплата</h4>
-                  <p className="text-sm text-gray-600">100% оплата до начала работы</p>
+            
+            {/* Show info about existing prepayment */}
+            {existingPaymentInfo?.paymentStatus === 'prepaid' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center space-x-3 mb-2">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-blue-800">Предоплата уже получена</h4>
                 </div>
-              </label>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
+                  <p><strong>Получено (предоплата):</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
+                  <p><strong>Осталось к оплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
+                </div>
+              </div>
+            )}
 
-              <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  value="partial_prepay_postpay"
-                  checked={formData.paymentType === 'partial_prepay_postpay'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">Частичная предоплата</h4>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">Часть до работы, часть после</p>
-                    {formData.paymentType === 'partial_prepay_postpay' && (
-                      <div>
-                        <div className="flex justify-between text-sm text-gray-700 mb-2">
-                          <span>Предоплата: {formData.prepayPercentage}% ({formatCurrency(formData.amount * formData.prepayPercentage / 100)})</span>
-                          <span>Постоплата: {100 - formData.prepayPercentage}% ({formatCurrency(formData.amount * (100 - formData.prepayPercentage) / 100)})</span>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type="range"
-                            min="10"
-                            max="90"
-                            step="5"
-                            value={formData.prepayPercentage}
-                            onChange={(e) => setFormData(prev => ({ ...prev, prepayPercentage: parseInt(e.target.value) }))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                            style={{
-                              background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${formData.prepayPercentage}%, #e5e7eb ${formData.prepayPercentage}%, #e5e7eb 100%)`
-                            }}
-                          />
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>10%</span>
-                            <span>{formData.prepayPercentage}%</span>
-                            <span>90%</span>
+            {existingPaymentInfo?.paymentStatus === 'prepaid' ? (
+              // Force postpay only after prepayment
+              <div className="space-y-3">
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      value="postpay"
+                      checked={true}
+                      disabled={true}
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">Постоплата</h4>
+                      <p className="text-sm text-gray-600">Оплата оставшейся части после выполнения работы</p>
+                      <p className="text-sm text-orange-700 mt-1">
+                        <strong>Сумма постоплаты: {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Show all payment options for new payments
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    value="full_prepay"
+                    checked={formData.paymentType === 'full_prepay'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">Полная предоплата</h4>
+                    <p className="text-sm text-gray-600">100% оплата до начала работы</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    value="partial_prepay_postpay"
+                    checked={formData.paymentType === 'partial_prepay_postpay'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">Частичная предоплата</h4>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">Часть до работы, часть после</p>
+                      {formData.paymentType === 'partial_prepay_postpay' && (
+                        <div>
+                          <div className="flex justify-between text-sm text-gray-700 mb-2">
+                            <span>Предоплата: {formData.prepayPercentage}% ({formatCurrency(formData.amount * formData.prepayPercentage / 100)})</span>
+                            <span>Постоплата: {100 - formData.prepayPercentage}% ({formatCurrency(formData.amount * (100 - formData.prepayPercentage) / 100)})</span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="range"
+                              min="10"
+                              max="90"
+                              step="5"
+                              value={formData.prepayPercentage}
+                              onChange={(e) => setFormData(prev => ({ ...prev, prepayPercentage: parseInt(e.target.value) }))}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                              style={{
+                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${formData.prepayPercentage}%, #e5e7eb ${formData.prepayPercentage}%, #e5e7eb 100%)`
+                              }}
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>10%</span>
+                              <span>{formData.prepayPercentage}%</span>
+                              <span>90%</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+                </label>
                   </div>
                 </div>
               </label>
 
-              <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  value="postpay"
-                  checked={formData.paymentType === 'postpay'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">Постоплата</h4>
-                  <p className="text-sm text-gray-600">100% оплата после выполнения</p>
-                </div>
-              </label>
-            </div>
+                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    value="postpay"
+                    checked={formData.paymentType === 'postpay'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">Постоплата</h4>
+                    <p className="text-sm text-gray-600">100% оплата после выполнения</p>
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Payment Details */}

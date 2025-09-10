@@ -141,7 +141,7 @@ export class PaymentWindowService {
 
       // Update application/offer status when payment is confirmed
       if (newStatus === 'confirmed') {
-        await this.updateRelatedItemStatus(currentWindow, 'prepaid');
+        await this.updateRelatedItemStatus(currentWindow, newStatus);
       }
 
       return updatedWindow;
@@ -151,31 +151,59 @@ export class PaymentWindowService {
     }
   }
 
-  private async updateRelatedItemStatus(window: PaymentWindow, paymentStatus: string): Promise<void> {
+  private async updateRelatedItemStatus(window: PaymentWindow, paymentStatus: PaymentWindowStatus): Promise<void> {
     try {
       if (window.applicationId) {
-        // Update application metadata to track payment status
+        // Get current application data
         const { data: currentApp } = await supabase
           .from('applications')
-          .select('metadata')
+          .select('metadata, application_data')
           .eq('id', window.applicationId)
           .single();
         
         if (currentApp) {
+          // Calculate payment status for application
+          let applicationPaymentStatus = 'pending';
+          let paidAmount = window.amount;
+          let remainingAmount = 0;
+          
+          if (paymentStatus === 'confirmed') {
+            if (window.paymentStage === 'prepay' && window.paymentType === 'partial_prepay_postpay') {
+              applicationPaymentStatus = 'prepaid';
+              remainingAmount = (window.metadata?.totalAmount || window.amount) - window.amount;
+            } else if (window.paymentStage === 'prepay' && window.paymentType === 'full_prepay') {
+              applicationPaymentStatus = 'fully_paid';
+            } else if (window.paymentStage === 'postpay') {
+              applicationPaymentStatus = 'fully_paid';
+              paidAmount = window.metadata?.totalAmount || window.amount;
+            }
+          }
+          
           const updatedMetadata = {
             ...currentApp.metadata,
-            paymentStatus: paymentStatus,
+            paymentStatus: applicationPaymentStatus,
             paymentWindowId: window.id,
-            paidAmount: window.amount,
+            paidAmount: paidAmount,
             paymentDate: new Date().toISOString(),
-            remainingAmount: window.metadata?.totalAmount ? 
-              (window.metadata.totalAmount - window.amount) : 0
+            remainingAmount: remainingAmount,
+            totalAmount: window.metadata?.totalAmount || window.amount,
+            paymentStage: window.paymentStage,
+            paymentType: window.paymentType
           };
+          
+          // Update application status based on payment
+          let applicationStatus = currentApp.application_data?.status || 'accepted';
+          if (applicationPaymentStatus === 'prepaid') {
+            applicationStatus = 'prepaid';
+          } else if (applicationPaymentStatus === 'fully_paid') {
+            applicationStatus = 'paid';
+          }
           
           await supabase
             .from('applications')
             .update({ 
               metadata: updatedMetadata,
+              status: applicationStatus,
               updated_at: new Date().toISOString()
             })
             .eq('id', window.applicationId);
@@ -183,7 +211,7 @@ export class PaymentWindowService {
       }
       
       if (window.offerId) {
-        // Update offer metadata to track payment status
+        // Get current offer data
         const { data: currentOffer } = await supabase
           .from('offers')
           .select('metadata')
@@ -191,14 +219,33 @@ export class PaymentWindowService {
           .single();
         
         if (currentOffer) {
+          // Calculate payment status for offer
+          let offerPaymentStatus = 'pending';
+          let paidAmount = window.amount;
+          let remainingAmount = 0;
+          
+          if (paymentStatus === 'confirmed') {
+            if (window.paymentStage === 'prepay' && window.paymentType === 'partial_prepay_postpay') {
+              offerPaymentStatus = 'prepaid';
+              remainingAmount = (window.metadata?.totalAmount || window.amount) - window.amount;
+            } else if (window.paymentStage === 'prepay' && window.paymentType === 'full_prepay') {
+              offerPaymentStatus = 'fully_paid';
+            } else if (window.paymentStage === 'postpay') {
+              offerPaymentStatus = 'fully_paid';
+              paidAmount = window.metadata?.totalAmount || window.amount;
+            }
+          }
+          
           const updatedMetadata = {
             ...currentOffer.metadata,
-            paymentStatus: paymentStatus,
+            paymentStatus: offerPaymentStatus,
             paymentWindowId: window.id,
-            paidAmount: window.amount,
+            paidAmount: paidAmount,
             paymentDate: new Date().toISOString(),
-            remainingAmount: window.metadata?.totalAmount ? 
-              (window.metadata.totalAmount - window.amount) : 0
+            remainingAmount: remainingAmount,
+            totalAmount: window.metadata?.totalAmount || window.amount,
+            paymentStage: window.paymentStage,
+            paymentType: window.paymentType
           };
           
           await supabase

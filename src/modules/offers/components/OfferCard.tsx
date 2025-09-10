@@ -325,19 +325,23 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <div>
                   <span className="text-sm font-medium text-green-800">
                     {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
-                      'Предоплата получена!' : 
+                      'Предоплачена' : 
+                      (offer as any).metadata?.paymentStatus === 'fully_paid' ? 
+                      'Полностью оплачена' :
                       'Предложение принято! Управляйте сделкой.'}
                   </span>
-                  {(offer as any).metadata?.paymentStatus === 'prepaid' && (offer as any).metadata?.remainingAmount > 0 && (
+                  {((offer as any).metadata?.paymentStatus === 'prepaid' || (offer as any).metadata?.paymentStatus === 'fully_paid') && (
                     <p className="text-xs text-green-700 mt-1">
-                      Предоплачено: {formatCurrency((offer as any).metadata.paidAmount, offer.details.currency)}. 
-                      Осталось: {formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}
+                      Оплачено: {formatCurrency((offer as any).metadata.paidAmount || 0, offer.details.currency)}
+                      {(offer as any).metadata?.remainingAmount > 0 && 
+                        `. Осталось: ${formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}`
+                      }
                     </p>
                   )}
                 </div>
               </div>
               <div className="flex space-x-2">
-                {currentUserId === offer.influencerId && (
+                {currentUserId === offer.influencerId && (offer as any).metadata?.paymentStatus !== 'fully_paid' && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
@@ -354,13 +358,15 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                     </span>
                   </button>
                 )}
-                <button
-                  onClick={() => onManageDeal?.(offer.offerId)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                >
-                  <Settings className="w-3 h-3" />
-                  <span>Управление</span>
-                </button>
+                {(offer as any).metadata?.paymentStatus !== 'fully_paid' && (
+                  <button
+                    onClick={() => onManageDeal?.(offer.offerId)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <Settings className="w-3 h-3" />
+                    <span>Управление</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
