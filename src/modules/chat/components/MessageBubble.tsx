@@ -117,13 +117,6 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
       const windowId = message.metadata?.paymentWindowId;
       if (windowId) {
         await paymentWindowService.updatePaymentWindowStatus(windowId, 'cancelled', currentUserId, 'Отменено из чата');
-          },
-          {
-            id: 'not_received',
-            label: 'Средства не получены',
-            action: 'update_payment_status',
-            status: 'failed',
-            style: 'danger'
         onInteraction('payment_window_cancelled', message.id);
         toast.success('Окно оплаты отменено');
       }
