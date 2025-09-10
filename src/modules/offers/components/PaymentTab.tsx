@@ -183,14 +183,6 @@ export function PaymentTab() {
           <h2 className="text-xl font-semibold text-gray-900">Оплаты</h2>
           <p className="text-sm text-gray-600">История выставленных и полученных окон оплаты</p>
         </div>
-        
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Создать окно оплаты</span>
-        </button>
       </div>
 
       {/* Stats */}
