@@ -85,7 +85,15 @@ export function AIChatPanel({
       
     } catch (error) {
       console.error('Failed to analyze conversation:', error);
-      toast.error('Не удалось проанализировать диалог');
+      
+      // Show user-friendly error messages
+      if (error.message.includes('Supabase не настроен')) {
+        toast.error('AI-анализ недоступен: требуется настройка Supabase');
+      } else if (error.message.includes('Не удалось подключиться к AI-сервису')) {
+        toast.error('AI-сервис временно недоступен');
+      } else {
+        toast.error('Не удалось проанализировать диалог');
+      }
     } finally {
       setIsAnalyzing(false);
     }

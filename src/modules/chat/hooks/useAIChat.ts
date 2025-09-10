@@ -46,7 +46,15 @@ export function useAIChat(user1Id: string, user2Id: string) {
       return response;
     } catch (err: any) {
       console.error('Failed to send question:', err);
-      setError(err.message || 'Failed to send question');
+      
+      // Show user-friendly error messages
+      if (err.message.includes('Supabase не настроен')) {
+        setError('AI-анализ недоступен: требуется настройка Supabase');
+      } else if (err.message.includes('Не удалось подключиться к AI-сервису')) {
+        setError('AI-сервис временно недоступен');
+      } else {
+        setError(err.message || 'Failed to send question');
+      }
       return null;
     } finally {
       setIsLoading(false);

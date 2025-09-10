@@ -244,6 +244,14 @@ export class AIChatService {
 
   private async callDeepSeekAPI(request: AnalysisRequest): Promise<string> {
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || !supabaseUrl.includes('.supabase.co')) {
+        throw new Error('Supabase не настроен. AI-анализ недоступен. Нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+      
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-analysis`;
       
       const response = await fetch(apiUrl, {
@@ -268,7 +276,17 @@ export class AIChatService {
       return result.response;
     } catch (error) {
       console.error('Failed to call DeepSeek API:', error);
-      throw error;
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Не удалось подключиться к AI-сервису. Проверьте настройки Supabase или попробуйте позже.');
+      }
+      
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      throw new Error('AI-анализ временно недоступен');
     }
   }
 
