@@ -277,16 +277,24 @@ export function PaymentModal({
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Предоплата: {prepayPercentage}%
-                          </label>
-                          <input
+                          {(currentDeal.paymentDetails as any).cardNumber && (
+                            <p><strong>💳 Карта:</strong> {(currentDeal.paymentDetails as any).cardNumber}</p>
                             type="range"
-                            min="10"
-                            max="90"
+                          {(currentDeal.paymentDetails as any).bankAccount && (
+                            <p><strong>🏦 Банковский счет:</strong> {(currentDeal.paymentDetails as any).bankAccount}</p>
                             step="10"
-                            value={prepayPercentage}
-                            onChange={(e) => setPrepayPercentage(parseInt(e.target.value))}
+                          {(currentDeal.paymentDetails as any).paypalEmail && (
+                            <p><strong>📧 PayPal Email:</strong> {(currentDeal.paymentDetails as any).paypalEmail}</p>
                             className="w-full"
-                          />
+                          {(currentDeal.paymentDetails as any).cryptoAddress && (
+                            <p><strong>₿ Крипто-адрес:</strong> {(currentDeal.paymentDetails as any).cryptoAddress}</p>
+                          )}
+                          {(currentDeal.paymentDetails as any).instructions && (
+                            <div>
+                              <strong>📋 Инструкции по оплате:</strong>
+                              <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{(currentDeal.paymentDetails as any).instructions}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

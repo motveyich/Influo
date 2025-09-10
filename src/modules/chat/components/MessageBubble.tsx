@@ -76,7 +76,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
           {details.instructions && (
             <div>
               <strong>📄 Инструкции:</strong>
-              <p className="whitespace-pre-line mt-1">{details.instructions}</p>
+              <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{details.instructions}</p>
             </div>
           )}
         </div>
