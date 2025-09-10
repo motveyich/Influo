@@ -4,6 +4,7 @@ import { OfferCard } from './OfferCard';
 import { OfferResponseModal } from './OfferResponseModal';
 import { CreateOfferModal } from './CreateOfferModal';
 import { DetailedOfferModal } from './DetailedOfferModal';
+import { PaymentWindowModal } from './PaymentWindowModal';
 import { DealManagementModal } from '../../deals/components/DealManagementModal';
 import { PaymentModal } from '../../deals/components/PaymentModal';
 import { ReviewModal } from '../../deals/components/ReviewModal';
