@@ -277,24 +277,16 @@ export function PaymentModal({
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Предоплата: {prepayPercentage}%
-                          {(currentDeal.paymentDetails as any).cardNumber && (
-                            <p><strong>💳 Карта:</strong> {(currentDeal.paymentDetails as any).cardNumber}</p>
+                          </label>
+                          <input
+                            min="10"
+                            max="90"
+                            value={prepayPercentage}
+                            onChange={(e) => setPrepayPercentage(Number(e.target.value))}
                             type="range"
-                          {(currentDeal.paymentDetails as any).bankAccount && (
-                            <p><strong>🏦 Банковский счет:</strong> {(currentDeal.paymentDetails as any).bankAccount}</p>
                             step="10"
-                          {(currentDeal.paymentDetails as any).paypalEmail && (
-                            <p><strong>📧 PayPal Email:</strong> {(currentDeal.paymentDetails as any).paypalEmail}</p>
                             className="w-full"
-                          {(currentDeal.paymentDetails as any).cryptoAddress && (
-                            <p><strong>₿ Крипто-адрес:</strong> {(currentDeal.paymentDetails as any).cryptoAddress}</p>
-                          )}
-                          {(currentDeal.paymentDetails as any).instructions && (
-                            <div>
-                              <strong>📋 Инструкции по оплате:</strong>
-                              <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{(currentDeal.paymentDetails as any).instructions}</p>
-                            </div>
-                          )}
+                          />
                         </div>
                       )}
                     </div>
@@ -400,16 +392,24 @@ export function PaymentModal({
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-medium text-gray-900 mb-2">Реквизиты для оплаты</h4>
                     <div className="space-y-2 text-sm text-gray-700">
-                      {currentDeal.paymentDetails.cardNumber && (
-                        <p><strong>Карта:</strong> {currentDeal.paymentDetails.cardNumber}</p>
+                      {(currentDeal.paymentDetails as any).cardNumber && (
+                        <p><strong>💳 Карта:</strong> {(currentDeal.paymentDetails as any).cardNumber}</p>
                       )}
-                      {currentDeal.paymentDetails.bankAccount && (
-                        <p><strong>Счет:</strong> {currentDeal.paymentDetails.bankAccount}</p>
+                      {(currentDeal.paymentDetails as any).bankAccount && (
+                        <p><strong>🏦 Банковский счет:</strong> {(currentDeal.paymentDetails as any).bankAccount}</p>
                       )}
-                      {currentDeal.paymentDetails.paypalEmail && (
-                        <p><strong>PayPal:</strong> {currentDeal.paymentDetails.paypalEmail}</p>
+                      {(currentDeal.paymentDetails as any).paypalEmail && (
+                        <p><strong>📧 PayPal Email:</strong> {(currentDeal.paymentDetails as any).paypalEmail}</p>
                       )}
-                      <p><strong>Инструкции:</strong> {currentDeal.paymentDetails.instructions}</p>
+                      {(currentDeal.paymentDetails as any).cryptoAddress && (
+                        <p><strong>₿ Крипто-адрес:</strong> {(currentDeal.paymentDetails as any).cryptoAddress}</p>
+                      )}
+                      {(currentDeal.paymentDetails as any).instructions && (
+                        <div>
+                          <strong>📋 Инструкции по оплате:</strong>
+                          <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{(currentDeal.paymentDetails as any).instructions}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
