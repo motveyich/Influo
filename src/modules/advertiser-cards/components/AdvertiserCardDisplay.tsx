@@ -72,13 +72,13 @@ export function AdvertiserCardDisplay({
         .from('applications')
         .select('id')
         .eq('applicant_id', currentUserId)
-        .eq('target_id', card.userId)
+        .eq('target_reference_id', card.id)
         .eq('target_type', 'advertiser_card')
         .not('status', 'in', '(cancelled,withdrawn)')
         .maybeSingle();
 
       if (existingApplication) {
-        toast.error('Вы уже отправили заявку этому рекламодателю');
+        toast.error('Вы уже отправили заявку на эту карточку');
         setIsLoading(false);
         return;
       }

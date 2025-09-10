@@ -154,13 +154,15 @@ export class PaymentWindowService {
     try {
       // Calculate postpay amount from metadata
       const totalAmount = prepayWindow.metadata?.totalAmount || prepayWindow.amount;
-      const prepayPercentage = prepayWindow.metadata?.prepayPercentage || 50;
-      const postpayAmount = totalAmount - Math.round(totalAmount * (prepayPercentage / 100));
+      const prepayAmount = prepayWindow.amount;
+      const postpayAmount = totalAmount - prepayAmount;
       
       if (postpayAmount <= 0) {
         console.log('No postpay amount needed');
         return;
       }
+
+      console.log(`Creating postpay window: totalAmount=${totalAmount}, prepayAmount=${prepayAmount}, postpayAmount=${postpayAmount}`);
 
       // Create postpay window
       const postpayWindowData = {
@@ -179,14 +181,30 @@ export class PaymentWindowService {
           prepayWindowId: prepayWindow.id,
           isAutoCreated: true,
           autoCreatedAt: new Date().toISOString(),
-          prepayAmount: prepayWindow.amount,
+          prepayAmount: prepayAmount,
           totalAmount: totalAmount
         }
       };
 
       await this.createPaymentWindow(postpayWindowData);
       
-      console.log(`Auto-created postpay window for ${postpayAmount} ${prepayWindow.currency}`);
+      console.log(`✅ Auto-created postpay window for ${postpayAmount} ${prepayWindow.currency}`);
+      
+      // Send notification about postpay window creation
+      const { chatService } = await import('../modules/chat/services/chatService');
+      await chatService.sendMessage({
+        senderId: prepayWindow.payeeId,
+        receiverId: prepayWindow.payerId,
+        messageContent: `💳 Автоматически создано окно постоплаты на сумму ${this.formatCurrency(postpayAmount, prepayWindow.currency)}`,
+        messageType: 'payment_window',
+        metadata: {
+          paymentWindowId: 'auto-created',
+          amount: postpayAmount,
+          currency: prepayWindow.currency,
+          actionType: 'postpay_window_created',
+          prepayWindowId: prepayWindow.id
+        }
+      });
     } catch (error) {
       console.error('Failed to create postpay window:', error);
       // Don't throw error as this is auto-creation
