@@ -12,14 +12,10 @@ interface PaymentWindowModalProps {
   offerId?: string;
   applicationId?: string;
   dealId?: string;
-  initialAmount?: number;
-  existingPaymentInfo?: {
-    paidAmount: number;
-    remainingAmount: number;
-    paymentStatus: string;
-  };
+  initialAmount: number;
+  existingPaymentInfo?: any;
   currentWindow?: PaymentWindow | null;
-  onWindowCreated?: (window: PaymentWindow) => void;
+  onWindowCreated: (window: any) => void;
 }
 
 export function PaymentWindowModal({
@@ -30,7 +26,7 @@ export function PaymentWindowModal({
   offerId,
   applicationId,
   dealId,
-  initialAmount = 0,
+  initialAmount,
   existingPaymentInfo,
   currentWindow,
   onWindowCreated
@@ -471,7 +467,6 @@ export function PaymentWindowModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-        existingPaymentInfo={(selectedDealOffer as any).existingPaymentInfo}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
