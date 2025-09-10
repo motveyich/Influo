@@ -33,6 +33,7 @@ export function OffersPage() {
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
+  const [paymentModalExistingInfo, setPaymentModalExistingInfo] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailOffer, setDetailOffer] = useState<Offer | null>(null);
   const [PaymentTabComponent, setPaymentTabComponent] = useState<React.ComponentType | null>(null);
@@ -286,14 +287,14 @@ export function OffersPage() {
     }
     
     // Check for existing payment info
-    const existingPaymentInfo = (offer as any).metadata?.paymentStatus === 'prepaid' ? {
+    const existingPaymentInfoData = (offer as any).metadata?.paymentStatus === 'prepaid' ? {
       paidAmount: (offer as any).metadata.paidAmount,
       remainingAmount: (offer as any).metadata.remainingAmount,
       paymentStatus: (offer as any).metadata.paymentStatus
     } : undefined;
     
+    setPaymentModalExistingInfo(existingPaymentInfoData);
     setSelectedDealOffer(offer);
-    setSelectedDealOffer({...offer, existingPaymentInfo});
     setShowPaymentModal(true);
   };
 
@@ -688,16 +689,19 @@ export function OffersPage() {
           onClose={() => {
             setShowPaymentModal(false);
             setSelectedDealOffer(null);
+            setPaymentModalExistingInfo(null);
           }}
           payerId={selectedDealOffer.advertiserId}
           payeeId={selectedDealOffer.influencerId}
           offerId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
           applicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
           initialAmount={selectedDealOffer.details.rate}
+          existingPaymentInfo={paymentModalExistingInfo}
           onWindowCreated={(window) => {
             toast.success('Окно оплаты создано и отправлено в чат!');
             setShowPaymentModal(false);
             setSelectedDealOffer(null);
+            setPaymentModalExistingInfo(null);
             loadOffers();
           }}
         />
