@@ -18,6 +18,17 @@ class AuthService {
   private async initialize() {
     // Get initial session
     const { data: { session } } = await supabase.auth.getSession();
+    
+    // Clear stale session data if no session exists but Supabase is configured
+    if (!session && isSupabaseConfigured()) {
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        // Ignore errors when clearing stale session data
+        console.log('Cleared stale session data');
+      }
+    }
+    
     this.currentState = { user: session?.user || null, loading: false };
     this.notifyListeners();
 
