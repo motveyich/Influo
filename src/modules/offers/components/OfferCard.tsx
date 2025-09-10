@@ -327,7 +327,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 </span>
               </div>
               <div className="flex space-x-2">
-                {/* Кнопка оплаты только для инфлюенсера в сделке */}
+                {/* Кнопка создания окна оплаты только для инфлюенсера в принятых предложениях */}
                 {currentUserId === offer.influencerId && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
