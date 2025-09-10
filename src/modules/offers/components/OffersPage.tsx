@@ -34,18 +34,20 @@ export function OffersPage() {
   const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailOffer, setDetailOffer] = useState<Offer | null>(null);
-  const { PaymentTab } = await import('./PaymentTab');
+  const [PaymentTabComponent, setPaymentTabComponent] = useState<React.ComponentType | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
-
-  // Lazy load PaymentTab component
-  const PaymentTabComponent = React.lazy(() => 
-    import('./PaymentTab').then(module => ({ default: module.PaymentTab }))
-  );
-
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
+
+  useEffect(() => {
+    const loadPaymentTab = async () => {
+      const { PaymentTab } = await import('./PaymentTab');
+      setPaymentTabComponent(() => PaymentTab);
+    };
+    loadPaymentTab();
+  }, []);
 
   useEffect(() => {
     if (currentUserId && !loading) {
@@ -671,7 +673,14 @@ export function OffersPage() {
       )}
     </div>
       ) : (
-        <PaymentTab />
+        <React.Suspense fallback={
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка вкладки оплаты...</p>
+          </div>
+        }>
+          {PaymentTabComponent && <PaymentTabComponent />}
+        </React.Suspense>
       )}
     </div>
   );
