@@ -162,7 +162,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
         {/* Interactive buttons */}
         {isInteractive && message.metadata?.buttons && (
           <div className="mt-2 space-y-2">
-            {message.metadata.buttons.filter((button: any) => {
+            {!isOwnMessage && message.metadata.buttons.filter((button: any) => {
               // Фильтруем кнопки на основе роли пользователя
               const userRole = getUserRole(currentUserId, message.metadata);
               return shouldShowButton(button, userRole);
