@@ -334,7 +334,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
                   >
                     <DollarSign className="w-3 h-3" />
-                    <span>Оплата</span>
+                    <span>Окно оплаты</span>
                   </button>
                 )}
                 <button
@@ -367,7 +367,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
                   >
                     <DollarSign className="w-3 h-3" />
-                    <span>Оплата</span>
+                    <span>Окно оплаты</span>
                   </button>
                 )}
                 <button
