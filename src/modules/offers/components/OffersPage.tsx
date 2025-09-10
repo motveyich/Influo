@@ -671,6 +671,28 @@ export function OffersPage() {
           }}
         />
       )}
+      
+      {/* Payment Window Modal - только через кнопки "Окно оплаты" в принятых предложениях */}
+      {selectedDealOffer && (
+        <PaymentWindowModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedDealOffer(null);
+          }}
+          payerId={selectedDealOffer.advertiserId}
+          payeeId={selectedDealOffer.influencerId}
+          offerId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
+          applicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
+          initialAmount={selectedDealOffer.details.rate}
+          onWindowCreated={(window) => {
+            toast.success('Окно оплаты создано и отправлено в чат!');
+            setShowPaymentModal(false);
+            setSelectedDealOffer(null);
+            loadOffers();
+          }}
+        />
+      )}
     </div>
       ) : (
         <React.Suspense fallback={

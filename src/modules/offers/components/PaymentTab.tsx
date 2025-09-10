@@ -262,12 +262,9 @@ export function PaymentTab() {
               : 'Нет окон с выбранным статусом'
             }
           </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors"
-          >
-            Создать первое окно оплаты
-          </button>
+          <p className="text-sm text-blue-600">
+            💡 Окна оплаты создаются через кнопку "Окно оплаты" в принятых предложениях
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
