@@ -373,7 +373,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <button
                   onClick={() => onManageDeal?.(offer.offerId)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-          receiverId: offer.advertiserId === currentUserId ? offer.influencerId : offer.advertiserId,
+                >
                   <Settings className="w-3 h-3" />
                   <span>Управление</span>
                 </button>
