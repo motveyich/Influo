@@ -60,4 +60,5 @@ export const TABLES = {
   DEALS: 'deals',
   REVIEWS: 'reviews',
   PAYMENT_CONFIRMATIONS: 'payment_confirmations',
+  PAYMENT_WINDOWS: 'payment_windows',
 } as const;

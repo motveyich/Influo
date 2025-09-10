@@ -38,6 +38,12 @@ export function OffersPage() {
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
+
+  // Lazy load PaymentTab component
+  const PaymentTabComponent = React.lazy(() => 
+    import('./PaymentTab').then(module => ({ default: module.PaymentTab }))
+  );
+
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
