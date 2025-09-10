@@ -110,17 +110,34 @@ export function PaymentWindowModal({
 
     setIsLoading(true);
     try {
+      // Calculate actual amount based on payment type
+      let actualAmount = formData.amount;
+      if (formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'prepay') {
+        actualAmount = Math.round(formData.amount * (formData.prepayPercentage / 100));
+      } else if (formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'postpay') {
+        // For postpay, calculate remaining amount
+        const prepayAmount = Math.round(formData.amount * (formData.prepayPercentage / 100));
+        actualAmount = formData.amount - prepayAmount;
+      }
+
       const windowData: Partial<PaymentWindow> = {
         dealId,
         offerId,
         applicationId,
         payerId,
         payeeId,
-        ...formData,
+        amount: actualAmount,
+        currency: formData.currency,
+        paymentType: formData.paymentType,
+        paymentStage: formData.paymentStage,
+        paymentDetails: formData.paymentDetails,
         metadata: {
           prepayPercentage: formData.paymentType === 'partial_prepay_postpay' ? formData.prepayPercentage : undefined,
           totalAmount: formData.amount,
-          isPartialPayment: formData.paymentType === 'partial_prepay_postpay'
+          isPartialPayment: formData.paymentType === 'partial_prepay_postpay',
+          remainingAmount: formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'prepay' 
+            ? formData.amount - actualAmount 
+            : undefined
         }
       };
 
