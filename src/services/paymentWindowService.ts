@@ -81,6 +81,13 @@ export class PaymentWindowService {
         throw new Error('Нет прав для изменения этого статуса');
       }
 
+      console.log('🔧 [PaymentWindowService] Updating payment window status:', {
+        windowId,
+        currentStatus: currentWindow.status,
+        newStatus,
+        changedBy
+      });
+
       // Update editability based on status
       let isEditable = currentWindow.isEditable;
       if (newStatus === 'paying' || newStatus === 'paid') {
@@ -122,6 +129,12 @@ export class PaymentWindowService {
         .single();
 
       if (error) throw error;
+
+      console.log('✅ [PaymentWindowService] Payment window status updated successfully:', {
+        windowId,
+        newStatus,
+        dbResult: data
+      });
 
       const updatedWindow = this.transformFromDatabase(data);
 

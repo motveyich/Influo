@@ -61,9 +61,17 @@ export function PaymentTab() {
 
   const handleStatusUpdate = async (windowId: string, newStatus: PaymentWindowStatus) => {
     try {
+      console.log('🔧 [PaymentTab] Updating status:', { windowId, newStatus, currentUserId });
+      
       await paymentWindowService.updatePaymentWindowStatus(windowId, newStatus, currentUserId);
+      
+      console.log('✅ [PaymentTab] Status update completed, reloading windows...');
+      
       await loadPaymentWindows();
+      
       toast.success('Статус оплаты обновлен');
+      
+      console.log('✅ [PaymentTab] Payment windows reloaded successfully');
     } catch (error: any) {
       console.error('Failed to update status:', error);
       toast.error(error.message || 'Не удалось обновить статус');
