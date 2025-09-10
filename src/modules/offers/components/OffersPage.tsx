@@ -285,7 +285,15 @@ export function OffersPage() {
       return;
     }
     
+    // Check for existing payment info
+    const existingPaymentInfo = (offer as any).metadata?.paymentStatus === 'prepaid' ? {
+      paidAmount: (offer as any).metadata.paidAmount,
+      remainingAmount: (offer as any).metadata.remainingAmount,
+      paymentStatus: (offer as any).metadata.paymentStatus
+    } : undefined;
+    
     setSelectedDealOffer(offer);
+    setSelectedDealOffer({...offer, existingPaymentInfo});
     setShowPaymentModal(true);
   };
 

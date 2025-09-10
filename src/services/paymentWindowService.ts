@@ -139,10 +139,80 @@ export class PaymentWindowService {
         await this.createPostpayWindow(currentWindow);
       }
 
+      // Update application/offer status when payment is confirmed
+      if (newStatus === 'confirmed') {
+        await this.updateRelatedItemStatus(currentWindow, 'prepaid');
+      }
+
       return updatedWindow;
     } catch (error) {
       console.error('Failed to update payment window status:', error);
       throw error;
+    }
+  }
+
+  private async updateRelatedItemStatus(window: PaymentWindow, paymentStatus: string): Promise<void> {
+    try {
+      if (window.applicationId) {
+        // Update application metadata to track payment status
+        const { data: currentApp } = await supabase
+          .from('applications')
+          .select('metadata')
+          .eq('id', window.applicationId)
+          .single();
+        
+        if (currentApp) {
+          const updatedMetadata = {
+            ...currentApp.metadata,
+            paymentStatus: paymentStatus,
+            paymentWindowId: window.id,
+            paidAmount: window.amount,
+            paymentDate: new Date().toISOString(),
+            remainingAmount: window.metadata?.totalAmount ? 
+              (window.metadata.totalAmount - window.amount) : 0
+          };
+          
+          await supabase
+            .from('applications')
+            .update({ 
+              metadata: updatedMetadata,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', window.applicationId);
+        }
+      }
+      
+      if (window.offerId) {
+        // Update offer metadata to track payment status
+        const { data: currentOffer } = await supabase
+          .from('offers')
+          .select('metadata')
+          .eq('offer_id', window.offerId)
+          .single();
+        
+        if (currentOffer) {
+          const updatedMetadata = {
+            ...currentOffer.metadata,
+            paymentStatus: paymentStatus,
+            paymentWindowId: window.id,
+            paidAmount: window.amount,
+            paymentDate: new Date().toISOString(),
+            remainingAmount: window.metadata?.totalAmount ? 
+              (window.metadata.totalAmount - window.amount) : 0
+          };
+          
+          await supabase
+            .from('offers')
+            .update({ 
+              metadata: updatedMetadata,
+              updated_at: new Date().toISOString()
+            })
+            .eq('offer_id', window.offerId);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update related item status:', error);
+      // Don't throw error as this is secondary functionality
     }
   }
 

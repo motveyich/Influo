@@ -322,19 +322,36 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
-                  Предложение принято! Управляйте сделкой.
-                </span>
+                <div>
+                  <span className="text-sm font-medium text-green-800">
+                    {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
+                      'Предоплата получена!' : 
+                      'Предложение принято! Управляйте сделкой.'}
+                  </span>
+                  {(offer as any).metadata?.paymentStatus === 'prepaid' && (offer as any).metadata?.remainingAmount > 0 && (
+                    <p className="text-xs text-green-700 mt-1">
+                      Предоплачено: {formatCurrency((offer as any).metadata.paidAmount, offer.details.currency)}. 
+                      Осталось: {formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex space-x-2">
-                {/* Кнопка создания окна оплаты только для инфлюенсера в принятых предложениях */}
                 {currentUserId === offer.influencerId && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
+                      (offer as any).metadata?.paymentStatus === 'prepaid' ?
+                      'bg-orange-600 hover:bg-orange-700 text-white' :
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
                   >
                     <DollarSign className="w-3 h-3" />
-                    <span>Окно оплаты</span>
+                    <span>
+                      {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
+                        'Окно постоплаты' : 
+                        'Окно оплаты'}
+                    </span>
                   </button>
                 )}
                 <button

@@ -13,6 +13,11 @@ interface PaymentWindowModalProps {
   applicationId?: string;
   dealId?: string;
   initialAmount?: number;
+  existingPaymentInfo?: {
+    paidAmount: number;
+    remainingAmount: number;
+    paymentStatus: string;
+  };
   currentWindow?: PaymentWindow | null;
   onWindowCreated?: (window: PaymentWindow) => void;
 }
@@ -26,6 +31,7 @@ export function PaymentWindowModal({
   applicationId,
   dealId,
   initialAmount = 0,
+  existingPaymentInfo,
   currentWindow,
   onWindowCreated
 }: PaymentWindowModalProps) {
@@ -57,6 +63,22 @@ export function PaymentWindowModal({
         prepayPercentage: currentWindow.metadata?.prepayPercentage || 50,
         paymentDetails: currentWindow.paymentDetails
       });
+    } else if (existingPaymentInfo?.paymentStatus === 'prepaid') {
+      // Auto-configure for postpay if prepayment exists
+      setFormData({
+        amount: existingPaymentInfo.remainingAmount,
+        currency: 'USD',
+        paymentType: 'postpay',
+        paymentStage: 'postpay',
+        prepayPercentage: 50,
+        paymentDetails: {
+          bankAccount: '',
+          cardNumber: '',
+          paypalEmail: '',
+          cryptoAddress: '',
+          instructions: `Постоплата. Уже получено: ${formatCurrency(existingPaymentInfo.paidAmount)}. К доплате: ${formatCurrency(existingPaymentInfo.remainingAmount)}`
+        }
+      });
     } else {
       setFormData({
         amount: initialAmount,
@@ -74,7 +96,7 @@ export function PaymentWindowModal({
       });
     }
     setErrors({});
-  }, [currentWindow, initialAmount, isOpen]);
+  }, [currentWindow, initialAmount, existingPaymentInfo, isOpen]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -449,6 +471,7 @@ export function PaymentWindowModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
+        existingPaymentInfo={(selectedDealOffer as any).existingPaymentInfo}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
