@@ -76,17 +76,6 @@ export class PaymentWindowService {
       const currentWindow = await this.getPaymentWindow(windowId);
       if (!currentWindow) throw new Error('Payment window not found');
 
-      // Check permissions
-      if (!this.canUserChangeStatus(currentWindow, changedBy, newStatus)) {
-        throw new Error('Нет прав для изменения этого статуса');
-      }
-
-      console.log('🔧 [PaymentWindowService] Updating payment window status:', {
-        windowId,
-        currentStatus: currentWindow.status,
-        newStatus,
-        changedBy
-      });
 
       // Update editability based on status
       let isEditable = currentWindow.isEditable;
@@ -94,7 +83,7 @@ export class PaymentWindowService {
         isEditable = false; // Заморозить для редактирования
       } else if (newStatus === 'failed') {
         isEditable = true; // Разморозить при неудаче
-      } else if (newStatus === 'completed' || newStatus === 'cancelled') {
+      } else if (newStatus === 'confirmed' || newStatus === 'completed' || newStatus === 'cancelled') {
         isEditable = false; // Финальные статусы
       }
 
@@ -129,12 +118,6 @@ export class PaymentWindowService {
         .single();
 
       if (error) throw error;
-
-      console.log('✅ [PaymentWindowService] Payment window status updated successfully:', {
-        windowId,
-        newStatus,
-        dbResult: data
-      });
 
       const updatedWindow = this.transformFromDatabase(data);
 
