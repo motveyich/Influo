@@ -51,7 +51,9 @@ export function PaymentTab() {
       setPaymentWindows(filteredWindows);
     } catch (error) {
       console.error('Failed to load payment windows:', error);
-      toast.error('Не удалось загрузить окна оплаты');
+      if (error?.code !== '42P01') {
+        toast.error('Не удалось загрузить окна оплаты');
+      }
     } finally {
       setIsLoading(false);
     }
