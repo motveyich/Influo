@@ -136,10 +136,60 @@ export class PaymentWindowService {
         is_editable: isEditable
       });
 
+      // Auto-create postpay window if prepay is confirmed and payment type is partial
+      if (newStatus === 'confirmed' && 
+          currentWindow.paymentType === 'partial_prepay_postpay' && 
+          currentWindow.paymentStage === 'prepay') {
+        await this.createPostpayWindow(currentWindow);
+      }
+
       return updatedWindow;
     } catch (error) {
       console.error('Failed to update payment window status:', error);
       throw error;
+    }
+  }
+
+  private async createPostpayWindow(prepayWindow: PaymentWindow): Promise<void> {
+    try {
+      // Calculate postpay amount from metadata
+      const totalAmount = prepayWindow.metadata?.totalAmount || prepayWindow.amount;
+      const prepayPercentage = prepayWindow.metadata?.prepayPercentage || 50;
+      const postpayAmount = totalAmount - Math.round(totalAmount * (prepayPercentage / 100));
+      
+      if (postpayAmount <= 0) {
+        console.log('No postpay amount needed');
+        return;
+      }
+
+      // Create postpay window
+      const postpayWindowData = {
+        dealId: prepayWindow.dealId,
+        offerId: prepayWindow.offerId,
+        applicationId: prepayWindow.applicationId,
+        payerId: prepayWindow.payerId,
+        payeeId: prepayWindow.payeeId,
+        amount: postpayAmount,
+        currency: prepayWindow.currency,
+        paymentType: prepayWindow.paymentType,
+        paymentStage: 'postpay' as 'prepay' | 'postpay',
+        paymentDetails: prepayWindow.paymentDetails,
+        metadata: {
+          ...prepayWindow.metadata,
+          prepayWindowId: prepayWindow.id,
+          isAutoCreated: true,
+          autoCreatedAt: new Date().toISOString(),
+          prepayAmount: prepayWindow.amount,
+          totalAmount: totalAmount
+        }
+      };
+
+      await this.createPaymentWindow(postpayWindowData);
+      
+      console.log(`Auto-created postpay window for ${postpayAmount} ${prepayWindow.currency}`);
+    } catch (error) {
+      console.error('Failed to create postpay window:', error);
+      // Don't throw error as this is auto-creation
     }
   }
 
