@@ -19,6 +19,7 @@ import { supabase, TABLES } from '../../../core/supabase';
 export function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'declined' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'offers' | 'payments'>('offers');
   const [isLoading, setIsLoading] = useState(true);
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -33,6 +34,7 @@ export function OffersPage() {
   const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailOffer, setDetailOffer] = useState<Offer | null>(null);
+  const { PaymentTab } = await import('./PaymentTab');
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -384,6 +386,35 @@ export function OffersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('offers')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'offers'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Предложения
+          </button>
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'payments'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Оплаты
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'offers' ? (
+        <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -631,6 +662,10 @@ export function OffersPage() {
             loadOffers();
           }}
         />
+      )}
+    </div>
+      ) : (
+        <PaymentTab />
       )}
     </div>
   );

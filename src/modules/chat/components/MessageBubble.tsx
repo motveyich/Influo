@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChatMessage } from '../../../core/types';
-import { CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { paymentWindowService } from '../../../services/paymentWindowService';
+import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -54,11 +56,10 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
   };
 
   const renderPaymentDetails = () => {
-    if (message.messageType !== 'payment_window' || !message.metadata?.paymentDetails) {
+    if (message.messageType !== 'payment_window' || !message.metadata?.paymentWindowId) {
       return null;
     }
 
-    const details = message.metadata.paymentDetails;
     return (
       <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <h4 className="font-medium text-blue-900 mb-2">💳 Реквизиты для оплаты:</h4>
@@ -69,19 +70,60 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
             message.metadata.paymentType === 'partial_prepay_postpay' ? 'Частичная предоплата + постоплата' :
             'Постоплата'
           }</p>
-          {details.cardNumber && <p><strong>💳 Карта:</strong> {details.cardNumber}</p>}
-          {details.bankAccount && <p><strong>🏦 Банковский счет:</strong> {details.bankAccount}</p>}
-          {details.paypalEmail && <p><strong>📧 PayPal:</strong> {details.paypalEmail}</p>}
-          {details.cryptoAddress && <p><strong>₿ Крипто:</strong> {details.cryptoAddress}</p>}
-          {details.instructions && (
+          {message.metadata.paymentDetails?.cardNumber && <p><strong>💳 Карта:</strong> {message.metadata.paymentDetails.cardNumber}</p>}
+          {message.metadata.paymentDetails?.bankAccount && <p><strong>🏦 Банковский счет:</strong> {message.metadata.paymentDetails.bankAccount}</p>}
+          {message.metadata.paymentDetails?.paypalEmail && <p><strong>📧 PayPal:</strong> {message.metadata.paymentDetails.paypalEmail}</p>}
+          {message.metadata.paymentDetails?.cryptoAddress && <p><strong>₿ Крипто:</strong> {message.metadata.paymentDetails.cryptoAddress}</p>}
+          {message.metadata.paymentDetails?.instructions && (
             <div>
               <strong>📄 Инструкции:</strong>
-              <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{details.instructions}</p>
+              <p className="whitespace-pre-line mt-1 p-2 bg-white rounded border">{message.metadata.paymentDetails.instructions}</p>
             </div>
           )}
         </div>
+        
+        {/* Edit/Cancel buttons for payment window creator */}
+        {isOwnMessage && message.metadata.status === 'pending' && (
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleEditPaymentWindow()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+            >
+              <Edit className="w-3 h-3" />
+              <span>Редактировать</span>
+            </button>
+            <button
+              onClick={() => handleCancelPaymentWindow()}
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Отменить</span>
+            </button>
+          </div>
+        )}
       </div>
     );
+  };
+
+  const handleEditPaymentWindow = async () => {
+    // This would open the edit modal
+    toast('Функция редактирования будет доступна в интерфейсе окон оплаты');
+  };
+
+  const handleCancelPaymentWindow = async () => {
+    if (!confirm('Отменить это окно оплаты?')) return;
+    
+    try {
+      const windowId = message.metadata?.paymentWindowId;
+      if (windowId) {
+        await paymentWindowService.updatePaymentWindowStatus(windowId, 'cancelled', currentUserId, 'Отменено из чата');
+        onInteraction('payment_window_cancelled', message.id);
+        toast.success('Окно оплаты отменено');
+      }
+    } catch (error: any) {
+      console.error('Failed to cancel payment window:', error);
+      toast.error('Не удалось отменить окно оплаты');
+    }
   };
 
   return (

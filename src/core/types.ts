@@ -543,6 +543,46 @@ export interface AIChatMessage {
   createdAt: string;
 }
 
+// Payment Window types
+export type PaymentWindowStatus = 'pending' | 'paying' | 'paid' | 'failed' | 'confirmed' | 'completed' | 'cancelled';
+export type PaymentWindowType = 'full_prepay' | 'partial_prepay_postpay' | 'postpay';
+
+export interface PaymentWindow {
+  id: string;
+  dealId?: string;
+  offerId?: string;
+  applicationId?: string;
+  payerId: string; // Кто должен платить (рекламодатель)
+  payeeId: string; // Кто получает оплату (инфлюенсер)
+  amount: number;
+  currency: string;
+  paymentType: PaymentWindowType;
+  paymentDetails: {
+    bankAccount?: string;
+    cardNumber?: string;
+    paypalEmail?: string;
+    cryptoAddress?: string;
+    instructions: string;
+  };
+  status: PaymentWindowStatus;
+  paymentStage: 'prepay' | 'postpay';
+  isEditable: boolean; // Может ли инфлюенсер редактировать
+  statusHistory: Array<{
+    status: PaymentWindowStatus;
+    changedBy: string;
+    timestamp: string;
+    note?: string;
+  }>;
+  metadata: {
+    chatMessageId?: string;
+    createdBy: string;
+    lastEditedAt?: string;
+    paymentAttempts: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AIAnalysisResult {
   conversationStatus: 'constructive' | 'neutral' | 'concerning';
   sentiment: 'positive' | 'neutral' | 'negative';

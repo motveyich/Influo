@@ -284,7 +284,22 @@ export function ChatPage() {
 
   const handleMessageInteraction = async (action: string, messageId: string, dealId?: string) => {
     try {
-      if (action === 'confirm_payment' && dealId) {
+      if (action === 'update_payment_status') {
+        // Handle payment window status updates
+        const paymentWindowId = messages.find(m => m.id === messageId)?.metadata?.paymentWindowId;
+        const newStatus = messages.find(m => m.id === messageId)?.metadata?.buttons?.find((b: any) => b.action === action)?.status;
+        
+        if (paymentWindowId && newStatus) {
+          const { paymentWindowService } = await import('../../../services/paymentWindowService');
+          await paymentWindowService.updatePaymentWindowStatus(paymentWindowId, newStatus, currentUserId);
+          
+          // Refresh messages to show updated status
+          if (selectedConversation) {
+            await loadMessages(selectedConversation.id);
+          }
+          return;
+        }
+      } else if (action === 'confirm_payment' && dealId) {
         // Отправляем уведомление о том, что платеж был произведен
         await chatService.sendMessage({
           senderId: currentUserId,
