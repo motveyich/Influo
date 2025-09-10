@@ -218,7 +218,6 @@ export function PaymentWindowModal({
           </div>
 
           {/* Payment Type */}
-          {!isPostpayWindow && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Тип оплаты *
@@ -263,6 +262,7 @@ export function PaymentWindowModal({
                 </div>
               </label>
             </div>
+          </div>
 
           {/* Payment Details */}
           <div>
