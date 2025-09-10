@@ -401,7 +401,7 @@ export function PaymentTab() {
                   </button>
                 )}
                 
-                {canUpdateStatus(window, 'failed') && window.status === 'paid' && (
+                {window.payeeId === currentUserId && window.status === 'paid' && (
                   <button
                     onClick={() => handleStatusUpdate(window.id, 'failed')}
                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
