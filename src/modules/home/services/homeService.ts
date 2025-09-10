@@ -343,6 +343,26 @@ export class HomeService {
     }
   }
 
+  async getPendingPaymentsCount(userId: string): Promise<number> {
+    try {
+      const { data, error } = await supabase
+        .from('payment_windows')
+        .select('id')
+        .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
+        .in('status', ['pending', 'paying', 'paid']);
+
+      if (error) throw error;
+      return data?.length || 0;
+    } catch (error) {
+      if (error?.code === '42P01') {
+        console.log('Payment windows table not yet created');
+        return 0;
+      }
+      console.error('Failed to get pending payments count:', error);
+      return 0;
+    }
+  }
+
   private getEmptyStats(): CampaignStats {
     return {
       activeCampaigns: 0,
