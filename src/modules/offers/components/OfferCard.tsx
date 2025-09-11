@@ -20,33 +20,26 @@ interface OfferCardProps {
 export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWithdraw, onModify, onLeaveReview, showSenderActions = false, currentUserId, onViewDetails }: OfferCardProps) {
   const { t } = useTranslation();
 
-  // Check if this is an application (not a traditional offer)
   const isApplication = (offer as any).type === 'application';
   
-  // Determine sender and receiver roles
   const getSenderRole = () => {
     if (isApplication) {
-      // For applications: determine roles by target_type
       const targetType = (offer as any).applicationTargetType;
       
       if (targetType === 'influencer_card') {
-        // Advertiser applied to influencer
         return showSenderActions 
           ? (currentUserId === offer.advertiserId ? 'Рекламодатель → Инфлюенсеру' : 'Неизвестная роль')
           : 'От рекламодателя';
       } else {
-        // Influencer applied to advertiser or campaign
         return showSenderActions
           ? (currentUserId === offer.influencerId ? 'Инфлюенсер → Рекламодателю' : 'Неизвестная роль') 
           : 'От инфлюенсера';
       }
     } else {
-      // For offers: advertiser sends to influencer
       return showSenderActions ? 'Рекламодатель → Инфлюенсеру' : 'От рекламодателя';
     }
   };
   
-  // Get what is required/offered
   const getRequirements = () => {
     const deliverables = offer.details.deliverables || [];
     const rate = offer.details.rate;
@@ -145,7 +138,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
               {isApplication ? 'ID заявки:' : 'ID кампании:'} {offer.campaignId} • {isApplication ? 'ID заявки:' : 'ID предложения:'} {offer.offerId}
             </p>
             
-            {/* Requirements summary */}
             <div className="mt-2 p-3 bg-gray-50 rounded-md">
               <div className="flex items-center space-x-2 mb-1">
                 <Target className="w-4 h-4 text-purple-600" />
@@ -166,7 +158,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         </div>
 
-        {/* Metadata */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <div className="flex items-center space-x-1">
@@ -194,7 +185,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
 
       {/* Details */}
       <div className="p-6">
-        {/* Requirements Details */}
         <div className="mb-4">
           <h4 className="text-sm font-semibold text-gray-900 mb-2">
             {isApplication ? 'Что предлагается:' : t('offers.deliverables')}
@@ -222,7 +212,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         </div>
 
-        {/* Original terms/message */}
         <div className="mb-6">
           <h4 className="text-sm font-semibold text-gray-900 mb-2">
             {isApplication ? 'Сообщение:' : t('offers.terms')}
@@ -232,7 +221,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </p>
         </div>
 
-        {/* Timeline moved to after details */}
         {(offer.timeline.respondedAt || offer.timeline.completedAt) && (
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('offers.timeline')}</h4>
@@ -266,7 +254,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         )}
 
-        {/* Actions */}
         {offer.status === 'pending' && !showSenderActions && onAction && 
          offer.status !== 'withdrawn' && offer.status !== 'cancelled' && (
           <div className="flex space-x-3">
@@ -297,7 +284,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         )}
 
-        {/* Sender Actions (for sent offers) */}
         {offer.status === 'pending' && showSenderActions && (
           <div className="flex space-x-3">
             <button
@@ -366,7 +352,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         )}
 
-        {/* In Progress Status with Management Options */}
         {(offer.status === 'in_progress' || offer.status === 'accepted') && (offer as any).dealId && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <div className="flex items-center justify-between">
@@ -377,7 +362,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 </span>
               </div>
               <div className="flex space-x-2">
-                {/* Кнопка оплаты только для инфлюенсера в сделке */}
                 {currentUserId === offer.influencerId && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
@@ -399,7 +383,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
           </div>
         )}
         
-        {/* Review Section for Completed Offers */}
         {offer.status === 'completed' && (
           <div className="bg-green-50 border border-green-200 rounded-md p-4">
             <div className="flex items-center justify-between">
