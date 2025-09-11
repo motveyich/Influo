@@ -283,12 +283,11 @@ export class HomeService {
         const { data: pendingPaymentWindows } = await supabase
           .from('payment_windows')
           .select('id')
-          .eq('payee_id', userId) // Только окна где пользователь - получатель
-          .eq('payment_stage', 'postpay') // Только постоплаты
-          .in('status', ['pending', 'paying', 'paid']); // Исключаем подтвержденные и завершенные
+          .eq('payee_id', userId)
+          .eq('payment_stage', 'postpay')
+          .in('status', ['pending', 'paying', 'paid']);
         pendingPayoutsCount = pendingPaymentWindows?.length || 0;
       } catch (dealsError) {
-        // Таблица payment_windows еще не создана, возвращаем 0
         console.log('Deals table not yet created:', dealsError);
         pendingPayoutsCount = 0;
       }

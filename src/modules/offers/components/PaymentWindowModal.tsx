@@ -284,6 +284,17 @@ export function PaymentWindowModal({
             {existingPaymentInfo?.paymentStatus === 'prepaid' ? (
               // Force postpay only after prepayment
               <div className="space-y-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-medium text-blue-800">Предоплата завершена</h4>
+                  </div>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
+                    <p><strong>Внесена предоплата в размере:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
+                    <p><strong>К доплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
+                  </div>
+                </div>
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <input
@@ -293,8 +304,8 @@ export function PaymentWindowModal({
                       disabled={true}
                     />
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">Постоплата</h4>
-                      <p className="text-sm text-gray-600">Оплата оставшейся части после выполнения работы</p>
+                      <h4 className="font-medium text-orange-900">Только постоплата</h4>
+                      <p className="text-sm text-orange-700">Доплата оставшейся суммы после выполнения работы</p>
                       <p className="text-sm text-orange-700 mt-1">
                         <strong>Сумма постоплаты: {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</strong>
                       </p>
