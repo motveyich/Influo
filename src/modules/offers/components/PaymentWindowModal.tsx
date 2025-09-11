@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PaymentWindow, PaymentWindowType } from '../../../core/types';
 import { paymentWindowService } from '../../../services/paymentWindowService';
-import { X, Save, AlertCircle, DollarSign, CreditCard, Banknote, Smartphone, Bitcoin } from 'lucide-react';
+import { X, Save, AlertCircle, DollarSign, CreditCard, Banknote, Smartphone, Bitcoin, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PaymentWindowModalProps {
@@ -376,6 +376,22 @@ export function PaymentWindowModal({
             )}
           </div>
 
+          {/* Информация о предоплате */}
+          {existingPaymentInfo?.paymentStatus === 'prepaid' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center space-x-3 mb-3">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+                <h4 className="font-medium text-blue-800">Информация о предоплате</h4>
+              </div>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
+                <p><strong>Внесена предоплата:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
+                <p><strong>Дата предоплаты:</strong> {new Date(existingPaymentInfo.paymentDate || '').toLocaleDateString('ru-RU')}</p>
+                <p><strong>Остаток к оплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
+              </div>
+            </div>
+          )}
+          
           {/* Payment Details */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Реквизиты для оплаты</h3>
