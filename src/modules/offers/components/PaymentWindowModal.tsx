@@ -359,9 +359,6 @@ export function PaymentWindowModal({
                     </div>
                   </div>
                 </label>
-                  </div>
-                </div>
-              </label>
 
                 <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
