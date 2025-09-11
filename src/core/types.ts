@@ -319,20 +319,20 @@ export interface Application {
   targetType: 'influencer_card' | 'advertiser_card' | 'campaign';
   targetReferenceId: string;
   applicationData: {
-    status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'pending' | 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
     proposedRate?: number;
     timeline?: string;
     deliverables?: string[];
     additionalInfo?: string;
   };
-  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
   responseData?: {
     message?: string;
     counterOffer?: any;
     declineReason?: string;
   };
   timeline: {
-    sentAt: string;
+    pendingAt: string;
     respondedAt?: string;
     completedAt?: string;
   };

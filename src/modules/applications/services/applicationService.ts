@@ -39,11 +39,11 @@ export class ApplicationService {
         target_reference_id: applicationData.targetReferenceId,
         application_data: {
           ...applicationData.applicationData,
-          status: 'sent'
+          status: 'pending'
         },
-        status: 'sent',
+        status: 'pending',
         timeline: {
-          sentAt: new Date().toISOString()
+          pendingAt: new Date().toISOString()
         },
         metadata: {
           viewCount: 0
@@ -70,7 +70,7 @@ export class ApplicationService {
         type: 'application_received',
         data: transformedApplication,
         userId: applicationData.targetId!,
-        timestamp: transformedApplication.timeline.sentAt
+        timestamp: transformedApplication.timeline.pendingAt
       });
 
       // Track analytics
@@ -336,7 +336,7 @@ export class ApplicationService {
         throw new Error('Заявка уже была отменена');
       }
       
-      if (!['sent'].includes(existingApp.status)) {
+      if (!['pending'].includes(existingApp.status)) {
         throw new Error('Нельзя отменить заявку со статусом: ' + existingApp.status);
       }
       
