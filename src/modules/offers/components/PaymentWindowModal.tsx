@@ -221,7 +221,7 @@ export function PaymentWindowModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Сумма *
+                {existingPaymentInfo?.paymentStatus === 'prepaid' ? 'Сумма постоплаты (заблокирована) *' : 'Сумма *'}
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -229,9 +229,12 @@ export function PaymentWindowModal({
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                  disabled={existingPaymentInfo?.paymentStatus === 'prepaid'}
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.amount ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                    errors.amount ? 'border-red-300' : 
+                    existingPaymentInfo?.paymentStatus === 'prepaid' ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 
+                    'border-gray-300'
+                  } ${existingPaymentInfo?.paymentStatus === 'prepaid' ? 'text-gray-600' : ''}`}
                   placeholder="1000"
                 />
               </div>
@@ -239,6 +242,11 @@ export function PaymentWindowModal({
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.amount}
+                </p>
+              )}
+              {existingPaymentInfo?.paymentStatus === 'prepaid' && (
+                <p className="mt-1 text-xs text-orange-600">
+                  Сумма зафиксирована на остатке от общей стоимости сделки
                 </p>
               )}
             </div>
@@ -266,8 +274,6 @@ export function PaymentWindowModal({
               Тип оплаты *
             </label>
             
-            {/* После предоплаты - только постоплата на остаток */}
-
             {existingPaymentInfo?.paymentStatus === 'prepaid' ? (
               // Force postpay only after prepayment
               <div className="space-y-3">
@@ -276,13 +282,11 @@ export function PaymentWindowModal({
                     <CheckCircle className="w-5 h-5 text-blue-600" />
                     <h4 className="font-medium text-blue-800">Предоплата завершена</h4>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-orange-900">🔒 Только постоплата</h4>
-                    <p className="text-sm text-orange-700">Доплата оставшейся суммы. Предоплата уже внесена.</p>
-                    <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
-                    <p><strong>Внесена предоплата в размере:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
-                    <p><strong>К доплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
-                  </div>
+                  <h4 className="font-medium text-orange-900">🔒 Только постоплата</h4>
+                  <p className="text-sm text-orange-700">Доплата оставшейся суммы. Предоплата уже внесена.</p>
+                  <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
+                  <p><strong>Внесена предоплата в размере:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
+                  <p><strong>К доплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
                 </div>
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <div className="flex items-center space-x-2">
@@ -489,7 +493,7 @@ export function PaymentWindowModal({
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Важное уведомление</h4>
                 <p className="text-sm text-yellow-700 mt-1">
-                  Подтвердите оплату в системе после перевода средств. Это поможет контролировать процесс оплаты.
+                  Убедитесь, что все реквизиты указаны корректно. После создания окна оплаты плательщик получит уведомление с инструкциями.
                 </p>
               </div>
             </div>
