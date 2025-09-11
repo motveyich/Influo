@@ -136,7 +136,7 @@ export function ReviewModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
           {/* Rating */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -259,7 +259,7 @@ export function ReviewModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-white">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
