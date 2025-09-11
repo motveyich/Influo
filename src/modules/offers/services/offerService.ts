@@ -302,6 +302,86 @@ export class OfferService {
     }
   }
 
+  async completeOffer(offerId: string, completedBy: string): Promise<Offer> {
+    try {
+      // First, fetch the offer to verify its existence and status
+      const { data: existingOffer, error: fetchError } = await supabase
+        .from(TABLES.OFFERS)
+        .select('*')
+        .eq('offer_id', offerId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      
+      if (!existingOffer) {
+        throw new Error('Предложение не найдено');
+      }
+
+      // Check if offer is in a valid state for completion
+      const validStatuses = ['accepted', 'in_progress'];
+      if (!validStatuses.includes(existingOffer.status)) {
+        throw new Error(`Нельзя завершить предложение со статусом "${existingOffer.status}"`);
+      }
+
+      const updateData: any = {
+        status: 'completed',
+        timeline: {
+          ...existingOffer.timeline,
+          completedAt: new Date().toISOString()
+        },
+        metadata: {
+          ...existingOffer.metadata,
+          completedBy: completedBy,
+          completedAt: new Date().toISOString()
+        },
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.OFFERS)
+        .update(updateData)
+        .eq('offer_id', offerId)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Не удалось завершить предложение');
+      }
+
+      const completedOffer = this.transformFromDatabase(data);
+
+      // Send completion notification to the other party
+      await this.sendOfferNotification(completedOffer, 'offer_completed');
+
+      // Send real-time notification
+      const receiverId = completedBy === completedOffer.influencerId 
+        ? completedOffer.advertiserId 
+        : completedOffer.influencerId;
+
+      realtimeService.sendNotification({
+        type: 'offer_completed',
+        data: { ...completedOffer, completedBy },
+        userId: receiverId,
+        timestamp: completedOffer.timeline.completedAt!
+      });
+
+      // Track analytics
+      analytics.track('offer_completed', {
+        offer_id: offerId,
+        completed_by: completedBy,
+        influencer_id: completedOffer.influencerId,
+        advertiser_id: completedOffer.advertiserId
+      });
+
+      return completedOffer;
+    } catch (error) {
+      console.error('Failed to complete offer:', error);
+      throw error;
+    }
+  }
+
   async requestMoreInfo(offerId: string, message: string): Promise<Offer> {
     try {
       const offer = await this.getOffer(offerId);
