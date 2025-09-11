@@ -18,22 +18,7 @@ export class AIChatService {
         return this.activeThreads.get(conversationId)!;
       }
 
-      // Try to get existing thread from database
-      const { data: existingThread, error: fetchError } = await supabase
-        .from(TABLES.AI_CHAT_THREADS)
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      if (existingThread) {
-        const thread = this.transformThreadFromDatabase(existingThread);
-        this.activeThreads.set(conversationId, thread);
-        return thread;
-      }
-
-      // Create new thread
+      // Create or get existing thread using upsert
       const newThread = {
         conversation_id: conversationId,
         user1_id: userId,
@@ -42,14 +27,15 @@ export class AIChatService {
           created_by_service: true,
           conversation_type: 'personal_ai_assistant',
           is_personal: true
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        }
       };
 
       const { data, error } = await supabase
         .from(TABLES.AI_CHAT_THREADS)
-        .insert([newThread])
+        .upsert([newThread], { 
+          onConflict: 'conversation_id',
+          ignoreDuplicates: false 
+        })
         .select()
         .single();
 
@@ -58,10 +44,13 @@ export class AIChatService {
       const thread = this.transformThreadFromDatabase(data);
       this.activeThreads.set(conversationId, thread);
 
-      // Send initial AI message
-      await this.sendSystemMessage(thread.id, 
-        'Привет! Я ваш персональный AI-ассистент. Буду анализировать ваши диалоги и предлагать рекомендации для эффективного сотрудничества. Вся история нашего общения видна только вам.'
-      );
+      // Send initial AI message only for newly created threads
+      const messages = await this.getThreadMessages(thread.id);
+      if (messages.length === 0) {
+        await this.sendSystemMessage(thread.id, 
+          'Привет! Я ваш персональный AI-ассистент. Буду анализировать ваши диалоги и предлагать рекомендации для эффективного сотрудничества. Вся история нашего общения видна только вам.'
+        );
+      }
 
       return thread;
     } catch (error) {
