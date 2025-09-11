@@ -611,7 +611,7 @@ export function OffersPage() {
               key={offer.offerId}
               offer={offer}
               onAction={!showMyOffers ? handleOfferAction : undefined}
-              onWithdraw={showMyOffers ? handleWithdrawOffer : undefined}
+             onWithdraw={showMyOffers ? handleCancelOffer : undefined}
               onModify={showMyOffers ? handleModifyOffer : undefined}
               onLeaveReview={handleLeaveReview}
               onManageDeal={handleManageDeal}
