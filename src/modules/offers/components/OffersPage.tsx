@@ -8,6 +8,7 @@ import { PaymentWindowModal } from './PaymentWindowModal';
 import { DealManagementModal } from '../../deals/components/DealManagementModal';
 import { PaymentModal } from '../../deals/components/PaymentModal';
 import { ReviewModal } from '../../deals/components/ReviewModal';
+import { CreatePaymentRequestModal } from '../../payments/components/CreatePaymentRequestModal';
 import { offerService } from '../services/offerService';
 import { Handshake, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
