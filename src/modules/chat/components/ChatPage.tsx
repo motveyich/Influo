@@ -943,8 +943,8 @@ export function ChatPage() {
       {/* AI Chat Panel */}
       {selectedConversation && showAIPanel && (
         <AIChatPanel
-          user1Id={currentUserId}
-          user2Id={selectedConversation.participantId}
+          currentUserId={currentUserId}
+          partnerId={selectedConversation.participantId}
           isVisible={showAIPanel}
           onToggleVisibility={() => setShowAIPanel(!showAIPanel)}
           conversationMessages={messages}

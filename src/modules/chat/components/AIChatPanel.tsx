@@ -6,16 +6,16 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
 interface AIChatPanelProps {
-  user1Id: string;
-  user2Id: string;
+  currentUserId: string;
+  partnerId: string;
   isVisible: boolean;
   onToggleVisibility: () => void;
   conversationMessages: ChatMessage[];
 }
 
 export function AIChatPanel({ 
-  user1Id, 
-  user2Id, 
+  currentUserId, 
+  partnerId, 
   isVisible, 
   onToggleVisibility, 
   conversationMessages 
@@ -30,10 +30,10 @@ export function AIChatPanel({
 
   // Initialize AI thread when panel opens
   useEffect(() => {
-    if (user1Id && user2Id && isVisible) {
+    if (currentUserId && partnerId && isVisible) {
       initializeAIThread();
     }
-  }, [user1Id, user2Id, isVisible]);
+  }, [currentUserId, partnerId, isVisible]);
 
   // Auto-trigger analysis when conversation messages change
   useEffect(() => {
@@ -54,7 +54,8 @@ export function AIChatPanel({
   const initializeAIThread = async () => {
     try {
       setIsLoading(true);
-      const aiThread = await aiChatService.getOrCreateThread(user1Id, user2Id);
+      // Create personal thread for current user only
+      const aiThread = await aiChatService.getOrCreatePersonalThread(currentUserId);
       setThread(aiThread);
       
       // Load existing AI messages for this thread
@@ -77,7 +78,9 @@ export function AIChatPanel({
       // Analyze conversation using real messages
       const analysisMessage = await aiChatService.analyzeConversationWithAI(
         thread.id, 
-        conversationMessages
+        conversationMessages,
+        currentUserId,
+        partnerId
       );
       
       // Add analysis message to UI
@@ -109,8 +112,9 @@ export function AIChatPanel({
       const aiResponse = await aiChatService.askAIQuestion(
         thread.id,
         userQuestion,
-        user1Id, // Current user asking the question
-        conversationMessages
+        currentUserId,
+        conversationMessages,
+        partnerId
       );
       
       // Add both user question and AI response to UI
@@ -119,7 +123,7 @@ export function AIChatPanel({
         threadId: thread.id,
         messageType: 'user_question',
         content: userQuestion,
-        metadata: { user_id: user1Id },
+        metadata: { user_id: currentUserId },
         createdAt: new Date().toISOString()
       };
       
@@ -203,7 +207,7 @@ export function AIChatPanel({
             <div>
               <h3 className="text-sm font-semibold text-gray-900">DeepSeek AI Ассистент</h3>
               <p className="text-xs text-gray-600">
-                Анализ диалога • {conversationMessages.length} сообщений
+                Персональный помощник • {conversationMessages.length} сообщений для анализа
               </p>
             </div>
           </div>
@@ -377,7 +381,7 @@ export function AIChatPanel({
         {/* Status */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            🧠 DeepSeek V3 • {conversationMessages.length < 2 ? 'Ожидание диалога' : 'Анализирует диалог'}
+            🧠 DeepSeek V3 • Ваш персональный AI-помощник • {conversationMessages.length < 2 ? 'Ожидание диалога' : 'Готов анализировать'}
           </p>
         </div>
       </div>

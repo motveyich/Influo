@@ -8,10 +8,10 @@ export class AIChatService {
   private readonly RATE_LIMIT_MAX = 15; // requests per hour
   private readonly RATE_LIMIT_WINDOW = 3600000; // 1 hour
 
-  async getOrCreateThread(user1Id: string, user2Id: string): Promise<AIChatThread> {
+  async getOrCreatePersonalThread(userId: string): Promise<AIChatThread> {
     try {
-      // Create consistent conversation ID
-      const conversationId = [user1Id, user2Id].sort().join('_');
+      // Create personal conversation ID for this user only
+      const conversationId = `personal_${userId}`;
       
       // Check if thread is cached
       if (this.activeThreads.has(conversationId)) {
@@ -36,11 +36,12 @@ export class AIChatService {
       // Create new thread
       const newThread = {
         conversation_id: conversationId,
-        user1_id: user1Id,
-        user2_id: user2Id,
+        user1_id: userId,
+        user2_id: userId, // Same user for personal chat
         metadata: {
           created_by_service: true,
-          conversation_type: 'influencer_advertiser'
+          conversation_type: 'personal_ai_assistant',
+          is_personal: true
         },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -59,7 +60,7 @@ export class AIChatService {
 
       // Send initial AI message
       await this.sendSystemMessage(thread.id, 
-        'Привет! Я ваш AI-ассистент. Буду анализировать ваш диалог и предлагать персональные рекомендации для эффективного сотрудничества.'
+        'Привет! Я ваш персональный AI-ассистент. Буду анализировать ваши диалоги и предлагать рекомендации для эффективного сотрудничества. Вся история нашего общения видна только вам.'
       );
 
       return thread;
@@ -87,14 +88,14 @@ export class AIChatService {
     }
   }
 
-  async analyzeConversationWithAI(threadId: string, chatMessages: ChatMessage[]): Promise<AIChatMessage> {
+  async analyzeConversationWithAI(threadId: string, chatMessages: ChatMessage[], currentUserId: string, partnerId: string): Promise<AIChatMessage> {
     try {
       if (chatMessages.length < 2) {
         throw new Error('Недостаточно сообщений для анализа');
       }
 
       // Get user roles
-      const userRoles = await this.getUserRoles(threadId);
+      const userRoles = await this.getUserRoles(currentUserId, partnerId);
       
       // Prepare messages for AI analysis
       const formattedMessages = await this.formatMessagesForAI(chatMessages, userRoles);
@@ -103,8 +104,8 @@ export class AIChatService {
       const analysisResponse = await this.callDeepSeekAPI({
         messages: formattedMessages,
         threadId,
-        user1Role: userRoles.user1Role,
-        user2Role: userRoles.user2Role,
+        user1Role: userRoles.currentUserRole,
+        user2Role: userRoles.partnerRole,
         analysisType: 'conversation_analysis'
       });
 
@@ -112,12 +113,15 @@ export class AIChatService {
       const aiMessage = await this.saveAIMessage(threadId, 'ai_analysis', analysisResponse, {
         analysis_type: 'conversation_analysis',
         message_count: chatMessages.length,
-        confidence: 0.9
+        confidence: 0.9,
+        analyzed_partner: partnerId
       });
 
       // Track analytics
       analytics.track('ai_conversation_analyzed', {
         thread_id: threadId,
+        user_id: currentUserId,
+        partner_id: partnerId,
         message_count: chatMessages.length,
         analysis_length: analysisResponse.length
       });
@@ -129,7 +133,7 @@ export class AIChatService {
     }
   }
 
-  async askAIQuestion(threadId: string, question: string, userId: string, chatMessages: ChatMessage[]): Promise<AIChatMessage> {
+  async askAIQuestion(threadId: string, question: string, userId: string, chatMessages: ChatMessage[], partnerId: string): Promise<AIChatMessage> {
     try {
       // Check rate limit
       if (!this.checkRateLimit(userId)) {
@@ -143,7 +147,7 @@ export class AIChatService {
       });
 
       // Get user roles
-      const userRoles = await this.getUserRoles(threadId);
+      const userRoles = await this.getUserRoles(userId, partnerId);
       
       // Prepare context with real chat messages
       const formattedMessages = await this.formatMessagesForAI(chatMessages, userRoles);
@@ -153,8 +157,8 @@ export class AIChatService {
         messages: formattedMessages,
         userQuestion: question,
         threadId,
-        user1Role: userRoles.user1Role,
-        user2Role: userRoles.user2Role,
+        user1Role: userRoles.currentUserRole,
+        user2Role: userRoles.partnerRole,
         analysisType: 'user_question'
       });
 
@@ -162,7 +166,8 @@ export class AIChatService {
       const aiMessage = await this.saveAIMessage(threadId, 'ai_response', aiResponse, {
         question: question,
         user_id: userId,
-        context_messages: formattedMessages.length
+        context_messages: formattedMessages.length,
+        partner_id: partnerId
       });
 
       // Track analytics
@@ -180,39 +185,30 @@ export class AIChatService {
     }
   }
 
-  private async getUserRoles(threadId: string): Promise<{ user1Role: string; user2Role: string; user1Id: string; user2Id: string }> {
+  private async getUserRoles(currentUserId: string, partnerId: string): Promise<{ currentUserRole: string; partnerRole: string; currentUserId: string; partnerId: string }> {
     try {
-      // Get thread info
-      const { data: thread } = await supabase
-        .from(TABLES.AI_CHAT_THREADS)
-        .select('user1_id, user2_id')
-        .eq('id', threadId)
-        .single();
-      
-      if (!thread) throw new Error('Thread not found');
-      
       // Get user profiles
       const { data: profiles } = await supabase
         .from(TABLES.USER_PROFILES)
         .select('user_id, user_type, full_name')
-        .in('user_id', [thread.user1_id, thread.user2_id]);
+        .in('user_id', [currentUserId, partnerId]);
       
-      const user1Profile = profiles?.find(p => p.user_id === thread.user1_id);
-      const user2Profile = profiles?.find(p => p.user_id === thread.user2_id);
+      const currentUserProfile = profiles?.find(p => p.user_id === currentUserId);
+      const partnerProfile = profiles?.find(p => p.user_id === partnerId);
       
       return {
-        user1Role: this.getUserTypeLabel(user1Profile?.user_type || 'user'),
-        user2Role: this.getUserTypeLabel(user2Profile?.user_type || 'user'),
-        user1Id: thread.user1_id,
-        user2Id: thread.user2_id
+        currentUserRole: this.getUserTypeLabel(currentUserProfile?.user_type || 'user'),
+        partnerRole: this.getUserTypeLabel(partnerProfile?.user_type || 'user'),
+        currentUserId: currentUserId,
+        partnerId: partnerId
       };
     } catch (error) {
       console.error('Failed to get user roles:', error);
       return {
-        user1Role: 'Пользователь',
-        user2Role: 'Пользователь',
-        user1Id: '',
-        user2Id: ''
+        currentUserRole: 'Пользователь',
+        partnerRole: 'Пользователь',
+        currentUserId: currentUserId,
+        partnerId: partnerId
       };
     }
   }
@@ -237,8 +233,8 @@ export class AIChatService {
       senderId: msg.senderId,
       receiverId: msg.receiverId,
       timestamp: msg.timestamp,
-      senderRole: msg.senderId === userRoles.user1Id ? userRoles.user1Role : userRoles.user2Role,
-      receiverRole: msg.senderId === userRoles.user1Id ? userRoles.user2Role : userRoles.user1Role
+      senderRole: msg.senderId === userRoles.currentUserId ? userRoles.currentUserRole : userRoles.partnerRole,
+      receiverRole: msg.senderId === userRoles.currentUserId ? userRoles.partnerRole : userRoles.currentUserRole
     }));
   }
 
@@ -374,14 +370,13 @@ export class AIChatService {
     };
   }
 
-  // Auto-trigger analysis when new messages are added
-  async triggerAutoAnalysis(user1Id: string, user2Id: string, chatMessages: ChatMessage[]): Promise<void> {
+  async triggerAutoAnalysis(currentUserId: string, partnerId: string, chatMessages: ChatMessage[]): Promise<void> {
     try {
       // Only auto-analyze every 3 messages to avoid spam
       if (chatMessages.length % 3 !== 0) return;
       
-      const thread = await this.getOrCreateThread(user1Id, user2Id);
-      await this.analyzeConversationWithAI(thread.id, chatMessages);
+      const thread = await this.getOrCreatePersonalThread(currentUserId);
+      await this.analyzeConversationWithAI(thread.id, chatMessages, currentUserId, partnerId);
     } catch (error) {
       console.error('Failed to trigger auto analysis:', error);
       // Don't throw error for auto-analysis failures

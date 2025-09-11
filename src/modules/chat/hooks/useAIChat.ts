@@ -2,24 +2,24 @@ import { useState, useEffect } from 'react';
 import { AIChatThread, AIChatMessage, ChatMessage } from '../../../core/types';
 import { aiChatService } from '../../../services/aiChatService';
 
-export function useAIChat(user1Id: string, user2Id: string) {
+export function useAIChat(currentUserId: string, partnerId: string) {
   const [thread, setThread] = useState<AIChatThread | null>(null);
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user1Id && user2Id) {
+    if (currentUserId && partnerId) {
       initializeThread();
     }
-  }, [user1Id, user2Id]);
+  }, [currentUserId, partnerId]);
 
   const initializeThread = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const aiThread = await aiChatService.getOrCreateThread(user1Id, user2Id);
+      const aiThread = await aiChatService.getOrCreatePersonalThread(currentUserId);
       setThread(aiThread);
       
       const threadMessages = await aiChatService.getThreadMessages(aiThread.id);
@@ -32,12 +32,18 @@ export function useAIChat(user1Id: string, user2Id: string) {
     }
   };
 
-  const sendQuestion = async (question: string): Promise<AIChatMessage | null> => {
+  const sendQuestion = async (question: string, contextMessages?: ChatMessage[]): Promise<AIChatMessage | null> => {
     if (!thread) return null;
 
     try {
       setIsLoading(true);
-      const response = await aiChatService.sendUserQuestion(thread.id, question, user1Id);
+      const response = await aiChatService.askAIQuestion(
+        thread.id, 
+        question, 
+        currentUserId, 
+        contextMessages || [], 
+        partnerId
+      );
       
       // Reload messages to get the latest
       const updatedMessages = await aiChatService.getThreadMessages(thread.id);
@@ -61,18 +67,25 @@ export function useAIChat(user1Id: string, user2Id: string) {
     }
   };
 
-  const analyzeConversation = async (conversationMessages: ChatMessage[]): Promise<void> => {
+  const analyzeConversation = async (conversationMessages: ChatMessage[]): Promise<AIChatMessage | null> => {
     if (!thread) return;
 
     try {
-      const analysisMessage = await aiChatService.analyzeConversation(thread.id, conversationMessages);
+      const analysisMessage = await aiChatService.analyzeConversationWithAI(
+        thread.id, 
+        conversationMessages, 
+        currentUserId, 
+        partnerId
+      );
       
       if (analysisMessage) {
         setMessages(prev => [...prev, analysisMessage]);
       }
+      
+      return analysisMessage;
     } catch (err: any) {
       console.error('Failed to analyze conversation:', err);
-      // Don't set error for analysis failures as they're not critical
+      return null;
     }
   };
 
