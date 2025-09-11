@@ -13,6 +13,7 @@ import { Handshake, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'luc
 import { realtimeService } from '../../../core/realtime';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAuth } from '../../../hooks/useAuth';
+import { isSupabaseConfigured } from '../../../core/supabase';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import toast from 'react-hot-toast';
 import { supabase, TABLES } from '../../../core/supabase';
@@ -72,6 +73,12 @@ export function OffersPage() {
 
   const loadApplications = async () => {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, returning empty applications');
+        return [];
+      }
+      
       const { applicationService } = await import('../../applications/services/applicationService');
       
       // Load applications based on current view
@@ -113,6 +120,13 @@ export function OffersPage() {
       return transformedApplications;
     } catch (error) {
       console.error('Failed to load applications:', error);
+      
+      // Handle specific Supabase connection errors gracefully
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed for applications, returning empty list');
+        return [];
+      }
+      
       return [];
     }
   };
@@ -120,6 +134,20 @@ export function OffersPage() {
   const loadOffers = async () => {
     try {
       setIsLoading(true);
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, using empty offers list');
+        setOffers([]);
+        return;
+      }
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, using empty offers list');
+        setOffers([]);
+        return;
+      }
       
       // Load real offers from offers table
       const loadedOffers = await offerService.getUserOffers(
@@ -143,6 +171,22 @@ export function OffersPage() {
       setOffers(allOffers);
     } catch (error) {
       console.error('Failed to load offers:', error);
+      
+      // Handle specific Supabase connection errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed, using empty offers list');
+        setOffers([]);
+        return;
+      }
+      
+      
+      // Handle specific Supabase connection errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed, using empty campaigns list');
+        setCampaigns([]);
+        return;
+      }
+      
       toast.error(t('offers.errors.loadFailed'));
       setOffers([]);
     } finally {
