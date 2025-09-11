@@ -360,6 +360,39 @@ export class ApplicationService {
     }
   }
 
+  private async sendCompletionNotification(application: Application, completedBy: string): Promise<void> {
+    try {
+      // Get completer's profile to show proper name
+      const { data: completerProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', completedBy)
+        .single();
+
+      const completerName = completerProfile?.full_name || 'Партнер';
+      const messageContent = `✅ Сотрудничество завершено! ${completerName} отметил работу как выполненную. Теперь вы можете оставить отзыв.`;
+      
+      const receiverId = completedBy === application.applicantId 
+        ? application.targetId 
+        : application.applicantId;
+      
+      await chatService.sendMessage({
+        senderId: completedBy,
+        receiverId: receiverId,
+        messageContent: messageContent,
+        messageType: 'offer',
+        metadata: {
+          applicationId: application.id,
+          actionType: 'application_completed',
+          completedBy: completedBy
+        }
+      });
+    } catch (error) {
+      console.error('Failed to send completion notification:', error);
+      throw error;
+    }
+  }
+
   private transformFromDatabase(dbData: any): Application {
     return {
       id: dbData.id,

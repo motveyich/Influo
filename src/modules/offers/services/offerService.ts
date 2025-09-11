@@ -453,17 +453,29 @@ export class OfferService {
           messageContent = `Offer has been withdrawn by the advertiser`;
           receiverId = offer.influencerId;
           break;
+        case 'offer_completed':
+          messageContent = `✅ Сотрудничество завершено! Партнер отметил работу как выполненную. Теперь вы можете оставить отзыв.`;
+          receiverId = offer.advertiserId === offer.influencerId ? offer.advertiserId : 
+                       (type === 'offer_completed' ? 
+                         (offer.metadata?.completedBy === offer.influencerId ? offer.advertiserId : offer.influencerId) :
+                         offer.influencerId
+                       );
+          break;
       }
 
       if (messageContent && receiverId) {
         await chatService.sendMessage({
-          senderId: type === 'offer_withdrawn' ? offer.advertiserId : (type === 'new_offer' ? offer.advertiserId : offer.influencerId),
+          senderId: type === 'offer_completed' ? 
+                    (offer.metadata?.completedBy || offer.influencerId) : 
+                    (type === 'offer_withdrawn' ? offer.advertiserId : 
+                     (type === 'new_offer' ? offer.advertiserId : offer.influencerId)),
           receiverId: receiverId,
           messageContent: messageContent,
           messageType: 'offer',
           metadata: {
             offerId: offer.offerId,
-            campaignId: offer.campaignId
+            campaignId: offer.campaignId,
+            actionType: type
           }
         });
       }
