@@ -34,10 +34,11 @@ export function OffersPage() {
   const [reviewTargetOffer, setReviewTargetOffer] = useState<Offer | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedDealOffer, setSelectedDealOffer] = useState<Offer | null>(null);
-  const [paymentModalExistingInfo, setPaymentModalExistingInfo] = useState<any>(null);
+  const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
+  const [paymentRequestExistingInfo, setPaymentRequestExistingInfo] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailOffer, setDetailOffer] = useState<Offer | null>(null);
-  const [PaymentTabComponent, setPaymentTabComponent] = useState<React.ComponentType | null>(null);
+  const [PaymentRequestsTabComponent, setPaymentRequestsTabComponent] = useState<React.ComponentType | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -45,11 +46,11 @@ export function OffersPage() {
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
   useEffect(() => {
-    const loadPaymentTab = async () => {
-      const { PaymentTab } = await import('./PaymentTab');
-      setPaymentTabComponent(() => PaymentTab);
+    const loadPaymentRequestsTab = async () => {
+      const { PaymentRequestsTab } = await import('../../payments/components/PaymentRequestsTab');
+      setPaymentRequestsTabComponent(() => PaymentRequestsTab);
     };
-    loadPaymentTab();
+    loadPaymentRequestsTab();
   }, []);
 
   useEffect(() => {
@@ -318,38 +319,35 @@ export function OffersPage() {
       return;
     }
     
-    // Проверяем, что текущий пользователь - это инфлюенсер в данной конкретной сделке
+    // Check that current user is the influencer
     if (currentUserId !== offer.influencerId) {
       toast.error('Только инфлюенсер в данной сделке может создать окно оплаты');
       return;
     }
     
-    // Дополнительная проверка что у пользователя есть настройки инфлюенсера
+    // Check influencer profile setup
     if (!currentUserProfile?.profileCompletion.influencerSetup) {
       toast.error('Заполните раздел "Инфлюенсер" для создания окон оплаты');
       return;
     }
     
-    // Calculate payment info based on current status
+    // Get existing payment info
     const paymentStatus = (offer as any).metadata?.paymentStatus;
     const totalAmount = (offer as any).metadata?.totalAmount || offer.details.rate;
     const paidAmount = (offer as any).metadata?.paidAmount || 0;
     const remainingAmount = (offer as any).metadata?.remainingAmount || totalAmount;
     const isAfterPrepayment = paymentStatus === 'prepaid';
     
-    const existingPaymentInfoData = isAfterPrepayment ? {
+    const existingInfo = isAfterPrepayment ? {
       totalAmount,
       paidAmount,
       remainingAmount,
       paymentStatus,
-      paymentStage: 'postpay',
-      paymentType: 'postpay',
-      isPrepaymentCompleted: true
     } : null;
     
-    setPaymentModalExistingInfo(existingPaymentInfoData);
+    setPaymentRequestExistingInfo(existingInfo);
     setSelectedDealOffer(offer);
-    setShowPaymentModal(true);
+    setShowPaymentRequestModal(true);
   };
 
   const handleDealStatusUpdated = () => {
@@ -756,54 +754,31 @@ export function OffersPage() {
         />
       )}
 
-      {/* Payment Modal */}
+      {/* Payment Request Modal */}
       {selectedDealOffer && (
-        <PaymentModal
-          isOpen={showPaymentModal}
+        <CreatePaymentRequestModal
+          isOpen={showPaymentRequestModal}
           onClose={() => {
-            setShowPaymentModal(false);
+            setShowPaymentRequestModal(false);
             setSelectedDealOffer(null);
+            setPaymentRequestExistingInfo(null);
           }}
-          offerId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
-          applicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
           payerId={selectedDealOffer.advertiserId}
           payeeId={selectedDealOffer.influencerId}
-          totalAmount={selectedDealOffer.details.rate}
+          relatedOfferId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
+          relatedApplicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
+          initialAmount={selectedDealOffer.details.rate}
           currency={selectedDealOffer.details.currency || 'USD'}
-          currentUserId={currentUserId}
-          onDealCreated={(deal) => {
-            toast.success('Сделка создана! Теперь можно управлять оплатой.');
-            setShowPaymentModal(false);
+          existingPaymentInfo={paymentRequestExistingInfo}
+          onRequestCreated={(request) => {
+            setShowPaymentRequestModal(false);
             setSelectedDealOffer(null);
+            setPaymentRequestExistingInfo(null);
             loadOffers();
           }}
         />
       )}
       
-      {/* Payment Window Modal - только через кнопки "Окно оплаты" в принятых предложениях */}
-      {selectedDealOffer && (
-        <PaymentWindowModal
-          isOpen={showPaymentModal}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedDealOffer(null);
-            setPaymentModalExistingInfo(null);
-          }}
-          payerId={selectedDealOffer.advertiserId}
-          payeeId={selectedDealOffer.influencerId}
-          offerId={selectedDealOffer.type === 'application' ? undefined : selectedDealOffer.offerId}
-          applicationId={selectedDealOffer.type === 'application' ? selectedDealOffer.offerId : undefined}
-          initialAmount={selectedDealOffer.details.rate}
-          existingPaymentInfo={paymentModalExistingInfo}
-          onWindowCreated={(window) => {
-            toast.success('Окно оплаты создано и отправлено в чат!');
-            setShowPaymentModal(false);
-            setSelectedDealOffer(null);
-            setPaymentModalExistingInfo(null);
-            loadOffers();
-          }}
-        />
-      )}
     </div>
       ) : (
         <React.Suspense fallback={
@@ -812,7 +787,7 @@ export function OffersPage() {
             <p className="text-gray-600">Загрузка вкладки оплаты...</p>
           </div>
         }>
-          {PaymentTabComponent && <PaymentTabComponent />}
+          {PaymentRequestsTabComponent && <PaymentRequestsTabComponent />}
         </React.Suspense>
       )}
     </div>

@@ -279,16 +279,15 @@ export class HomeService {
       // 4. Ждут выплат (deals в статусе pending payout)
       let pendingPayoutsCount = 0;
       try {
-        // Считаем окна оплаты с непогашенной постоплатой
-        const { data: pendingPaymentWindows } = await supabase
+        // Count payment requests awaiting confirmation
+        const { data: pendingPaymentRequests } = await supabase
           .from('payment_windows')
           .select('id')
-          .eq('payee_id', userId)
-          .eq('payment_stage', 'postpay')
+          .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
           .in('status', ['pending', 'paying', 'paid']);
-        pendingPayoutsCount = pendingPaymentWindows?.length || 0;
+        pendingPayoutsCount = pendingPaymentRequests?.length || 0;
       } catch (dealsError) {
-        console.log('Deals table not yet created:', dealsError);
+        console.log('Payment windows table not yet created:', dealsError);
         pendingPayoutsCount = 0;
       }
 

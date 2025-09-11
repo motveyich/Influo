@@ -361,15 +361,6 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                     <span>Окно оплаты</span>
                   </button>
                 )}
-                {(offer as any).metadata?.paymentStatus !== 'fully_paid' && !(offer as any).metadata?.paymentStatus && (
-                  <button
-                    onClick={() => onManageDeal?.(offer.offerId)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                  >
-                    <Settings className="w-3 h-3" />
-                    <span>Управление</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>

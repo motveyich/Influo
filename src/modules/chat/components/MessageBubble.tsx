@@ -199,10 +199,18 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
       if (button.id === 'failed' && currentStatus !== 'paying') {
         return false;
       }
+      // Дополнительная логика для кнопки "failed" - показывать только в статусе "paying"
+      if (button.id === 'failed' && currentStatus !== 'paying') {
+        return false;
+      }
       return true;
     }
     
     if (userRole === 'payee' && payeeButtons.includes(button.id)) {
+      // Кнопка "confirmed" только при статусе "paid"
+      if (button.id === 'confirmed' && currentStatus !== 'paid') {
+        return false;
+      }
       // Кнопка "confirmed" только при статусе "paid"
       if (button.id === 'confirmed' && currentStatus !== 'paid') {
         return false;
