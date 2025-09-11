@@ -37,7 +37,10 @@ export class ApplicationService {
         target_id: applicationData.targetId,
         target_type: applicationData.targetType,
         target_reference_id: applicationData.targetReferenceId,
-        application_data: applicationData.applicationData,
+        application_data: {
+          ...applicationData.applicationData,
+          status: 'sent'
+        },
         status: 'sent',
         timeline: {
           sentAt: new Date().toISOString()
@@ -308,13 +311,13 @@ export class ApplicationService {
     }
   }
 
-  async withdrawApplication(applicationId: string): Promise<void> {
+  async cancelApplication(applicationId: string): Promise<void> {
     try {
       if (!isSupabaseConfigured()) {
         throw new Error('Supabase не настроен. Пожалуйста, нажмите "Connect to Supabase" в правом верхнем углу.');
       }
 
-      // First check if application exists and is withdrawable
+      // First check if application exists and is cancellable
       const { data: existingApp, error: fetchError } = await supabase
         .from('applications')
         .select('*')
@@ -329,20 +332,18 @@ export class ApplicationService {
         throw new Error('Заявка не найдена в базе данных');
       }
       
-      if (existingApp.status === 'cancelled' || existingApp.status === 'withdrawn') {
-        throw new Error('Заявка уже была отозвана');
+      if (existingApp.status === 'cancelled') {
+        throw new Error('Заявка уже была отменена');
       }
       
-      if (!['sent', 'pending'].includes(existingApp.status)) {
-      }
       if (!['sent'].includes(existingApp.status)) {
-        throw new Error('Нельзя отозвать заявку со статусом: ' + existingApp.status);
+        throw new Error('Нельзя отменить заявку со статусом: ' + existingApp.status);
       }
       
       const { error } = await supabase
         .from('applications')
         .update({
-          status: 'withdrawn',
+          status: 'cancelled',
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId);
@@ -350,11 +351,11 @@ export class ApplicationService {
       if (error) throw error;
 
       // Track analytics
-      analytics.track('application_withdrawn', {
+      analytics.track('application_cancelled', {
         application_id: applicationId
       });
     } catch (error) {
-      console.error('Failed to withdraw application:', error);
+      console.error('Failed to cancel application:', error);
       throw error;
     }
   }
