@@ -291,15 +291,17 @@ export function OffersPage() {
     const totalAmount = (offer as any).metadata?.totalAmount || offer.details.rate;
     const paidAmount = (offer as any).metadata?.paidAmount || 0;
     const remainingAmount = (offer as any).metadata?.remainingAmount || totalAmount;
+    const isAfterPrepayment = paymentStatus === 'prepaid';
     
-    const existingPaymentInfoData = paymentStatus === 'prepaid' ? {
+    const existingPaymentInfoData = isAfterPrepayment ? {
       totalAmount,
       paidAmount,
       remainingAmount,
       paymentStatus,
-      paymentStage: (offer as any).metadata?.paymentStage,
-      paymentType: (offer as any).metadata?.paymentType
-    } : undefined;
+      paymentStage: 'postpay',
+      paymentType: 'postpay',
+      isPrepaymentCompleted: true
+    } : null;
     
     setPaymentModalExistingInfo(existingPaymentInfoData);
     setSelectedDealOffer(offer);

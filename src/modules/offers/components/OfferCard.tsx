@@ -325,40 +325,41 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <div>
                   <span className="text-sm font-medium text-green-800">
                     {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
-                      'Предоплачена' : 
+                      '💰 Предоплата внесена!' : 
                       (offer as any).metadata?.paymentStatus === 'fully_paid' ? 
-                      'Полностью оплачена' :
+                      '✅ Полностью оплачена' :
                       'Предложение принято! Управляйте сделкой.'}
                   </span>
                   {((offer as any).metadata?.paymentStatus === 'prepaid' || (offer as any).metadata?.paymentStatus === 'fully_paid') && (
                     <p className="text-xs text-green-700 mt-1">
-                      Оплачено: {formatCurrency((offer as any).metadata.paidAmount || 0, offer.details.currency)}
+                      <strong>Внесена предоплата в размере: {formatCurrency((offer as any).metadata.paidAmount || 0, offer.details.currency)}</strong>
                       {(offer as any).metadata?.remainingAmount > 0 && 
-                        `. Осталось: ${formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}`
+                        <span className="block mt-1">Остаток к доплате: {formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}</span>
                       }
                     </p>
                   )}
                 </div>
               </div>
               <div className="flex space-x-2">
-                {currentUserId === offer.influencerId && (offer as any).metadata?.paymentStatus !== 'fully_paid' && (
+                {currentUserId === offer.influencerId && (offer as any).metadata?.paymentStatus === 'prepaid' && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-                      (offer as any).metadata?.paymentStatus === 'prepaid' ?
-                      'bg-orange-600 hover:bg-orange-700 text-white' :
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
+                    className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
                   >
                     <DollarSign className="w-3 h-3" />
-                    <span>
-                      {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
-                        'Окно постоплаты' : 
-                        'Окно оплаты'}
-                    </span>
+                    <span>Окно постоплаты</span>
                   </button>
                 )}
-                {(offer as any).metadata?.paymentStatus !== 'fully_paid' && (
+                {currentUserId === offer.influencerId && !(offer as any).metadata?.paymentStatus && (
+                  <button
+                    onClick={() => onCreatePayment?.(offer.offerId)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <DollarSign className="w-3 h-3" />
+                    <span>Окно оплаты</span>
+                  </button>
+                )}
+                {(offer as any).metadata?.paymentStatus !== 'fully_paid' && !(offer as any).metadata?.paymentStatus && (
                   <button
                     onClick={() => onManageDeal?.(offer.offerId)}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"

@@ -181,6 +181,17 @@ export class PaymentWindowService {
           
           const updatedMetadata = {
             ...currentApp.metadata,
+            paymentHistory: [
+              ...(currentApp.metadata?.paymentHistory || []),
+              {
+                windowId: window.id,
+                amount: window.amount,
+                currency: window.currency,
+                stage: window.paymentStage,
+                status: paymentStatus,
+                confirmedAt: new Date().toISOString()
+              }
+            ],
             paymentStatus: applicationPaymentStatus,
             paymentWindowId: window.id,
             paidAmount: paidAmount,
