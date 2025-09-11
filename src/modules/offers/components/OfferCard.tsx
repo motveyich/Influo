@@ -325,7 +325,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 <div>
                   <span className="text-sm font-medium text-green-800">
                     {(offer as any).metadata?.paymentStatus === 'prepaid' ? 
-                      '💰 Предоплата внесена!' : 
+                      '💰 Предоплачена!' : 
                       (offer as any).metadata?.paymentStatus === 'fully_paid' ? 
                       '✅ Полностью оплачена' :
                       'Предложение принято! Управляйте сделкой.'}
@@ -333,6 +333,8 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                   {((offer as any).metadata?.paymentStatus === 'prepaid' || (offer as any).metadata?.paymentStatus === 'fully_paid') && (
                     <p className="text-xs text-green-700 mt-1">
                       <strong>Внесена предоплата в размере: {formatCurrency((offer as any).metadata.paidAmount || 0, offer.details.currency)}</strong>
+                      <br />
+                      <strong>Дата предоплаты: {new Date((offer as any).metadata?.paymentDate || '').toLocaleDateString('ru-RU')}</strong>
                       {(offer as any).metadata?.remainingAmount > 0 && 
                         <span className="block mt-1">Остаток к доплате: {formatCurrency((offer as any).metadata.remainingAmount, offer.details.currency)}</span>
                       }
@@ -341,7 +343,7 @@ export function OfferCard({ offer, onAction, onManageDeal, onCreatePayment, onWi
                 </div>
               </div>
               <div className="flex space-x-2">
-                {currentUserId === offer.influencerId && (offer as any).metadata?.paymentStatus === 'prepaid' && (
+                {currentUserId === offer.influencerId && (offer as any).metadata?.paymentStatus === 'prepaid' && (offer as any).metadata?.remainingAmount > 0 && (
                   <button
                     onClick={() => onCreatePayment?.(offer.offerId)}
                     className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-1"

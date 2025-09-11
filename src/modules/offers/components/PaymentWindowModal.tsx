@@ -266,19 +266,8 @@ export function PaymentWindowModal({
               Тип оплаты *
             </label>
             
-            {/* Show info about existing prepayment */}
+            // После предоплаты - только постоплата на остаток
             {existingPaymentInfo?.paymentStatus === 'prepaid' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center space-x-3 mb-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                  <h4 className="font-medium text-blue-800">Предоплата уже получена</h4>
-                </div>
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
-                  <p><strong>Получено (предоплата):</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
-                  <p><strong>Осталось к оплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
-                </div>
-              </div>
             )}
 
             {existingPaymentInfo?.paymentStatus === 'prepaid' ? (
@@ -288,8 +277,8 @@ export function PaymentWindowModal({
                   <div className="flex items-center space-x-3 mb-2">
                     <CheckCircle className="w-5 h-5 text-blue-600" />
                     <h4 className="font-medium text-blue-800">Предоплата завершена</h4>
-                  </div>
-                  <div className="text-sm text-blue-700 space-y-1">
+                    <h4 className="font-medium text-orange-900">🔒 Только постоплата</h4>
+                    <p className="text-sm text-orange-700">Доплата оставшейся суммы. Предоплата уже внесена.</p>
                     <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
                     <p><strong>Внесена предоплата в размере:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
                     <p><strong>К доплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
@@ -308,7 +297,7 @@ export function PaymentWindowModal({
                       <p className="text-sm text-orange-700">Доплата оставшейся суммы после выполнения работы</p>
                       <p className="text-sm text-orange-700 mt-1">
                         <strong>Сумма постоплаты: {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</strong>
-                      </p>
+                      <strong>Сумма к доплате: {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</strong>
                     </div>
                   </div>
                 </div>
@@ -471,7 +460,7 @@ export function PaymentWindowModal({
           {/* Instructions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Инструкции по оплате *
+              {existingPaymentInfo?.paymentStatus === 'prepaid' ? 'Сумма постоплаты (заблокирована) *' : 'Сумма *'}
             </label>
             <textarea
               value={formData.paymentDetails.instructions}
@@ -498,12 +487,20 @@ export function PaymentWindowModal({
             <div className="flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div>
+                disabled={existingPaymentInfo?.paymentStatus === 'prepaid'}
                 <h4 className="text-sm font-medium text-yellow-800">Важное уведомление</h4>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Подтвердите оплату в системе после перевода средств. Это поможет контролировать процесс оплаты.
+                  errors.amount ? 'border-red-300' : 
+                  existingPaymentInfo?.paymentStatus === 'prepaid' ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 
+                  'border-gray-300'
+                } ${existingPaymentInfo?.paymentStatus === 'prepaid' ? 'text-gray-600' : ''}`}
                 </p>
               </div>
             </div>
+            {existingPaymentInfo?.paymentStatus === 'prepaid' && (
+              <p className="mt-1 text-xs text-orange-600">
+                Сумма зафиксирована на остатке от общей стоимости сделки
+              </p>
+            )}
           </div>
         </div>
 
