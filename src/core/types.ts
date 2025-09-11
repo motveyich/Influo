@@ -319,13 +319,13 @@ export interface Application {
   targetType: 'influencer_card' | 'advertiser_card' | 'campaign';
   targetReferenceId: string;
   applicationData: {
-  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled' | 'withdrawn';
     proposedRate?: number;
     timeline?: string;
     deliverables?: string[];
     additionalInfo?: string;
   };
-  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled' | 'withdrawn';
   responseData?: {
     message?: string;
     counterOffer?: any;
