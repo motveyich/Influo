@@ -221,7 +221,7 @@ export function PaymentWindowModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {existingPaymentInfo?.paymentStatus === 'prepaid' ? 'Сумма постоплаты (заблокирована) *' : 'Сумма *'}
+                Сумма *
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -229,12 +229,9 @@ export function PaymentWindowModal({
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  disabled={existingPaymentInfo?.paymentStatus === 'prepaid'}
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.amount ? 'border-red-300' : 
-                    existingPaymentInfo?.paymentStatus === 'prepaid' ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 
-                    'border-gray-300'
-                  } ${existingPaymentInfo?.paymentStatus === 'prepaid' ? 'text-gray-600' : ''}`}
+                    errors.amount ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="1000"
                 />
               </div>
@@ -242,11 +239,6 @@ export function PaymentWindowModal({
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.amount}
-                </p>
-              )}
-              {existingPaymentInfo?.paymentStatus === 'prepaid' && (
-                <p className="mt-1 text-xs text-orange-600">
-                  Сумма зафиксирована на остатке от общей стоимости сделки
                 </p>
               )}
             </div>
@@ -497,7 +489,7 @@ export function PaymentWindowModal({
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Важное уведомление</h4>
                 <p className="text-sm text-yellow-700 mt-1">
-                  Убедитесь, что все реквизиты указаны корректно. После создания окна оплаты плательщик получит уведомление с инструкциями.
+                  Подтвердите оплату в системе после перевода средств. Это поможет контролировать процесс оплаты.
                 </p>
               </div>
             </div>
