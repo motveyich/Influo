@@ -325,14 +325,14 @@ export interface Application {
     deliverables?: string[];
     additionalInfo?: string;
   };
-  status: 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled' | 'withdrawn';
+  status: 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled' | 'withdrawn';
   responseData?: {
     message?: string;
     counterOffer?: any;
     declineReason?: string;
   };
   timeline: {
-    pendingAt: string;
+    sentAt: string;
     respondedAt?: string;
     completedAt?: string;
   };

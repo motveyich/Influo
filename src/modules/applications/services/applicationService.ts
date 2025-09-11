@@ -38,9 +38,9 @@ export class ApplicationService {
         target_type: applicationData.targetType,
         target_reference_id: applicationData.targetReferenceId,
         application_data: applicationData.applicationData,
-        status: 'pending',
+        status: 'sent',
         timeline: {
-          pendingAt: new Date().toISOString()
+          sentAt: new Date().toISOString()
         },
         metadata: {
           viewCount: 0
@@ -67,7 +67,7 @@ export class ApplicationService {
         type: 'application_received',
         data: transformedApplication,
         userId: applicationData.targetId!,
-        timestamp: transformedApplication.timeline.pendingAt
+        timestamp: transformedApplication.timeline.sentAt
       });
 
       // Track analytics
@@ -334,6 +334,7 @@ export class ApplicationService {
       }
       
       if (!['sent', 'pending'].includes(existingApp.status)) {
+      if (!['sent'].includes(existingApp.status)) {
         throw new Error('Нельзя отозвать заявку со статусом: ' + existingApp.status);
       }
       
