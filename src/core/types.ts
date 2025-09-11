@@ -543,41 +543,41 @@ export interface AIChatMessage {
   createdAt: string;
 }
 
-// Payment Window types
-export type PaymentWindowStatus = 'pending' | 'paying' | 'paid' | 'failed' | 'confirmed' | 'completed' | 'cancelled';
-export type PaymentWindowType = 'full_prepay' | 'partial_prepay_postpay' | 'postpay';
+// Payment Window types (rebuilt)
+export type PaymentStatus = 'pending' | 'paying' | 'paid' | 'failed' | 'confirmed' | 'completed' | 'cancelled';
+export type PaymentType = 'full_prepay' | 'partial_prepay_postpay' | 'postpay';
 
-export interface PaymentWindow {
+export interface PaymentRequest {
   id: string;
-  dealId?: string;
-  offerId?: string;
-  applicationId?: string;
-  payerId: string; // Кто должен платить (рекламодатель)
-  payeeId: string; // Кто получает оплату (инфлюенсер)
+  payerId: string; // Рекламодатель
+  payeeId: string; // Инфлюенсер 
+  relatedOfferId?: string;
+  relatedApplicationId?: string;
   amount: number;
   currency: string;
-  paymentType: PaymentWindowType;
+  paymentType: PaymentType;
+  paymentStage: 'prepay' | 'postpay';
   paymentDetails: {
-    bankAccount?: string;
     cardNumber?: string;
+    bankAccount?: string;
     paypalEmail?: string;
     cryptoAddress?: string;
     instructions: string;
   };
-  status: PaymentWindowStatus;
-  paymentStage: 'prepay' | 'postpay';
-  isEditable: boolean; // Может ли инфлюенсер редактировать
+  status: PaymentStatus;
+  isEditable: boolean;
   statusHistory: Array<{
-    status: PaymentWindowStatus;
+    status: PaymentStatus;
     changedBy: string;
     timestamp: string;
     note?: string;
   }>;
   metadata: {
-    chatMessageId?: string;
     createdBy: string;
-    lastEditedAt?: string;
-    paymentAttempts: number;
+    totalAmount?: number;
+    paidAmount?: number;
+    remainingAmount?: number;
+    prepayPercentage?: number;
   };
   createdAt: string;
   updatedAt: string;

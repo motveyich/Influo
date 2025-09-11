@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChatMessage } from '../../../core/types';
 import { CreditCard, CheckCircle, XCircle, AlertTriangle, Edit, Trash2 } from 'lucide-react';
-import { paymentWindowService } from '../../../services/paymentWindowService';
+import { paymentRequestService } from '../../../services/paymentRequestService';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -56,7 +56,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
   };
 
   const renderPaymentDetails = () => {
-    if (message.messageType !== 'payment_window' || !message.metadata?.paymentWindowId) {
+    if (message.messageType !== 'payment_window' || !message.metadata?.paymentRequestId) {
       return null;
     }
 
@@ -114,10 +114,10 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
     if (!confirm('Отменить это окно оплаты?')) return;
     
     try {
-      const windowId = message.metadata?.paymentWindowId;
-      if (windowId) {
-        await paymentWindowService.updatePaymentWindowStatus(windowId, 'cancelled', currentUserId, 'Отменено из чата');
-        onInteraction('payment_window_cancelled', message.id);
+      const requestId = message.metadata?.paymentRequestId;
+      if (requestId) {
+        await paymentRequestService.updatePaymentStatus(requestId, 'cancelled', currentUserId, 'Отменено из чата');
+        onInteraction('payment_request_cancelled', message.id);
         toast.success('Окно оплаты отменено');
       }
     } catch (error: any) {
@@ -165,7 +165,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
             {!isOwnMessage && message.metadata.buttons.filter((button: any) => {
               // Фильтруем кнопки на основе роли пользователя
               const userRole = getUserRole(currentUserId, message.metadata);
-              return shouldShowButton(button, userRole);
+              return shouldShowButton(button, userRole, message.metadata?.status);
             }).map((button: any) => (
               <button
                 key={button.id}
@@ -188,17 +188,25 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
     return 'none';
   }
 
-  function shouldShowButton(button: any, userRole: 'payer' | 'payee' | 'none'): boolean {
+  function shouldShowButton(button: any, userRole: 'payer' | 'payee' | 'none', currentStatus?: string): boolean {
     // Кнопки для плательщика (рекламодателя)
     const payerButtons = ['paying', 'paid', 'failed'];
     // Кнопки для получателя (инфлюенсера)
-    const payeeButtons = ['confirmed'];
+    const payeeButtons = ['confirmed', 'cancelled'];
 
     if (userRole === 'payer' && payerButtons.includes(button.id)) {
+      // Дополнительная логика для кнопки "failed" - показывать только в статусе "paying"
+      if (button.id === 'failed' && currentStatus !== 'paying') {
+        return false;
+      }
       return true;
     }
     
     if (userRole === 'payee' && payeeButtons.includes(button.id)) {
+      // Кнопка "confirmed" только при статусе "paid"
+      if (button.id === 'confirmed' && currentStatus !== 'paid') {
+        return false;
+      }
       return true;
     }
 

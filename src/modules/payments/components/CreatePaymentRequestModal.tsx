@@ -1,48 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { PaymentWindow, PaymentWindowType } from '../../../core/types';
-import { paymentWindowService } from '../../../services/paymentWindowService';
-import { X, Save, AlertCircle, DollarSign, CreditCard, Banknote, Smartphone, Bitcoin, CheckCircle } from 'lucide-react';
+import { PaymentRequest, PaymentType } from '../../../core/types';
+import { paymentRequestService } from '../../../services/paymentRequestService';
+import { X, Save, AlertCircle, DollarSign, CreditCard, Banknote, Smartphone, Bitcoin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-interface PaymentWindowModalProps {
+interface CreatePaymentRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  payerId: string;
-  payeeId: string;
-  offerId?: string;
-  applicationId?: string;
-  dealId?: string;
+  payerId: string; // Рекламодатель
+  payeeId: string; // Инфлюенсер (текущий пользователь)
+  relatedOfferId?: string;
+  relatedApplicationId?: string;
   initialAmount: number;
-  existingPaymentInfo?: any;
-  currentWindow?: PaymentWindow | null;
-  onWindowCreated: (window: any) => void;
+  currency?: string;
+  existingPaymentInfo?: {
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    paymentStatus: string;
+  };
+  onRequestCreated: (request: PaymentRequest) => void;
 }
 
-export function PaymentWindowModal({
+export function CreatePaymentRequestModal({
   isOpen,
   onClose,
   payerId,
   payeeId,
-  offerId,
-  applicationId,
-  dealId,
+  relatedOfferId,
+  relatedApplicationId,
   initialAmount,
+  currency = 'USD',
   existingPaymentInfo,
-  currentWindow,
-  onWindowCreated
-}: PaymentWindowModalProps) {
+  onRequestCreated
+}: CreatePaymentRequestModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     amount: initialAmount,
-    currency: 'USD',
-    paymentType: 'full_prepay' as PaymentWindowType,
+    currency: currency,
+    paymentType: 'full_prepay' as PaymentType,
     paymentStage: 'prepay' as 'prepay' | 'postpay',
     prepayPercentage: 50,
     paymentDetails: {
-      bankAccount: '',
       cardNumber: '',
+      bankAccount: '',
       paypalEmail: '',
       cryptoAddress: '',
       instructions: ''
@@ -50,49 +53,30 @@ export function PaymentWindowModal({
   });
 
   useEffect(() => {
-    if (currentWindow) {
-      setFormData({
-        amount: currentWindow.amount,
-        currency: currentWindow.currency,
-        paymentType: currentWindow.paymentType,
-        paymentStage: currentWindow.paymentStage,
-        prepayPercentage: currentWindow.metadata?.prepayPercentage || 50,
-        paymentDetails: currentWindow.paymentDetails
-      });
-    } else if (existingPaymentInfo?.paymentStatus === 'prepaid') {
-      // Auto-configure for postpay if prepayment exists - LOCK to postpay only
+    if (existingPaymentInfo?.paymentStatus === 'prepaid') {
+      // Force postpay for remainder
       setFormData({
         amount: existingPaymentInfo.remainingAmount,
-        currency: 'USD',
-        paymentType: 'postpay', // Force postpay only
+        currency: currency,
+        paymentType: 'postpay',
         paymentStage: 'postpay',
         prepayPercentage: 50,
         paymentDetails: {
-          bankAccount: '',
           cardNumber: '',
+          bankAccount: '',
           paypalEmail: '',
           cryptoAddress: '',
-          instructions: `Постоплата за выполненную работу.\n\nСделка на сумму: ${formatCurrency(existingPaymentInfo.totalAmount || 0)}\nУже получено (предоплата): ${formatCurrency(existingPaymentInfo.paidAmount || 0)}\nК доплате: ${formatCurrency(existingPaymentInfo.remainingAmount || 0)}\n\nОплатите после завершения работы согласно условиям.`
+          instructions: `Постоплата за выполненную работу.\n\nОбщая сумма сделки: ${formatCurrency(existingPaymentInfo.totalAmount)}\nУже получено: ${formatCurrency(existingPaymentInfo.paidAmount)}\nК доплате: ${formatCurrency(existingPaymentInfo.remainingAmount)}`
         }
       });
     } else {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         amount: initialAmount,
-        currency: 'USD',
-        paymentType: 'full_prepay',
-        paymentStage: 'prepay',
-        prepayPercentage: 50,
-        paymentDetails: {
-          bankAccount: '',
-          cardNumber: '',
-          paypalEmail: '',
-          cryptoAddress: '',
-          instructions: ''
-        }
-      });
+        currency: currency
+      }));
     }
-    setErrors({});
-  }, [currentWindow, initialAmount, existingPaymentInfo, isOpen]);
+  }, [existingPaymentInfo, initialAmount, currency, isOpen]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -107,8 +91,8 @@ export function PaymentWindowModal({
 
     // At least one payment method should be provided
     const hasPaymentMethod = 
-      formData.paymentDetails.bankAccount.trim() ||
       formData.paymentDetails.cardNumber.trim() ||
+      formData.paymentDetails.bankAccount.trim() ||
       formData.paymentDetails.paypalEmail.trim() ||
       formData.paymentDetails.cryptoAddress.trim();
 
@@ -120,64 +104,47 @@ export function PaymentWindowModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async () => {
+  const handleCreate = async () => {
     if (!validateForm()) {
-      toast.error('Пожалуйста, исправьте ошибки перед сохранением');
+      toast.error('Пожалуйста, исправьте ошибки перед созданием');
       return;
     }
 
     setIsLoading(true);
     try {
-      // Calculate actual amount based on payment type
+      // Calculate actual amount for partial payments
       let actualAmount = formData.amount;
       if (formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'prepay') {
         actualAmount = Math.round(formData.amount * (formData.prepayPercentage / 100));
-      } else if (formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'postpay') {
-        // For postpay, calculate remaining amount
-        const prepayAmount = Math.round(formData.amount * (formData.prepayPercentage / 100));
-        actualAmount = formData.amount - prepayAmount;
       }
 
-      const windowData: Partial<PaymentWindow> = {
-        dealId,
-        offerId,
-        applicationId,
+      const requestData: Partial<PaymentRequest> = {
         payerId,
         payeeId,
+        relatedOfferId,
+        relatedApplicationId,
         amount: actualAmount,
         currency: formData.currency,
         paymentType: formData.paymentType,
         paymentStage: formData.paymentStage,
         paymentDetails: formData.paymentDetails,
         metadata: {
-          prepayPercentage: formData.paymentType === 'partial_prepay_postpay' ? formData.prepayPercentage : undefined,
           totalAmount: formData.amount,
-          isPartialPayment: formData.paymentType === 'partial_prepay_postpay',
+          prepayPercentage: formData.paymentType === 'partial_prepay_postpay' ? formData.prepayPercentage : undefined,
           remainingAmount: formData.paymentType === 'partial_prepay_postpay' && formData.paymentStage === 'prepay' 
             ? formData.amount - actualAmount 
             : undefined
         }
       };
 
-      let savedWindow: PaymentWindow;
+      const createdRequest = await paymentRequestService.createPaymentRequest(requestData);
       
-      if (currentWindow) {
-        savedWindow = await paymentWindowService.updatePaymentWindow(
-          currentWindow.id,
-          windowData,
-          payeeId
-        );
-        toast.success('Окно оплаты обновлено!');
-      } else {
-        savedWindow = await paymentWindowService.createPaymentWindow(windowData);
-        toast.success('Окно оплаты создано!');
-      }
-
-      onWindowCreated?.(savedWindow);
+      toast.success('Окно оплаты создано и отправлено в чат!');
+      onRequestCreated(createdRequest);
       onClose();
     } catch (error: any) {
-      console.error('Failed to save payment window:', error);
-      toast.error(error.message || 'Не удалось сохранить окно оплаты');
+      console.error('Failed to create payment request:', error);
+      toast.error(error.message || 'Не удалось создать окно оплаты');
     } finally {
       setIsLoading(false);
     }
@@ -194,15 +161,15 @@ export function PaymentWindowModal({
 
   if (!isOpen) return null;
 
+  const isPostpayOnly = existingPaymentInfo?.paymentStatus === 'prepaid';
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {currentWindow ? 'Редактировать окно оплаты' : 'Создать окно оплаты'}
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900">Создать окно оплаты</h2>
             <p className="text-sm text-gray-600">
               Сумма: {formatCurrency(formData.amount)}
             </p>
@@ -221,7 +188,7 @@ export function PaymentWindowModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {existingPaymentInfo?.paymentStatus === 'prepaid' ? 'Сумма постоплаты (заблокирована) *' : 'Сумма *'}
+                {isPostpayOnly ? 'Сумма постоплаты (заблокирована) *' : 'Сумма *'}
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -229,12 +196,12 @@ export function PaymentWindowModal({
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  disabled={existingPaymentInfo?.paymentStatus === 'prepaid'}
+                  disabled={isPostpayOnly}
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                     errors.amount ? 'border-red-300' : 
-                    existingPaymentInfo?.paymentStatus === 'prepaid' ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 
+                    isPostpayOnly ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 
                     'border-gray-300'
-                  } ${existingPaymentInfo?.paymentStatus === 'prepaid' ? 'text-gray-600' : ''}`}
+                  }`}
                   placeholder="1000"
                 />
               </div>
@@ -242,11 +209,6 @@ export function PaymentWindowModal({
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.amount}
-                </p>
-              )}
-              {existingPaymentInfo?.paymentStatus === 'prepaid' && (
-                <p className="mt-1 text-xs text-orange-600">
-                  Сумма зафиксирована на остатке от общей стоимости сделки
                 </p>
               )}
             </div>
@@ -274,49 +236,30 @@ export function PaymentWindowModal({
               Тип оплаты *
             </label>
             
-            {existingPaymentInfo?.paymentStatus === 'prepaid' ? (
-              // Force postpay only after prepayment
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
-                    <h4 className="font-medium text-blue-800">Предоплата завершена</h4>
-                  </div>
-                  <h4 className="font-medium text-orange-900">🔒 Только постоплата</h4>
-                  <p className="text-sm text-orange-700">Доплата оставшейся суммы. Предоплата уже внесена.</p>
-                  <p><strong>Общая сумма сделки:</strong> {formatCurrency(existingPaymentInfo.totalAmount || 0)}</p>
-                  <p><strong>Внесена предоплата в размере:</strong> {formatCurrency(existingPaymentInfo.paidAmount || 0)}</p>
-                  <p><strong>К доплате:</strong> {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</p>
-                </div>
-                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      value="postpay"
-                      checked={true}
-                      disabled={true}
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-orange-900">Только постоплата</h4>
-                      <p className="text-sm text-orange-700">Доплата оставшейся суммы после выполнения работы</p>
-                      <p className="text-sm text-orange-700 mt-1">
-                        <strong>Сумма к доплате: {formatCurrency(existingPaymentInfo.remainingAmount || 0)}</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {isPostpayOnly ? (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-medium text-orange-900">🔒 Только постоплата</h4>
+                <p className="text-sm text-orange-700">Доплата оставшейся суммы после предоплаты</p>
+                <p className="text-sm text-orange-700 mt-1">
+                  <strong>Общая сумма: {formatCurrency(existingPaymentInfo!.totalAmount)}</strong>
+                </p>
+                <p className="text-sm text-orange-700">
+                  <strong>Получено: {formatCurrency(existingPaymentInfo!.paidAmount)}</strong>
+                </p>
+                <p className="text-sm text-orange-700">
+                  <strong>К доплате: {formatCurrency(existingPaymentInfo!.remainingAmount)}</strong>
+                </p>
               </div>
             ) : (
-              // Show all payment options for new payments
               <div className="space-y-3">
                 <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
                     value="full_prepay"
                     checked={formData.paymentType === 'full_prepay'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
                   />
-                  <div className="flex-1">
+                  <div>
                     <h4 className="font-medium text-gray-900">Полная предоплата</h4>
                     <p className="text-sm text-gray-600">100% оплата до начала работы</p>
                   </div>
@@ -327,40 +270,30 @@ export function PaymentWindowModal({
                     type="radio"
                     value="partial_prepay_postpay"
                     checked={formData.paymentType === 'partial_prepay_postpay'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
                   />
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">Частичная предоплата</h4>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-600">Часть до работы, часть после</p>
-                      {formData.paymentType === 'partial_prepay_postpay' && (
-                        <div>
-                          <div className="flex justify-between text-sm text-gray-700 mb-2">
-                            <span>Предоплата: {formData.prepayPercentage}% ({formatCurrency(formData.amount * formData.prepayPercentage / 100)})</span>
-                            <span>Постоплата: {100 - formData.prepayPercentage}% ({formatCurrency(formData.amount * (100 - formData.prepayPercentage) / 100)})</span>
-                          </div>
-                          <div className="relative">
-                            <input
-                              type="range"
-                              min="10"
-                              max="90"
-                              step="5"
-                              value={formData.prepayPercentage}
-                              onChange={(e) => setFormData(prev => ({ ...prev, prepayPercentage: parseInt(e.target.value) }))}
-                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                              style={{
-                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${formData.prepayPercentage}%, #e5e7eb ${formData.prepayPercentage}%, #e5e7eb 100%)`
-                              }}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                              <span>10%</span>
-                              <span>{formData.prepayPercentage}%</span>
-                              <span>90%</span>
-                            </div>
-                          </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Предоплата {formData.prepayPercentage}%, постоплата {100 - formData.prepayPercentage}%
+                    </p>
+                    {formData.paymentType === 'partial_prepay_postpay' && (
+                      <div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="90"
+                          step="5"
+                          value={formData.prepayPercentage}
+                          onChange={(e) => setFormData(prev => ({ ...prev, prepayPercentage: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>Предоплата: {formatCurrency(formData.amount * formData.prepayPercentage / 100)}</span>
+                          <span>Постоплата: {formatCurrency(formData.amount * (100 - formData.prepayPercentage) / 100)}</span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </label>
 
@@ -369,11 +302,11 @@ export function PaymentWindowModal({
                     type="radio"
                     value="postpay"
                     checked={formData.paymentType === 'postpay'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentWindowType }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
                   />
-                  <div className="flex-1">
+                  <div>
                     <h4 className="font-medium text-gray-900">Постоплата</h4>
-                    <p className="text-sm text-gray-600">100% оплата после выполнения</p>
+                    <p className="text-sm text-gray-600">100% оплата после выполнения работы</p>
                   </div>
                 </label>
               </div>
@@ -493,7 +426,7 @@ export function PaymentWindowModal({
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Важное уведомление</h4>
                 <p className="text-sm text-yellow-700 mt-1">
-                  Убедитесь, что все реквизиты указаны корректно. После создания окна оплаты плательщик получит уведомление с инструкциями.
+                  Подтвердите оплату в системе после перевода средств. Убедитесь, что все реквизиты указаны корректно.
                 </p>
               </div>
             </div>
@@ -509,12 +442,12 @@ export function PaymentWindowModal({
             Отмена
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleCreate}
             disabled={isLoading}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Сохранение...' : currentWindow ? 'Сохранить изменения' : 'Создать окно оплаты'}</span>
+            <span>{isLoading ? 'Создание...' : 'Создать окно оплаты'}</span>
           </button>
         </div>
       </div>
