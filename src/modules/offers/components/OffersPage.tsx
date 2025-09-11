@@ -33,6 +33,52 @@ interface EnhancedOffer extends Offer {
 type SortField = 'date' | 'amount' | 'status' | 'partner' | 'activity';
 type ViewMode = 'grid' | 'list';
 
+// Helper functions - moved to top to avoid hoisting issues
+const getOfferPriority = (offer: Offer): 'high' | 'medium' | 'low' => {
+  // High priority: pending offers from last 24 hours
+  if (offer.status === 'pending') {
+    const createdAt = new Date(offer.timeline.createdAt);
+    const hoursAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (hoursAgo <= 24) return 'high';
+  }
+  
+  // High priority: accepted offers without payment
+  if (offer.status === 'accepted' && !(offer as any).metadata?.paymentStatus) {
+    return 'high';
+  }
+  
+  // Medium priority: counter offers, info requested
+  if (['counter', 'info_requested'].includes(offer.status)) {
+    return 'medium';
+  }
+  
+  return 'low';
+};
+
+const getPriorityColor = (priority: 'high' | 'medium' | 'low') => {
+  switch (priority) {
+    case 'high': return 'border-l-red-500 bg-red-50';
+    case 'medium': return 'border-l-yellow-500 bg-yellow-50';
+    case 'low': return 'border-l-green-500 bg-green-50';
+    default: return 'border-l-gray-500 bg-gray-50';
+  }
+};
+
+const formatCurrency = (amount: number, currency: string = 'USD') => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const formatNumber = (num: number) => {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toString();
+};
+
 export function OffersPage() {
   const [offers, setOffers] = useState<EnhancedOffer[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'completed' | 'requires_action'>('all');
@@ -642,21 +688,6 @@ export function OffersPage() {
     return buttons;
   };
 
-  const getOfferPriority = (offer: EnhancedOffer): 'high' | 'medium' | 'low' => {
-    if (offer.status === 'pending' && !showMyOffers) return 'high';
-    if (offer.paymentStatus === 'paid') return 'high';
-    if (offer.unreadMessages && offer.unreadMessages > 0) return 'medium';
-    return 'low';
-  };
-
-  const getPriorityColor = (priority: 'high' | 'medium' | 'low') => {
-    switch (priority) {
-      case 'high': return 'border-red-300 bg-red-50';
-      case 'medium': return 'border-yellow-300 bg-yellow-50';
-      default: return '';
-    }
-  };
-
   const filteredAndSortedOffers = sortOffers(filterOffers(offers));
 
   const stats = {
@@ -1166,15 +1197,6 @@ function EnhancedOfferCard({
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const getPaymentStatusInfo = () => {
     if (offer.paymentStatus === 'confirmed' && offer.totalPaid) {
       return {
@@ -1203,21 +1225,6 @@ function EnhancedOfferCard({
   const priority = getOfferPriority(offer);
   const priorityColor = getPriorityColor(priority);
   const paymentInfo = getPaymentStatusInfo();
-
-  const getOfferPriority = (offer: EnhancedOffer): 'high' | 'medium' | 'low' => {
-    if (offer.status === 'pending' && !showSenderActions) return 'high';
-    if (offer.paymentStatus === 'paid') return 'high';
-    if (offer.unreadMessages && offer.unreadMessages > 0) return 'medium';
-    return 'low';
-  };
-
-  const getPriorityColor = (priority: 'high' | 'medium' | 'low') => {
-    switch (priority) {
-      case 'high': return 'border-red-300 bg-red-50';
-      case 'medium': return 'border-yellow-300 bg-yellow-50';
-      default: return '';
-    }
-  };
 
   if (viewMode === 'list') {
     return (
