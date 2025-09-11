@@ -403,6 +403,50 @@ export function OffersPage() {
     }
   };
 
+  const handleCancelOffer = async (offerId: string) => {
+    if (!confirm('Вы уверены, что хотите отменить это предложение?')) return;
+
+    try {
+      // Find the offer to determine if it's a real offer or application
+      const offer = offers.find(o => o.offerId === offerId);
+      if (!offer) {
+        toast.error('Предложение не найдено');
+        return;
+      }
+      
+      if (offer.type === 'application') {
+        // This is an application, use application service
+        const { applicationService } = await import('../../applications/services/applicationService');
+        await applicationService.cancelApplication(offerId);
+        
+        // Send notification message
+        const { chatService } = await import('../../chat/services/chatService');
+        await chatService.sendMessage({
+          senderId: currentUserId,
+          receiverId: offer.advertiserId,
+          messageContent: 'Заявка на сотрудничество была отменена отправителем.',
+          messageType: 'text',
+          metadata: {
+            applicationId: offerId,
+            actionType: 'application_cancelled'
+          }
+        });
+        
+        toast.success('Заявка отменена успешно!');
+      } else {
+        // This is a real offer
+        await offerService.withdrawOffer(offerId);
+        toast.success('Предложение отменено успешно!');
+      }
+      
+      // Remove from UI only after successful cancellation
+      setOffers(prev => prev.filter(o => o.offerId !== offerId));
+    } catch (error: any) {
+      console.error('Failed to cancel offer:', error);
+      toast.error(error.message || 'Не удалось отменить заявку');
+    }
+  };
+
   const handleModifyOffer = (offerId: string) => {
     // For now, just show a message - in a real app this would open an edit modal
     toast('Функция изменения условий будет доступна в следующем обновлении');
