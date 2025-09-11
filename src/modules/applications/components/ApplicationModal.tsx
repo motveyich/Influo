@@ -36,7 +36,8 @@ export function ApplicationModal({
     proposedRate: 0,
     timeline: '',
     deliverables: [] as string[],
-    additionalInfo: ''
+    additionalInfo: '',
+    status: 'pending'
   });
 
   const [newDeliverable, setNewDeliverable] = useState('');
