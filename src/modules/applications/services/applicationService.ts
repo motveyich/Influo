@@ -38,7 +38,7 @@ export class ApplicationService {
         target_type: applicationData.targetType,
         target_reference_id: applicationData.targetReferenceId,
         application_data: applicationData.applicationData,
-        status: 'pending',
+        status: 'sent',
         timeline: {
           sentAt: new Date().toISOString()
         },
