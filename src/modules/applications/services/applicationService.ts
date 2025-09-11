@@ -334,6 +334,7 @@ export class ApplicationService {
       }
       
       if (!['sent', 'pending'].includes(existingApp.status)) {
+      }
       if (!['sent'].includes(existingApp.status)) {
         throw new Error('Нельзя отозвать заявку со статусом: ' + existingApp.status);
       }
