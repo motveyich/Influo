@@ -103,11 +103,11 @@ ALTER TABLE platform_updates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_events ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for platform_news
-CREATE POLICY "Anyone can read published news"
-  ON platform_news
-  FOR SELECT
-  TO authenticated
-  USING (is_published = true);
+--CREATE POLICY "Anyone can read published news"
+  --ON platform_news
+  --FOR SELECT
+  --TO authenticated
+  --USING (is_published = true);
 
 CREATE POLICY "Moderators can manage news"
   ON platform_news
