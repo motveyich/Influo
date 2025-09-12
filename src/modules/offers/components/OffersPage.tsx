@@ -172,11 +172,13 @@ export function OffersPage() {
       setOffers(enhancedOffers);
       
       // Use the new completion method that syncs for both users
+      const { applicationService } = await import('../../applications/services/applicationService');
       await applicationService.completeApplication(applicationId, currentUserId);
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         console.warn('Supabase connection failed, using empty offers list');
         setOffers([]);
         return;
+      }
       toast.success('Сотрудничество завершено! Уведомление отправлено партнеру.');
       
       toast.error('Не удалось загрузить предложения');
