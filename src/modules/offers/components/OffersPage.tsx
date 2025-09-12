@@ -458,14 +458,3 @@ export function OffersPage() {
     </FeatureGate>
   );
 }
-                
-          )
-          )
-          }
-  )
-}
-            )
-            )
-            }
-  )
-}
