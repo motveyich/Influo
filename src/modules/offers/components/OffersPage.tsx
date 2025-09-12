@@ -185,7 +185,7 @@ export function OffersPage() {
       setOffers([]);
     } catch (error) {
       console.error('Failed to load offers:', error);
-      toast.error('Не удалось загрузить предложения');
+      toast.error(error?.message || 'Не удалось загрузить предложения');
       setOffers([]);
     } finally {
       setIsLoading(false);
