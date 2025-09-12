@@ -173,7 +173,7 @@ export function OffersPage() {
       
       // Use the new completion method that syncs for both users
       const { applicationService } = await import('../../applications/services/applicationService');
-      await applicationService.completeApplication(applicationId, currentUserId);
+      // await applicationService.completeApplication(applicationId, currentUserId);
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         console.warn('Supabase connection failed, using empty offers list');
         setOffers([]);
@@ -881,7 +881,7 @@ export function OffersPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
-                const dealId = offer.metadata?.dealId || (offer as any).id || null;
+                </div>
                 
                 <select
                   value={selectedFilter}
