@@ -125,7 +125,7 @@ export function OffersPage() {
       }
     } catch (error: any) {
       console.error('Failed to load offers:', error);
-      toast.error('Не удалось загрузить предложения');
+      toast.error(error?.message || 'Не удалось загрузить предложения');
       setOffers([]);
       setApplications([]);
     } finally {
