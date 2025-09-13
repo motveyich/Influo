@@ -4,7 +4,6 @@ import {
   Users, 
   Target, 
   MessageCircle, 
-  Handshake, 
   BarChart3,
   Grid,
   Menu,
@@ -39,7 +38,6 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Автоматические кампании', href: '/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
     { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
-    { name: t('nav.offers'), href: '/offers', icon: Handshake },
   ];
 
   const adminNavigation = [

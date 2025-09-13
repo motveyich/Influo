@@ -11,7 +11,6 @@ export const ROUTES = {
   PROFILES: '/profiles',
   CAMPAIGNS: '/campaigns',
   CHAT: '/chat',
-  OFFERS: '/offers',
   ANALYTICS: '/analytics',
   PROFILE: '/profile/:id',
   CAMPAIGN: '/campaign/:id',

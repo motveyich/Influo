@@ -41,7 +41,6 @@ export const TABLES = {
   CAMPAIGNS: 'campaigns',
   COLLABORATION_FORMS: 'collaboration_forms',
   CHAT_MESSAGES: 'chat_messages',
-  OFFERS: 'offers',
   ANALYTICS_EVENTS: 'analytics_events',
   APPLICATIONS: 'applications',
   FAVORITES: 'favorites',

@@ -263,31 +263,6 @@ export interface ChatMessage {
   };
 }
 
-export interface Offer {
-  offerId: string;
-  influencerId: string;
-  campaignId: string;
-  advertiserId: string;
-  details: {
-    rate: number;
-    currency: string;
-    deliverables: string[];
-    timeline: string;
-    terms: string;
-  };
-  status: 'pending' | 'accepted' | 'declined' | 'counter' | 'completed' | 'withdrawn' | 'info_requested';
-  timeline: {
-    createdAt: string;
-    respondedAt?: string;
-    completedAt?: string;
-    withdrawnAt?: string;
-  };
-  messages: string[];
-  metadata: {
-    viewCount: number;
-    lastViewed?: string;
-  };
-}
 
 export interface AnalyticsEvent {
   eventId: string;
