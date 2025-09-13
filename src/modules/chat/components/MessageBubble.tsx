@@ -1,7 +1,6 @@
 import React from 'react';
 import { ChatMessage } from '../../../core/types';
 import { CreditCard, CheckCircle, XCircle, AlertTriangle, Edit, Trash2 } from 'lucide-react';
-import { paymentRequestService } from '../../../services/paymentRequestService';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -114,12 +113,8 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
     if (!confirm('Отменить это окно оплаты?')) return;
     
     try {
-      const requestId = message.metadata?.paymentRequestId;
-      if (requestId) {
-        await paymentRequestService.updatePaymentStatus(requestId, 'cancelled', currentUserId, 'Отменено из чата');
-        onInteraction('payment_request_cancelled', message.id);
-        toast.success('Окно оплаты отменено');
-      }
+      onInteraction('payment_request_cancelled', message.id);
+      toast.success('Окно оплаты отменено');
     } catch (error: any) {
       console.error('Failed to cancel payment window:', error);
       toast.error('Не удалось отменить окно оплаты');

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Campaign } from '../../../core/types';
-import { CreateOfferModal } from '../../offers/components/CreateOfferModal';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -25,7 +24,6 @@ export function CampaignCard({
   onFindInfluencers,
   currentUserId
 }: CampaignCardProps) {
-  const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
   const { t } = useTranslation();
 
@@ -283,13 +281,6 @@ export function CampaignCard({
           >
             {campaign.status === 'active' ? 'Подать заявку' : 'Недоступно'}
           </button>
-          <button 
-            onClick={() => setShowOfferModal(true)}
-            disabled={campaign.status !== 'active'}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            Отправить предложение
-          </button>
           <button
             onClick={() => setShowReportModal(true)}
             className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors"
@@ -322,19 +313,6 @@ export function CampaignCard({
           </button>
         </div>
       )}
-
-      {/* Create Offer Modal */}
-      <CreateOfferModal
-        isOpen={showOfferModal}
-        onClose={() => setShowOfferModal(false)}
-        campaign={campaign}
-        influencerId={currentUserId || ''}
-        advertiserId={campaign.advertiserId}
-        onOfferSent={() => {
-          setShowOfferModal(false);
-          // Could show success message or redirect
-        }}
-      />
 
       {/* Report Modal */}
       <ReportModal

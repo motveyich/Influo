@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Application } from '../../../core/types';
 import { applicationService } from '../services/applicationService';
-import { ReviewModal } from '../../deals/components/ReviewModal';
 import { X, Send, AlertCircle, DollarSign, Calendar, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -41,7 +40,6 @@ export function ApplicationModal({
   });
 
   const [newDeliverable, setNewDeliverable] = useState('');
-  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -285,23 +283,6 @@ export function ApplicationModal({
             <span>{isLoading ? 'Отправка...' : 'Отправить заявку'}</span>
           </button>
         </div>
-        
-        {/* Review Modal for completed applications */}
-        {completedApplicationId && showReviewOption && (
-          <ReviewModal
-            isOpen={showReviewModal}
-            onClose={() => setShowReviewModal(false)}
-            dealId={completedApplicationId}
-            reviewerId={applicantId}
-            revieweeId={targetId}
-            collaborationType="as_influencer" // This would be dynamic based on user type
-            revieweeName="Партнер по сотрудничеству"
-            onReviewSubmitted={() => {
-              setShowReviewModal(false);
-              onClose();
-            }}
-          />
-        )}
       </div>
     </div>
   );

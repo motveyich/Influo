@@ -1,7 +1,6 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { Campaign, InfluencerCard, Offer } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
-import { offerService } from '../../offers/services/offerService';
 import { influencerCardService } from '../../influencer-cards/services/influencerCardService';
 
 interface InfluencerScore {
@@ -321,41 +320,8 @@ export class AutomaticCampaignService {
   }
 
   private async sendBatchOffers(campaign: Campaign, influencers: InfluencerScore[]): Promise<void> {
-    const offers = influencers.map(async (influencer) => {
-      try {
-        // Check if campaign is still active and needs more influencers
-        const tracking = this.activeCampaigns.get(campaign.campaignId);
-        if (!tracking || tracking.acceptedCount >= (campaign as any).metadata.automaticSettings.targetInfluencerCount) {
-          return null;
-        }
-
-        // Create offer
-        const offer = await offerService.createOffer({
-          influencerId: influencer.influencerId,
-          campaignId: campaign.campaignId,
-          advertiserId: campaign.advertiserId,
-          details: {
-            rate: this.calculateOfferRate(campaign.budget, influencer.score),
-            currency: campaign.budget.currency,
-            deliverables: campaign.preferences.contentTypes,
-            timeline: `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`,
-            terms: `Автоматическое предложение для кампании "${campaign.title}". Детали обсуждаются после принятия.`
-          }
-        });
-
-        // Track sent offer
-        if (tracking) {
-          tracking.sentOffers.push(offer.offerId);
-        }
-
-        return offer;
-      } catch (error) {
-        console.error(`Failed to send offer to influencer ${influencer.influencerId}:`, error);
-        return null;
-      }
-    });
-
-    await Promise.allSettled(offers);
+    // Automatic offer sending is disabled - offers functionality removed
+    console.log('Automatic offer sending disabled - offers functionality removed');
   }
 
   private calculateOfferRate(budget: Campaign['budget'], score: number): number {
@@ -462,19 +428,8 @@ export class AutomaticCampaignService {
       const replacement = await this.findReplacement(tracking.campaign, tracking.sentOffers);
       
       if (replacement) {
-        // Send offer to replacement
-        await offerService.createOffer({
-          influencerId: replacement.influencerId,
-          campaignId: campaignId,
-          advertiserId: tracking.campaign.advertiserId,
-          details: {
-            rate: this.calculateOfferRate(tracking.campaign.budget, replacement.score),
-            currency: tracking.campaign.budget.currency,
-            deliverables: tracking.campaign.preferences.contentTypes,
-            timeline: `${tracking.campaign.timeline.startDate} - ${tracking.campaign.timeline.endDate}`,
-            terms: `Замещающее предложение для кампании "${tracking.campaign.title}".`
-          }
-        });
+        // Replacement offer sending is disabled - offers functionality removed
+        console.log('Replacement offer sending disabled - offers functionality removed');
 
         // Update replacement count
         tracking.replacementCount.set(influencerId, currentReplacements + 1);

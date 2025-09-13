@@ -290,9 +290,6 @@ export function ChatPage() {
         const newStatus = messages.find(m => m.id === messageId)?.metadata?.buttons?.find((b: any) => b.action === action)?.status;
         
         if (paymentRequestId && newStatus) {
-          const { paymentRequestService } = await import('../../../services/paymentRequestService');
-          await paymentRequestService.updatePaymentStatus(paymentRequestId, newStatus, currentUserId);
-          
           // Refresh messages to show updated status
           if (selectedConversation) {
             await loadMessages(selectedConversation.id);
