@@ -2,16 +2,6 @@ import { supabase, TABLES } from '../../../core/supabase';
 import { analytics } from '../../../core/analytics';
 import { contentManagementService } from '../../../services/contentManagementService';
 
-interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  publishedAt: string;
-  source: string;
-  category: 'industry' | 'platform' | 'trends';
-}
-
 interface PlatformUpdate {
   id: string;
   title: string;
@@ -52,29 +42,6 @@ interface CampaignStats {
 }
 
 export class HomeService {
-  async getNews(): Promise<NewsItem[]> {
-    try {
-      // Получаем новости из базы данных
-      const dbNews = await contentManagementService.getPublishedNews();
-      
-      // Преобразуем в формат NewsItem
-      const transformedNews = dbNews.map(news => ({
-        id: news.id,
-        title: news.title,
-        summary: news.summary,
-        url: news.url || '#',
-        publishedAt: news.publishedAt,
-        source: news.source,
-        category: news.category as 'industry' | 'platform' | 'trends'
-      }));
-      
-      // Если нет новостей в БД, возвращаем моковые данные
-      return transformedNews.length > 0 ? transformedNews : this.getMockNews();
-    } catch (error) {
-      console.error('Failed to fetch news:', error);
-      return this.getMockNews();
-    }
-  }
 
   async getPlatformUpdates(): Promise<PlatformUpdate[]> {
     try {
@@ -423,55 +390,6 @@ export class HomeService {
     }
   }
 
-  private getMockNews(): NewsItem[] {
-    return [
-      {
-        id: 'news_1',
-        title: 'Инфлюенс-маркетинг показал рост на 67% в 2024 году',
-        summary: 'Согласно новому исследованию, рынок инфлюенс-маркетинга продолжает активно расти, достигнув отметки в $21.1 миллиард.',
-        url: 'https://example.com/news/1',
-        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        source: 'Marketing Land',
-        category: 'industry'
-      },
-      {
-        id: 'news_2',
-        title: 'TikTok запускает новые инструменты для брендов',
-        summary: 'Платформа представила обновленный Creator Marketplace с улучшенной аналитикой и инструментами таргетинга.',
-        url: 'https://example.com/news/2',
-        publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        source: 'TikTok Business',
-        category: 'platform'
-      },
-      {
-        id: 'news_3',
-        title: 'Микро-инфлюенсеры демонстрируют лучшую вовлеченность',
-        summary: 'Исследование показало, что инфлюенсеры с аудиторией 10K-100K показывают на 60% лучшую вовлеченность.',
-        url: 'https://example.com/news/3',
-        publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        source: 'Influencer Marketing Hub',
-        category: 'trends'
-      },
-      {
-        id: 'news_4',
-        title: 'Instagram тестирует новый формат рекламы в Stories',
-        summary: 'Новый интерактивный формат позволит брендам создавать более вовлекающий контент с инфлюенсерами.',
-        url: 'https://example.com/news/4',
-        publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        source: 'Instagram Business',
-        category: 'platform'
-      },
-      {
-        id: 'news_5',
-        title: 'Аутентичность контента становится ключевым трендом',
-        summary: 'Потребители все больше ценят честные отзывы и аутентичный контент от инфлюенсеров.',
-        url: 'https://example.com/news/5',
-        publishedAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
-        source: 'Social Media Today',
-        category: 'trends'
-      }
-    ];
-  }
 
   private getMockPlatformUpdates(): PlatformUpdate[] {
     return [
@@ -625,18 +543,6 @@ export class HomeService {
     ];
   }
 
-  private getMockCampaignStats(): CampaignStats {
-    return {
-      totalCampaigns: 156,
-      activeCampaigns: 23,
-      averageBudget: 3500,
-      averageConversion: 78,
-      newApplicationsThisWeek: 47,
-      totalBudgetThisMonth: 125000,
-      successfulDeals: 89,
-      averageResponseTime: 3
-    };
-  }
 }
 
 export const homeService = new HomeService();

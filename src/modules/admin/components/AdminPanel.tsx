@@ -14,7 +14,7 @@ import {
   Shield, 
   BarChart3, 
   Settings,
-  Newspaper,
+  Bell,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -81,7 +81,7 @@ export function AdminPanel() {
     { id: 'moderation', label: 'Модерация', icon: Shield, count: stats.moderationQueue },
     { id: 'reports', label: 'Жалобы', icon: Flag, count: stats.pendingReports },
     { id: 'logs', label: 'Логи', icon: BarChart3, count: stats.todayActions },
-    { id: 'content', label: 'Контент', icon: Newspaper, count: 0 },
+    { id: 'content', label: 'Контент', icon: Bell, count: 0 },
     { id: 'settings', label: 'Настройки', icon: Settings, count: 0 }
   ];
 

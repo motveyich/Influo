@@ -449,20 +449,6 @@ export interface ContentFilter {
 }
 
 // Platform content management types
-export interface PlatformNews {
-  id: string;
-  title: string;
-  summary: string;
-  content?: string;
-  url?: string;
-  source: string;
-  category: 'industry' | 'platform' | 'trends';
-  publishedAt: string;
-  isPublished: boolean;
-  createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface PlatformUpdate {
   id: string;

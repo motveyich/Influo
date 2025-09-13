@@ -13,7 +13,6 @@ import {
   Award,
   Zap,
   Bell,
-  ExternalLink,
   ChevronRight,
   Trophy,
   Activity,
@@ -25,16 +24,6 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
-
-interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  publishedAt: string;
-  source: string;
-  category: 'industry' | 'platform' | 'trends';
-}
 
 interface PlatformUpdate {
   id: string;
@@ -77,7 +66,6 @@ interface CampaignStats {
 }
 
 export function HomePage() {
-  const [news, setNews] = useState<NewsItem[]>([]);
   const [platformUpdates, setPlatformUpdates] = useState<PlatformUpdate[]>([]);
   const [platformEvents, setPlatformEvents] = useState<PlatformEvent[]>([]);
   const [topInfluencers, setTopInfluencers] = useState<TopUser[]>([]);
@@ -102,14 +90,12 @@ export function HomePage() {
       setIsLoading(true);
       
       const [
-        newsData,
         updatesData,
         eventsData,
         influencersData,
         advertisersData,
         statsData
       ] = await Promise.all([
-        homeService.getNews(),
         homeService.getPlatformUpdates(),
         homeService.getPlatformEvents(),
         homeService.getTopInfluencers(),
@@ -117,7 +103,6 @@ export function HomePage() {
         homeService.getCampaignStats(currentUserId)
       ]);
 
-      setNews(newsData);
       setPlatformUpdates(updatesData);
       setPlatformEvents(eventsData);
       setTopInfluencers(influencersData);
@@ -151,18 +136,6 @@ export function HomePage() {
     }).format(amount);
   };
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'industry':
-        return 'bg-blue-100 text-blue-700';
-      case 'platform':
-        return 'bg-purple-100 text-purple-700';
-      case 'trends':
-        return 'bg-green-100 text-green-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
 
   const getUpdateTypeIcon = (type: string) => {
     switch (type) {
@@ -376,7 +349,7 @@ export function HomePage() {
                     <p className="text-sm text-orange-700">Рассмотрите заявки и ответьте инфлюенсерам.</p>
                   </div>
                   <button 
-                    onClick={() => window.location.href = '/offers'}
+                    onClick={() => window.location.href = '/chat'}
                     className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
                   >
                     Просмотреть
@@ -391,54 +364,6 @@ export function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* News Feed */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Новости индустрии</h2>
-                <span className="text-sm text-gray-500">Обновляется ежедневно</span>
-              </div>
-            </div>
-            
-            <div className="divide-y divide-gray-200">
-              {news.map((item) => (
-                <div key={item.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-md ${getCategoryColor(item.category)}`}>
-                          {item.category === 'industry' ? 'Индустрия' :
-                           item.category === 'platform' ? 'Платформы' :
-                           item.category === 'trends' ? 'Тренды' : item.category}
-                        </span>
-                        <span className="text-xs text-gray-500">{item.source}</span>
-                      </div>
-                      <h3 className="text-md font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {item.summary}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(parseISO(item.publishedAt), { addSuffix: true })}
-                        </span>
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-1"
-                        >
-                          <span>Читать далее</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Platform Events */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">

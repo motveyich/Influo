@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlatformNews, PlatformUpdate, PlatformEvent } from '../../../core/types';
+import { PlatformUpdate, PlatformEvent } from '../../../core/types';
 import { contentManagementService } from '../../../services/contentManagementService';
 import { useAuth } from '../../../hooks/useAuth';
 import { 
@@ -8,7 +8,6 @@ import {
   Trash2, 
   Eye, 
   EyeOff,
-  Newspaper,
   Bell,
   Calendar,
   Filter,
@@ -19,12 +18,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type ContentType = 'news' | 'updates' | 'events';
+type ContentType = 'updates' | 'events';
 
 const getTabIcon = (tab: ContentType) => {
   switch (tab) {
-    case 'news':
-      return <Newspaper className="w-4 h-4" />;
     case 'updates':
       return <Bell className="w-4 h-4" />;
     case 'events':
@@ -34,8 +31,6 @@ const getTabIcon = (tab: ContentType) => {
 
 const getTabLabel = (tab: ContentType) => {
   switch (tab) {
-    case 'news':
-      return 'Новости';
     case 'updates':
       return 'Обновления';
     case 'events':
@@ -48,8 +43,7 @@ interface ContentManagementProps {
 }
 
 export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
-  const [activeTab, setActiveTab] = useState<ContentType>('news');
-  const [news, setNews] = useState<PlatformNews[]>([]);
+  const [activeTab, setActiveTab] = useState<ContentType>('updates');
   const [updates, setUpdates] = useState<PlatformUpdate[]>([]);
   const [events, setEvents] = useState<PlatformEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,10 +64,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
       
       const isPublished = publishedFilter === 'all' ? undefined : publishedFilter === 'published';
       
-      if (activeTab === 'news') {
-        const newsData = await contentManagementService.getAllNews({ isPublished });
-        setNews(newsData);
-      } else if (activeTab === 'updates') {
+      if (activeTab === 'updates') {
         const updatesData = await contentManagementService.getAllUpdates({ isPublished });
         setUpdates(updatesData);
       } else if (activeTab === 'events') {
@@ -102,9 +93,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
     if (!confirm('Вы уверены, что хотите удалить этот элемент?')) return;
 
     try {
-      if (activeTab === 'news') {
-        await contentManagementService.deleteNews(itemId, user!.id);
-      } else if (activeTab === 'updates') {
+      if (activeTab === 'updates') {
         await contentManagementService.deleteUpdate(itemId, user!.id);
       } else if (activeTab === 'events') {
         await contentManagementService.deleteEvent(itemId, user!.id);
@@ -123,9 +112,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
     try {
       const updates = { isPublished: !item.isPublished };
       
-      if (activeTab === 'news') {
-        await contentManagementService.updateNews(item.id, updates, user!.id);
-      } else if (activeTab === 'updates') {
+      if (activeTab === 'updates') {
         await contentManagementService.updateUpdate(item.id, updates, user!.id);
       } else if (activeTab === 'events') {
         await contentManagementService.updateEvent(item.id, updates, user!.id);
@@ -141,11 +128,6 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
 
   const getCurrentData = () => {
     switch (activeTab) {
-      case 'news':
-        return news.filter(item => 
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.summary.toLowerCase().includes(searchQuery.toLowerCase())
-        );
       case 'updates':
         return updates.filter(item => 
           item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,9 +144,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
   };
 
   const getItemIcon = (item: any) => {
-    if (activeTab === 'news') {
-      return <Newspaper className="w-4 h-4 text-blue-600" />;
-    } else if (activeTab === 'updates') {
+    if (activeTab === 'updates') {
       return <Bell className="w-4 h-4 text-purple-600" />;
     } else {
       return <Calendar className="w-4 h-4 text-green-600" />;
@@ -179,7 +159,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Управление контентом</h2>
-          <p className="text-sm text-gray-600">Управление новостями, обновлениями и событиями платформы</p>
+          <p className="text-sm text-gray-600">Управление обновлениями и событиями платформы</p>
         </div>
         
         <button
@@ -194,7 +174,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex space-x-8">
-          {(['news', 'updates', 'events'] as ContentType[]).map((tab) => (
+          {(['updates', 'events'] as ContentType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -301,8 +281,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {activeTab === 'news' ? (item as PlatformNews).summary : 
-                       activeTab === 'updates' ? (item as PlatformUpdate).description :
+                      {activeTab === 'updates' ? (item as PlatformUpdate).description :
                        (item as PlatformEvent).description}
                     </p>
                     
@@ -447,17 +426,8 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
       newErrors.title = 'Заголовок обязателен';
     }
 
-    if (contentType === 'news') {
-      if (!formData.summary.trim()) {
-        newErrors.summary = 'Краткое описание обязательно';
-      }
-      if (!formData.source.trim()) {
-        newErrors.source = 'Источник обязателен';
-      }
-    } else {
-      if (!formData.description.trim()) {
-        newErrors.description = 'Описание обязательно';
-      }
+    if (!formData.description.trim()) {
+      newErrors.description = 'Описание обязательно';
     }
 
     setErrors(newErrors);
@@ -479,9 +449,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
 
       if (editingItem) {
         // Update existing item
-        if (contentType === 'news') {
-          await contentManagementService.updateNews(editingItem.id, data, user!.id);
-        } else if (contentType === 'updates') {
+        if (contentType === 'updates') {
           await contentManagementService.updateUpdate(editingItem.id, data, user!.id);
         } else if (contentType === 'events') {
           await contentManagementService.updateEvent(editingItem.id, data, user!.id);
@@ -489,9 +457,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
         toast.success('Элемент обновлен');
       } else {
         // Create new item
-        if (contentType === 'news') {
-          await contentManagementService.createNews(data, user!.id);
-        } else if (contentType === 'updates') {
+        if (contentType === 'updates') {
           await contentManagementService.createUpdate(data, user!.id);
         } else if (contentType === 'events') {
           await contentManagementService.createEvent(data, user!.id);
@@ -550,48 +516,28 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
             )}
           </div>
 
-          {/* Summary (for news) or Description (for updates/events) */}
+          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {contentType === 'news' ? 'Краткое описание *' : 'Описание *'}
+              Описание *
             </label>
             <textarea
-              value={contentType === 'news' ? formData.summary : formData.description}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                [contentType === 'news' ? 'summary' : 'description']: e.target.value 
-              }))}
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                errors.summary || errors.description ? 'border-red-300' : 'border-gray-300'
+                errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder={contentType === 'news' ? 'Краткое описание новости' : 'Описание обновления или события'}
+              placeholder="Описание обновления или события"
             />
-            {(errors.summary || errors.description) && (
+            {errors.description && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
-                {errors.summary || errors.description}
+                {errors.description}
               </p>
             )}
           </div>
 
-          {/* Category (for news) */}
-          {contentType === 'news' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Категория
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="industry">Индустрия</option>
-                <option value="platform">Платформа</option>
-                <option value="trends">Тренды</option>
-              </select>
-            </div>
-          )}
 
           {/* Type (for updates/events) */}
           {contentType === 'updates' && (
@@ -647,44 +593,6 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
             </div>
           )}
 
-          {/* Source (for news) */}
-          {contentType === 'news' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Источник *
-                </label>
-                <input
-                  type="text"
-                  value={formData.source}
-                  onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.source ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Название источника"
-                />
-                {errors.source && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.source}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ссылка на источник
-                </label>
-                <input
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="https://example.com/news"
-                />
-              </div>
-            </div>
-          )}
 
           {/* Published Date */}
           <div>
