@@ -12,6 +12,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { isSupabaseConfigured } from '../core/supabase';
 import { useTranslation } from '../hooks/useTranslation';
 import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
 import { AuthModal } from './AuthModal';
@@ -27,6 +28,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [showAuthModal, setShowAuthModal] = React.useState(false);
+  const [showSupabaseWarning, setShowSupabaseWarning] = React.useState(false);
   const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
@@ -45,6 +47,13 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const navigation = isModerator ? [...baseNavigation, ...adminNavigation] : baseNavigation;
+
+  React.useEffect(() => {
+    // Check Supabase configuration
+    if (!isSupabaseConfigured()) {
+      setShowSupabaseWarning(true);
+    }
+  }, []);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -116,6 +125,21 @@ export function Layout({ children }: LayoutProps) {
   return (
     <EngagementTracker userId={currentUserId} feature={getCurrentFeature()}>
       <div className="min-h-screen bg-gray-50">
+        {/* Supabase Configuration Warning */}
+        {showSupabaseWarning && (
+          <div className="bg-red-600 text-white p-3 text-center relative">
+            <p className="text-sm">
+              ⚠️ Supabase не настроен! Настройте переменные окружения в файле .env и перезапустите сервер.
+            </p>
+            <button
+              onClick={() => setShowSupabaseWarning(false)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
