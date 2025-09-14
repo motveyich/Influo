@@ -54,20 +54,38 @@ src/
    ```
 
 2. **Set up Supabase**
-   - Click "Connect to Supabase" in the top right
-   - Create a new project or connect existing one
+   - Create a new Supabase project at [supabase.com](https://supabase.com)
+   - Go to Settings > API in your Supabase dashboard
+   - Copy your Project URL and anon/public key
    - The database schema will be automatically created
 
 3. **Environment Variables**
    ```bash
    cp .env.example .env
-   # Update .env with your Supabase credentials
    ```
+   
+   **Open the `.env` file and update it with your actual Supabase credentials:**
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   ```
+   
+   ⚠️ **Important**: Make sure to replace the placeholder values with your actual Supabase project URL and anonymous key!
 
 4. **Start development server**
    ```bash
    npm run dev
    ```
+
+## 🔧 Troubleshooting
+
+### "Failed to fetch" errors
+If you see "Failed to fetch" errors in the browser console:
+
+1. **Check your `.env` file**: Make sure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set with your actual Supabase credentials
+2. **Verify your Supabase project**: Ensure your Supabase project is active and accessible
+3. **Restart the development server**: After updating `.env`, restart with `npm run dev`
+4. **Check the browser console**: Look for detailed error messages about the connection
 
 ## 📊 Database Schema
 

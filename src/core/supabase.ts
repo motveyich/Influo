@@ -14,13 +14,25 @@ export const isSupabaseConfigured = () => {
          supabaseAnonKey.length > 100; // Supabase anon keys are JWT tokens starting with 'eyJ' and longer than 100 chars
 };
 
-// Use safe defaults if not configured
-const safeSupabaseUrl = isSupabaseConfigured() ? supabaseUrl! : 'https://placeholder.supabase.co';
-const safeSupabaseAnonKey = isSupabaseConfigured() ? supabaseAnonKey! : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxMjM0NTYsImV4cCI6MTk2MDY5OTQ1Nn0.placeholder';
-
+// Use actual values or throw error if not configured
 if (!isSupabaseConfigured()) {
-  console.warn('Supabase is not configured. Please click "Connect to Supabase" in the top right corner or check your .env file.');
+  console.error('❌ Supabase is not configured properly!');
+  console.error('Please set up your Supabase environment variables:');
+  console.error('1. Copy .env.example to .env');
+  console.error('2. Update VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with your actual values');
+  console.error('3. Restart the development server');
+  
+  // Show user-friendly error in the browser
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      alert('Supabase не настроен! Пожалуйста, настройте переменные окружения и перезапустите сервер.');
+    }, 1000);
+  }
 }
+
+// Use actual values or fallback to prevent errors
+const safeSupabaseUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const safeSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
 
 export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   auth: {
@@ -34,6 +46,19 @@ export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   },
 });
 
+// Add a helper function to check connection status
+export const checkSupabaseConnection = async () => {
+  if (!isSupabaseConfigured()) {
+    return { connected: false, error: 'Supabase not configured' };
+  }
+  
+  try {
+    const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
+    return { connected: !error, error: error?.message };
+  } catch (err) {
+    return { connected: false, error: (err as Error).message };
+  }
+};
 // Database tables
 export const TABLES = {
   USER_PROFILES: 'user_profiles',
