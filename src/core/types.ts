@@ -504,44 +504,130 @@ export interface AIChatMessage {
   createdAt: string;
 }
 
-// Payment Window types (rebuilt)
-export type PaymentStatus = 'pending' | 'paying' | 'paid' | 'failed' | 'confirmed' | 'completed' | 'cancelled';
-export type PaymentType = 'full_prepay' | 'partial_prepay_postpay' | 'postpay';
+// Offers system types
+export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'terminated' | 'cancelled';
+export type PaymentRequestStatus = 'draft' | 'pending' | 'paying' | 'paid' | 'confirmed' | 'failed' | 'cancelled';
+export type CollaborationStage = 'pre_payment' | 'work_in_progress' | 'post_payment' | 'completed';
+
+export interface CollaborationOffer {
+  id: string;
+  influencerId: string;
+  advertiserId: string;
+  campaignId?: string;
+  influencerCardId?: string;
+  
+  // Offer details
+  title: string;
+  description: string;
+  proposedRate: number;
+  currency: string;
+  deliverables: string[];
+  timeline: string;
+  
+  // Status and stages
+  status: OfferStatus;
+  currentStage: CollaborationStage;
+  
+  // Acceptance details
+  acceptedAt?: string;
+  acceptedRate?: number;
+  finalTerms?: Record<string, any>;
+  
+  // Completion details
+  completedAt?: string;
+  terminatedAt?: string;
+  terminationReason?: string;
+  
+  // Reviews
+  influencerReviewed: boolean;
+  advertiserReviewed: boolean;
+  
+  // Metadata
+  metadata: Record<string, any>;
+  
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface PaymentRequest {
   id: string;
-  payerId: string; // Рекламодатель
-  payeeId: string; // Инфлюенсер 
-  relatedOfferId?: string;
-  relatedApplicationId?: string;
+  offerId: string;
+  createdBy: string;
+  
+  // Payment details
   amount: number;
   currency: string;
-  paymentType: PaymentType;
-  paymentStage: 'prepay' | 'postpay';
+  paymentType: 'prepay' | 'postpay' | 'full';
+  paymentMethod: string;
+  
+  // Payment instructions
   paymentDetails: {
-    cardNumber?: string;
     bankAccount?: string;
+    cardNumber?: string;
     paypalEmail?: string;
     cryptoAddress?: string;
-    instructions: string;
+    accountHolder?: string;
+    bankName?: string;
+    routingNumber?: string;
   };
-  status: PaymentStatus;
-  isEditable: boolean;
-  statusHistory: Array<{
-    status: PaymentStatus;
-    changedBy: string;
-    timestamp: string;
-    note?: string;
-  }>;
-  metadata: {
-    createdBy: string;
-    totalAmount?: number;
-    paidAmount?: number;
-    remainingAmount?: number;
-    prepayPercentage?: number;
-  };
+  instructions?: string;
+  
+  // Status
+  status: PaymentRequestStatus;
+  isFrozen: boolean;
+  
+  // Confirmation details
+  confirmedBy?: string;
+  confirmedAt?: string;
+  paymentProof?: Record<string, any>;
+  
+  // Timestamps
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CollaborationReview {
+  id: string;
+  offerId: string;
+  reviewerId: string;
+  revieweeId: string;
+  
+  // Review content
+  rating: number;
+  title: string;
+  comment: string;
+  
+  // Review metadata
+  isPublic: boolean;
+  helpfulVotes: number;
+  metadata: Record<string, any>;
+  
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OfferStatusHistory {
+  id: string;
+  offerId: string;
+  previousStatus?: OfferStatus;
+  newStatus: OfferStatus;
+  changedBy: string;
+  reason?: string;
+  metadata: Record<string, any>;
+  createdAt: string;
+}
+
+export interface PaymentStatusHistory {
+  id: string;
+  paymentRequestId: string;
+  previousStatus?: PaymentRequestStatus;
+  newStatus: PaymentRequestStatus;
+  changedBy: string;
+  reason?: string;
+  metadata: Record<string, any>;
+  createdAt: string;
 }
 
 export interface AIAnalysisResult {

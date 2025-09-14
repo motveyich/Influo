@@ -39,6 +39,7 @@ export function Layout({ children }: LayoutProps) {
     { name: t('nav.profiles'), href: '/profiles', icon: Users },
     { name: 'Автоматические кампании', href: '/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
+    { name: 'Предложения', href: '/offers', icon: MessageCircle },
     { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
   ];
 

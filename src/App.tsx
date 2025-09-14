@@ -9,6 +9,7 @@ import { InfluencerCardsPage } from './modules/influencer-cards/components/Influ
 import { InfluencerCardDetailPage } from './modules/influencer-cards/components/InfluencerCardDetailPage';
 import { HomePage } from './modules/home/components/HomePage';
 import { AdminPanel } from './modules/admin/components/AdminPanel';
+import { OffersPage } from './modules/offers/components/OffersPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/influencer-cards" element={<InfluencerCardsPage />} />
             <Route path="/influencer-cards/:cardId" element={<InfluencerCardDetailPage />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/offers" element={<OffersPage />} />
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </Layout>
