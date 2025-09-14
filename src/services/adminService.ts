@@ -107,29 +107,64 @@ export class AdminService {
         throw new Error('User is already blocked');
       }
 
-      // Block user by setting is_deleted to true
-      console.log('🔧 [AdminService] Updating user_profiles table...');
-      const { data, error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: deletedBy
-        })
-        .eq('user_id', userId)
-        .select();
-
-      if (error) {
-        console.error('❌ [AdminService] Database update failed:', error);
-        throw new Error(`Database update failed: ${error.message}. This usually indicates RLS policy restrictions.`);
+      // Get current user's session to ensure proper authentication
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session.session) {
+        throw new Error('Authentication session not found. Please log in again.');
       }
 
-      console.log('✅ [AdminService] User blocked successfully in database');
-      
-      // Verify the update worked
-      console.log('🔧 [AdminService] Verifying database update...');
-      if (!data || data.length === 0 || !data[0].is_deleted) {
-        throw new Error('User blocking failed - RLS policy prevented database update. Please check Supabase RLS policies for user_profiles table.');
+      // Verify the current user is actually an admin/moderator
+      const { data: adminUser, error: adminCheckError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('role, is_deleted')
+        .eq('user_id', deletedBy)
+        .single();
+
+      if (adminCheckError || !adminUser) {
+        console.error('❌ [AdminService] Failed to verify admin status:', adminCheckError);
+        throw new Error('Failed to verify admin permissions');
+      }
+
+      if (!['admin', 'moderator'].includes(adminUser.role) || adminUser.is_deleted) {
+        throw new Error('Insufficient permissions - user is not an active admin or moderator');
+      }
+
+      // Block user by setting is_deleted to true with proper error handling
+      console.log('🔧 [AdminService] Updating user_profiles table...');
+      try {
+        const { data, error } = await supabase
+          .from(TABLES.USER_PROFILES)
+          .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString(),
+            deleted_by: deletedBy
+          })
+          .eq('user_id', userId)
+          .select();
+
+        if (error) {
+          console.error('❌ [AdminService] Database update failed:', error);
+          
+          // Provide specific error messages based on error code
+          if (error.code === '42501' || error.message.includes('permission denied')) {
+            throw new Error('Permission denied: RLS policy blocks this operation. Please ensure you have proper admin/moderator role and the RLS policies are correctly configured.');
+          } else if (error.code === 'PGRST301' || error.message.includes('row-level security')) {
+            throw new Error('Row Level Security policy prevented this operation. The admin RLS policies may need to be updated in Supabase.');
+          } else {
+            throw new Error(`Database update failed: ${error.message}`);
+          }
+        }
+
+        console.log('✅ [AdminService] User blocked successfully in database');
+        
+        // Verify the update worked
+        console.log('🔧 [AdminService] Verifying database update...');
+        if (!data || data.length === 0 || !data[0].is_deleted) {
+          throw new Error('User blocking failed - database update did not take effect. This may be due to RLS policy restrictions.');
+        }
+      } catch (updateError: any) {
+        console.error('❌ [AdminService] Update operation failed:', updateError);
+        throw updateError;
       }
 
       // Log the action
