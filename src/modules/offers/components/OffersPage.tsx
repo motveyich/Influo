@@ -159,10 +159,6 @@ export function OffersPage() {
     }).format(amount);
   };
 
-  const getTabIcon = (tab: OfferTab) => {
-    return tab === 'active' ? <PlayCircle className="w-4 h-4" /> : <Archive className="w-4 h-4" />;
-  };
-
   const getTabLabel = (tab: OfferTab) => {
     return tab === 'active' ? 'Действующие' : 'Завершённые';
   };
@@ -284,7 +280,6 @@ export function OffersPage() {
                   }`}
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    {getTabIcon(tab)}
                     <span>{getTabLabel(tab)}</span>
                     {((tab === 'active' && stats.activeCount > 0) || (tab === 'completed' && stats.completedCount > 0)) && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
@@ -354,7 +349,6 @@ export function OffersPage() {
               </div>
             ) : filteredOffers.length === 0 ? (
               <div className="text-center py-12">
-                {getEmptyStateMessage().icon}
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {getEmptyStateMessage().title}
                 </h3>
