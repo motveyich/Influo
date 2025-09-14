@@ -113,22 +113,6 @@ export class AdminService {
         throw new Error('Authentication session not found. Please log in again.');
       }
 
-      // Verify the current user is actually an admin/moderator
-      const { data: adminUser, error: adminCheckError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('role, is_deleted')
-        .eq('user_id', deletedBy)
-        .single();
-
-      if (adminCheckError || !adminUser) {
-        console.error('❌ [AdminService] Failed to verify admin status:', adminCheckError);
-        throw new Error('Failed to verify admin permissions');
-      }
-
-      if (!['admin', 'moderator'].includes(adminUser.role) || adminUser.is_deleted) {
-        throw new Error('Insufficient permissions - user is not an active admin or moderator');
-      }
-
       // Block user by setting is_deleted to true with proper error handling
       console.log('🔧 [AdminService] Updating user_profiles table...');
       try {
