@@ -1,6 +1,7 @@
 import React from 'react';
-import { CollaborationOffer, OfferStatus } from '../../../core/types';
+import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/types';
 import { offerService } from '../services/offerService';
+import { paymentRequestService } from '../services/paymentRequestService';
 import { 
   Clock, 
   DollarSign, 
@@ -13,7 +14,12 @@ import {
   Settings,
   Play,
   Trophy,
-  Ban
+  Ban,
+  CreditCard,
+  FileText,
+  User,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -34,6 +40,29 @@ export function OfferCard({
   onViewDetails 
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
+  const [paymentRequests, setPaymentRequests] = React.useState<PaymentRequest[]>([]);
+  const [paymentWindowsLoading, setPaymentWindowsLoading] = React.useState(false);
+
+  // Загружаем окна оплаты при первом открытии
+  React.useEffect(() => {
+    if (showPaymentWindows && paymentRequests.length === 0) {
+      loadPaymentWindows();
+    }
+  }, [showPaymentWindows]);
+
+  const loadPaymentWindows = async () => {
+    try {
+      setPaymentWindowsLoading(true);
+      const payments = await paymentRequestService.getOfferPaymentRequests(offer.id);
+      setPaymentRequests(payments);
+    } catch (error) {
+      console.error('Failed to load payment windows:', error);
+      toast.error('Не удалось загрузить окна оплаты');
+    } finally {
+      setPaymentWindowsLoading(false);
+    }
+  };
 
   const getStatusColor = (status: OfferStatus) => {
     switch (status) {
@@ -91,6 +120,42 @@ export function OfferCard({
         return 'Расторгнуто';
       case 'declined':
         return 'Отклонено';
+      case 'cancelled':
+        return 'Отменено';
+      default:
+        return status;
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'paid':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'paying':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'failed':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'pending':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getPaymentStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Подтверждено';
+      case 'paid':
+        return 'Оплачено';
+      case 'paying':
+        return 'Оплачивается';
+      case 'failed':
+        return 'Ошибка оплаты';
+      case 'pending':
+        return 'Ожидает оплаты';
       case 'cancelled':
         return 'Отменено';
       default:
@@ -158,7 +223,26 @@ export function OfferCard({
     return actions;
   };
 
+  const getUserRoleLabel = () => {
+    return userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+  };
+
+  const getPartnerInfo = () => {
+    if (userRole === 'influencer') {
+      return {
+        label: 'Рекламодатель',
+        id: offer.advertiserId
+      };
+    } else {
+      return {
+        label: 'Инфлюенсер', 
+        id: offer.influencerId
+      };
+    }
+  };
+
   const availableActions = getAvailableActions();
+  const partnerInfo = getPartnerInfo();
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -175,6 +259,17 @@ export function OfferCard({
                 <span>{getStatusLabel(offer.status)}</span>
               </div>
             </span>
+          </div>
+          
+          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+            <div className="flex items-center space-x-1">
+              <User className="w-4 h-4" />
+              <span>Ваша роль: {getUserRoleLabel()}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Users className="w-4 h-4" />
+              <span>{partnerInfo.label}: {partnerInfo.id.substring(0, 8)}...</span>
+            </div>
           </div>
           
           <p className="text-sm text-gray-600 line-clamp-2">
@@ -236,6 +331,103 @@ export function OfferCard({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Payment Windows Section */}
+      <div className="border-t border-gray-200 pt-4 mb-4">
+        <button
+          onClick={() => {
+            setShowPaymentWindows(!showPaymentWindows);
+            if (!showPaymentWindows && paymentRequests.length === 0) {
+              loadPaymentWindows();
+            }
+          }}
+          className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <div className="flex items-center space-x-2">
+            <CreditCard className="w-5 h-5 text-blue-600" />
+            <span className="text-sm font-medium text-gray-900">
+              Окна оплаты ({paymentRequests.length})
+            </span>
+          </div>
+          {showPaymentWindows ? (
+            <ChevronUp className="w-4 h-4 text-gray-600" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-600" />
+          )}
+        </button>
+
+        {showPaymentWindows && (
+          <div className="mt-3 space-y-2">
+            {paymentWindowsLoading ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                <span className="ml-2 text-sm text-gray-600">Загрузка окон оплаты...</span>
+              </div>
+            ) : paymentRequests.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <CreditCard className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Окна оплаты не созданы</p>
+                {userRole === 'influencer' && ['accepted', 'in_progress'].includes(offer.status) && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Вы можете создать окно оплаты в детальном просмотре
+                  </p>
+                )}
+              </div>
+            ) : (
+              paymentRequests.map((payment) => (
+                <div key={payment.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatCurrency(payment.amount, payment.currency)}
+                        </p>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPaymentStatusColor(payment.status)}`}>
+                          {getPaymentStatusLabel(payment.status)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {payment.paymentType === 'prepay' ? 'Предоплата' : 
+                         payment.paymentType === 'postpay' ? 'Постоплата' : 'Полная оплата'} • 
+                        {payment.paymentMethod}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(parseISO(payment.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  
+                  {payment.instructions && (
+                    <p className="text-xs text-gray-600 mt-2 p-2 bg-white rounded border">
+                      {payment.instructions}
+                    </p>
+                  )}
+
+                  {/* Payment Details */}
+                  {payment.paymentDetails && Object.keys(payment.paymentDetails).length > 0 && (
+                    <div className="mt-2 p-2 bg-white rounded border">
+                      <div className="grid grid-cols-1 gap-1 text-xs text-gray-700">
+                        {payment.paymentDetails.bankAccount && (
+                          <p><span className="font-medium">Счет:</span> {payment.paymentDetails.bankAccount}</p>
+                        )}
+                        {payment.paymentDetails.cardNumber && (
+                          <p><span className="font-medium">Карта:</span> {payment.paymentDetails.cardNumber}</p>
+                        )}
+                        {payment.paymentDetails.paypalEmail && (
+                          <p><span className="font-medium">PayPal:</span> {payment.paymentDetails.paypalEmail}</p>
+                        )}
+                        {payment.paymentDetails.accountHolder && (
+                          <p><span className="font-medium">Владелец:</span> {payment.paymentDetails.accountHolder}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

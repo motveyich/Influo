@@ -21,7 +21,11 @@ import {
   Square,
   Trophy,
   Ban,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  User,
+  FileText,
+  History
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -48,6 +52,7 @@ export function OfferDetailsModal({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [canReview, setCanReview] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
 
   const isInfluencer = currentUserId === offer.influencerId;
   const isAdvertiser = currentUserId === offer.advertiserId;
@@ -103,9 +108,40 @@ export function OfferDetailsModal({
     }
   };
 
+  const handlePaymentStatusUpdate = async (paymentId: string, newStatus: string) => {
+    try {
+      await paymentRequestService.updatePaymentStatus(paymentId, newStatus as any, currentUserId);
+      await loadOfferDetails(); // Reload payment requests
+      
+      const statusMessages = {
+        'paying': 'Начат процесс оплаты',
+        'paid': 'Оплата подтверждена',
+        'failed': 'Оплата не удалась',
+        'confirmed': 'Получение оплаты подтверждено'
+      };
+      
+      toast.success(statusMessages[newStatus] || 'Статус оплаты обновлен');
+    } catch (error: any) {
+      console.error('Failed to update payment status:', error);
+      toast.error(error.message || 'Не удалось обновить статус оплаты');
+    }
+  };
+
   const handlePaymentRequestCreated = (paymentRequest: PaymentRequest) => {
     setPaymentRequests(prev => [paymentRequest, ...prev]);
     setShowPaymentModal(false);
+    setEditingPayment(null);
+  };
+
+  const handlePaymentRequestDeleted = async (paymentId: string) => {
+    try {
+      await paymentRequestService.deletePaymentRequest(paymentId, currentUserId);
+      setPaymentRequests(prev => prev.filter(p => p.id !== paymentId));
+      toast.success('Окно оплаты отменено');
+    } catch (error: any) {
+      console.error('Failed to delete payment request:', error);
+      toast.error(error.message || 'Не удалось отменить окно оплаты');
+    }
   };
 
   const handleReviewCreated = (review: CollaborationReview) => {
@@ -152,6 +188,41 @@ export function OfferDetailsModal({
            !getActivePaymentRequest();
   };
 
+  const canEditPaymentRequest = (payment: PaymentRequest) => {
+    return isInfluencer && 
+           payment.createdBy === currentUserId && 
+           !payment.isFrozen && 
+           ['draft', 'pending'].includes(payment.status);
+  };
+
+  const getPaymentActions = (payment: PaymentRequest) => {
+    const actions = [];
+
+    if (isAdvertiser) {
+      // Advertiser actions
+      if (payment.status === 'pending') {
+        actions.push(
+          { label: 'Оплачиваю', action: 'paying', style: 'warning' },
+          { label: 'Не могу оплатить', action: 'failed', style: 'danger' }
+        );
+      } else if (payment.status === 'paying') {
+        actions.push(
+          { label: 'Оплатил', action: 'paid', style: 'success' },
+          { label: 'Не получилось', action: 'failed', style: 'danger' }
+        );
+      }
+    } else if (isInfluencer) {
+      // Influencer actions
+      if (payment.status === 'paid') {
+        actions.push(
+          { label: 'Подтвердить получение', action: 'confirmed', style: 'success' }
+        );
+      }
+    }
+
+    return actions;
+  };
+
   const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -182,6 +253,23 @@ export function OfferDetailsModal({
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'paid':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'paying':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'failed':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'pending':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
   const availableActions = getAvailableActions();
   const activePaymentRequest = getActivePaymentRequest();
 
@@ -189,19 +277,24 @@ export function OfferDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">{offer.title}</h2>
-            <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border mt-2 ${getStatusColor(offer.status)}`}>
-              {offer.status === 'pending' ? 'Ожидает ответа' :
-               offer.status === 'accepted' ? 'Принято' :
-               offer.status === 'in_progress' ? 'В работе' :
-               offer.status === 'completed' ? 'Завершено' :
-               offer.status === 'terminated' ? 'Расторгнуто' :
-               offer.status === 'declined' ? 'Отклонено' : 'Отменено'}
-            </span>
+            <div className="flex items-center space-x-4 mt-2">
+              <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
+                {offer.status === 'pending' ? 'Ожидает ответа' :
+                 offer.status === 'accepted' ? 'Принято' :
+                 offer.status === 'in_progress' ? 'В работе' :
+                 offer.status === 'completed' ? 'Завершено' :
+                 offer.status === 'terminated' ? 'Расторгнуто' :
+                 offer.status === 'declined' ? 'Отклонено' : 'Отменено'}
+              </span>
+              <span className="text-sm text-gray-600">
+                Ваша роль: {isInfluencer ? 'Инфлюенсер' : 'Рекламодатель'}
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -271,39 +364,97 @@ export function OfferDetailsModal({
                 </div>
               </div>
 
-              {/* Payment Requests */}
-              {paymentRequests.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Окна оплаты</h3>
-                  <div className="space-y-3">
+              {/* Payment Windows Section */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Окна оплаты</h3>
+                  {canCreatePaymentRequest() && (
+                    <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Создать окно оплаты</span>
+                    </button>
+                  )}
+                </div>
+                
+                {paymentRequests.length === 0 ? (
+                  <div className="bg-gray-50 rounded-lg p-6 text-center">
+                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-2">Окна оплаты не созданы</p>
+                    {canCreatePaymentRequest() && (
+                      <p className="text-sm text-gray-500">
+                        Создайте окно оплаты для получения средств от рекламодателя
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                     {paymentRequests.map((payment) => (
                       <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-3">
                           <div>
-                            <p className="font-medium text-gray-900">
-                              {formatCurrency(payment.amount, payment.currency)} - {payment.paymentType}
-                            </p>
-                            <p className="text-sm text-gray-600">{payment.instructions}</p>
+                            <div className="flex items-center space-x-3 mb-2">
+                              <p className="text-lg font-medium text-gray-900">
+                                {formatCurrency(payment.amount, payment.currency)}
+                              </p>
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPaymentStatusColor(payment.status)}`}>
+                                {payment.status === 'confirmed' ? 'Подтверждено' :
+                                 payment.status === 'paid' ? 'Оплачено' :
+                                 payment.status === 'paying' ? 'Оплачивается' :
+                                 payment.status === 'failed' ? 'Ошибка оплаты' :
+                                 payment.status === 'pending' ? 'Ожидает оплаты' : payment.status}
+                              </span>
+                              {payment.isFrozen && (
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                                  Заморожено
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                              <span>
+                                {payment.paymentType === 'prepay' ? 'Предоплата' : 
+                                 payment.paymentType === 'postpay' ? 'Постоплата' : 'Полная оплата'}
+                              </span>
+                              <span>•</span>
+                              <span>{payment.paymentMethod}</span>
+                              <span>•</span>
+                              <span>{formatDistanceToNow(parseISO(payment.createdAt), { addSuffix: true })}</span>
+                            </div>
                           </div>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            payment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                            payment.status === 'paid' ? 'bg-blue-100 text-blue-700' :
-                            payment.status === 'paying' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {payment.status === 'confirmed' ? 'Подтверждено' :
-                             payment.status === 'paid' ? 'Оплачено' :
-                             payment.status === 'paying' ? 'Оплачивается' :
-                             payment.status === 'failed' ? 'Ошибка оплаты' :
-                             payment.status === 'pending' ? 'Ожидает оплаты' : payment.status}
-                          </span>
+                          
+                          <div className="flex items-center space-x-2">
+                            {/* Influencer actions */}
+                            {canEditPaymentRequest(payment) && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingPayment(payment);
+                                    setShowPaymentModal(true);
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                  title="Редактировать окно оплаты"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handlePaymentRequestDeleted(payment.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  title="Отменить окно оплаты"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                         
                         {/* Payment details */}
                         {payment.paymentDetails && Object.keys(payment.paymentDetails).length > 0 && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Реквизиты для оплаты:</p>
-                            <div className="space-y-1 text-sm text-gray-600">
+                          <div className="mb-3 p-3 bg-blue-50 rounded-md">
+                            <p className="text-sm font-medium text-blue-900 mb-2">Реквизиты для оплаты:</p>
+                            <div className="space-y-1 text-sm text-blue-800">
                               {payment.paymentDetails.bankAccount && (
                                 <p><strong>Банковский счет:</strong> {payment.paymentDetails.bankAccount}</p>
                               )}
@@ -316,14 +467,44 @@ export function OfferDetailsModal({
                               {payment.paymentDetails.cryptoAddress && (
                                 <p><strong>Криптокошелек:</strong> {payment.paymentDetails.cryptoAddress}</p>
                               )}
+                              {payment.paymentDetails.accountHolder && (
+                                <p><strong>Владелец:</strong> {payment.paymentDetails.accountHolder}</p>
+                              )}
                             </div>
+                          </div>
+                        )}
+
+                        {payment.instructions && (
+                          <div className="mb-3 p-3 bg-white rounded border">
+                            <p className="text-sm font-medium text-gray-700 mb-1">Инструкции:</p>
+                            <p className="text-sm text-gray-600 whitespace-pre-line">{payment.instructions}</p>
+                          </div>
+                        )}
+
+                        {/* Payment Actions */}
+                        {getPaymentActions(payment).length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {getPaymentActions(payment).map((action) => (
+                              <button
+                                key={action.action}
+                                onClick={() => handlePaymentStatusUpdate(payment.id, action.action)}
+                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                  action.style === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                  action.style === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                                  action.style === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                  'bg-gray-600 hover:bg-gray-700 text-white'
+                                }`}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Reviews */}
               {reviews.length > 0 && (
@@ -476,6 +657,10 @@ export function OfferDetailsModal({
                       </span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Окон оплаты:</span>
+                    <span className="font-medium text-gray-900">{paymentRequests.length}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -485,9 +670,13 @@ export function OfferDetailsModal({
         {/* Payment Request Modal */}
         <PaymentRequestModal
           isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setEditingPayment(null);
+          }}
           offerId={offer.id}
           createdBy={currentUserId}
+          existingRequest={editingPayment}
           onPaymentRequestCreated={handlePaymentRequestCreated}
         />
 

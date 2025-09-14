@@ -65,6 +65,45 @@ export class ApplicationService {
       // Send notification message
       await this.sendApplicationNotification(transformedApplication);
 
+      // Create offer automatically after successful application
+      try {
+        const { offerService } = await import('../../offers/services/offerService');
+        
+        // Determine roles based on application
+        const isInfluencerApplication = applicationData.targetType === 'campaign' || 
+                                      applicationData.targetType === 'advertiser_card';
+        
+        let influencerId, advertiserId;
+        if (isInfluencerApplication) {
+          influencerId = applicationData.applicantId;
+          advertiserId = applicationData.targetId;
+        } else {
+          // Advertiser applying to influencer
+          advertiserId = applicationData.applicantId;
+          influencerId = applicationData.targetId;
+        }
+        
+        // Create offer from application
+        await offerService.createOfferFromApplication({
+          influencerId: influencerId!,
+          advertiserId: advertiserId!,
+          applicationId: transformedApplication.id,
+          title: applicationData.applicationData?.message?.substring(0, 50) + '...' || 'Предложение о сотрудничестве',
+          description: applicationData.applicationData?.message || 'Предложение создано из заявки',
+          proposedRate: applicationData.applicationData?.proposedRate || 1000,
+          currency: 'USD',
+          deliverables: applicationData.applicationData?.deliverables || ['Услуги по договоренности'],
+          timeline: applicationData.applicationData?.timeline || 'По договоренности',
+          metadata: {
+            createdFromApplication: true,
+            originalApplicationId: transformedApplication.id
+          }
+        });
+      } catch (offerError) {
+        console.error('Failed to create offer from application:', offerError);
+        // Don't fail the entire application if offer creation fails
+      }
+
       // Send real-time notification
       realtimeService.sendNotification({
         type: 'application_received',

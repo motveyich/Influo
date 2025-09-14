@@ -5,12 +5,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
-import { CreateOfferModal } from './CreateOfferModal';
 import { OfferDetailsModal } from './OfferDetailsModal';
 import { 
-  Send, 
-  Inbox, 
-  Plus, 
   Search, 
   Filter,
   Target,
@@ -19,19 +15,21 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Trophy
+  Trophy,
+  PlayCircle,
+  Archive,
+  AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type OfferTab = 'sent' | 'received';
+type OfferTab = 'active' | 'completed';
 
 export function OffersPage() {
-  const [activeTab, setActiveTab] = useState<OfferTab>('received');
+  const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [offers, setOffers] = useState<CollaborationOffer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OfferStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -48,8 +46,26 @@ export function OffersPage() {
   const loadOffers = async () => {
     try {
       setIsLoading(true);
-      const loadedOffers = await offerService.getUserOffers(currentUserId, activeTab);
-      setOffers(loadedOffers);
+      
+      // Загружаем все предложения пользователя (и отправленные, и полученные)
+      const [sentOffers, receivedOffers] = await Promise.all([
+        offerService.getUserOffers(currentUserId, 'sent'),
+        offerService.getUserOffers(currentUserId, 'received')
+      ]);
+      
+      // Объединяем все предложения
+      const allOffers = [...sentOffers, ...receivedOffers];
+      
+      // Фильтруем по вкладке
+      const filteredByTab = allOffers.filter(offer => {
+        if (activeTab === 'active') {
+          return ['pending', 'accepted', 'in_progress'].includes(offer.status);
+        } else {
+          return ['completed', 'declined', 'cancelled', 'terminated'].includes(offer.status);
+        }
+      });
+      
+      setOffers(filteredByTab);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error('Не удалось загрузить предложения');
@@ -59,22 +75,6 @@ export function OffersPage() {
     }
   };
 
-  const handleCreateOffer = () => {
-    // Only influencers can create offers
-    if (!currentUserProfile?.profileCompletion.influencerSetup) {
-      toast.error('Заполните раздел "Инфлюенсер" для создания предложений');
-      return;
-    }
-    setShowCreateModal(true);
-  };
-
-  const handleOfferCreated = (newOffer: CollaborationOffer) => {
-    if (activeTab === 'sent') {
-      setOffers(prev => [newOffer, ...prev]);
-    }
-    setShowCreateModal(false);
-  };
-
   const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
     setOffers(prev => prev.map(offer => 
       offer.id === updatedOffer.id ? updatedOffer : offer
@@ -82,11 +82,24 @@ export function OffersPage() {
     if (selectedOffer?.id === updatedOffer.id) {
       setSelectedOffer(updatedOffer);
     }
+    
+    // Если статус изменился так, что предложение перешло в другую категорию, перезагружаем
+    const isActiveStatus = ['pending', 'accepted', 'in_progress'].includes(updatedOffer.status);
+    const shouldRefresh = (activeTab === 'active' && !isActiveStatus) || 
+                         (activeTab === 'completed' && isActiveStatus);
+    
+    if (shouldRefresh) {
+      loadOffers();
+    }
   };
 
   const handleViewDetails = (offer: CollaborationOffer) => {
     setSelectedOffer(offer);
     setShowDetailsModal(true);
+  };
+
+  const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
+    return offer.influencerId === currentUserId ? 'influencer' : 'advertiser';
   };
 
   const filteredOffers = offers.filter(offer => {
@@ -98,17 +111,10 @@ export function OffersPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const getTabCounts = () => {
-    const sentOffers = offers.filter(offer => offer.influencerId === currentUserId);
-    const receivedOffers = offers.filter(offer => offer.advertiserId === currentUserId);
-    
-    return {
-      sent: sentOffers.length,
-      received: receivedOffers.length
-    };
-  };
-
   const getOfferStats = () => {
+    const activeOffers = offers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
+    const completedOffers = offers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
+    
     return {
       total: offers.length,
       pending: offers.filter(o => o.status === 'pending').length,
@@ -117,11 +123,31 @@ export function OffersPage() {
       completed: offers.filter(o => o.status === 'completed').length,
       totalValue: offers
         .filter(o => ['accepted', 'in_progress', 'completed'].includes(o.status))
-        .reduce((sum, o) => sum + (o.acceptedRate || o.proposedRate), 0)
+        .reduce((sum, o) => sum + (o.acceptedRate || o.proposedRate), 0),
+      activeCount: activeOffers.length,
+      completedCount: completedOffers.length
     };
   };
 
-  const tabCounts = getTabCounts();
+  const getStatusFiltersForTab = (): { value: OfferStatus | 'all'; label: string }[] => {
+    if (activeTab === 'active') {
+      return [
+        { value: 'all', label: 'Все статусы' },
+        { value: 'pending', label: 'Ожидают ответа' },
+        { value: 'accepted', label: 'Приняты' },
+        { value: 'in_progress', label: 'В работе' }
+      ];
+    } else {
+      return [
+        { value: 'all', label: 'Все статусы' },
+        { value: 'completed', label: 'Завершены' },
+        { value: 'declined', label: 'Отклонены' },
+        { value: 'cancelled', label: 'Отменены' },
+        { value: 'terminated', label: 'Расторгнуты' }
+      ];
+    }
+  };
+
   const stats = getOfferStats();
 
   const formatCurrency = (amount: number) => {
@@ -134,11 +160,29 @@ export function OffersPage() {
   };
 
   const getTabIcon = (tab: OfferTab) => {
-    return tab === 'sent' ? <Send className="w-4 h-4" /> : <Inbox className="w-4 h-4" />;
+    return tab === 'active' ? <PlayCircle className="w-4 h-4" /> : <Archive className="w-4 h-4" />;
   };
 
   const getTabLabel = (tab: OfferTab) => {
-    return tab === 'sent' ? 'Отправленные' : 'Полученные';
+    return tab === 'active' ? 'Действующие' : 'Завершённые';
+  };
+
+  const getEmptyStateMessage = () => {
+    if (activeTab === 'active') {
+      return {
+        icon: <PlayCircle className="w-16 h-16 text-gray-400" />,
+        title: 'Нет действующих предложений',
+        subtitle: 'Действующие предложения о сотрудничестве появятся здесь',
+        description: 'Предложения создаются автоматически при согласовании сотрудничества через автоматические кампании или карточки инфлюенсеров/рекламодателей.'
+      };
+    } else {
+      return {
+        icon: <Archive className="w-16 h-16 text-gray-400" />,
+        title: 'Нет завершённых предложений',
+        subtitle: 'Завершённые и отклонённые предложения появятся здесь',
+        description: 'После завершения, отклонения или отмены предложений они будут отображаться в этой вкладке.'
+      };
+    }
   };
 
   return (
@@ -154,19 +198,22 @@ export function OffersPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Предложения о сотрудничестве</h1>
             <p className="mt-1 text-sm text-gray-600">
-              Управление заявками и сотрудничеством с партнерами
+              Управление предложениями, созданными через автоматические кампании и карточки
             </p>
           </div>
           
-          {currentUserProfile?.profileCompletion.influencerSetup && (
-            <button
-              onClick={handleCreateOffer}
-              className="mt-4 sm:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Создать предложение</span>
-            </button>
-          )}
+          {/* Информационная подсказка */}
+          <div className="mt-4 sm:mt-0 bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-xs">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-blue-800">Как создавать предложения?</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Предложения создаются автоматически при откликах на карточки и кампании
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
@@ -181,6 +228,22 @@ export function OffersPage() {
           
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
+              <PlayCircle className="w-5 h-5 text-blue-600" />
+              <span className="ml-2 text-sm font-medium text-gray-600">Действующие</span>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.activeCount}</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <Archive className="w-5 h-5 text-gray-600" />
+              <span className="ml-2 text-sm font-medium text-gray-600">Завершённые</span>
+            </div>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.completedCount}</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
               <Clock className="w-5 h-5 text-yellow-600" />
               <span className="ml-2 text-sm font-medium text-gray-600">Ожидают</span>
             </div>
@@ -189,26 +252,10 @@ export function OffersPage() {
           
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Приняты</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.accepted}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
               <Users className="w-5 h-5 text-blue-600" />
               <span className="ml-2 text-sm font-medium text-gray-600">В работе</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.inProgress}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <Trophy className="w-5 h-5 text-green-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Завершены</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.completed}</p>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -226,7 +273,7 @@ export function OffersPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200">
             <div className="flex">
-              {(['sent', 'received'] as OfferTab[]).map((tab) => (
+              {(['active', 'completed'] as OfferTab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -239,13 +286,13 @@ export function OffersPage() {
                   <div className="flex items-center justify-center space-x-2">
                     {getTabIcon(tab)}
                     <span>{getTabLabel(tab)}</span>
-                    {tabCounts[tab] > 0 && (
+                    {((tab === 'active' && stats.activeCount > 0) || (tab === 'completed' && stats.completedCount > 0)) && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activeTab === tab
                           ? 'bg-purple-600 text-white'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
-                        {tabCounts[tab]}
+                        {tab === 'active' ? stats.activeCount : stats.completedCount}
                       </span>
                     )}
                   </div>
@@ -275,14 +322,11 @@ export function OffersPage() {
                   onChange={(e) => setStatusFilter(e.target.value as OfferStatus | 'all')}
                   className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="all">Все статусы</option>
-                  <option value="pending">Ожидают ответа</option>
-                  <option value="accepted">Приняты</option>
-                  <option value="in_progress">В работе</option>
-                  <option value="completed">Завершены</option>
-                  <option value="terminated">Расторгнуты</option>
-                  <option value="declined">Отклонены</option>
-                  <option value="cancelled">Отменены</option>
+                  {getStatusFiltersForTab().map(filter => (
+                    <option key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -310,28 +354,18 @@ export function OffersPage() {
               </div>
             ) : filteredOffers.length === 0 ? (
               <div className="text-center py-12">
-                {getTabIcon(activeTab)}
-                <div className="w-16 h-16 text-gray-400 mx-auto mb-4">
-                  {getTabIcon(activeTab)}
-                </div>
+                {getEmptyStateMessage().icon}
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {activeTab === 'sent' ? 'Нет отправленных предложений' : 'Нет полученных предложений'}
+                  {getEmptyStateMessage().title}
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  {activeTab === 'sent' 
-                    ? 'Создайте первое предложение о сотрудничестве'
-                    : 'Когда рекламодатели отправят вам предложения, они появятся здесь'
-                  }
+                <p className="text-gray-600 mb-4">
+                  {getEmptyStateMessage().subtitle}
                 </p>
-                {activeTab === 'sent' && currentUserProfile?.profileCompletion.influencerSetup && (
-                  <button
-                    onClick={handleCreateOffer}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2 mx-auto"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Создать предложение</span>
-                  </button>
-                )}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="text-sm text-gray-700">
+                    {getEmptyStateMessage().description}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -340,7 +374,7 @@ export function OffersPage() {
                     key={offer.id}
                     offer={offer}
                     currentUserId={currentUserId}
-                    userRole={activeTab === 'sent' ? 'influencer' : 'advertiser'}
+                    userRole={getUserRole(offer)}
                     onOfferUpdated={handleOfferUpdated}
                     onViewDetails={handleViewDetails}
                   />
@@ -349,14 +383,6 @@ export function OffersPage() {
             )}
           </div>
         </div>
-
-        {/* Create Offer Modal */}
-        <CreateOfferModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          influencerId={currentUserId}
-          onOfferCreated={handleOfferCreated}
-        />
 
         {/* Offer Details Modal */}
         {selectedOffer && (
