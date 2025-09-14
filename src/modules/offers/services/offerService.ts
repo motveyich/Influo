@@ -54,6 +54,65 @@ export class OfferService {
     }
   }
 
+  async createOfferFromApplication(offerData: {
+    influencerId: string;
+    advertiserId: string;
+    applicationId: string;
+    title: string;
+    description: string;
+    proposedRate: number;
+    currency: string;
+    deliverables: string[];
+    timeline: string;
+    metadata?: Record<string, any>;
+  }): Promise<CollaborationOffer> {
+    try {
+      // Create offer with pending status
+      const newOffer = {
+        influencer_id: offerData.influencerId,
+        advertiser_id: offerData.advertiserId,
+        title: offerData.title,
+        description: offerData.description,
+        proposed_rate: offerData.proposedRate,
+        currency: offerData.currency,
+        deliverables: offerData.deliverables,
+        timeline: offerData.timeline,
+        status: 'pending',
+        current_stage: 'pre_payment',
+        metadata: {
+          ...offerData.metadata,
+          createdFromApplication: true,
+          applicationId: offerData.applicationId
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('collaboration_offers')
+        .insert([newOffer])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const transformedOffer = this.transformFromDatabase(data);
+
+      // Track analytics
+      analytics.track('collaboration_offer_auto_created', {
+        offer_id: transformedOffer.id,
+        application_id: offerData.applicationId,
+        influencer_id: offerData.influencerId,
+        advertiser_id: offerData.advertiserId
+      });
+
+      return transformedOffer;
+    } catch (error) {
+      console.error('Failed to create offer from application:', error);
+      throw error;
+    }
+  }
+
   async updateOfferStatus(
     offerId: string, 
     newStatus: OfferStatus, 
