@@ -166,6 +166,11 @@ export function InfluencerCardsPage() {
         })
       );
       setFavoriteCards(favoriteCards.filter(card => card !== null) as InfluencerCard[]);
+      
+      const influencerFavorites = favorites.filter(fav => fav.targetType === 'influencer');
+      const advertiserFavorites = favorites.filter(fav => fav.targetType === 'advertiser');
+      
+      const influencerCardPromises = influencerFavorites.map(async (fav) => {
         try {
           return await influencerCardService.getCard(fav.targetId);
         } catch (error) {
