@@ -133,15 +133,6 @@ export interface AdvertiserCard {
     amount: number;
     currency: string;
   };
-  targetAudience: {
-    description: string;
-    interests: string[];
-    ageRange: [number, number];
-    ageGroups: Record<string, number>;
-    genderSplit: Record<string, number>;
-    countries: string[];
-    topCountries: Array<{country: string; percentage: number}>;
-  };
   serviceFormat: string[];
   campaignDuration: {
     startDate: string;
@@ -157,14 +148,6 @@ export interface AdvertiserCard {
     phone?: string;
     website?: string;
   };
-  paymentInfo?: {
-    bankAccount?: string;
-    cardNumber?: string;
-    paypalEmail?: string;
-    cryptoAddress?: string;
-    accountHolder?: string;
-  };
-  blacklistedCategories: string[];
   campaignStats?: {
     completedCampaigns: number;
     averageRating: number;

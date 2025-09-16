@@ -34,66 +34,6 @@ const SERVICE_FORMATS = [
   'Упоминание в видео'
 ];
 
-const COUNTRIES = [
-  'Россия',
-  'Беларусь', 
-  'Казахстан',
-  'Украина',
-  'Узбекистан',
-  'Киргизия',
-  'Таджикистан',
-  'Армения',
-  'Азербайджан',
-  'Молдова',
-  'Грузия',
-  'США',
-  'Германия',
-  'Великобритания',
-  'Франция',
-  'Италия',
-  'Испания',
-  'Канада',
-  'Австралия',
-  'Турция',
-  'Польша',
-  'Чехия'
-];
-
-const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
-
-const INTERESTS = [
-  'Мода и стиль',
-  'Красота и косметика', 
-  'Образ жизни',
-  'Путешествия и туризм',
-  'Еда и кулинария',
-  'Фитнес и здоровье',
-  'Спорт',
-  'Технологии и гаджеты',
-  'Игры и киберспорт',
-  'Музыка и развлечения',
-  'Искусство и творчество',
-  'Бизнес и предпринимательство',
-  'Образование и обучение',
-  'Наука и исследования',
-  'Автомобили и транспорт',
-  'Недвижимость и дизайн интерьера',
-  'Финансы и инвестиции',
-  'Родительство и семья',
-  'Домашние животные',
-  'Книги и литература',
-  'Кино и сериалы',
-  'Фотография',
-  'Дизайн и архитектура',
-  'Политика и общество',
-  'Экология и устойчивое развитие',
-  'Психология и саморазвитие',
-  'Медицина и здравоохранение',
-  'Юмор и комедия',
-  'Новости и журналистика',
-  'Религия и духовность'
-];
-
 export function AdvertiserCardModal({ 
   isOpen, 
   onClose, 
@@ -114,15 +54,6 @@ export function AdvertiserCardModal({
       amount: 0,
       currency: 'RUB'
     },
-    targetAudience: {
-      description: '',
-      interests: [] as string[],
-      ageRange: [18, 35] as [number, number],
-      ageGroups: {} as Record<string, number>,
-      genderSplit: { male: 50, female: 50, other: 0 },
-      countries: [] as string[],
-      topCountries: [] as Array<{country: string; percentage: number}>
-    },
     serviceFormat: [] as string[],
     campaignDuration: {
       startDate: '',
@@ -137,26 +68,11 @@ export function AdvertiserCardModal({
       email: '',
       phone: '',
       website: ''
-    },
-    paymentInfo: {
-      bankAccount: '',
-      cardNumber: '',
-      paypalEmail: '',
-      cryptoAddress: '',
-      accountHolder: ''
-    },
-    blacklistedCategories: [] as string[]
+    }
   });
 
   useEffect(() => {
     if (currentCard) {
-      // Convert old format to new format
-      const oldTopCountries = currentCard.targetAudience.countries || [];
-      const convertedCountries = oldTopCountries.slice(0, 3).map((country, index) => ({
-        country,
-        percentage: index === 0 ? 50 : index === 1 ? 30 : 20
-      }));
-
       setFormData({
         companyName: currentCard.companyName,
         campaignTitle: currentCard.campaignTitle,
@@ -166,27 +82,10 @@ export function AdvertiserCardModal({
           amount: currentCard.budget.amount || 0,
           currency: currentCard.budget.currency
         },
-        targetAudience: {
-          description: currentCard.targetAudience.description,
-          interests: currentCard.targetAudience.interests || [],
-          ageRange: currentCard.targetAudience.ageRange,
-          ageGroups: currentCard.targetAudience.ageGroups || {},
-          genderSplit: currentCard.targetAudience.genderSplit || { male: 50, female: 50, other: 0 },
-          countries: currentCard.targetAudience.countries,
-          topCountries: convertedCountries
-        },
         serviceFormat: currentCard.serviceFormat || [],
         campaignDuration: currentCard.campaignDuration,
         influencerRequirements: currentCard.influencerRequirements,
-        contactInfo: currentCard.contactInfo,
-        paymentInfo: currentCard.paymentInfo || {
-          bankAccount: '',
-          cardNumber: '',
-          paypalEmail: '',
-          cryptoAddress: '',
-          accountHolder: ''
-        },
-        blacklistedCategories: currentCard.blacklistedCategories || []
+        contactInfo: currentCard.contactInfo
       });
     } else {
       // Reset form for new card
@@ -196,27 +95,10 @@ export function AdvertiserCardModal({
         campaignDescription: '',
         platform: 'vk',
         budget: { amount: 0, currency: 'RUB' },
-        targetAudience: {
-          description: '',
-          interests: [],
-          ageRange: [18, 35],
-          ageGroups: {},
-          genderSplit: { male: 50, female: 50, other: 0 },
-          countries: [],
-          topCountries: []
-        },
         serviceFormat: [],
         campaignDuration: { startDate: '', endDate: '' },
         influencerRequirements: { minFollowers: 0, maxFollowers: 0, minEngagementRate: 0 },
-        contactInfo: { email: '', phone: '', website: '' },
-        paymentInfo: {
-          bankAccount: '',
-          cardNumber: '',
-          paypalEmail: '',
-          cryptoAddress: '',
-          accountHolder: ''
-        },
-        blacklistedCategories: []
+        contactInfo: { email: '', phone: '', website: '' }
       });
     }
     setErrors({});
@@ -245,24 +127,6 @@ export function AdvertiserCardModal({
 
     if (formData.serviceFormat.length === 0) {
       newErrors.serviceFormat = 'Выберите хотя бы один формат услуги';
-    }
-
-    if (formData.targetAudience.topCountries.length === 0) {
-      newErrors.countries = 'Выберите хотя бы одну страну';
-    } else if (formData.targetAudience.topCountries.length > 3) {
-      newErrors.countries = 'Можно выбрать максимум 3 страны';
-    }
-
-    // Validate country percentages
-    const countrySum = formData.targetAudience.topCountries.reduce((sum, item) => sum + item.percentage, 0);
-    if (countrySum > 100) {
-      newErrors.countries = `Сумма процентов по странам не может превышать 100% (текущая: ${countrySum}%)`;
-    }
-
-    // Validate age group percentages
-    const ageGroupSum = Object.values(formData.targetAudience.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
-    if (ageGroupSum > 100) {
-      newErrors.ageGroups = `Сумма процентов по возрастным группам не может превышать 100% (текущая: ${ageGroupSum}%)`;
     }
 
     if (!formData.campaignDuration.startDate) {
@@ -331,90 +195,6 @@ export function AdvertiserCardModal({
     } else {
       setter([...array, item]);
     }
-  };
-
-  const handleInterestToggle = (interest: string) => {
-    setFormData(prev => ({
-      ...prev,
-      targetAudience: {
-        ...prev.targetAudience,
-        interests: prev.targetAudience.interests.includes(interest)
-          ? prev.targetAudience.interests.filter(i => i !== interest)
-          : [...prev.targetAudience.interests, interest]
-      }
-    }));
-  };
-
-  const handleBlacklistToggle = (category: string) => {
-    setFormData(prev => ({
-      ...prev,
-      blacklistedCategories: prev.blacklistedCategories.includes(category)
-        ? prev.blacklistedCategories.filter(c => c !== category)
-        : [...prev.blacklistedCategories, category]
-    }));
-  };
-
-  const handleAgeGroupChange = (ageGroup: string, percentage: number) => {
-    setFormData(prev => ({
-      ...prev,
-      targetAudience: {
-        ...prev.targetAudience,
-        ageGroups: {
-          ...prev.targetAudience.ageGroups,
-          [ageGroup]: Math.max(0, Math.min(100, percentage))
-        }
-      }
-    }));
-  };
-
-  const handleCountryAdd = () => {
-    if (formData.targetAudience.topCountries.length >= 3) {
-      toast.error('Можно выбрать максимум 3 страны');
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      targetAudience: {
-        ...prev.targetAudience,
-        topCountries: [
-          ...prev.targetAudience.topCountries,
-          { country: COUNTRIES[0], percentage: 0 }
-        ]
-      }
-    }));
-  };
-
-  const handleCountryRemove = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      targetAudience: {
-        ...prev.targetAudience,
-        topCountries: prev.targetAudience.topCountries.filter((_, i) => i !== index)
-      }
-    }));
-  };
-
-  const handleCountryChange = (index: number, field: 'country' | 'percentage', value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      targetAudience: {
-        ...prev.targetAudience,
-        topCountries: prev.targetAudience.topCountries.map((item, i) => 
-          i === index 
-            ? { ...item, [field]: field === 'percentage' ? Math.max(0, Math.min(100, Number(value))) : value }
-            : item
-        )
-      }
-    }));
-  };
-
-  const getAgeGroupSum = () => {
-    return Object.values(formData.targetAudience.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
-  };
-
-  const getCountrySum = () => {
-    return formData.targetAudience.topCountries.reduce((sum, item) => sum + item.percentage, 0);
   };
 
   if (!isOpen) return null;
@@ -615,250 +395,6 @@ export function AdvertiserCardModal({
             </div>
           </div>
 
-          {/* Target Audience Demographics */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Целевая аудитория</h3>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Описание целевой аудитории
-              </label>
-              <textarea
-                value={formData.targetAudience.description}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  targetAudience: { ...prev.targetAudience, description: e.target.value }
-                }))}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Опишите вашу целевую аудиторию..."
-              />
-            </div>
-
-            {/* Countries */}
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  География аудитории * (максимум 3 страны)
-                </label>
-                <button
-                  type="button"
-                  onClick={handleCountryAdd}
-                  disabled={formData.targetAudience.topCountries.length >= 3}
-                  className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Добавить страну</span>
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                {formData.targetAudience.topCountries.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <select
-                      value={item.country}
-                      onChange={(e) => handleCountryChange(index, 'country', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      {COUNTRIES.map((country) => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={item.percentage}
-                      onChange={(e) => handleCountryChange(index, 'percentage', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                    <span className="text-sm text-gray-600">%</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCountryRemove(index)}
-                      className="text-red-600 hover:text-red-800 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-2 text-sm text-gray-600">
-                Общий процент: {getCountrySum()}% / 100%
-                {getCountrySum() > 100 && (
-                  <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
-                )}
-              </div>
-              
-              {errors.countries && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.countries}
-                </p>
-              )}
-            </div>
-
-            {/* Interests */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Интересы аудитории
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {INTERESTS.map((interest) => (
-                  <button
-                    key={interest}
-                    type="button"
-                    onClick={() => handleInterestToggle(interest)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
-                      formData.targetAudience.interests.includes(interest)
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {interest}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Age Groups and Gender Split */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Age Groups */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Распределение по возрастным группам (%)
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {AGE_GROUPS.map((ageGroup) => (
-                    <div key={ageGroup}>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {ageGroup} лет
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.targetAudience.ageGroups[ageGroup] || 0}
-                        onChange={(e) => handleAgeGroupChange(ageGroup, parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="mt-2 text-sm text-gray-600">
-                  Общий процент: {getAgeGroupSum()}% / 100%
-                  {getAgeGroupSum() > 100 && (
-                    <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
-                  )}
-                </div>
-                
-                {errors.ageGroups && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.ageGroups}
-                  </p>
-                )}
-              </div>
-
-              {/* Gender Split */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Распределение по полу (%)
-                </label>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Мужчины
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.targetAudience.genderSplit.male}
-                      onChange={(e) => {
-                        const male = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                        const remaining = 100 - male;
-                        const female = Math.min(remaining, formData.targetAudience.genderSplit.female);
-                        const other = remaining - female;
-                        
-                        setFormData(prev => ({
-                          ...prev,
-                          targetAudience: {
-                            ...prev.targetAudience,
-                            genderSplit: { male, female, other }
-                          }
-                        }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Женщины
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.targetAudience.genderSplit.female}
-                      onChange={(e) => {
-                        const female = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                        const remaining = 100 - female;
-                        const male = Math.min(remaining, formData.targetAudience.genderSplit.male);
-                        const other = remaining - male;
-                        
-                        setFormData(prev => ({
-                          ...prev,
-                          targetAudience: {
-                            ...prev.targetAudience,
-                            genderSplit: { male, female, other }
-                          }
-                        }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Другое
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.targetAudience.genderSplit.other}
-                      onChange={(e) => {
-                        const other = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                        const remaining = 100 - other;
-                        const male = Math.min(remaining, formData.targetAudience.genderSplit.male);
-                        const female = remaining - male;
-                        
-                        setFormData(prev => ({
-                          ...prev,
-                          targetAudience: {
-                            ...prev.targetAudience,
-                            genderSplit: { male, female, other }
-                          }
-                        }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mt-2 text-sm text-gray-600">
-                  Общий процент: {formData.targetAudience.genderSplit.male + formData.targetAudience.genderSplit.female + formData.targetAudience.genderSplit.other}% / 100%
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Campaign Duration */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Сроки проведения кампании</h3>
@@ -1036,122 +572,6 @@ export function AdvertiserCardModal({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Payment Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Реквизиты для оплаты (опционально)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Банковский счет
-                </label>
-                <input
-                  type="text"
-                  value={formData.paymentInfo.bankAccount}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    paymentInfo: { ...prev.paymentInfo, bankAccount: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="40817810099910004312"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Номер карты
-                </label>
-                <input
-                  type="text"
-                  value={formData.paymentInfo.cardNumber}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    paymentInfo: { ...prev.paymentInfo, cardNumber: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="2202 2020 2020 2020"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PayPal Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.paymentInfo.paypalEmail}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    paymentInfo: { ...prev.paymentInfo, paypalEmail: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="payments@company.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Владелец счета/карты
-                </label>
-                <input
-                  type="text"
-                  value={formData.paymentInfo.accountHolder}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    paymentInfo: { ...prev.paymentInfo, accountHolder: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="ООО Компания"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Blacklisted Categories */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Чёрный список категорий</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Выберите категории товаров/секторов бизнеса, с которыми вы НЕ хотите сотрудничать:
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {INTERESTS.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => handleBlacklistToggle(category)}
-                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
-                    formData.blacklistedCategories.includes(category)
-                      ? 'bg-red-100 border-red-300 text-red-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-            {formData.blacklistedCategories.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm text-gray-600 mb-2">Исключенные категории:</p>
-                <div className="flex flex-wrap gap-1">
-                  {formData.blacklistedCategories.map((category, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs"
-                    >
-                      {category}
-                      <button
-                        type="button"
-                        onClick={() => handleBlacklistToggle(category)}
-                        className="ml-1 text-red-600 hover:text-red-800"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

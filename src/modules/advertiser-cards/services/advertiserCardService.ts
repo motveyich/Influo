@@ -13,10 +13,10 @@ export class AdvertiserCardService {
         company_name: cardData.companyName,
         campaign_title: cardData.campaignTitle,
         campaign_description: cardData.campaignDescription,
+        platform: cardData.platform,
         product_type: cardData.productType,
         budget: cardData.budget,
-        target_audience: cardData.targetAudience,
-        campaign_format: cardData.campaignFormat,
+        service_format: cardData.serviceFormat,
         campaign_duration: cardData.campaignDuration,
         influencer_requirements: cardData.influencerRequirements,
         contact_info: cardData.contactInfo,
@@ -27,9 +27,6 @@ export class AdvertiserCardService {
           successRate: 0
         },
         is_active: true,
-        is_priority: cardData.isPriority || false,
-        priority: cardData.priority || 'medium',
-        application_deadline: cardData.applicationDeadline,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -234,19 +231,6 @@ export class AdvertiserCardService {
           amount: 50000,
           currency: 'RUB'
         },
-        targetAudience: {
-          description: 'Eco-conscious fashion enthusiasts aged 18-35',
-          interests: ['Мода и стиль', 'Экология и устойчивое развитие', 'Образ жизни'],
-          ageRange: [18, 35],
-          ageGroups: { '18-24': 40, '25-34': 50, '35-44': 10 },
-          genderSplit: { male: 30, female: 65, other: 5 },
-          countries: ['Россия', 'Беларусь', 'Казахстан'],
-          topCountries: [
-            { country: 'Россия', percentage: 70 },
-            { country: 'Беларусь', percentage: 20 },
-            { country: 'Казахстан', percentage: 10 }
-          ]
-        },
         serviceFormat: ['Пост', 'Рилс'],
         campaignDuration: {
           startDate: '2024-02-01T00:00:00Z',
@@ -261,11 +245,6 @@ export class AdvertiserCardService {
           email: 'partnerships@ecostyle.com',
           website: 'https://ecostyle.com'
         },
-        paymentInfo: {
-          bankAccount: '40817810099910004312',
-          accountHolder: 'ООО ЭкоСтиль'
-        },
-        blacklistedCategories: ['Алкоголь', 'Табак'],
         campaignStats: {
           completedCampaigns: 12,
           averageRating: 4.6,
@@ -273,9 +252,6 @@ export class AdvertiserCardService {
           successRate: 85
         },
         isActive: true,
-        isPriority: true,
-        priority: 'high',
-        applicationDeadline: '2024-01-25T00:00:00Z',
         createdAt: '2024-01-15T00:00:00Z',
         updatedAt: '2024-01-20T10:30:00Z'
       },
@@ -285,38 +261,25 @@ export class AdvertiserCardService {
         companyName: 'TechWave',
         campaignTitle: 'Wireless Headphones Product Launch',
         campaignDescription: 'Launch campaign for our new premium wireless headphones. Seeking tech reviewers and lifestyle influencers.',
-        productType: 'technology',
+        platform: 'youtube',
         budget: {
-          type: 'fixed',
           amount: 2500,
-          currency: 'USD'
+          currency: 'RUB'
         },
-        targetAudience: {
-          description: 'Tech enthusiasts and music lovers aged 20-45',
-          categories: ['technology', 'music', 'lifestyle'],
-          ageRange: [20, 45],
-          genders: ['male', 'female'],
-          countries: ['US', 'UK', 'DE']
-        },
-        campaignFormat: ['video', 'post', 'unboxing'],
+        serviceFormat: ['Видео', 'Пост'],
         campaignDuration: {
           startDate: '2024-01-20T00:00:00Z',
-          endDate: '2024-02-15T00:00:00Z',
-          isFlexible: false
+          endDate: '2024-02-15T00:00:00Z'
         },
         influencerRequirements: {
-          platforms: ['youtube', 'instagram'],
-          minReach: 5000,
-          maxReach: 200000,
-          contentThemes: ['technology', 'reviews', 'unboxing'],
-          engagementRate: 2.5,
-          locations: ['US', 'UK', 'DE']
+          minFollowers: 5000,
+          maxFollowers: 200000,
+          minEngagementRate: 2.5
         },
         contactInfo: {
           email: 'marketing@techwave.com',
           phone: '+1-555-0123',
-          website: 'https://techwave.com',
-          preferredContact: 'email'
+          website: 'https://techwave.com'
         },
         campaignStats: {
           completedCampaigns: 8,
@@ -324,6 +287,7 @@ export class AdvertiserCardService {
           totalInfluencersWorked: 28,
           successRate: 78
         },
+        isActive: true,
         createdAt: '2024-01-10T00:00:00Z',
         updatedAt: '2024-01-18T14:20:00Z'
       }
