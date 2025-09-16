@@ -99,49 +99,54 @@ export class HomeService {
   async getTopInfluencers(): Promise<TopUser[]> {
     try {
       // Получаем топ инфлюенсеров из базы данных
-      const { data, error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select(`
-          user_id,
-          full_name,
-          avatar,
-          user_type
-        `)
-        .eq('user_type', 'influencer')
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from(TABLES.USER_PROFILES)
+          .select(`
+            user_id,
+            full_name,
+            avatar,
+            user_type
+          `)
+          .eq('user_type', 'influencer')
+          .limit(5);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Дополняем данными из карточек инфлюенсеров
-      const influencersWithStats = await Promise.all(
-        data.map(async (user) => {
-          const { data: cards } = await supabase
-            .from(TABLES.INFLUENCER_CARDS)
-            .select('rating, completed_campaigns, reach')
-            .eq('user_id', user.user_id);
+        // Дополняем данными из карточек инфлюенсеров
+        const influencersWithStats = await Promise.all(
+          data.map(async (user) => {
+            const { data: cards } = await supabase
+              .from(TABLES.INFLUENCER_CARDS)
+              .select('rating, completed_campaigns, reach')
+              .eq('user_id', user.user_id);
 
-          const totalRating = cards?.reduce((sum, card) => sum + (card.rating || 0), 0) || 0;
-          const totalCampaigns = cards?.reduce((sum, card) => sum + (card.completed_campaigns || 0), 0) || 0;
-          const totalReach = cards?.reduce((sum, card) => sum + (card.reach?.followers || 0), 0) || 0;
-          const avgRating = cards?.length ? totalRating / cards.length : 0;
+            const totalRating = cards?.reduce((sum, card) => sum + (card.rating || 0), 0) || 0;
+            const totalCampaigns = cards?.reduce((sum, card) => sum + (card.completed_campaigns || 0), 0) || 0;
+            const totalReach = cards?.reduce((sum, card) => sum + (card.reach?.followers || 0), 0) || 0;
+            const avgRating = cards?.length ? totalRating / cards.length : 0;
 
-          return {
-            id: user.user_id,
-            name: user.full_name || 'Пользователь',
-            avatar: user.avatar,
-            userType: 'influencer' as const,
-            rating: avgRating,
-            completedDeals: totalCampaigns,
-            totalReach: totalReach,
-            successRate: totalCampaigns > 0 ? Math.min(95, 70 + Math.random() * 25) : 0
-          };
-        })
-      );
+            return {
+              id: user.user_id,
+              name: user.full_name || 'Пользователь',
+              avatar: user.avatar,
+              userType: 'influencer' as const,
+              rating: avgRating,
+              completedDeals: totalCampaigns,
+              totalReach: totalReach,
+              successRate: totalCampaigns > 0 ? Math.min(95, 70 + Math.random() * 25) : 0
+            };
+          })
+        );
 
-      // Сортируем по рейтингу и количеству сделок
-      return influencersWithStats
-        .sort((a, b) => (b.rating * b.completedDeals) - (a.rating * a.completedDeals))
-        .slice(0, 5);
+        // Сортируем по рейтингу и количеству сделок
+        return influencersWithStats
+          .sort((a, b) => (b.rating * b.completedDeals) - (a.rating * a.completedDeals))
+          .slice(0, 5);
+      } catch (dbError) {
+        console.warn('Database query failed, using mock data:', dbError);
+        return this.getMockTopInfluencers();
+      }
     } catch (error) {
       console.error('Failed to fetch top influencers:', error);
       return this.getMockTopInfluencers();
@@ -151,47 +156,52 @@ export class HomeService {
   async getTopAdvertisers(): Promise<TopUser[]> {
     try {
       // Получаем топ рекламодателей из базы данных
-      const { data, error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select(`
-          user_id,
-          full_name,
-          avatar,
-          user_type
-        `)
-        .eq('user_type', 'advertiser')
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from(TABLES.USER_PROFILES)
+          .select(`
+            user_id,
+            full_name,
+            avatar,
+            user_type
+          `)
+          .eq('user_type', 'advertiser')
+          .limit(5);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Дополняем данными из кампаний
-      const advertisersWithStats = await Promise.all(
-        data.map(async (user) => {
-          const { data: campaigns } = await supabase
-            .from(TABLES.CAMPAIGNS)
-            .select('status, metrics')
-            .eq('advertiser_id', user.user_id);
+        // Дополняем данными из кампаний
+        const advertisersWithStats = await Promise.all(
+          data.map(async (user) => {
+            const { data: campaigns } = await supabase
+              .from(TABLES.CAMPAIGNS)
+              .select('status, metrics')
+              .eq('advertiser_id', user.user_id);
 
-          const totalCampaigns = campaigns?.length || 0;
-          const completedCampaigns = campaigns?.filter(c => c.status === 'completed').length || 0;
-          const successRate = totalCampaigns > 0 ? (completedCampaigns / totalCampaigns) * 100 : 0;
+            const totalCampaigns = campaigns?.length || 0;
+            const completedCampaigns = campaigns?.filter(c => c.status === 'completed').length || 0;
+            const successRate = totalCampaigns > 0 ? (completedCampaigns / totalCampaigns) * 100 : 0;
 
-          return {
-            id: user.user_id,
-            name: user.full_name || 'Пользователь',
-            avatar: user.avatar,
-            userType: 'advertiser' as const,
-            rating: Math.min(5, 3.5 + Math.random() * 1.5), // Моковый рейтинг
-            completedDeals: completedCampaigns,
-            successRate: Math.round(successRate)
-          };
-        })
-      );
+            return {
+              id: user.user_id,
+              name: user.full_name || 'Пользователь',
+              avatar: user.avatar,
+              userType: 'advertiser' as const,
+              rating: Math.min(5, 3.5 + Math.random() * 1.5), // Моковый рейтинг
+              completedDeals: completedCampaigns,
+              successRate: Math.round(successRate)
+            };
+          })
+        );
 
-      // Сортируем по количеству завершенных кампаний и рейтингу
-      return advertisersWithStats
-        .sort((a, b) => (b.completedDeals * b.rating) - (a.completedDeals * a.rating))
-        .slice(0, 5);
+        // Сортируем по количеству завершенных кампаний и рейтингу
+        return advertisersWithStats
+          .sort((a, b) => (b.completedDeals * b.rating) - (a.completedDeals * a.rating))
+          .slice(0, 5);
+      } catch (dbError) {
+        console.warn('Database query failed, using mock data:', dbError);
+        return this.getMockTopAdvertisers();
+      }
     } catch (error) {
       console.error('Failed to fetch top advertisers:', error);
       return this.getMockTopAdvertisers();
