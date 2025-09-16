@@ -361,6 +361,11 @@ export class HomeService {
         publishedAt: campaign.created_at
       }));
     } catch (error) {
+      // Handle network/connection errors specifically
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed when fetching recent campaigns, using empty array');
+        return [];
+      }
       console.error('Failed to fetch recent campaigns:', error);
       return [];
     }
@@ -385,6 +390,11 @@ export class HomeService {
         publishedAt: user.created_at
       }));
     } catch (error) {
+      // Handle network/connection errors specifically
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed when fetching achievements, using empty array');
+        return [];
+      }
       console.error('Failed to fetch achievements:', error);
       return [];
     }
