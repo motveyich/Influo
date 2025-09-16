@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { InfluencerCard } from '../../../core/types';
-import { AdvertiserCard } from '../../../core/types';
 import { InfluencerCardDisplay } from './InfluencerCardDisplay';
 import { CardTypeSelectionModal } from './CardTypeSelectionModal';
-import { AdvertiserCardDisplay } from '../../advertiser-cards/components/AdvertiserCardDisplay';
 import { InfluencerCardModal } from './InfluencerCardModal';
-import { AdvertiserCardModal } from '../../advertiser-cards/components/AdvertiserCardModal';
 import { influencerCardService } from '../services/influencerCardService';
 import { isSupabaseConfigured } from '../../../core/supabase';
-import { advertiserCardService } from '../../advertiser-cards/services/advertiserCardService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -19,36 +15,26 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
 
-type ActiveTab = 'influencers' | 'advertisers' | 'my_cards' | 'favorites';
+type TabType = 'influencers' | 'my_cards' | 'favorites';
 
 export function InfluencerCardsPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('influencers');
-  const [cards, setCards] = useState<InfluencerCard[]>([]);
-  const [advertiserCards, setAdvertiserCards] = useState<AdvertiserCard[]>([]);
-  const [favoriteCards, setFavoriteCards] = useState<InfluencerCard[]>([]);
-  const [favoriteAdvertiserCards, setFavoriteAdvertiserCards] = useState<AdvertiserCard[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('influencers');
+  const [influencerCards, setInfluencerCards] = useState<InfluencerCard[]>([]);
   const [myInfluencerCards, setMyInfluencerCards] = useState<InfluencerCard[]>([]);
-  const [myAdvertiserCards, setMyAdvertiserCards] = useState<AdvertiserCard[]>([]);
+  const [favoriteCards, setFavoriteCards] = useState<any[]>([]);
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
-  const [selectedProductType, setSelectedProductType] = useState<string>('all');
-  const [minFollowers, setMinFollowers] = useState<string>('');
-  const [maxFollowers, setMaxFollowers] = useState<string>('');
-  const [minBudget, setMinBudget] = useState<string>('');
-  const [maxBudget, setMaxBudget] = useState<string>('');
-  const [selectedCampaignFormat, setSelectedCampaignFormat] = useState<string>('all');
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
+  const [minFollowersFilter, setMinFollowersFilter] = useState<string>('');
+  const [maxFollowersFilter, setMaxFollowersFilter] = useState<string>('');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [showAdvertiserModal, setShowAdvertiserModal] = useState(false);
+  const [showInfluencerModal, setShowInfluencerModal] = useState(false);
   const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
-  const [editingCard, setEditingCard] = useState<InfluencerCard | null>(null);
-  const [editingAdvertiserCard, setEditingAdvertiserCard] = useState<AdvertiserCard | null>(null);
+  const [editingInfluencerCard, setEditingInfluencerCard] = useState<InfluencerCard | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -56,27 +42,19 @@ export function InfluencerCardsPage() {
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
   const platforms = ['all', 'instagram', 'youtube', 'twitter', 'tiktok', 'multi'];
-  const productTypes = ['all', 'fashion', 'technology', 'food', 'travel', 'fitness', 'lifestyle', 'automotive', 'finance', 'education', 'other'];
-  const campaignFormats = ['all', 'post', 'story', 'reel', 'video', 'live', 'unboxing', 'review', 'tutorial', 'integration'];
-  const priorities = ['all', 'low', 'medium', 'high'];
   const countries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France'];
 
   // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
-    setSelectedPlatform('all');
-    setSelectedProductType('all');
-    setMinFollowers('');
-    setMaxFollowers('');
-    setMinBudget('');
-    setMaxBudget('');
-    setSelectedCampaignFormat('all');
-    setSelectedPriority('all');
+    setPlatformFilter('all');
+    setMinFollowersFilter('');
+    setMaxFollowersFilter('');
     setSelectedCountries([]);
   };
 
   // Handle tab change with filter reset
-  const handleTabChange = (tab: ActiveTab) => {
+  const handleTabChange = (tab: TabType) => {
     console.log('Switching to tab:', tab);
     setActiveTab(tab);
     clearFilters();
@@ -85,9 +63,9 @@ export function InfluencerCardsPage() {
   // Main data loading effect
   useEffect(() => {
     if (currentUserId && !loading) {
-      loadDataForActiveTab();
+      loadData();
     }
-  }, [currentUserId, loading, activeTab, searchQuery, selectedPlatform, selectedProductType, minFollowers, maxFollowers, minBudget, maxBudget, selectedCampaignFormat, selectedPriority, selectedCountries]);
+  }, [currentUserId, loading, activeTab, searchQuery, platformFilter, minFollowersFilter, maxFollowersFilter, selectedCountries]);
 
   // Listen for favorites changes
   useEffect(() => {
@@ -104,134 +82,30 @@ export function InfluencerCardsPage() {
     };
   }, [activeTab]);
 
-  const loadDataForActiveTab = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
       
-      switch (activeTab) {
-        case 'influencers':
-          await loadInfluencerCards();
-          break;
-        case 'advertisers':
-          await loadAdvertiserCards();
-          break;
-        case 'my_cards':
-          await loadMyCards();
-          break;
-        case 'favorites':
-          await loadFavorites();
-          break;
+      if (activeTab === 'influencers') {
+        const cards = await influencerCardService.getAllCards({
+          platform: platformFilter !== 'all' ? platformFilter : undefined,
+          minFollowers: minFollowersFilter || undefined,
+          maxFollowers: maxFollowersFilter || undefined,
+          isActive: true
+        });
+        setInfluencerCards(cards);
+      } else if (activeTab === 'my_cards') {
+        const [influencerCards] = await Promise.all([
+          influencerCardService.getUserCards(currentUserId)
+        ]);
+        setMyInfluencerCards(influencerCards);
+      } else if (activeTab === 'favorites') {
+        await loadFavorites();
       }
     } catch (error) {
-      console.error('Failed to load data for active tab:', error);
+      console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadInfluencerCards = async () => {
-    try {
-      const filters: any = { isActive: true };
-      
-      if (selectedPlatform !== 'all') {
-        filters.platform = selectedPlatform;
-      }
-      
-      if (minFollowers) {
-        filters.minFollowers = parseInt(minFollowers);
-      }
-      
-      if (maxFollowers) {
-        filters.maxFollowers = parseInt(maxFollowers);
-      }
-      
-      if (selectedCountries.length > 0) {
-        filters.countries = selectedCountries;
-      }
-
-      let loadedCards = await influencerCardService.getAllCards(filters);
-      
-      // Apply search filter
-      if (searchQuery) {
-        loadedCards = loadedCards.filter(card =>
-          card.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          card.serviceDetails.contentTypes.some(type => 
-            type.toLowerCase().includes(searchQuery.toLowerCase())
-          ) ||
-          card.audienceDemographics.interests.some(interest =>
-            interest.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
-      }
-      
-      setCards(loadedCards);
-    } catch (error) {
-      console.error('Failed to load influencer cards:', error);
-      toast.error(t('influencerCards.errors.loadFailed'));
-      setCards([]);
-    }
-  };
-
-  const loadAdvertiserCards = async () => {
-    try {
-      const filters: any = { isActive: true };
-      
-      if (selectedProductType !== 'all') {
-        filters.productType = selectedProductType;
-      }
-      
-      if (minBudget) {
-        filters.minBudget = parseInt(minBudget);
-      }
-      
-      if (maxBudget) {
-        filters.maxBudget = parseInt(maxBudget);
-      }
-      
-      if (selectedCampaignFormat !== 'all') {
-        filters.campaignFormat = selectedCampaignFormat;
-      }
-      
-      if (selectedPriority !== 'all') {
-        filters.priority = selectedPriority;
-      }
-      
-      if (selectedCountries.length > 0) {
-        filters.countries = selectedCountries;
-      }
-
-      let loadedCards = await advertiserCardService.getAllCards(filters);
-      
-      // Apply search filter
-      if (searchQuery) {
-        loadedCards = loadedCards.filter(card =>
-          card.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          card.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          card.campaignDescription.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
-      setAdvertiserCards(loadedCards);
-    } catch (error) {
-      console.error('Failed to load advertiser cards:', error);
-      toast.error('Не удалось загрузить карточки рекламодателей');
-      setAdvertiserCards([]);
-    }
-  };
-
-  const loadMyCards = async () => {
-    try {
-      const [myInfluencerCardsData, myAdvertiserCardsData] = await Promise.all([
-        influencerCardService.getUserCards(currentUserId),
-        advertiserCardService.getUserCards(currentUserId)
-      ]);
-      
-      setMyInfluencerCards(myInfluencerCardsData);
-      setMyAdvertiserCards(myAdvertiserCardsData);
-    } catch (error) {
-      console.error('Failed to load my cards:', error);
-      setMyInfluencerCards([]);
-      setMyAdvertiserCards([]);
     }
   };
 
@@ -240,38 +114,23 @@ export function InfluencerCardsPage() {
       if (!isSupabaseConfigured()) {
         console.warn('Supabase not configured, skipping favorites loading');
         setFavoriteCards([]);
-        setFavoriteAdvertiserCards([]);
         return;
       }
       
       const favorites = await favoriteService.getUserFavorites(currentUserId);
-      
       const influencerFavorites = favorites.filter(fav => fav.targetType === 'influencer_card');
-      const advertiserFavorites = favorites.filter(fav => fav.targetType === 'advertiser_card');
       
-      const influencerCardPromises = influencerFavorites.map(async (fav) => {
+      const cardPromises = influencerFavorites.map(async (fav) => {
         try {
           return await influencerCardService.getCard(fav.targetId);
         } catch (error) {
-          console.error('Failed to load favorite influencer card:', error);
+          console.error('Failed to load favorite card:', error);
           return null;
         }
       });
       
-      const advertiserCardPromises = advertiserFavorites.map(async (fav) => {
-        try {
-          return await advertiserCardService.getCard(fav.targetId);
-        } catch (error) {
-          console.error('Failed to load favorite advertiser card:', error);
-          return null;
-        }
-      });
-      
-      const loadedInfluencerCards = (await Promise.all(influencerCardPromises)).filter(Boolean) as InfluencerCard[];
-      const loadedAdvertiserCards = (await Promise.all(advertiserCardPromises)).filter(Boolean) as AdvertiserCard[];
-      
-      setFavoriteCards(loadedInfluencerCards);
-      setFavoriteAdvertiserCards(loadedAdvertiserCards);
+      const loadedCards = (await Promise.all(cardPromises)).filter(Boolean) as InfluencerCard[];
+      setFavoriteCards(loadedCards);
     } catch (error) {
       console.error('Failed to load favorites:', error);
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -280,133 +139,58 @@ export function InfluencerCardsPage() {
         toast.error('Не удалось загрузить избранные карточки');
       }
       setFavoriteCards([]);
-      setFavoriteAdvertiserCards([]);
     }
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     analytics.trackSearch(query, {
-      platform: activeTab === 'advertisers' ? selectedProductType : selectedPlatform,
-      section: activeTab === 'advertisers' ? 'advertiser_cards' : 'influencer_cards'
+      platform: platformFilter,
+      section: 'influencer_cards'
     });
   };
 
   const handleCreateCard = () => {
-    if (!currentUserProfile?.profileCompletion.basicInfo) {
-      toast.error('Заполните основную информацию профиля для создания карточек');
-      return;
-    }
-    setShowTypeSelectionModal(true);
+    setShowInfluencerModal(true);
   };
 
-  const handleCardTypeSelected = (type: 'influencer' | 'advertiser') => {
-    setShowTypeSelectionModal(false);
-    
-    if (type === 'influencer') {
-      setEditingCard(null);
-      setShowModal(true);
+  const handleInfluencerCardSaved = (card: InfluencerCard) => {
+    if (editingInfluencerCard) {
+      setMyInfluencerCards(prev => prev.map(c => c.id === card.id ? card : c));
     } else {
-      setEditingAdvertiserCard(null);
-      setShowAdvertiserModal(true);
+      setMyInfluencerCards(prev => [card, ...prev]);
     }
+    setEditingInfluencerCard(null);
   };
 
-  const handleEditCard = (card: InfluencerCard) => {
-    setEditingCard(card);
-    setShowModal(true);
+  const handleEditInfluencerCard = (card: InfluencerCard) => {
+    setEditingInfluencerCard(card);
+    setShowInfluencerModal(true);
   };
 
-  const handleEditAdvertiserCard = (card: AdvertiserCard) => {
-    setEditingAdvertiserCard(card);
-    setShowAdvertiserModal(true);
-  };
-
-  const handleDeleteCard = async (cardId: string) => {
-    if (!confirm('Are you sure you want to delete this card?')) return;
-
-    try {
-      await influencerCardService.deleteCard(cardId);
-      setCards(prev => prev.filter(card => card.id !== cardId));
-      setMyInfluencerCards(prev => prev.filter(card => card.id !== cardId));
-      toast.success(t('influencerCards.success.deleted'));
-    } catch (error) {
-      console.error('Failed to delete card:', error);
-      toast.error(t('influencerCards.errors.deleteFailed'));
-    }
-  };
-
-  const handleDeleteAdvertiserCard = async (cardId: string) => {
+  const handleDeleteInfluencerCard = async (cardId: string) => {
     if (!confirm('Вы уверены, что хотите удалить эту карточку?')) return;
 
     try {
-      await advertiserCardService.deleteCard(cardId);
-      setAdvertiserCards(prev => prev.filter(card => card.id !== cardId));
-      setMyAdvertiserCards(prev => prev.filter(card => card.id !== cardId));
-      toast.success('Карточка рекламодателя удалена успешно');
+      await influencerCardService.deleteCard(cardId);
+      setMyInfluencerCards(prev => prev.filter(c => c.id !== cardId));
+      toast.success('Карточка инфлюенсера удалена');
     } catch (error) {
-      console.error('Failed to delete advertiser card:', error);
-      toast.error('Не удалось удалить карточку рекламодателя');
+      console.error('Failed to delete influencer card:', error);
+      toast.error('Не удалось удалить карточку');
     }
   };
 
-  const handleToggleStatus = async (cardId: string, isActive: boolean) => {
+  const handleToggleInfluencerCardStatus = async (cardId: string, isActive: boolean) => {
     try {
-      const updatedCard = await influencerCardService.toggleCardStatus(cardId, isActive);
-      setCards(prev => prev.map(card => 
-        card.id === cardId ? updatedCard : card
+      await influencerCardService.toggleCardStatus(cardId, isActive);
+      setMyInfluencerCards(prev => prev.map(c => 
+        c.id === cardId ? { ...c, isActive } : c
       ));
-      setMyInfluencerCards(prev => prev.map(card => 
-        card.id === cardId ? updatedCard : card
-      ));
-      toast.success(isActive ? t('influencerCards.success.activated') : t('influencerCards.success.deactivated'));
+      toast.success(isActive ? 'Карточка активирована' : 'Карточка деактивирована');
     } catch (error) {
-      console.error('Failed to toggle card status:', error);
-      toast.error(t('influencerCards.errors.toggleFailed'));
-    }
-  };
-
-  const handleToggleAdvertiserStatus = async (cardId: string, isActive: boolean) => {
-    try {
-      const updatedCard = await advertiserCardService.toggleCardStatus(cardId, isActive);
-      setAdvertiserCards(prev => prev.map(card => 
-        card.id === cardId ? updatedCard : card
-      ));
-      setMyAdvertiserCards(prev => prev.map(card => 
-        card.id === cardId ? updatedCard : card
-      ));
-      toast.success(isActive ? 'Карточка активирована успешно' : 'Карточка деактивирована успешно');
-    } catch (error) {
-      console.error('Failed to toggle advertiser card status:', error);
-      toast.error('Не удалось обновить статус карточки');
-    }
-  };
-
-  const handleCardSaved = (savedCard: InfluencerCard) => {
-    if (editingCard) {
-      setCards(prev => prev.map(card => 
-        card.id === savedCard.id ? savedCard : card
-      ));
-      setMyInfluencerCards(prev => prev.map(card => 
-        card.id === savedCard.id ? savedCard : card
-      ));
-    } else {
-      setCards(prev => [savedCard, ...prev]);
-      setMyInfluencerCards(prev => [savedCard, ...prev]);
-    }
-  };
-
-  const handleAdvertiserCardSaved = (savedCard: AdvertiserCard) => {
-    if (editingAdvertiserCard) {
-      setAdvertiserCards(prev => prev.map(card => 
-        card.id === savedCard.id ? savedCard : card
-      ));
-      setMyAdvertiserCards(prev => prev.map(card => 
-        card.id === savedCard.id ? savedCard : card
-      ));
-    } else {
-      setAdvertiserCards(prev => [savedCard, ...prev]);
-      setMyAdvertiserCards(prev => [savedCard, ...prev]);
+      console.error('Failed to toggle influencer card status:', error);
+      toast.error('Не удалось изменить статус карточки');
     }
   };
 
@@ -436,116 +220,54 @@ export function InfluencerCardsPage() {
     }
   };
 
-  // Get current cards based on active tab
-  const getCurrentCards = () => {
-    switch (activeTab) {
-      case 'influencers':
-        return cards.filter(card => card.userId !== currentUserId);
-      case 'advertisers':
-        return advertiserCards.filter(card => card.userId !== currentUserId);
-      case 'my_cards':
-        return [...myInfluencerCards, ...myAdvertiserCards];
-      case 'favorites':
-        return [...favoriteCards, ...favoriteAdvertiserCards];
-      default:
-        return [];
+  const matchesFilters = (card: InfluencerCard) => {
+    if (searchQuery && !card.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !card.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        !card.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))) {
+      return false;
     }
+    
+    if (platformFilter !== 'all' && card.platform !== platformFilter) {
+      return false;
+    }
+    
+    if (minFollowersFilter && card.audienceDemographics.totalFollowers < parseInt(minFollowersFilter)) {
+      return false;
+    }
+    
+    if (maxFollowersFilter && card.audienceDemographics.totalFollowers > parseInt(maxFollowersFilter)) {
+      return false;
+    }
+    
+    if (selectedCountries.length > 0 && !selectedCountries.some(country => 
+      card.audienceDemographics.topCountries.includes(country))) {
+      return false;
+    }
+    
+    return true;
   };
 
-  // Get stats based on active tab
-  const getStats = () => {
-    switch (activeTab) {
-      case 'influencers':
-        return {
-          total: cards.length,
-          active: cards.filter(c => c.isActive).length,
-          avgRating: cards.length > 0 ? cards.reduce((sum, c) => sum + c.rating, 0) / cards.length : 0,
-          totalCampaigns: cards.reduce((sum, c) => sum + c.completedCampaigns, 0)
-        };
-      case 'advertisers':
-        return {
-          total: advertiserCards.length,
-          active: advertiserCards.filter(c => c.isActive).length,
-          avgRating: advertiserCards.length > 0 ? advertiserCards.reduce((sum, c) => sum + (c.campaignStats?.averageRating || 0), 0) / advertiserCards.length : 0,
-          totalCampaigns: advertiserCards.reduce((sum, c) => sum + (c.campaignStats?.completedCampaigns || 0), 0)
-        };
-      case 'my_cards':
-        const totalMyCards = myInfluencerCards.length + myAdvertiserCards.length;
-        const activeMyCards = myInfluencerCards.filter(c => c.isActive).length + myAdvertiserCards.filter(c => c.isActive).length;
-        const avgMyRating = totalMyCards > 0 ? 
-          (myInfluencerCards.reduce((sum, c) => sum + c.rating, 0) + myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.averageRating || 0), 0)) / totalMyCards : 0;
-        const totalMyCampaigns = myInfluencerCards.reduce((sum, c) => sum + c.completedCampaigns, 0) + myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.completedCampaigns || 0), 0);
-        
-        return {
-          total: totalMyCards,
-          active: activeMyCards,
-          avgRating: avgMyRating,
-          totalCampaigns: totalMyCampaigns
-        };
-      case 'favorites':
-        const totalFavorites = favoriteCards.length + favoriteAdvertiserCards.length;
-        const activeFavorites = favoriteCards.filter(c => c.isActive).length + favoriteAdvertiserCards.filter(c => c.isActive).length;
-        const avgFavoriteRating = totalFavorites > 0 ? 
-          (favoriteCards.reduce((sum, c) => sum + c.rating, 0) + favoriteAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.averageRating || 0), 0)) / totalFavorites : 0;
-        const totalFavoriteCampaigns = favoriteCards.reduce((sum, c) => sum + c.completedCampaigns, 0) + favoriteAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.completedCampaigns || 0), 0);
-        
-        return {
-          total: totalFavorites,
-          active: activeFavorites,
-          avgRating: avgFavoriteRating,
-          totalCampaigns: totalFavoriteCampaigns
-        };
-      default:
-        return { total: 0, active: 0, avgRating: 0, totalCampaigns: 0 };
+  const getFilteredData = () => {
+    if (activeTab === 'influencers') {
+      return influencerCards.filter(card => matchesFilters(card));
+    } else if (activeTab === 'my_cards') {
+      return myInfluencerCards.filter(card => matchesFilters(card));
+    } else if (activeTab === 'favorites') {
+      return favoriteCards.filter(card => matchesFilters(card));
     }
+    return [];
   };
 
-  const stats = getStats();
-
-  // Check if user has access to current tab
-  const hasAccessToCurrentTab = () => {
-    switch (activeTab) {
-      case 'influencers':
-        return currentUserProfile?.profileCompletion.advertiserSetup;
-      case 'advertisers':
-        return currentUserProfile?.profileCompletion.influencerSetup;
-      case 'my_cards':
-      case 'favorites':
-        return currentUserProfile?.profileCompletion.basicInfo;
-      default:
-        return false;
-    }
+  const influencerStats = {
+    total: myInfluencerCards.length,
+    active: myInfluencerCards.filter(c => c.isActive).length,
+    avgRating: myInfluencerCards.length > 0 
+      ? myInfluencerCards.reduce((sum, c) => sum + c.rating, 0) / myInfluencerCards.length 
+      : 0,
+    campaigns: myInfluencerCards.reduce((sum, c) => sum + c.completedCampaigns, 0)
   };
 
-  const getTabTitle = () => {
-    switch (activeTab) {
-      case 'influencers':
-        return 'Карточки инфлюенсеров';
-      case 'advertisers':
-        return 'Карточки рекламодателей';
-      case 'my_cards':
-        return 'Мои карточки';
-      case 'favorites':
-        return 'Избранное';
-      default:
-        return 'Карточки';
-    }
-  };
-
-  const getTabSubtitle = () => {
-    switch (activeTab) {
-      case 'influencers':
-        return 'Откройте для себя талантливых инфлюенсеров для вашей следующей кампании';
-      case 'advertisers':
-        return 'Найдите подходящие кампании от рекламодателей';
-      case 'my_cards':
-        return 'Управляйте вашими карточками и отслеживайте их эффективность';
-      case 'favorites':
-        return 'Ваши избранные карточки для быстрого доступа';
-      default:
-        return '';
-    }
-  };
+  const filteredData = getFilteredData();
 
   return (
     <FeatureGate
@@ -579,109 +301,185 @@ export function InfluencerCardsPage() {
         
         {/* Section Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="flex border-b border-gray-200">
-            {/* Influencers Tab */}
+          <div className="flex">
             <button
-              onClick={() => {
-                if (!currentUserProfile?.profileCompletion.advertiserSetup) {
-                  toast.error('Заполните раздел "Рекламодатель" для просмотра карточек инфлюенсеров');
-                  return;
-                }
-                handleTabChange('influencers');
-              }}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              onClick={() => handleTabChange('influencers')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'influencers'
-                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900'
-              } ${!currentUserProfile?.profileCompletion.advertiserSetup ? 'opacity-50' : ''}`}
+                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Users className="w-4 h-4" />
                 <span>Инфлюенсеры</span>
-                {!currentUserProfile?.profileCompletion.advertiserSetup && (
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Требует настройку</span>
-                )}
               </div>
             </button>
-            
-            {/* Advertisers Tab */}
-            <button
-              onClick={() => {
-                if (!currentUserProfile?.profileCompletion.influencerSetup) {
-                  toast.error('Заполните раздел "Инфлюенсер" для просмотра карточек рекламодателей');
-                  return;
-                }
-                handleTabChange('advertisers');
-              }}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'advertisers'
-                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900'
-              } ${!currentUserProfile?.profileCompletion.influencerSetup ? 'opacity-50' : ''}`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <Target className="w-4 h-4" />
-                <span>Рекламодатели</span>
-                {!currentUserProfile?.profileCompletion.influencerSetup && (
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Требует настройку</span>
-                )}
-              </div>
-            </button>
-            
-            {/* My Cards Tab */}
+
             <button
               onClick={() => handleTabChange('my_cards')}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'my_cards'
-                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Grid className="w-4 h-4" />
                 <span>Мои карточки</span>
-                {(myInfluencerCards.length > 0 || myAdvertiserCards.length > 0) && (
-                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
-                    {myInfluencerCards.length + myAdvertiserCards.length}
+                {myInfluencerCards.length > 0 && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    activeTab === 'my_cards'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {myInfluencerCards.length}
                   </span>
                 )}
               </div>
             </button>
             
-            {/* Favorites Tab */}
             <button
               onClick={() => handleTabChange('favorites')}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'favorites'
-                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Heart className="w-4 h-4" />
                 <span>Избранное</span>
-                {(favoriteCards.length > 0 || favoriteAdvertiserCards.length > 0) && (
-                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
-                    {favoriteCards.length + favoriteAdvertiserCards.length}
+                {favoriteCards.length > 0 && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    activeTab === 'favorites'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {favoriteCards.length}
                   </span>
                 )}
               </div>
             </button>
           </div>
           
-          <div className="p-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {getTabTitle()}
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {getTabSubtitle()}
-                </p>
+          {/* Stats */}
+          <div className="p-6 border-b border-gray-200">
+            {activeTab === 'my_cards' && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <Grid className="w-5 h-5 text-purple-600" />
+                    <span className="ml-2 text-sm font-medium text-gray-600">Всего карточек</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <span className="ml-2 text-sm font-medium text-gray-600">Активные</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active}</p>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <Star className="w-5 h-5 text-yellow-600" />
+                    <span className="ml-2 text-sm font-medium text-gray-600">Средний рейтинг</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.avgRating.toFixed(1)}</p>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <Trophy className="w-5 h-5 text-blue-600" />
+                    <span className="ml-2 text-sm font-medium text-gray-600">Кампании</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.campaigns}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Filters */}
+          {activeTab === 'influencers' && (
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Поиск по описанию, типам контента, интересам..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <select
+                  value={platformFilter}
+                  onChange={(e) => setPlatformFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  {platforms.map(platform => (
+                    <option key={platform} value={platform}>
+                      {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                
+                <input
+                  type="number"
+                  placeholder="Мин. подписчиков"
+                  value={minFollowersFilter}
+                  onChange={(e) => setMinFollowersFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                />
+                
+                <input
+                  type="number"
+                  placeholder="Макс. подписчиков"
+                  value={maxFollowersFilter}
+                  onChange={(e) => setMaxFollowersFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                />
+                
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Очистить
+                </button>
               </div>
               
-              {/* Bulk Actions for Favorites */}
-              {activeTab === 'favorites' && favoriteCards.length > 0 && (
+              {/* Country Filters */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
+                <div className="flex flex-wrap gap-2">
+                  {countries.map(country => (
+                    <button
+                      key={country}
+                      onClick={() => handleCountryToggle(country)}
+                      className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                        selectedCountries.includes(country)
+                          ? 'bg-purple-100 border-purple-300 text-purple-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Bulk Actions for Favorites */}
+          {activeTab === 'favorites' && favoriteCards.length > 0 && (
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Избранные карточки</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={handleBulkApplications}
@@ -697,315 +495,22 @@ export function InfluencerCardsPage() {
                     Обновить
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Show content only if user has access */}
-        {hasAccessToCurrentTab() ? (
-          <>
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex items-center">
-                  <Grid className="w-5 h-5 text-purple-600" />
-                  <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeTab === 'my_cards' ? 'Мои карточки' :
-                     activeTab === 'favorites' ? 'В избранном' : 
-                     activeTab === 'advertisers' ? 'Всего карточек' : t('influencerCards.stats.totalCards')}
-                  </span>
-                </div>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {stats.total}
-                </p>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex items-center">
-                  <TrendingUp className="w-5 h-5 text-green-600" />
-                  <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeTab === 'my_cards' ? 'Активные' :
-                     activeTab === 'favorites' ? 'Активные' : 
-                     activeTab === 'advertisers' ? 'Активные' : t('influencerCards.stats.active')}
-                  </span>
-                </div>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {stats.active}
-                </p>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex items-center">
-                  <Star className="w-5 h-5 text-yellow-600" />
-                  <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeTab === 'my_cards' ? 'Средний рейтинг' :
-                     activeTab === 'favorites' ? 'Средний рейтинг' : 
-                     activeTab === 'advertisers' ? 'Средний рейтинг' : t('influencerCards.stats.avgRating')}
-                  </span>
-                </div>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {stats.avgRating.toFixed(1)}
-                </p>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex items-center">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <span className="ml-2 text-sm font-medium text-gray-600">
-                    {activeTab === 'my_cards' ? 'Кампании' :
-                     activeTab === 'favorites' ? 'Кампании' : 
-                     activeTab === 'advertisers' ? 'Кампании' : t('influencerCards.stats.campaigns')}
-                  </span>
-                </div>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {stats.totalCampaigns}
-                </p>
               </div>
             </div>
-
-            {/* Search and Filters - Hide for favorites and my cards */}
-            {activeTab !== 'favorites' && activeTab !== 'my_cards' && (
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <div className="space-y-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder={activeTab === 'advertisers' ? "Поиск по названию компании, кампании, описанию..." : "Поиск по описанию, типам контента, интересам..."}
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Filters - Different for each section */}
-                  {activeTab === 'advertisers' ? (
-                    /* Advertiser Filters */
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Product Type Filter */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Тип продукта</label>
-                          <select
-                            value={selectedProductType}
-                            onChange={(e) => setSelectedProductType(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            {productTypes.map(type => (
-                              <option key={type} value={type}>
-                                {type === 'all' ? 'Все типы' :
-                                 type === 'fashion' ? 'Мода' :
-                                 type === 'technology' ? 'Технологии' :
-                                 type === 'food' ? 'Еда и напитки' :
-                                 type === 'travel' ? 'Путешествия' :
-                                 type === 'fitness' ? 'Фитнес' :
-                                 type === 'lifestyle' ? 'Образ жизни' :
-                                 type === 'automotive' ? 'Автомобили' :
-                                 type === 'finance' ? 'Финансы' :
-                                 type === 'education' ? 'Образование' :
-                                 type === 'other' ? 'Другое' : type}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Budget Range */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Мин. бюджет</label>
-                          <input
-                            type="number"
-                            placeholder="например, 1000"
-                            value={minBudget}
-                            onChange={(e) => setMinBudget(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Макс. бюджет</label>
-                          <input
-                            type="number"
-                            placeholder="например, 10000"
-                            value={maxBudget}
-                            onChange={(e) => setMaxBudget(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-
-                        {/* Clear Filters */}
-                        <div className="flex items-end">
-                          <button
-                            onClick={clearFilters}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            Очистить фильтры
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Campaign Format Filter */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Формат кампании</label>
-                          <select
-                            value={selectedCampaignFormat}
-                            onChange={(e) => setSelectedCampaignFormat(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            {campaignFormats.map(format => (
-                              <option key={format} value={format}>
-                                {format === 'all' ? 'Все форматы' :
-                                 format === 'post' ? 'Пост' :
-                                 format === 'story' ? 'Сторис' :
-                                 format === 'reel' ? 'Рилс' :
-                                 format === 'video' ? 'Видео' :
-                                 format === 'live' ? 'Прямой эфир' :
-                                 format === 'unboxing' ? 'Распаковка' :
-                                 format === 'review' ? 'Обзор' :
-                                 format === 'tutorial' ? 'Туториал' :
-                                 format === 'integration' ? 'Интеграция' : format}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Priority Filter */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label>
-                          <select
-                            value={selectedPriority}
-                            onChange={(e) => setSelectedPriority(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            {priorities.map(priority => (
-                              <option key={priority} value={priority}>
-                                {priority === 'all' ? 'Все приоритеты' :
-                                 priority === 'high' ? 'Высокий' :
-                                 priority === 'medium' ? 'Средний' :
-                                 priority === 'low' ? 'Низкий' : priority}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Country Filters */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
-                        <div className="flex flex-wrap gap-2">
-                          {countries.map(country => (
-                            <button
-                              key={country}
-                              onClick={() => handleCountryToggle(country)}
-                              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                                selectedCountries.includes(country)
-                                  ? 'bg-purple-100 border-purple-300 text-purple-700'
-                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              {country}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Influencer Filters */
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Platform Filter */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('influencerCards.platform')}</label>
-                          <select
-                            value={selectedPlatform}
-                            onChange={(e) => setSelectedPlatform(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            {platforms.map(platform => (
-                              <option key={platform} value={platform}>
-                                {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Followers Range */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Мин. подписчиков</label>
-                          <input
-                            type="number"
-                            placeholder="например, 10000"
-                            value={minFollowers}
-                            onChange={(e) => setMinFollowers(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Макс. подписчиков</label>
-                          <input
-                            type="number"
-                            placeholder="например, 1000000"
-                            value={maxFollowers}
-                            onChange={(e) => setMaxFollowers(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-
-                        {/* Clear Filters */}
-                        <div className="flex items-end">
-                          <button
-                            onClick={clearFilters}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            Очистить фильтры
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Country Filters */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.targetCountries')}</label>
-                        <div className="flex flex-wrap gap-2">
-                          {countries.map(country => (
-                            <button
-                              key={country}
-                              onClick={() => handleCountryToggle(country)}
-                              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                                selectedCountries.includes(country)
-                                  ? 'bg-purple-100 border-purple-300 text-purple-700'
-                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              {country}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Cards Grid */}
+          )}
+          
+          {/* Content */}
+          <div className="p-6">
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                  <div key={i} className="bg-gray-50 rounded-lg p-6 animate-pulse">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="h-6 bg-gray-300 rounded w-20"></div>
-                      <div className="h-4 bg-gray-300 rounded w-16"></div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      {[...Array(3)].map((_, j) => (
-                        <div key={j} className="text-center">
-                          <div className="h-6 bg-gray-300 rounded mb-1"></div>
-                          <div className="h-3 bg-gray-300 rounded"></div>
-                        </div>
-                      ))}
+                      <div className="flex-1">
+                        <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                      </div>
+                      <div className="h-8 bg-gray-300 rounded w-20"></div>
                     </div>
                     <div className="space-y-2">
                       <div className="h-4 bg-gray-300 rounded"></div>
@@ -1014,174 +519,58 @@ export function InfluencerCardsPage() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeTab === 'my_cards' ? (
-                  /* My Cards Section */
-                  <>
-                    {/* My Influencer Cards */}
-                    {myInfluencerCards.map((card) => (
-                      <InfluencerCardDisplay
-                        key={card.id}
-                        card={card}
-                        showActions={true}
-                        currentUserId={currentUserId}
-                        onEdit={handleEditCard}
-                        onDelete={handleDeleteCard}
-                        onToggleStatus={handleToggleStatus}
-                        onViewAnalytics={handleViewAnalytics}
-                      />
-                    ))}
-                    
-                    {/* My Advertiser Cards */}
-                    {myAdvertiserCards.map((card) => (
-                      <AdvertiserCardDisplay
-                        key={card.id}
-                        card={card}
-                        showActions={true}
-                        onEdit={handleEditAdvertiserCard}
-                        onDelete={handleDeleteAdvertiserCard}
-                        onToggleStatus={handleToggleAdvertiserStatus}
-                        onViewAnalytics={handleViewAnalytics}
-                        currentUserId={currentUserId}
-                      />
-                    ))}
-                  </>
-                ) : activeTab === 'favorites' ? (
-                  /* Favorites Section */
-                  <>
-                    {/* Favorite Influencer Cards */}
-                    {favoriteCards.map((card) => (
-                      <InfluencerCardDisplay
-                        key={card.id}
-                        card={card}
-                        showActions={false}
-                        currentUserId={currentUserId}
-                        onViewAnalytics={handleViewAnalytics}
-                      />
-                    ))}
-                    
-                    {/* Favorite Advertiser Cards */}
-                    {favoriteAdvertiserCards.map((card) => (
-                      <AdvertiserCardDisplay
-                        key={card.id}
-                        card={card}
-                        showActions={false}
-                        onViewAnalytics={handleViewAnalytics}
-                        currentUserId={currentUserId}
-                      />
-                    ))}
-                  </>
-                ) : activeTab === 'advertisers' ? (
-                  /* Advertiser Cards */
-                  advertiserCards.filter(card => card.userId !== currentUserId).map((card) => (
-                    <AdvertiserCardDisplay
-                      key={card.id}
-                      card={card}
-                      showActions={false}
-                      onViewAnalytics={handleViewAnalytics}
-                      currentUserId={currentUserId}
-                    />
-                  ))
-                ) : (
-                  /* Influencer Cards */
-                  cards.filter(card => card.userId !== currentUserId).map((card) => (
-                    <InfluencerCardDisplay
-                      key={card.id}
-                      card={card}
-                      showActions={false}
-                      currentUserId={currentUserId}
-                      onViewAnalytics={handleViewAnalytics}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* No Results */}
-            {!isLoading && getCurrentCards().length === 0 && (
+            ) : filteredData.length === 0 ? (
               <div className="text-center py-12">
-                {activeTab === 'my_cards' ? (
-                  <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                ) : activeTab === 'favorites' ? (
-                  <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                ) : (
-                  <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                )}
+                <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {activeTab === 'my_cards'
-                    ? 'У вас пока нет карточек'
-                    : activeTab === 'favorites' 
-                    ? 'Нет избранных карточек'
-                    : activeTab === 'advertisers'
-                    ? 'Карточки рекламодателей не найдены'
-                    : 'Карточки инфлюенсеров не найдены'
-                  }
+                  {activeTab === 'influencers' ? 'Карточки инфлюенсеров не найдены' :
+                   activeTab === 'my_cards' ? 'У вас пока нет карточек' :
+                   'Избранные карточки не найдены'}
                 </h3>
-                <p className="text-gray-600">
-                  {activeTab === 'my_cards'
-                    ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве'
-                    : activeTab === 'favorites'
-                    ? 'Добавляйте интересные карточки в избранное для быстрого доступа'
-                    : activeTab === 'advertisers'
-                    ? (searchQuery || selectedProductType !== 'all' || minBudget || maxBudget || selectedCampaignFormat !== 'all' || selectedPriority !== 'all' || selectedCountries.length > 0
-                        ? 'Попробуйте изменить поисковый запрос или фильтры'
-                        : 'В данный момент активные кампании рекламодателей отсутствуют'
-                      )
-                    : (searchQuery || selectedPlatform !== 'all' || minFollowers || maxFollowers || selectedCountries.length > 0
-                        ? 'Попробуйте изменить поисковый запрос или фильтры'
-                        : 'В данный момент карточки инфлюенсеров недоступны'
-                      )
-                  }
+                <p className="text-gray-600 mb-4">
+                  {activeTab === 'influencers' ? 'Попробуйте изменить фильтры поиска' :
+                   activeTab === 'my_cards' ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве' :
+                   'Добавьте карточки в избранное для быстрого доступа'}
                 </p>
                 {activeTab === 'my_cards' && (
                   <button
                     onClick={handleCreateCard}
-                    className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
                   >
-                    <Plus className="w-5 h-5" />
-                    <span>Создать первую карточку</span>
+                    Создать первую карточку
                   </button>
                 )}
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(activeTab === 'influencers' || activeTab === 'my_cards' || activeTab === 'favorites') && filteredData.map((card: InfluencerCard) => (
+                  <InfluencerCardDisplay
+                    key={card.id}
+                    card={card}
+                    showActions={activeTab === 'my_cards'}
+                    currentUserId={currentUserId}
+                    onEdit={activeTab === 'my_cards' ? handleEditInfluencerCard : undefined}
+                    onDelete={activeTab === 'my_cards' ? handleDeleteInfluencerCard : undefined}
+                    onToggleStatus={activeTab === 'my_cards' ? handleToggleInfluencerCardStatus : undefined}
+                  />
+                ))}
+              </div>
             )}
-          </>
-        ) : (
-          /* Show feature gate for specific section */
-          <FeatureGate
-            profile={currentUserProfile}
-            requiredSection={activeTab === 'my_cards' || activeTab === 'favorites' ? "basic" : activeTab === 'advertisers' ? "influencer" : "advertiser"}
-            featureName={activeTab === 'my_cards' ? "мои карточки" : activeTab === 'favorites' ? "избранное" : activeTab === 'advertisers' ? "карточки рекламодателей" : "карточки инфлюенсеров"}
-            onCompleteProfile={() => window.location.href = '/profiles'}
-          >
-            <div></div>
-          </FeatureGate>
-        )}
-
-        {/* Modals */}
-        <CardTypeSelectionModal
-          isOpen={showTypeSelectionModal}
-          onClose={() => setShowTypeSelectionModal(false)}
-          onSelectType={handleCardTypeSelected}
-          profile={currentUserProfile}
-        />
-
-        <InfluencerCardModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          currentCard={editingCard}
-          userId={currentUserId}
-          onCardSaved={handleCardSaved}
-        />
-
-        <AdvertiserCardModal
-          isOpen={showAdvertiserModal}
-          onClose={() => setShowAdvertiserModal(false)}
-          currentCard={editingAdvertiserCard}
-          userId={currentUserId}
-          onCardSaved={handleAdvertiserCardSaved}
-        />
+          </div>
+        </div>
       </div>
+
+      {/* Influencer Card Modal */}
+      <InfluencerCardModal
+        isOpen={showInfluencerModal}
+        onClose={() => {
+          setShowInfluencerModal(false);
+          setEditingInfluencerCard(null);
+        }}
+        currentCard={editingInfluencerCard}
+        userId={currentUserId}
+        onCardSaved={handleInfluencerCardSaved}
+      />
     </FeatureGate>
   );
 }
