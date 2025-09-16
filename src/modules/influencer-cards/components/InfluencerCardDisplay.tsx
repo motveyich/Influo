@@ -374,11 +374,6 @@ export function InfluencerCardDisplay({
 
         <div className="flex justify-between items-center text-sm text-gray-600">
           <div className="flex items-center space-x-1">
-            <Clock className="w-4 h-4" />
-            <span>{card.serviceDetails.responseTime}</span>
-          </div>
-          
-          <div className="flex items-center space-x-1">
             <span>Доставка: {card.serviceDetails.deliveryTime}</span>
           </div>
         </div>

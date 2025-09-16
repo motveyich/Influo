@@ -54,7 +54,6 @@ export interface UserProfile {
     audienceDemographics?: AudienceDemographics;
     contentCategories: string[];
     availableForCollabs: boolean;
-    responseTime: string;
     pricing?: {
       post: number;
       story: number;
@@ -115,7 +114,6 @@ export interface InfluencerCard {
       video: number;
     };
     availability: boolean;
-    responseTime: string;
     description: string;
     deliveryTime: string;
     revisions: number;

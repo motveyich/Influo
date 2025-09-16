@@ -411,12 +411,6 @@ export function InfluencerCardDetailPage() {
               {/* Service Details */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-200">
                 <div className="text-center">
-                  <Clock className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">Время ответа</h4>
-                  <p className="text-sm text-gray-600">{card.serviceDetails.responseTime}</p>
-                </div>
-                
-                <div className="text-center">
                   <Calendar className="w-6 h-6 text-green-600 mx-auto mb-2" />
                   <h4 className="text-sm font-medium text-gray-900 mb-1">Время доставки</h4>
                   <p className="text-sm text-gray-600">{card.serviceDetails.deliveryTime}</p>
@@ -630,16 +624,6 @@ export function InfluencerCardDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Контактная информация</h2>
               
               <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-gray-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Время ответа</p>
-                    <p className="text-sm text-gray-600">{card.serviceDetails.responseTime}</p>
-                  </div>
-                </div>
-                
                 {cardOwner.website && (
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
