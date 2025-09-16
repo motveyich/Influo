@@ -409,19 +409,6 @@ export function InfluencerCardDetailPage() {
               </div>
 
               {/* Service Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-200">
-                <div className="text-center">
-                  <Calendar className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">Время доставки</h4>
-                  <p className="text-sm text-gray-600">{card.serviceDetails.deliveryTime}</p>
-                </div>
-                
-                <div className="text-center">
-                  <Award className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">Правки включены</h4>
-                  <p className="text-sm text-gray-600">{card.serviceDetails.revisions}</p>
-                </div>
-              </div>
             </div>
 
             {/* Audience Analytics */}

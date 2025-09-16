@@ -373,9 +373,7 @@ export function InfluencerCardDisplay({
         </div>
 
         <div className="flex justify-between items-center text-sm text-gray-600">
-          <div className="flex items-center space-x-1">
-            <span>Доставка: {card.serviceDetails.deliveryTime}</span>
-          </div>
+          <div></div>
         </div>
 
         {/* Action Button */}

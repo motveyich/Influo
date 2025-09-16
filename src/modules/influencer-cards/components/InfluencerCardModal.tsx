@@ -184,9 +184,7 @@ export function InfluencerCardModal({
           contentTypes: [],
           pricing: { post: 0, video: 0, reel: 0, mention: 0 },
           availability: true,
-          description: '',
-          deliveryTime: '3-5 days',
-          revisions: 2
+          description: ''
         }
       });
     }

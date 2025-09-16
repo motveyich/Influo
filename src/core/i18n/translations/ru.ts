@@ -327,9 +327,6 @@ export const ru: TranslationKeys = {
     targetCountries: 'Целевые страны',
     audienceInterests: 'Интересы аудитории',
     ageDistribution: 'Распределение по возрастным группам (%)',
-    responseTime: 'Время ответа',
-    deliveryTime: 'Время доставки',
-    revisionsIncluded: 'Включенные правки',
     startingFrom: 'Начиная от',
     viewDetails: 'Просмотреть детали',
     stats: {

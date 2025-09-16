@@ -328,9 +328,6 @@ export const en: TranslationKeys = {
     targetCountries: 'Target Countries',
     audienceInterests: 'Audience Interests',
     ageDistribution: 'Age Distribution (%)',
-    responseTime: 'Response Time',
-    deliveryTime: 'Delivery Time',
-    revisionsIncluded: 'Revisions Included',
     startingFrom: 'Starting from',
     viewDetails: 'View Details',
     stats: {
