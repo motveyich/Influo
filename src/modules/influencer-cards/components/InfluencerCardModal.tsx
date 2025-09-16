@@ -128,7 +128,6 @@ export function InfluencerCardModal({
         mention: 0
       },
       availability: true,
-      responseTime: '24 hours',
       description: '',
       deliveryTime: '3-5 days',
       revisions: 2
@@ -165,7 +164,6 @@ export function InfluencerCardModal({
             mention: (currentCard.serviceDetails.pricing as any)?.mention || 0
           },
           availability: currentCard.serviceDetails.availability ?? true,
-          responseTime: currentCard.serviceDetails.responseTime || '24 hours',
           description: currentCard.serviceDetails.description || '',
           deliveryTime: currentCard.serviceDetails.deliveryTime || '3-5 days',
           revisions: currentCard.serviceDetails.revisions || 2
@@ -186,7 +184,6 @@ export function InfluencerCardModal({
           contentTypes: [],
           pricing: { post: 0, video: 0, reel: 0, mention: 0 },
           availability: true,
-          responseTime: '24 hours',
           description: '',
           deliveryTime: '3-5 days',
           revisions: 2
@@ -778,26 +775,7 @@ export function InfluencerCardModal({
             {/* Interests */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Интересы аудитории
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {INTERESTS.map((interest) => (
-                  <button
-                    key={interest}
-                    type="button"
-                    onClick={() => handleInterestToggle(interest)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
-                      formData.audienceDemographics.interests.includes(interest)
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {interest}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Age Groups */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
