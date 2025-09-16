@@ -253,12 +253,6 @@ export class InfluencerCardService {
           errors.push('Pricing cannot be negative');
         }
       }
-    }
-
-    if (cardData.audienceDemographics) {
-      if (!cardData.audienceDemographics.topCountries || 
-          cardData.audienceDemographics.topCountries.length === 0) {
-        errors.push('At least one target country is required');
       }
     }
 

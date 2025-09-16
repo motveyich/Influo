@@ -128,9 +128,7 @@ export function InfluencerCardModal({
         mention: 0
       },
       availability: true,
-      description: '',
-      deliveryTime: '3-5 days',
-      revisions: 2
+      description: ''
     }
   });
 
@@ -164,9 +162,7 @@ export function InfluencerCardModal({
             mention: (currentCard.serviceDetails.pricing as any)?.mention || 0
           },
           availability: currentCard.serviceDetails.availability ?? true,
-          description: currentCard.serviceDetails.description || '',
-          deliveryTime: currentCard.serviceDetails.deliveryTime || '3-5 days',
-          revisions: currentCard.serviceDetails.revisions || 2
+          description: currentCard.serviceDetails.description || ''
         }
       });
     } else {
@@ -641,44 +637,6 @@ export function InfluencerCardModal({
               )}
             </div>
 
-            {/* Additional Service Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Время доставки
-                </label>
-                <select
-                  value={formData.serviceDetails.deliveryTime}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    serviceDetails: { ...prev.serviceDetails, deliveryTime: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="1-2 days">1-2 дня</option>
-                  <option value="3-5 days">3-5 дней</option>
-                  <option value="1 week">1 неделя</option>
-                  <option value="2 weeks">2 недели</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Количество правок
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={formData.serviceDetails.revisions}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    serviceDetails: { ...prev.serviceDetails, revisions: parseInt(e.target.value) || 0 }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Audience Demographics */}

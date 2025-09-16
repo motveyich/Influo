@@ -113,8 +113,6 @@ export interface InfluencerCard {
       reel: number;
       video: number;
     };
-    availability: boolean;
-    description: string;
   };
   rating: number;
   completedCampaigns: number;
