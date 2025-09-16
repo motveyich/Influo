@@ -114,6 +114,7 @@ export interface InfluencerCard {
       video: number;
     };
     blacklistedProductCategories: string[];
+    blacklistedProductCategories: string[];
   };
   rating: number;
   completedCampaigns: number;

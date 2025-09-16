@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { influencerCardService } from '../services/influencerCardService';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { PRODUCT_CATEGORIES } from '../../../core/constants';
 import { X, Save, AlertCircle, Plus, Trash2, Instagram, Youtube, Twitter, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -127,6 +128,8 @@ export function InfluencerCardModal({
         reel: 0,
         mention: 0
       },
+      blacklistedProductCategories: []
+      blacklistedProductCategories: [] as string[]
       availability: true,
       description: ''
     }
@@ -181,7 +184,8 @@ export function InfluencerCardModal({
           pricing: { post: 0, video: 0, reel: 0, mention: 0 },
           availability: true,
           description: ''
-        }
+        },
+        blacklistedProductCategories: []
       });
     }
     setErrors({});
@@ -262,7 +266,8 @@ export function InfluencerCardModal({
             story: 0, // Remove story pricing
             reel: formData.serviceDetails.pricing.reel,
             video: formData.serviceDetails.pricing.video
-          }
+          },
+          blacklistedProductCategories: currentCard.serviceDetails.blacklistedProductCategories || []
         }
       };
 
