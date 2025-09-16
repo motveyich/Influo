@@ -311,7 +311,6 @@ export class AnalyticsService {
         engagement: Math.floor(Math.random() * 10000) + 5000,
         totalCampaigns: Math.floor(Math.random() * 20) + 5,
         totalOffers: Math.floor(Math.random() * 50) + 10,
-        averageResponseTime: Math.floor(Math.random() * 24) + 1,
         completionRate: Math.floor(Math.random() * 20) + 80,
         revenue: Math.floor(Math.random() * 50000) + 10000
       },
