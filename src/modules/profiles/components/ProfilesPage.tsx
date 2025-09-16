@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
-import { dealService } from '../../../services/dealService';
+import { reviewService } from '../../offers/services/reviewService';
 import { ProfileCompletionBanner } from './ProfileCompletionBanner';
 import { useProfileCompletion } from '../hooks/useProfileCompletion';
 import { useAuth } from '../../../hooks/useAuth';
@@ -313,12 +313,8 @@ export function ProfilesPage() {
 
   const loadUserReviews = async () => {
     try {
-      const [reviews, rating] = await Promise.all([
-        dealService.getUserReviews(currentUserId, false), // Reviews about this user
-        dealService.getUserRating(currentUserId)
-      ]);
+      const reviews = await reviewService.getUserReviews(currentUserId, 'received');
       setUserReviews(reviews);
-      setUserRating(rating);
     } catch (error) {
       console.error('Failed to load user reviews:', error);
     }
