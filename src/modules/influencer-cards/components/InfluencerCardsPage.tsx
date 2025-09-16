@@ -64,6 +64,19 @@ export function InfluencerCardsPage() {
     if (currentUserId && !loading) {
       loadCards();
       loadAdvertiserCards();
+      loadFavorites();
+      
+      // Listen for favorites changes
+      const handleFavoritesChanged = () => {
+        loadFavorites();
+      };
+      
+      window.addEventListener('favoritesChanged', handleFavoritesChanged);
+      
+      return () => {
+        window.removeEventListener('favoritesChanged', handleFavoritesChanged);
+      };
+    }
   }, [currentUserId, loading, showMyCards]);
 
   // Separate effect for search and filter changes
@@ -78,20 +91,6 @@ export function InfluencerCardsPage() {
     setSearchQuery('');
     setSelectedPlatform('all');
   }, [showMyCards]);
-      loadFavorites();
-      
-      // Listen for favorites changes
-      const handleFavoritesChanged = () => {
-        loadFavorites();
-      };
-      
-      window.addEventListener('favoritesChanged', handleFavoritesChanged);
-      
-      return () => {
-        window.removeEventListener('favoritesChanged', handleFavoritesChanged);
-      };
-    }
-  }, [showMyCards, currentUserId, loading]);
 
   const loadMyCards = async () => {
     try {
