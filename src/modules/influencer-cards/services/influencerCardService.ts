@@ -246,8 +246,6 @@ export class InfluencerCardService {
       }
       if (!cardData.serviceDetails.description || cardData.serviceDetails.description.trim().length < 10) {
         errors.push('Service description must be at least 10 characters');
-        blacklistedProductCategories: influencerData.blacklistedProductCategories || [],
-        blacklistedProductCategories: [],
       }
       if (cardData.serviceDetails.pricing) {
         const pricing = cardData.serviceDetails.pricing;
