@@ -12,7 +12,6 @@ export interface AccountStats {
   engagement: number;
   totalCampaigns: number;
   totalOffers: number;
-  averageResponseTime: number;
   completionRate: number;
   revenue: number;
 }
