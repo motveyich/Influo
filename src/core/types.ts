@@ -115,8 +115,6 @@ export interface InfluencerCard {
     };
     availability: boolean;
     description: string;
-    deliveryTime: string;
-    revisions: number;
   };
   rating: number;
   completedCampaigns: number;
