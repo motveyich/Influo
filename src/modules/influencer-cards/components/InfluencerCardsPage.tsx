@@ -9,7 +9,7 @@ import { isSupabaseConfigured } from '../../../core/supabase';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
-import { Search, Filter, Plus, Users, TrendingUp, Star, Grid, Target, Heart, Send } from 'lucide-react';
+import { Search, Filter, Plus, Users, TrendingUp, Star, Grid, Target, Heart, Send, Trophy } from 'lucide-react';
 import { analytics } from '../../../core/analytics';
 import { useTranslation } from '../../../hooks/useTranslation';
 import toast from 'react-hot-toast';
