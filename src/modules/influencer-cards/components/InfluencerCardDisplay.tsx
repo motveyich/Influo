@@ -183,6 +183,22 @@ export function InfluencerCardDisplay({
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
+      case 'vk':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'telegram':
+        return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'ok':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'facebook':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'twitch':
+        return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'rutube':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'yandex_zen':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'likee':
+        return 'bg-pink-100 text-pink-700 border-pink-200';
       case 'instagram':
         return 'bg-pink-100 text-pink-700 border-pink-200';
       case 'youtube':
@@ -252,7 +268,7 @@ export function InfluencerCardDisplay({
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="text-center">
           <div className="flex items-center justify-center space-x-1 mb-1">
             <Users className="w-4 h-4 text-purple-600" />
@@ -271,16 +287,6 @@ export function InfluencerCardDisplay({
             </span>
           </div>
           <p className="text-xs text-gray-600">Вовлеченность</p>
-        </div>
-        
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-1 mb-1">
-            <Eye className="w-4 h-4 text-blue-600" />
-            <span className="text-lg font-semibold text-gray-900">
-              {formatNumber(card.reach.averageViews)}
-            </span>
-          </div>
-          <p className="text-xs text-gray-600">Средние просмотры</p>
         </div>
       </div>
 

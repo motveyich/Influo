@@ -152,6 +152,22 @@ export function InfluencerCardDetailPage() {
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
+      case 'vk':
+        return <Zap className="w-5 h-5 text-blue-600" />;
+      case 'telegram':
+        return <Zap className="w-5 h-5 text-sky-600" />;
+      case 'ok':
+        return <Zap className="w-5 h-5 text-orange-600" />;
+      case 'facebook':
+        return <Zap className="w-5 h-5 text-blue-600" />;
+      case 'twitch':
+        return <Zap className="w-5 h-5 text-purple-600" />;
+      case 'rutube':
+        return <Zap className="w-5 h-5 text-red-600" />;
+      case 'yandex_zen':
+        return <Zap className="w-5 h-5 text-yellow-600" />;
+      case 'likee':
+        return <Zap className="w-5 h-5 text-pink-600" />;
       case 'instagram':
         return <Instagram className="w-5 h-5 text-pink-600" />;
       case 'youtube':
@@ -167,6 +183,22 @@ export function InfluencerCardDetailPage() {
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
+      case 'vk':
+        return 'from-blue-500 to-blue-600';
+      case 'telegram':
+        return 'from-sky-400 to-sky-600';
+      case 'ok':
+        return 'from-orange-500 to-orange-600';
+      case 'facebook':
+        return 'from-blue-600 to-blue-700';
+      case 'twitch':
+        return 'from-purple-500 to-purple-600';
+      case 'rutube':
+        return 'from-red-500 to-red-600';
+      case 'yandex_zen':
+        return 'from-yellow-500 to-yellow-600';
+      case 'likee':
+        return 'from-pink-500 to-pink-600';
       case 'instagram':
         return 'from-pink-500 to-purple-600';
       case 'youtube':
@@ -268,12 +300,6 @@ export function InfluencerCardDetailPage() {
                     <TrendingUp className="w-4 h-4" />
                     <span>{card.reach.engagementRate.toFixed(1)}% вовлеченность</span>
                   </div>
-                  {cardOwner.location && (
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>{cardOwner.location}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -518,11 +544,11 @@ export function InfluencerCardDetailPage() {
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Eye className="w-5 h-5 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-600">Средние просмотры</span>
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-gray-600">Вовлеченность</span>
                   </div>
                   <span className="text-lg font-semibold text-gray-900">
-                    {formatNumber(card.reach.averageViews)}
+                    {card.reach.engagementRate.toFixed(1)}%
                   </span>
                 </div>
                 

@@ -14,27 +14,85 @@ interface InfluencerCardModalProps {
 }
 
 const PLATFORMS = [
-  { value: 'instagram', label: 'Instagram', icon: Instagram },
+  { value: 'vk', label: 'ВКонтакте', icon: Zap },
   { value: 'youtube', label: 'YouTube', icon: Youtube },
-  { value: 'twitter', label: 'Twitter', icon: Twitter },
+  { value: 'instagram', label: 'Instagram', icon: Instagram },
+  { value: 'telegram', label: 'Telegram', icon: Zap },
+  { value: 'ok', label: 'Одноклассники', icon: Zap },
+  { value: 'facebook', label: 'Facebook', icon: Zap },
+  { value: 'twitter', label: 'Twitter / X', icon: Twitter },
   { value: 'tiktok', label: 'TikTok', icon: Zap },
-  { value: 'multi', label: 'Multi-Platform', icon: Zap }
+  { value: 'twitch', label: 'Twitch', icon: Zap },
+  { value: 'rutube', label: 'RuTube', icon: Zap },
+  { value: 'yandex_zen', label: 'Яндекс.Дзен', icon: Zap },
+  { value: 'likee', label: 'Likee', icon: Zap }
 ];
 
 const CONTENT_TYPES = [
-  'Post', 'Story', 'Reel', 'Video', 'Live Stream', 'IGTV', 
-  'Shorts', 'Tweet', 'Thread', 'Review', 'Unboxing', 'Tutorial'
+  'Пост',
+  'Видео', 
+  'Рилс',
+  'Упоминание в видео'
 ];
 
 const COUNTRIES = [
-  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
-  'France', 'Spain', 'Italy', 'Netherlands', 'Brazil', 'Mexico', 'India'
+  'Россия',
+  'Беларусь', 
+  'Казахстан',
+  'Украина',
+  'Узбекистан',
+  'Киргизия',
+  'Таджикистан',
+  'Армения',
+  'Азербайджан',
+  'Молдова',
+  'Грузия',
+  'США',
+  'Германия',
+  'Великобритания',
+  'Франция',
+  'Италия',
+  'Испания',
+  'Канада',
+  'Австралия',
+  'Турция',
+  'Польша',
+  'Чехия'
 ];
 
 const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
+
 const INTERESTS = [
-  'Fashion', 'Beauty', 'Lifestyle', 'Travel', 'Food', 'Fitness',
-  'Technology', 'Gaming', 'Music', 'Art', 'Business', 'Education'
+  'Мода и стиль',
+  'Красота и косметика', 
+  'Образ жизни',
+  'Путешествия и туризм',
+  'Еда и кулинария',
+  'Фитнес и здоровье',
+  'Спорт',
+  'Технологии и гаджеты',
+  'Игры и киберспорт',
+  'Музыка и развлечения',
+  'Искусство и творчество',
+  'Бизнес и предпринимательство',
+  'Образование и обучение',
+  'Наука и исследования',
+  'Автомобили и транспорт',
+  'Недвижимость и дизайн интерьера',
+  'Финансы и инвестиции',
+  'Родительство и семья',
+  'Домашние животные',
+  'Книги и литература',
+  'Кино и сериалы',
+  'Фотография',
+  'Дизайн и архитектура',
+  'Политика и общество',
+  'Экология и устойчивое развитие',
+  'Психология и саморазвитие',
+  'Медицина и здравоохранение',
+  'Юмор и комедия',
+  'Новости и журналистика',
+  'Религия и духовность'
 ];
 
 export function InfluencerCardModal({ 
@@ -50,25 +108,24 @@ export function InfluencerCardModal({
 
   // Form state
   const [formData, setFormData] = useState({
-    platform: 'instagram' as const,
+    platform: 'vk' as const,
     reach: {
       followers: 0,
-      averageViews: 0,
       engagementRate: 0
     },
     audienceDemographics: {
       ageGroups: {} as Record<string, number>,
       genderSplit: { male: 50, female: 50, other: 0 },
-      topCountries: [] as string[],
+      topCountries: [] as Array<{country: string; percentage: number}>,
       interests: [] as string[]
     },
     serviceDetails: {
       contentTypes: [] as string[],
       pricing: {
         post: 0,
-        story: 0,
+        video: 0,
         reel: 0,
-        video: 0
+        mention: 0
       },
       availability: true,
       responseTime: '24 hours',
@@ -80,17 +137,45 @@ export function InfluencerCardModal({
 
   useEffect(() => {
     if (currentCard) {
+      // Convert old format to new format
+      const oldTopCountries = currentCard.audienceDemographics.topCountries || [];
+      const convertedCountries = oldTopCountries.slice(0, 3).map((country, index) => ({
+        country,
+        percentage: index === 0 ? 50 : index === 1 ? 30 : 20
+      }));
+
       setFormData({
-        platform: currentCard.platform,
-        reach: currentCard.reach,
-        audienceDemographics: currentCard.audienceDemographics,
-        serviceDetails: currentCard.serviceDetails
+        platform: currentCard.platform as any,
+        reach: {
+          followers: currentCard.reach.followers || 0,
+          engagementRate: currentCard.reach.engagementRate || 0
+        },
+        audienceDemographics: {
+          ageGroups: currentCard.audienceDemographics.ageGroups || {},
+          genderSplit: currentCard.audienceDemographics.genderSplit || { male: 50, female: 50, other: 0 },
+          topCountries: convertedCountries,
+          interests: currentCard.audienceDemographics.interests || []
+        },
+        serviceDetails: {
+          contentTypes: currentCard.serviceDetails.contentTypes || [],
+          pricing: {
+            post: currentCard.serviceDetails.pricing?.post || 0,
+            video: currentCard.serviceDetails.pricing?.video || 0,
+            reel: currentCard.serviceDetails.pricing?.reel || 0,
+            mention: (currentCard.serviceDetails.pricing as any)?.mention || 0
+          },
+          availability: currentCard.serviceDetails.availability ?? true,
+          responseTime: currentCard.serviceDetails.responseTime || '24 hours',
+          description: currentCard.serviceDetails.description || '',
+          deliveryTime: currentCard.serviceDetails.deliveryTime || '3-5 days',
+          revisions: currentCard.serviceDetails.revisions || 2
+        }
       });
     } else {
       // Reset form for new card
       setFormData({
-        platform: 'instagram',
-        reach: { followers: 0, averageViews: 0, engagementRate: 0 },
+        platform: 'vk',
+        reach: { followers: 0, engagementRate: 0 },
         audienceDemographics: {
           ageGroups: {},
           genderSplit: { male: 50, female: 50, other: 0 },
@@ -99,7 +184,7 @@ export function InfluencerCardModal({
         },
         serviceDetails: {
           contentTypes: [],
-          pricing: { post: 0, story: 0, reel: 0, video: 0 },
+          pricing: { post: 0, video: 0, reel: 0, mention: 0 },
           availability: true,
           responseTime: '24 hours',
           description: '',
@@ -115,27 +200,41 @@ export function InfluencerCardModal({
     const newErrors: Record<string, string> = {};
 
     if (formData.reach.followers <= 0) {
-      newErrors.followers = t('influencerCards.validation.followersRequired');
+      newErrors.followers = 'Количество подписчиков должно быть больше 0';
     }
 
     if (formData.reach.engagementRate < 0 || formData.reach.engagementRate > 100) {
-      newErrors.engagementRate = t('influencerCards.validation.engagementInvalid');
+      newErrors.engagementRate = 'Процент вовлеченности должен быть от 0 до 100';
     }
 
     if (formData.serviceDetails.contentTypes.length === 0) {
-      newErrors.contentTypes = t('influencerCards.validation.contentTypesRequired');
+      newErrors.contentTypes = 'Выберите хотя бы один тип контента';
     }
 
     if (!formData.serviceDetails.description || formData.serviceDetails.description.trim().length < 10) {
-      newErrors.description = t('influencerCards.validation.descriptionTooShort');
+      newErrors.description = 'Описание услуг должно содержать минимум 10 символов';
     }
 
     if (formData.audienceDemographics.topCountries.length === 0) {
-      newErrors.countries = t('influencerCards.validation.countriesRequired');
+      newErrors.countries = 'Выберите хотя бы одну страну';
+    } else if (formData.audienceDemographics.topCountries.length > 3) {
+      newErrors.countries = 'Можно выбрать максимум 3 страны';
+    }
+
+    // Validate country percentages
+    const countrySum = formData.audienceDemographics.topCountries.reduce((sum, item) => sum + item.percentage, 0);
+    if (countrySum > 100) {
+      newErrors.countries = `Сумма процентов по странам не может превышать 100% (текущая: ${countrySum}%)`;
+    }
+
+    // Validate age group percentages
+    const ageGroupSum = Object.values(formData.audienceDemographics.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
+    if (ageGroupSum > 100) {
+      newErrors.ageGroups = `Сумма процентов по возрастным группам не может превышать 100% (текущая: ${ageGroupSum}%)`;
     }
 
     if (Object.values(formData.serviceDetails.pricing).every(price => price === 0)) {
-      newErrors.pricing = t('influencerCards.validation.pricingRequired');
+      newErrors.pricing = 'Установите цену хотя бы для одной услуги';
     }
 
     setErrors(newErrors);
@@ -150,25 +249,46 @@ export function InfluencerCardModal({
 
     setIsLoading(true);
     try {
+      // Convert to old format for database compatibility
       const cardData: Partial<InfluencerCard> = {
         userId,
-        ...formData
+        platform: formData.platform,
+        reach: {
+          followers: formData.reach.followers,
+          averageViews: 0, // Remove this field
+          engagementRate: formData.reach.engagementRate
+        },
+        audienceDemographics: {
+          ageGroups: formData.audienceDemographics.ageGroups,
+          genderSplit: formData.audienceDemographics.genderSplit,
+          topCountries: formData.audienceDemographics.topCountries.map(item => item.country),
+          interests: formData.audienceDemographics.interests
+        },
+        serviceDetails: {
+          ...formData.serviceDetails,
+          pricing: {
+            post: formData.serviceDetails.pricing.post,
+            story: 0, // Remove story pricing
+            reel: formData.serviceDetails.pricing.reel,
+            video: formData.serviceDetails.pricing.video
+          }
+        }
       };
 
       let savedCard: InfluencerCard;
       if (currentCard) {
         savedCard = await influencerCardService.updateCard(currentCard.id, cardData);
-        toast.success(t('influencerCards.success.updated'));
+        toast.success('Карточка обновлена успешно!');
       } else {
         savedCard = await influencerCardService.createCard(cardData);
-        toast.success(t('influencerCards.success.created'));
+        toast.success('Карточка создана успешно!');
       }
 
       onCardSaved(savedCard);
       onClose();
     } catch (error: any) {
       console.error('Failed to save card:', error);
-      toast.error(error.message || t('influencerCards.errors.saveFailed'));
+      toast.error(error.message || 'Не удалось сохранить карточку');
     } finally {
       setIsLoading(false);
     }
@@ -182,18 +302,6 @@ export function InfluencerCardModal({
         contentTypes: prev.serviceDetails.contentTypes.includes(contentType)
           ? prev.serviceDetails.contentTypes.filter(type => type !== contentType)
           : [...prev.serviceDetails.contentTypes, contentType]
-      }
-    }));
-  };
-
-  const handleCountryToggle = (country: string) => {
-    setFormData(prev => ({
-      ...prev,
-      audienceDemographics: {
-        ...prev.audienceDemographics,
-        topCountries: prev.audienceDemographics.topCountries.includes(country)
-          ? prev.audienceDemographics.topCountries.filter(c => c !== country)
-          : [...prev.audienceDemographics.topCountries, country]
       }
     }));
   };
@@ -217,10 +325,60 @@ export function InfluencerCardModal({
         ...prev.audienceDemographics,
         ageGroups: {
           ...prev.audienceDemographics.ageGroups,
-          [ageGroup]: percentage
+          [ageGroup]: Math.max(0, Math.min(100, percentage))
         }
       }
     }));
+  };
+
+  const handleCountryAdd = () => {
+    if (formData.audienceDemographics.topCountries.length >= 3) {
+      toast.error('Можно выбрать максимум 3 страны');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      audienceDemographics: {
+        ...prev.audienceDemographics,
+        topCountries: [
+          ...prev.audienceDemographics.topCountries,
+          { country: COUNTRIES[0], percentage: 0 }
+        ]
+      }
+    }));
+  };
+
+  const handleCountryRemove = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      audienceDemographics: {
+        ...prev.audienceDemographics,
+        topCountries: prev.audienceDemographics.topCountries.filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const handleCountryChange = (index: number, field: 'country' | 'percentage', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      audienceDemographics: {
+        ...prev.audienceDemographics,
+        topCountries: prev.audienceDemographics.topCountries.map((item, i) => 
+          i === index 
+            ? { ...item, [field]: field === 'percentage' ? Math.max(0, Math.min(100, Number(value))) : value }
+            : item
+        )
+      }
+    }));
+  };
+
+  const getAgeGroupSum = () => {
+    return Object.values(formData.audienceDemographics.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
+  };
+
+  const getCountrySum = () => {
+    return formData.audienceDemographics.topCountries.reduce((sum, item) => sum + item.percentage, 0);
   };
 
   if (!isOpen) return null;
@@ -231,7 +389,7 @@ export function InfluencerCardModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {currentCard ? t('influencerCards.editCard') : t('influencerCards.createCard')}
+            {currentCard ? 'Редактировать карточку инфлюенсера' : 'Создать карточку инфлюенсера'}
           </h2>
           <button
             onClick={onClose}
@@ -246,9 +404,9 @@ export function InfluencerCardModal({
           {/* Platform Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              {t('influencerCards.platform')} *
+              Площадка *
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {PLATFORMS.map((platform) => {
                 const Icon = platform.icon;
                 return (
@@ -263,7 +421,7 @@ export function InfluencerCardModal({
                     }`}
                   >
                     <Icon className="w-6 h-6" />
-                    <span className="text-sm font-medium">{platform.label}</span>
+                    <span className="text-sm font-medium text-center">{platform.label}</span>
                   </button>
                 );
               })}
@@ -272,11 +430,11 @@ export function InfluencerCardModal({
 
           {/* Reach Metrics */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">{t('influencerCards.reachEngagement')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Охват и вовлеченность</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Подписчики *
+                  Количество подписчиков *
                 </label>
                 <input
                   type="number"
@@ -300,37 +458,24 @@ export function InfluencerCardModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Средние просмотры
-                </label>
-                <input
-                  type="number"
-                  value={formData.reach.averageViews}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    reach: { ...prev.reach, averageViews: parseInt(e.target.value) || 0 }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="5000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Уровень вовлеченности (%) *
+                  Процент вовлеченности (ER) *
                 </label>
                 <input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="100"
                   value={formData.reach.engagementRate}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    reach: { ...prev.reach, engagementRate: parseFloat(e.target.value) || 0 }
+                    reach: { ...prev.reach, engagementRate: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }
                   }))}
                   className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                     errors.engagementRate ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="3.5"
                 />
+                <p className="text-xs text-gray-500 mt-1">От 0 до 100%</p>
                 {errors.engagementRate && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
@@ -343,12 +488,12 @@ export function InfluencerCardModal({
 
           {/* Service Details */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">{t('influencerCards.serviceDetails')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Детали услуг</h3>
             
             {/* Content Types */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('influencerCards.contentTypes')} *
+                Типы контента *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {CONTENT_TYPES.map((type) => (
@@ -377,7 +522,7 @@ export function InfluencerCardModal({
             {/* Description */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('influencerCards.serviceDescription')} *
+                Описание услуг *
               </label>
               <textarea
                 value={formData.serviceDetails.description}
@@ -402,32 +547,96 @@ export function InfluencerCardModal({
             {/* Pricing */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('influencerCards.pricing')} *
+                Цены за услуги (₽) *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(formData.serviceDetails.pricing).map(([type, price]) => (
-                  <div key={type}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">
-                      {type}
-                    </label>
-                    <input
-                      type="number"
-                      value={price}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        serviceDetails: {
-                          ...prev.serviceDetails,
-                          pricing: {
-                            ...prev.serviceDetails.pricing,
-                            [type]: parseInt(e.target.value) || 0
-                          }
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Пост
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.serviceDetails.pricing.post}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      serviceDetails: {
+                        ...prev.serviceDetails,
+                        pricing: {
+                          ...prev.serviceDetails.pricing,
+                          post: parseInt(e.target.value) || 0
                         }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                  </div>
-                ))}
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Видео
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.serviceDetails.pricing.video}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      serviceDetails: {
+                        ...prev.serviceDetails,
+                        pricing: {
+                          ...prev.serviceDetails.pricing,
+                          video: parseInt(e.target.value) || 0
+                        }
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Рилс
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.serviceDetails.pricing.reel}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      serviceDetails: {
+                        ...prev.serviceDetails,
+                        pricing: {
+                          ...prev.serviceDetails.pricing,
+                          reel: parseInt(e.target.value) || 0
+                        }
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Упоминание в видео
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.serviceDetails.pricing.mention}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      serviceDetails: {
+                        ...prev.serviceDetails,
+                        pricing: {
+                          ...prev.serviceDetails.pricing,
+                          mention: parseInt(e.target.value) || 0
+                        }
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
               </div>
               {errors.pricing && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -441,7 +650,7 @@ export function InfluencerCardModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('influencerCards.responseTime')}
+                  Время ответа
                 </label>
                 <select
                   value={formData.serviceDetails.responseTime}
@@ -451,16 +660,16 @@ export function InfluencerCardModal({
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="1 hour">{t('time.within1Hour')}</option>
-                  <option value="24 hours">{t('time.within24Hours')}</option>
-                  <option value="48 hours">{t('time.within48Hours')}</option>
-                  <option value="1 week">{t('time.within1Week')}</option>
+                  <option value="1 hour">В течение 1 часа</option>
+                  <option value="24 hours">В течение 24 часов</option>
+                  <option value="48 hours">В течение 48 часов</option>
+                  <option value="1 week">В течение 1 недели</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('influencerCards.deliveryTime')}
+                  Время доставки
                 </label>
                 <select
                   value={formData.serviceDetails.deliveryTime}
@@ -470,16 +679,16 @@ export function InfluencerCardModal({
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="1-2 days">{t('time.days1to2')}</option>
-                  <option value="3-5 days">{t('time.days3to5')}</option>
-                  <option value="1 week">{t('time.week1')}</option>
-                  <option value="2 weeks">{t('time.weeks2')}</option>
+                  <option value="1-2 days">1-2 дня</option>
+                  <option value="3-5 days">3-5 дней</option>
+                  <option value="1 week">1 неделя</option>
+                  <option value="2 weeks">2 недели</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('influencerCards.revisionsIncluded')}
+                  Количество правок
                 </label>
                 <input
                   type="number"
@@ -498,29 +707,65 @@ export function InfluencerCardModal({
 
           {/* Audience Demographics */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">{t('influencerCards.audienceDemographics')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Демография аудитории</h3>
             
-            {/* Target Countries */}
+            {/* Countries */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('influencerCards.targetCountries')} *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {COUNTRIES.map((country) => (
-                  <button
-                    key={country}
-                    type="button"
-                    onClick={() => handleCountryToggle(country)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                      formData.audienceDemographics.topCountries.includes(country)
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {country}
-                  </button>
+              <div className="flex justify-between items-center mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  География аудитории * (максимум 3 страны)
+                </label>
+                <button
+                  type="button"
+                  onClick={handleCountryAdd}
+                  disabled={formData.audienceDemographics.topCountries.length >= 3}
+                  className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Добавить страну</span>
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.audienceDemographics.topCountries.map((item, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <select
+                      value={item.country}
+                      onChange={(e) => handleCountryChange(index, 'country', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={item.percentage}
+                      onChange={(e) => handleCountryChange(index, 'percentage', e.target.value)}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                    <span className="text-sm text-gray-600">%</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCountryRemove(index)}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
+              
+              <div className="mt-2 text-sm text-gray-600">
+                Общий процент: {getCountrySum()}% / 100%
+                {getCountrySum() > 100 && (
+                  <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
+                )}
+              </div>
+              
               {errors.countries && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
@@ -532,15 +777,15 @@ export function InfluencerCardModal({
             {/* Interests */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('influencerCards.audienceInterests')}
+                Интересы аудитории
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
                 {INTERESTS.map((interest) => (
                   <button
                     key={interest}
                     type="button"
                     onClick={() => handleInterestToggle(interest)}
-                    className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
                       formData.audienceDemographics.interests.includes(interest)
                         ? 'bg-purple-100 border-purple-300 text-purple-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -555,13 +800,13 @@ export function InfluencerCardModal({
             {/* Age Groups */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('influencerCards.ageDistribution')}
+                Распределение по возрастным группам (%)
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {AGE_GROUPS.map((ageGroup) => (
                   <div key={ageGroup}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      {ageGroup}
+                      {ageGroup} лет
                     </label>
                     <input
                       type="number"
@@ -575,6 +820,20 @@ export function InfluencerCardModal({
                   </div>
                 ))}
               </div>
+              
+              <div className="mt-2 text-sm text-gray-600">
+                Общий процент: {getAgeGroupSum()}% / 100%
+                {getAgeGroupSum() > 100 && (
+                  <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
+                )}
+              </div>
+              
+              {errors.ageGroups && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.ageGroups}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -585,7 +844,7 @@ export function InfluencerCardModal({
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
-            {t('common.cancel')}
+            Отмена
           </button>
           <button
             onClick={handleSave}
