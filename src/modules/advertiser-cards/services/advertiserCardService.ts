@@ -14,11 +14,12 @@ export class AdvertiserCardService {
         campaign_title: cardData.campaignTitle,
         campaign_description: cardData.campaignDescription,
         platform: cardData.platform,
-        product_type: cardData.productType,
+        product_categories: cardData.productCategories,
         budget: cardData.budget,
         service_format: cardData.serviceFormat,
         campaign_duration: cardData.campaignDuration,
         influencer_requirements: cardData.influencerRequirements,
+        target_audience: cardData.targetAudience,
         contact_info: cardData.contactInfo,
         campaign_stats: cardData.campaignStats || {
           completedCampaigns: 0,
@@ -227,6 +228,7 @@ export class AdvertiserCardService {
         campaignTitle: 'Summer Sustainable Fashion Campaign',
         campaignDescription: 'Promote our new eco-friendly summer collection. Looking for fashion influencers who align with sustainability values.',
         platform: 'instagram',
+        productCategories: ['Мода и стиль', 'Экология и устойчивое развитие'],
         budget: {
           amount: 50000,
           currency: 'RUB'
@@ -240,6 +242,9 @@ export class AdvertiserCardService {
           minFollowers: 10000,
           maxFollowers: 500000,
           minEngagementRate: 3.0
+        },
+        targetAudience: {
+          interests: ['Мода и стиль', 'Красота и косметика', 'Экология и устойчивое развитие']
         },
         contactInfo: {
           email: 'partnerships@ecostyle.com',
@@ -262,6 +267,7 @@ export class AdvertiserCardService {
         campaignTitle: 'Wireless Headphones Product Launch',
         campaignDescription: 'Launch campaign for our new premium wireless headphones. Seeking tech reviewers and lifestyle influencers.',
         platform: 'youtube',
+        productCategories: ['Технологии и гаджеты', 'Музыка и развлечения'],
         budget: {
           amount: 2500,
           currency: 'RUB'
@@ -275,6 +281,9 @@ export class AdvertiserCardService {
           minFollowers: 5000,
           maxFollowers: 200000,
           minEngagementRate: 2.5
+        },
+        targetAudience: {
+          interests: ['Технологии и гаджеты', 'Музыка и развлечения', 'Образ жизни']
         },
         contactInfo: {
           email: 'marketing@techwave.com',
@@ -307,6 +316,10 @@ export class AdvertiserCardService {
       errors.push('Campaign description must be at least 20 characters');
     }
 
+    if (cardData.productCategories && cardData.productCategories.length === 0) {
+      errors.push('At least one product category is required');
+    }
+
     if (cardData.budget) {
       if (!cardData.budget.amount || cardData.budget.amount <= 0) {
         errors.push('Valid budget amount is required');
@@ -336,14 +349,13 @@ export class AdvertiserCardService {
       campaignTitle: dbData.campaign_title,
       campaignDescription: dbData.campaign_description,
       platform: dbData.platform,
+      productCategories: dbData.product_categories || [],
       budget: dbData.budget,
-      targetAudience: dbData.target_audience,
       serviceFormat: dbData.service_format,
       campaignDuration: dbData.campaign_duration,
       influencerRequirements: dbData.influencer_requirements,
+      targetAudience: dbData.target_audience || { interests: [] },
       contactInfo: dbData.contact_info,
-      paymentInfo: dbData.payment_info,
-      blacklistedCategories: dbData.blacklisted_categories || [],
       campaignStats: dbData.campaign_stats,
       isActive: dbData.is_active,
       createdAt: dbData.created_at,
