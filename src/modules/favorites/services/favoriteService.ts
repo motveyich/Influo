@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { supabase, isSupabaseConfigured } from '../../../core/supabase';
 import { Favorite } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
@@ -113,6 +113,12 @@ export class FavoriteService {
 
   async isFavorite(userId: string, targetType: string, targetId: string): Promise<boolean> {
     try {
+      // Check if Supabase is configured before making any requests
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, returning false for favorite check');
+        return false;
+      }
+
       // Проверяем, что таблица существует
       const { error: tableError } = await supabase
         .from('favorites')
