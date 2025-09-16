@@ -651,22 +651,6 @@ export function InfluencerCardModal({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Время ответа
-                </label>
-                <select
-                  value={formData.serviceDetails.responseTime}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    serviceDetails: { ...prev.serviceDetails, responseTime: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="1 hour">В течение 1 часа</option>
-                  <option value="24 hours">В течение 24 часов</option>
-                  <option value="48 hours">В течение 48 часов</option>
-                  <option value="1 week">В течение 1 недели</option>
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Время доставки
