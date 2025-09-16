@@ -8,6 +8,7 @@ import { AdvertiserCardDisplay } from '../../advertiser-cards/components/Adverti
 import { InfluencerCardModal } from './InfluencerCardModal';
 import { AdvertiserCardModal } from '../../advertiser-cards/components/AdvertiserCardModal';
 import { influencerCardService } from '../services/influencerCardService';
+import { isSupabaseConfigured } from '../../../core/supabase';
 import { advertiserCardService } from '../../advertiser-cards/services/advertiserCardService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { FeatureGate } from '../../../components/FeatureGate';
@@ -146,12 +147,25 @@ export function InfluencerCardsPage() {
     try {
       const favorites = await favoriteService.getUserFavorites(currentUserId);
       
-      // Separate influencer and advertiser favorites
-      const influencerFavorites = favorites.filter(fav => fav.targetType === 'influencer_card');
-      const advertiserFavorites = favorites.filter(fav => fav.targetType === 'advertiser_card');
+      // Check if Supabase is configured before making requests
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping favorites loading');
+        setFavoriteCards([]);
+        return;
+      }
       
-      // Load full card data for favorites
-      const influencerCardPromises = influencerFavorites.map(async (fav) => {
+      const favoriteCards = await Promise.all(
+        favorites.map(async (fav) => {
+          try {
+            const card = await influencerCardService.getCard(fav.targetId);
+            return card;
+          } catch (error) {
+            console.error('Failed to load favorite influencer card:', error);
+            return null;
+          }
+        })
+      );
+      setFavoriteCards(favoriteCards.filter(card => card !== null) as InfluencerCard[]);
         try {
           return await influencerCardService.getCard(fav.targetId);
         } catch (error) {
@@ -176,7 +190,13 @@ export function InfluencerCardsPage() {
       setFavoriteAdvertiserCards(loadedAdvertiserCards);
     } catch (error) {
       console.error('Failed to load favorites:', error);
-      setFavoriteCards([]);
+      // Handle specific Supabase connection errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed when loading favorites');
+        setFavoriteCards([]);
+      } else {
+        toast.error('Не удалось загрузить избранные карточки');
+      }
       setFavoriteAdvertiserCards([]);
     }
   };
