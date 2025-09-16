@@ -128,8 +128,7 @@ export function InfluencerCardModal({
         reel: 0,
         mention: 0
       },
-      blacklistedProductCategories: []
-      blacklistedProductCategories: [] as string[]
+      blacklistedProductCategories: [] as string[],
       availability: true,
       description: ''
     }
@@ -164,6 +163,7 @@ export function InfluencerCardModal({
             reel: currentCard.serviceDetails.pricing?.reel || 0,
             mention: (currentCard.serviceDetails.pricing as any)?.mention || 0
           },
+          blacklistedProductCategories: currentCard.serviceDetails.blacklistedProductCategories || [],
           availability: currentCard.serviceDetails.availability ?? true,
           description: currentCard.serviceDetails.description || ''
         }
@@ -182,10 +182,10 @@ export function InfluencerCardModal({
         serviceDetails: {
           contentTypes: [],
           pricing: { post: 0, video: 0, reel: 0, mention: 0 },
+          blacklistedProductCategories: [],
           availability: true,
           description: ''
-        },
-        blacklistedProductCategories: []
+        }
       });
     }
     setErrors({});
@@ -267,7 +267,7 @@ export function InfluencerCardModal({
             reel: formData.serviceDetails.pricing.reel,
             video: formData.serviceDetails.pricing.video
           },
-          blacklistedProductCategories: currentCard.serviceDetails.blacklistedProductCategories || []
+          blacklistedProductCategories: formData.serviceDetails.blacklistedProductCategories
         }
       };
 
@@ -637,6 +637,58 @@ export function InfluencerCardModal({
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.pricing}
                 </p>
+              )}
+            </div>
+
+            {/* Blacklisted Product Categories */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Черный список категорий продуктов
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Выберите категории продуктов, с которыми вы НЕ хотите работать
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {PRODUCT_CATEGORIES.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => {
+                      const isSelected = formData.serviceDetails.blacklistedProductCategories.includes(category);
+                      setFormData(prev => ({
+                        ...prev,
+                        serviceDetails: {
+                          ...prev.serviceDetails,
+                          blacklistedProductCategories: isSelected
+                            ? prev.serviceDetails.blacklistedProductCategories.filter(c => c !== category)
+                            : [...prev.serviceDetails.blacklistedProductCategories, category]
+                        }
+                      }));
+                    }}
+                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                      formData.serviceDetails.blacklistedProductCategories.includes(category)
+                        ? 'bg-red-100 border-red-300 text-red-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+              {formData.serviceDetails.blacklistedProductCategories.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm text-gray-600 mb-2">Выбранные категории для исключения:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {formData.serviceDetails.blacklistedProductCategories.map((category, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs"
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 

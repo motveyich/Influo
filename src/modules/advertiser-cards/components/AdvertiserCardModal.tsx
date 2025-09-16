@@ -642,69 +642,6 @@ export function AdvertiserCardModal({
                 <input
                   type="number"
                   step="0.1"
-                  value={formData.influencerRequirements.minEngagementRate}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    influencerRequirements: { ...prev.influencerRequirements, minEngagementRate: parseFloat(e.target.value) || 0 }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="3.0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Контактные данные</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email для связи *
-                </label>
-                <input
-                  type="email"
-                  value={formData.contactInfo.email}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    contactInfo: { ...prev.contactInfo, email: e.target.value }
-                  }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="partnerships@company.com"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон
-                </label>
-                <input
-                  type="tel"
-                  value={formData.contactInfo.phone}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    contactInfo: { ...prev.contactInfo, phone: e.target.value }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="+7-xxx-xxx-xx-xx"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Веб-сайт
-                </label>
-                <input
-                  type="url"
-                  value={formData.contactInfo.website}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
                     contactInfo: { ...prev.contactInfo, website: e.target.value }

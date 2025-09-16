@@ -279,7 +279,6 @@ export class InfluencerCardService {
 
   private transformToDatabase(cardData: Partial<InfluencerCard>): any {
     const dbData: any = {};
-    const hasBlacklist = influencerData.blacklistedProductCategories && influencerData.blacklistedProductCategories.length > 0;
     
     if (cardData.platform) dbData.platform = cardData.platform;
     if (cardData.reach) dbData.reach = cardData.reach;
@@ -289,7 +288,7 @@ export class InfluencerCardService {
     if (cardData.completedCampaigns !== undefined) dbData.completed_campaigns = cardData.completedCampaigns;
     if (cardData.isActive !== undefined) dbData.is_active = cardData.isActive;
 
-    return hasMainSocialLink || hasCategory || hasPlatformName || hasLinks || hasMetrics || hasCategories || hasPricing || hasBlacklist;
+    return dbData;
   }
 }
 
