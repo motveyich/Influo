@@ -64,7 +64,20 @@ export function InfluencerCardsPage() {
     if (currentUserId && !loading) {
       loadCards();
       loadAdvertiserCards();
-      loadMyCards();
+  }, [currentUserId, loading, showMyCards]);
+
+  // Separate effect for search and filter changes
+  useEffect(() => {
+    if (currentUserId && !loading) {
+      loadCards();
+    }
+  }, [searchQuery, selectedPlatform]);
+
+  // Reset filters when switching between tabs
+  useEffect(() => {
+    setSearchQuery('');
+    setSelectedPlatform('all');
+  }, [showMyCards]);
       loadFavorites();
       
       // Listen for favorites changes
