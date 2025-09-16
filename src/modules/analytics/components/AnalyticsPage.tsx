@@ -373,18 +373,6 @@ export function AnalyticsPage() {
               <p className="text-sm text-green-600">+8% с прошлого периода</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <MessageCircle className="w-6 h-6 text-blue-600" />
-                  <span className="ml-2 text-sm font-medium text-gray-600">{t('analytics.metrics.averageResponseTime')}</span>
-                </div>
-                <TrendingUp className="w-4 h-4 text-green-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{analyticsData.accountStats.averageResponseTime}h</p>
-              <p className="text-sm text-green-600">-15% с прошлого периода</p>
-            </div>
-            
             {currentUserProfile?.influencerData && (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">

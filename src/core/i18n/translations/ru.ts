@@ -293,7 +293,6 @@ export const ru: TranslationKeys = {
       totalOffers: 'Всего предложений',
       engagement: 'Вовлеченность',
       completionRate: 'Процент завершения',
-      averageResponseTime: 'Среднее время ответа',
       revenue: 'Доход',
     },
     connection: {

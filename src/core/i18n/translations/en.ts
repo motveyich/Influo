@@ -294,7 +294,6 @@ export const en: TranslationKeys = {
       totalOffers: 'Total Offers',
       engagement: 'Engagement',
       completionRate: 'Completion Rate',
-      averageResponseTime: 'Average Response Time',
       revenue: 'Revenue',
     },
     connection: {
