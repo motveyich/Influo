@@ -342,10 +342,16 @@ export function AdvertiserCardDisplay({
         <div className="flex items-center space-x-2">
           <MapPin className="w-4 h-4 text-red-600" />
           <span className="text-sm text-gray-600">
-            {card.targetAudience.topCountries.slice(0, 3).map(item => item.country).join(', ')}
-            {card.targetAudience.topCountries.length > 3 && 
-              ` +${card.targetAudience.topCountries.length - 3} еще`
-            }
+            {card.targetAudience.interests && card.targetAudience.interests.length > 0 ? (
+              <>
+                {card.targetAudience.interests.slice(0, 3).join(', ')}
+                {card.targetAudience.interests.length > 3 && 
+                  ` +${card.targetAudience.interests.length - 3} еще`
+                }
+              </>
+            ) : (
+              'Интересы не указаны'
+            )}
           </span>
         </div>
       </div>
