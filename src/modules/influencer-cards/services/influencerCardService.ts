@@ -253,7 +253,6 @@ export class InfluencerCardService {
           errors.push('Pricing cannot be negative');
         }
       }
-      }
     }
 
     if (errors.length > 0) {
