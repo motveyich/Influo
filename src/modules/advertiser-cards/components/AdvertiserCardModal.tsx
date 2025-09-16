@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdvertiserCard } from '../../../core/types';
 import { advertiserCardService } from '../services/advertiserCardService';
-import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Building, Zap } from 'lucide-react';
+import { X, Save, AlertCircle, Calendar, DollarSign, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface AdvertiserCardModalProps {
@@ -34,6 +34,39 @@ const SERVICE_FORMATS = [
   'Упоминание в видео'
 ];
 
+const PRODUCT_CATEGORIES = [
+  'Мода и стиль',
+  'Красота и косметика', 
+  'Образ жизни',
+  'Путешествия и туризм',
+  'Еда и кулинария',
+  'Фитнес и здоровье',
+  'Спорт',
+  'Технологии и гаджеты',
+  'Игры и киберспорт',
+  'Музыка и развлечения',
+  'Искусство и творчество',
+  'Бизнес и предпринимательство',
+  'Образование и обучение',
+  'Наука и исследования',
+  'Автомобили и транспорт',
+  'Недвижимость и дизайн интерьера',
+  'Финансы и инвестиции',
+  'Родительство и семья',
+  'Домашние животные',
+  'Книги и литература',
+  'Кино и сериалы',
+  'Фотография',
+  'Дизайн и архитектура',
+  'Политика и общество',
+  'Экология и устойчивое развитие',
+  'Психология и саморазвитие',
+  'Медицина и здравоохранение',
+  'Юмор и комедия',
+  'Новости и журналистика',
+  'Религия и духовность'
+];
+
 export function AdvertiserCardModal({ 
   isOpen, 
   onClose, 
@@ -50,6 +83,7 @@ export function AdvertiserCardModal({
     campaignTitle: '',
     campaignDescription: '',
     platform: 'vk' as const,
+    productCategories: [] as string[],
     budget: {
       amount: 0,
       currency: 'RUB'
@@ -63,6 +97,9 @@ export function AdvertiserCardModal({
       minFollowers: 0,
       maxFollowers: 0,
       minEngagementRate: 0
+    },
+    targetAudience: {
+      interests: [] as string[]
     },
     contactInfo: {
       email: '',
@@ -78,6 +115,7 @@ export function AdvertiserCardModal({
         campaignTitle: currentCard.campaignTitle,
         campaignDescription: currentCard.campaignDescription,
         platform: currentCard.platform as any,
+        productCategories: currentCard.productCategories || [],
         budget: {
           amount: currentCard.budget.amount || 0,
           currency: currentCard.budget.currency
@@ -85,6 +123,9 @@ export function AdvertiserCardModal({
         serviceFormat: currentCard.serviceFormat || [],
         campaignDuration: currentCard.campaignDuration,
         influencerRequirements: currentCard.influencerRequirements,
+        targetAudience: {
+          interests: currentCard.targetAudience?.interests || []
+        },
         contactInfo: currentCard.contactInfo
       });
     } else {
@@ -94,10 +135,12 @@ export function AdvertiserCardModal({
         campaignTitle: '',
         campaignDescription: '',
         platform: 'vk',
+        productCategories: [],
         budget: { amount: 0, currency: 'RUB' },
         serviceFormat: [],
         campaignDuration: { startDate: '', endDate: '' },
         influencerRequirements: { minFollowers: 0, maxFollowers: 0, minEngagementRate: 0 },
+        targetAudience: { interests: [] },
         contactInfo: { email: '', phone: '', website: '' }
       });
     }
@@ -119,6 +162,10 @@ export function AdvertiserCardModal({
       newErrors.campaignDescription = 'Описание кампании обязательно';
     } else if (formData.campaignDescription.length < 20) {
       newErrors.campaignDescription = 'Описание должно содержать минимум 20 символов';
+    }
+
+    if (formData.productCategories.length === 0) {
+      newErrors.productCategories = 'Выберите хотя бы одну категорию продукта';
     }
 
     if (formData.budget.amount <= 0) {
@@ -312,6 +359,39 @@ export function AdvertiserCardModal({
             </div>
           </div>
 
+          {/* Product Categories */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Категории продукта *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {PRODUCT_CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => handleArrayToggle(
+                    formData.productCategories,
+                    category,
+                    (newCategories) => setFormData(prev => ({ ...prev, productCategories: newCategories }))
+                  )}
+                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                    formData.productCategories.includes(category)
+                      ? 'bg-purple-100 border-purple-300 text-purple-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            {errors.productCategories && (
+              <p className="mt-1 text-sm text-red-600 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {errors.productCategories}
+              </p>
+            )}
+          </div>
+
           {/* Service Format */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -478,6 +558,7 @@ export function AdvertiserCardModal({
                   placeholder="10000"
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Максимальное количество подписчиков
@@ -493,6 +574,7 @@ export function AdvertiserCardModal({
                   placeholder="1000000"
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Минимальная вовлеченность (%)
@@ -509,6 +591,36 @@ export function AdvertiserCardModal({
                   placeholder="3.0"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Target Audience Interests */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Интересы аудитории
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {PRODUCT_CATEGORIES.map((interest) => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => handleArrayToggle(
+                    formData.targetAudience.interests,
+                    interest,
+                    (newInterests) => setFormData(prev => ({
+                      ...prev,
+                      targetAudience: { ...prev.targetAudience, interests: newInterests }
+                    }))
+                  )}
+                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                    formData.targetAudience.interests.includes(interest)
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {interest}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -113,6 +113,7 @@ export interface InfluencerCard {
       reel: number;
       video: number;
     };
+    blacklistedProductCategories: string[];
   };
   rating: number;
   completedCampaigns: number;
@@ -129,6 +130,7 @@ export interface AdvertiserCard {
   campaignTitle: string;
   campaignDescription: string;
   platform: 'vk' | 'youtube' | 'instagram' | 'telegram' | 'ok' | 'facebook' | 'twitter' | 'tiktok' | 'twitch' | 'rutube' | 'yandex_zen' | 'likee';
+  productCategories: string[];
   budget: {
     amount: number;
     currency: string;
@@ -142,6 +144,9 @@ export interface AdvertiserCard {
     minFollowers: number;
     maxFollowers?: number;
     minEngagementRate?: number;
+  };
+  targetAudience: {
+    interests: string[];
   };
   contactInfo: {
     email: string;
