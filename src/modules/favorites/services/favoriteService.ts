@@ -93,6 +93,13 @@ export class FavoriteService {
 
   async getFavorite(userId: string, targetType: string, targetId: string): Promise<Favorite | null> {
     try {
+      // Validate UUID format for targetId
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(targetId)) {
+        console.warn(`Invalid UUID format for targetId: ${targetId}`);
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('favorites')
         .select('*')
@@ -113,6 +120,13 @@ export class FavoriteService {
 
   async isFavorite(userId: string, targetType: string, targetId: string): Promise<boolean> {
     try {
+      // Validate UUID format for targetId
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(targetId)) {
+        console.warn(`Invalid UUID format for targetId: ${targetId}`);
+        return false;
+      }
+
       // Check if Supabase is configured before making any requests
       if (!isSupabaseConfigured()) {
         console.warn('Supabase not configured, returning false for favorite check');
