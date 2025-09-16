@@ -35,36 +35,66 @@ const SERVICE_FORMATS = [
 ];
 
 const PRODUCT_CATEGORIES = [
-  'Мода и стиль',
-  'Красота и косметика', 
-  'Образ жизни',
-  'Путешествия и туризм',
-  'Еда и кулинария',
-  'Фитнес и здоровье',
-  'Спорт',
-  'Технологии и гаджеты',
-  'Игры и киберспорт',
-  'Музыка и развлечения',
-  'Искусство и творчество',
-  'Бизнес и предпринимательство',
-  'Образование и обучение',
-  'Наука и исследования',
-  'Автомобили и транспорт',
-  'Недвижимость и дизайн интерьера',
-  'Финансы и инвестиции',
-  'Родительство и семья',
-  'Домашние животные',
-  'Книги и литература',
-  'Кино и сериалы',
-  'Фотография',
-  'Дизайн и архитектура',
-  'Политика и общество',
-  'Экология и устойчивое развитие',
-  'Психология и саморазвитие',
-  'Медицина и здравоохранение',
-  'Юмор и комедия',
-  'Новости и журналистика',
-  'Религия и духовность'
+  'Косметика',
+  'Химия для дома',
+  'Электроника',
+  'Одежда',
+  'Информационный продукт',
+  'Курсы',
+  'Заведения',
+  'Продукты питания',
+  'Напитки',
+  'Спортивные товары',
+  'Детские товары',
+  'Товары для дома',
+  'Мебель',
+  'Автомобили',
+  'Недвижимость',
+  'Финансовые услуги',
+  'Страхование',
+  'Медицинские услуги',
+  'Образовательные услуги',
+  'Туристические услуги',
+  'Развлечения',
+  'Игры и приложения',
+  'Программное обеспечение',
+  'Книги и издания',
+  'Музыка',
+  'Фильмы и сериалы',
+  'Подписки и сервисы',
+  'Криптовалюта',
+  'Инвестиции',
+  'Ювелирные изделия',
+  'Часы',
+  'Аксессуары',
+  'Обувь',
+  'Сумки',
+  'Парфюмерия',
+  'Средства по уходу',
+  'Витамины и БАДы',
+  'Спортивное питание',
+  'Диетические продукты',
+  'Органические продукты',
+  'Веганские продукты',
+  'Товары для животных',
+  'Садоводство',
+  'Инструменты',
+  'Строительные материалы',
+  'Канцелярские товары',
+  'Хобби и рукоделие',
+  'Музыкальные инструменты',
+  'Фототехника',
+  'Видеотехника',
+  'Компьютеры',
+  'Мобильные устройства',
+  'Бытовая техника',
+  'Климатическая техника',
+  'Освещение',
+  'Текстиль',
+  'Постельное белье',
+  'Посуда',
+  'Кухонная утварь',
+  'Другое'
 ];
 
 export function AdvertiserCardModal({ 
@@ -360,7 +390,7 @@ export function AdvertiserCardModal({
           </div>
 
           {/* Product Categories */}
-          <div>
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Категории продукта *
             </label>
@@ -392,8 +422,38 @@ export function AdvertiserCardModal({
             )}
           </div>
 
+          {/* Target Audience Interests */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Интересы аудитории
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {PRODUCT_CATEGORIES.map((interest) => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => handleArrayToggle(
+                    formData.targetAudience.interests,
+                    interest,
+                    (newInterests) => setFormData(prev => ({
+                      ...prev,
+                      targetAudience: { ...prev.targetAudience, interests: newInterests }
+                    }))
+                  )}
+                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                    formData.targetAudience.interests.includes(interest)
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {interest}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Service Format */}
-          <div>
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Формат услуги *
             </label>
@@ -542,7 +602,7 @@ export function AdvertiserCardModal({
           {/* Influencer Requirements */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Требования к инфлюенсеру</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Минимальное количество подписчиков
@@ -591,36 +651,6 @@ export function AdvertiserCardModal({
                   placeholder="3.0"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Target Audience Interests */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Интересы аудитории
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {PRODUCT_CATEGORIES.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => handleArrayToggle(
-                    formData.targetAudience.interests,
-                    interest,
-                    (newInterests) => setFormData(prev => ({
-                      ...prev,
-                      targetAudience: { ...prev.targetAudience, interests: newInterests }
-                    }))
-                  )}
-                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
-                    formData.targetAudience.interests.includes(interest)
-                      ? 'bg-blue-100 border-blue-300 text-blue-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
             </div>
           </div>
 
