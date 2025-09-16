@@ -182,13 +182,6 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
       {/* Availability for Influencers */}
       {profile.influencerData && (
         <div className="border-t border-gray-200 pt-4 mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">Время ответа</span>
-            <span className="text-sm font-medium text-gray-900">
-              {profile.influencerData.responseTime}
-            </span>
-          </div>
-          
           {profile.influencerData.availableForCollabs && (
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>

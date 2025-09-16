@@ -260,10 +260,8 @@ export class AutomaticCampaignService {
       relevanceScore += 50; // No country restriction
     }
     
-    // Response time score (faster = better)
-    const responseTimeScore = card.serviceDetails.responseTime === '1 hour' ? 100 :
-                             card.serviceDetails.responseTime === '24 hours' ? 80 :
-                             card.serviceDetails.responseTime === '48 hours' ? 60 : 40;
+    // Response time score (removed field, use default value)
+    const responseTimeScore = 80; // Default value since response time field is removed
     
     // Calculate weighted score
     const totalScore = (

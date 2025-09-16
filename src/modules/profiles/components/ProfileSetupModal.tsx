@@ -39,7 +39,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
     } as InfluencerMetrics,
     contentCategories: [] as string[],
     availableForCollabs: true,
-    responseTime: '24 hours',
     pricing: {
       post: 0,
       story: 0,
@@ -135,7 +134,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
           },
           contentCategories: currentProfile.influencerData.contentCategories || [],
           availableForCollabs: currentProfile.influencerData.availableForCollabs ?? true,
-          responseTime: currentProfile.influencerData.responseTime || '24 hours',
           pricing: currentProfile.influencerData.pricing || {
             post: 0,
             story: 0,
@@ -188,7 +186,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
         },
         contentCategories: [],
         availableForCollabs: true,
-        responseTime: '24 hours',
         pricing: {
           post: 0,
           story: 0,
@@ -362,7 +359,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
       },
       contentCategories: [],
       availableForCollabs: true,
-      responseTime: '24 hours',
       pricing: {
         post: 0,
         story: 0,
@@ -721,21 +717,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="5000"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('profile.fields.responseTime')}
-                    </label>
-                    <select
-                      value={influencerData.responseTime}
-                      onChange={(e) => setInfluencerData(prev => ({ ...prev, responseTime: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="1 hour">{t('time.within1Hour')}</option>
-                      <option value="24 hours">{t('time.within24Hours')}</option>
-                      <option value="48 hours">{t('time.within48Hours')}</option>
-                      <option value="1 week">{t('time.within1Week')}</option>
-                    </select>
                   </div>
                 </div>
               </div>
