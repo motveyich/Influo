@@ -308,38 +308,18 @@ export class AdvertiserCardService {
     }
 
     if (cardData.budget) {
-      if (cardData.budget.type === 'fixed' && (!cardData.budget.amount || cardData.budget.amount <= 0)) {
-        errors.push('Valid budget amount is required for fixed budget');
-      }
-      if (cardData.budget.type === 'range') {
-        if (!cardData.budget.min || cardData.budget.min <= 0) {
-          errors.push('Valid minimum budget is required for range budget');
-        }
-        if (!cardData.budget.max || cardData.budget.max <= 0) {
-          errors.push('Valid maximum budget is required for range budget');
-        }
-        if (cardData.budget.min && cardData.budget.max && cardData.budget.min > cardData.budget.max) {
-          errors.push('Minimum budget cannot be greater than maximum budget');
-        }
+      if (!cardData.budget.amount || cardData.budget.amount <= 0) {
+        errors.push('Valid budget amount is required');
       }
     }
 
-    if (cardData.campaignFormat && cardData.campaignFormat.length === 0) {
-      errors.push('At least one campaign format is required');
+    if (cardData.serviceFormat && cardData.serviceFormat.length === 0) {
+      errors.push('At least one service format is required');
     }
 
-    if (cardData.influencerRequirements) {
-      if (!cardData.influencerRequirements.platforms || cardData.influencerRequirements.platforms.length === 0) {
-        errors.push('At least one platform is required');
-      }
-      if (cardData.influencerRequirements.minReach && cardData.influencerRequirements.minReach < 0) {
-        errors.push('Minimum reach cannot be negative');
-      }
-    }
-
-    if (cardData.targetAudience) {
-      if (!cardData.targetAudience.countries || cardData.targetAudience.countries.length === 0) {
-        errors.push('At least one target country is required');
+    if (cardData.contactInfo) {
+      if (!cardData.contactInfo.email?.trim()) {
+        errors.push('Contact email is required');
       }
     }
 
