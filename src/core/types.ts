@@ -128,41 +128,43 @@ export interface AdvertiserCard {
   companyName: string;
   campaignTitle: string;
   campaignDescription: string;
-  productType: string;
+  platform: 'vk' | 'youtube' | 'instagram' | 'telegram' | 'ok' | 'facebook' | 'twitter' | 'tiktok' | 'twitch' | 'rutube' | 'yandex_zen' | 'likee';
   budget: {
-    type: 'fixed' | 'range';
-    amount?: number;
-    min?: number;
-    max?: number;
+    amount: number;
     currency: string;
   };
   targetAudience: {
     description: string;
-    categories: string[];
+    interests: string[];
     ageRange: [number, number];
-    genders: string[];
+    ageGroups: Record<string, number>;
+    genderSplit: Record<string, number>;
     countries: string[];
+    topCountries: Array<{country: string; percentage: number}>;
   };
-  campaignFormat: string[];
+  serviceFormat: string[];
   campaignDuration: {
     startDate: string;
     endDate: string;
-    isFlexible: boolean;
   };
   influencerRequirements: {
-    platforms: string[];
-    minReach: number;
-    maxReach?: number;
-    contentThemes: string[];
-    engagementRate?: number;
-    locations?: string[];
+    minFollowers: number;
+    maxFollowers?: number;
+    minEngagementRate?: number;
   };
   contactInfo: {
     email: string;
     phone?: string;
     website?: string;
-    preferredContact: 'email' | 'phone' | 'chat';
   };
+  paymentInfo?: {
+    bankAccount?: string;
+    cardNumber?: string;
+    paypalEmail?: string;
+    cryptoAddress?: string;
+    accountHolder?: string;
+  };
+  blacklistedCategories: string[];
   campaignStats?: {
     completedCampaigns: number;
     averageRating: number;
@@ -170,9 +172,6 @@ export interface AdvertiserCard {
     successRate: number;
   };
   isActive: boolean;
-  isPriority: boolean;
-  priority: 'low' | 'medium' | 'high';
-  applicationDeadline?: string;
   createdAt: string;
   updatedAt: string;
 }

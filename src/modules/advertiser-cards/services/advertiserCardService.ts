@@ -229,39 +229,43 @@ export class AdvertiserCardService {
         companyName: 'EcoStyle',
         campaignTitle: 'Summer Sustainable Fashion Campaign',
         campaignDescription: 'Promote our new eco-friendly summer collection. Looking for fashion influencers who align with sustainability values.',
-        productType: 'fashion',
+        platform: 'instagram',
         budget: {
-          type: 'range',
-          min: 1000,
-          max: 5000,
-          currency: 'USD'
+          amount: 50000,
+          currency: 'RUB'
         },
         targetAudience: {
           description: 'Eco-conscious fashion enthusiasts aged 18-35',
-          categories: ['fashion', 'sustainability', 'lifestyle'],
+          interests: ['Мода и стиль', 'Экология и устойчивое развитие', 'Образ жизни'],
           ageRange: [18, 35],
-          genders: ['female', 'male'],
-          countries: ['US', 'CA', 'UK']
+          ageGroups: { '18-24': 40, '25-34': 50, '35-44': 10 },
+          genderSplit: { male: 30, female: 65, other: 5 },
+          countries: ['Россия', 'Беларусь', 'Казахстан'],
+          topCountries: [
+            { country: 'Россия', percentage: 70 },
+            { country: 'Беларусь', percentage: 20 },
+            { country: 'Казахстан', percentage: 10 }
+          ]
         },
-        campaignFormat: ['post', 'story', 'reel'],
+        serviceFormat: ['Пост', 'Рилс'],
         campaignDuration: {
           startDate: '2024-02-01T00:00:00Z',
-          endDate: '2024-03-01T00:00:00Z',
-          isFlexible: true
+          endDate: '2024-03-01T00:00:00Z'
         },
         influencerRequirements: {
-          platforms: ['instagram', 'tiktok'],
-          minReach: 10000,
-          maxReach: 500000,
-          contentThemes: ['fashion', 'sustainability'],
-          engagementRate: 3.0,
-          locations: ['US', 'CA', 'UK']
+          minFollowers: 10000,
+          maxFollowers: 500000,
+          minEngagementRate: 3.0
         },
         contactInfo: {
           email: 'partnerships@ecostyle.com',
-          website: 'https://ecostyle.com',
-          preferredContact: 'email'
+          website: 'https://ecostyle.com'
         },
+        paymentInfo: {
+          bankAccount: '40817810099910004312',
+          accountHolder: 'ООО ЭкоСтиль'
+        },
+        blacklistedCategories: ['Алкоголь', 'Табак'],
         campaignStats: {
           completedCampaigns: 12,
           averageRating: 4.6,
@@ -320,9 +324,6 @@ export class AdvertiserCardService {
           totalInfluencersWorked: 28,
           successRate: 78
         },
-        isActive: true,
-        isPriority: false,
-        priority: 'medium',
         createdAt: '2024-01-10T00:00:00Z',
         updatedAt: '2024-01-18T14:20:00Z'
       }
@@ -390,18 +391,17 @@ export class AdvertiserCardService {
       companyName: dbData.company_name,
       campaignTitle: dbData.campaign_title,
       campaignDescription: dbData.campaign_description,
-      productType: dbData.product_type,
+      platform: dbData.platform,
       budget: dbData.budget,
       targetAudience: dbData.target_audience,
-      campaignFormat: dbData.campaign_format,
+      serviceFormat: dbData.service_format,
       campaignDuration: dbData.campaign_duration,
       influencerRequirements: dbData.influencer_requirements,
       contactInfo: dbData.contact_info,
+      paymentInfo: dbData.payment_info,
+      blacklistedCategories: dbData.blacklisted_categories || [],
       campaignStats: dbData.campaign_stats,
       isActive: dbData.is_active,
-      isPriority: dbData.is_priority,
-      priority: dbData.priority,
-      applicationDeadline: dbData.application_deadline,
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };

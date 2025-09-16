@@ -167,16 +167,12 @@ export function AdvertiserCardDisplay({
   const formatCurrency = (budget: AdvertiserCard['budget']) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: budget.currency,
+      currency: budget.currency || 'RUB',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
 
-    if (budget.type === 'fixed') {
-      return formatter.format(budget.amount || 0);
-    } else {
-      return `${formatter.format(budget.min || 0)} - ${formatter.format(budget.max || 0)}`;
-    }
+    return formatter.format(budget.amount || 0);
   };
 
   const formatNumber = (num: number) => {
@@ -185,80 +181,57 @@ export function AdvertiserCardDisplay({
     return num.toString();
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
+  const getPlatformColor = (platform: string) => {
+    switch (platform) {
+      case 'vk':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'telegram':
+        return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'ok':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'facebook':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'twitch':
+        return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'rutube':
         return 'bg-red-100 text-red-700 border-red-200';
-      case 'medium':
+      case 'yandex_zen':
         return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'low':
-        return 'bg-green-100 text-green-700 border-green-200';
-      default:
+      case 'likee':
+        return 'bg-pink-100 text-pink-700 border-pink-200';
+      case 'instagram':
+        return 'bg-pink-100 text-pink-700 border-pink-200';
+      case 'youtube':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'twitter':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'tiktok':
         return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
-
-  const getProductTypeColor = (productType: string) => {
-    switch (productType) {
-      case 'fashion':
-        return 'bg-pink-100 text-pink-700';
-      case 'technology':
-        return 'bg-blue-100 text-blue-700';
-      case 'food':
-        return 'bg-orange-100 text-orange-700';
-      case 'travel':
-        return 'bg-green-100 text-green-700';
-      case 'fitness':
-        return 'bg-purple-100 text-purple-700';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-purple-100 text-purple-700 border-purple-200';
     }
-  };
-
-  const isDeadlineApproaching = () => {
-    if (!card.applicationDeadline) return false;
-    const deadline = new Date(card.applicationDeadline);
-    const now = new Date();
-    const daysUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return daysUntilDeadline <= 3 && daysUntilDeadline > 0;
-  };
-
-  const isDeadlinePassed = () => {
-    if (!card.applicationDeadline) return false;
-    return new Date(card.applicationDeadline) < new Date();
   };
 
   return (
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 p-6 border ${
-      !card.isActive ? 'opacity-60 border-gray-300' : 
-      card.isPriority ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-200'
+      !card.isActive ? 'opacity-60 border-gray-300' : 'border-gray-200'
     }`}>
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
+          <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {card.campaignTitle}
             </h3>
-            {card.isPriority && (
-              <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(card.priority)}`}>
-                {card.priority === 'high' ? 'Высокий приоритет' : 
-                 card.priority === 'medium' ? 'Средний приоритет' : 'Низкий приоритет'}
-              </span>
-            )}
+            <span className={`px-3 py-1 text-sm font-medium rounded-full border capitalize ${getPlatformColor(card.platform)}`}>
+              {card.platform}
+            </span>
           </div>
           <div className="flex items-center space-x-3 mb-2">
             <div className="flex items-center space-x-1">
               <Building className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-medium text-gray-900">{card.companyName}</span>
             </div>
-            <span className={`px-2 py-1 text-xs font-medium rounded-md ${getProductTypeColor(card.productType)}`}>
-              {card.productType === 'fashion' ? 'Мода' :
-               card.productType === 'technology' ? 'Технологии' :
-               card.productType === 'food' ? 'Еда и напитки' :
-               card.productType === 'travel' ? 'Путешествия' :
-               card.productType === 'fitness' ? 'Фитнес' : card.productType}
-            </span>
           </div>
         </div>
         
@@ -324,21 +297,17 @@ export function AdvertiserCardDisplay({
       {/* Campaign Formats */}
       <div className="mb-4">
         <div className="flex flex-wrap gap-1">
-          {card.campaignFormat.slice(0, 4).map((format, index) => (
+          {card.serviceFormat.slice(0, 4).map((format, index) => (
             <span
               key={index}
               className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
             >
-              {format === 'post' ? 'Пост' :
-               format === 'story' ? 'Сторис' :
-               format === 'reel' ? 'Рилс' :
-               format === 'video' ? 'Видео' :
-               format === 'unboxing' ? 'Распаковка' : format}
+              {format}
             </span>
           ))}
-          {card.campaignFormat.length > 4 && (
+          {card.serviceFormat.length > 4 && (
             <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-              +{card.campaignFormat.length - 4} еще
+              +{card.serviceFormat.length - 4} еще
             </span>
           )}
         </div>
@@ -346,20 +315,12 @@ export function AdvertiserCardDisplay({
 
       {/* Requirements */}
       <div className="space-y-2 mb-4">
-        {/* Platforms */}
-        <div className="flex items-center space-x-2">
-          <Target className="w-4 h-4 text-purple-600" />
-          <span className="text-sm text-gray-600">
-            Платформы: {card.influencerRequirements.platforms.join(', ')}
-          </span>
-        </div>
-
-        {/* Reach */}
+        {/* Follower Requirements */}
         <div className="flex items-center space-x-2">
           <Users className="w-4 h-4 text-green-600" />
           <span className="text-sm text-gray-600">
-            Охват: {formatNumber(card.influencerRequirements.minReach)}
-            {card.influencerRequirements.maxReach && ` - ${formatNumber(card.influencerRequirements.maxReach)}`}
+            Подписчики: от {formatNumber(card.influencerRequirements.minFollowers)}
+            {card.influencerRequirements.maxFollowers && ` до ${formatNumber(card.influencerRequirements.maxFollowers)}`}
           </span>
         </div>
 
@@ -367,9 +328,9 @@ export function AdvertiserCardDisplay({
         <div className="flex items-center space-x-2">
           <MapPin className="w-4 h-4 text-red-600" />
           <span className="text-sm text-gray-600">
-            {card.targetAudience.countries.slice(0, 3).join(', ')}
-            {card.targetAudience.countries.length > 3 && 
-              ` +${card.targetAudience.countries.length - 3} еще`
+            {card.targetAudience.topCountries.slice(0, 3).map(item => item.country).join(', ')}
+            {card.targetAudience.topCountries.length > 3 && 
+              ` +${card.targetAudience.topCountries.length - 3} еще`
             }
           </span>
         </div>
@@ -427,31 +388,6 @@ export function AdvertiserCardDisplay({
               ) : (
                 <ToggleLeft className="w-4 h-4" />
               )}
-              <span>{card.isActive ? 'Активна' : 'Неактивна'}</span>
-            </button>
-          </div>
-          {card.campaignStats && (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => onViewAnalytics?.(card.id)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>Подробнее</span>
-              </button>
-              
-              <button
-                onClick={() => onDelete?.(card.id)}
-                className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                title="Удалить карточку"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Удалить</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {card.campaignStats && (
         <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200">
@@ -482,7 +418,7 @@ export function AdvertiserCardDisplay({
       </div>
 
       {/* Actions */}
-      {!showActions && !isDeadlinePassed() && !isOwnCard && (
+      {!showActions && !isOwnCard && (
         <div className="space-y-2">
           {/* Primary Actions */}
           <div className="flex space-x-2">
@@ -545,17 +481,6 @@ export function AdvertiserCardDisplay({
           <p className="text-sm text-blue-700 mt-1">
             Перейдите в "Мои карточки" для редактирования
           </p>
-        </div>
-      )}
-
-      {isDeadlinePassed() && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-red-600" />
-            <span className="text-sm font-medium text-red-800">
-              Срок подачи заявок истек
-            </span>
-          </div>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdvertiserCard } from '../../../core/types';
 import { advertiserCardService } from '../services/advertiserCardService';
-import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Building } from 'lucide-react';
+import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Building, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface AdvertiserCardModalProps {
@@ -12,29 +12,86 @@ interface AdvertiserCardModalProps {
   onCardSaved: (card: AdvertiserCard) => void;
 }
 
-const PRODUCT_TYPES = [
-  { value: 'fashion', label: 'Мода и красота' },
-  { value: 'technology', label: 'Технологии' },
-  { value: 'food', label: 'Еда и напитки' },
-  { value: 'travel', label: 'Путешествия' },
-  { value: 'fitness', label: 'Фитнес и здоровье' },
-  { value: 'lifestyle', label: 'Образ жизни' },
-  { value: 'automotive', label: 'Автомобили' },
-  { value: 'finance', label: 'Финансы' },
-  { value: 'education', label: 'Образование' },
-  { value: 'other', label: 'Другое' }
+const PLATFORMS = [
+  { value: 'vk', label: 'ВКонтакте' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'ok', label: 'Одноклассники' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'twitter', label: 'Twitter / X' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'twitch', label: 'Twitch' },
+  { value: 'rutube', label: 'RuTube' },
+  { value: 'yandex_zen', label: 'Яндекс.Дзен' },
+  { value: 'likee', label: 'Likee' }
 ];
 
-const CAMPAIGN_FORMATS = [
-  'post', 'story', 'reel', 'video', 'live', 'unboxing', 'review', 'tutorial', 'integration'
+const SERVICE_FORMATS = [
+  'Пост',
+  'Видео', 
+  'Рилс',
+  'Упоминание в видео'
 ];
 
-const PLATFORMS = ['instagram', 'youtube', 'twitter', 'tiktok'];
-const COUNTRIES = ['US', 'UK', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BR', 'MX', 'IN'];
-const GENDERS = ['male', 'female', 'non-binary'];
-const CONTENT_THEMES = [
-  'fashion', 'beauty', 'lifestyle', 'travel', 'food', 'fitness', 'technology', 
-  'gaming', 'music', 'art', 'business', 'education', 'reviews', 'unboxing'
+const COUNTRIES = [
+  'Россия',
+  'Беларусь', 
+  'Казахстан',
+  'Украина',
+  'Узбекистан',
+  'Киргизия',
+  'Таджикистан',
+  'Армения',
+  'Азербайджан',
+  'Молдова',
+  'Грузия',
+  'США',
+  'Германия',
+  'Великобритания',
+  'Франция',
+  'Италия',
+  'Испания',
+  'Канада',
+  'Австралия',
+  'Турция',
+  'Польша',
+  'Чехия'
+];
+
+const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
+
+const INTERESTS = [
+  'Мода и стиль',
+  'Красота и косметика', 
+  'Образ жизни',
+  'Путешествия и туризм',
+  'Еда и кулинария',
+  'Фитнес и здоровье',
+  'Спорт',
+  'Технологии и гаджеты',
+  'Игры и киберспорт',
+  'Музыка и развлечения',
+  'Искусство и творчество',
+  'Бизнес и предпринимательство',
+  'Образование и обучение',
+  'Наука и исследования',
+  'Автомобили и транспорт',
+  'Недвижимость и дизайн интерьера',
+  'Финансы и инвестиции',
+  'Родительство и семья',
+  'Домашние животные',
+  'Книги и литература',
+  'Кино и сериалы',
+  'Фотография',
+  'Дизайн и архитектура',
+  'Политика и общество',
+  'Экология и устойчивое развитие',
+  'Психология и саморазвитие',
+  'Медицина и здравоохранение',
+  'Юмор и комедия',
+  'Новости и журналистика',
+  'Религия и духовность'
 ];
 
 export function AdvertiserCardModal({ 
@@ -52,60 +109,84 @@ export function AdvertiserCardModal({
     companyName: '',
     campaignTitle: '',
     campaignDescription: '',
-    productType: 'fashion',
+    platform: 'vk' as const,
     budget: {
-      type: 'range' as 'fixed' | 'range',
       amount: 0,
-      min: 0,
-      max: 0,
-      currency: 'USD'
+      currency: 'RUB'
     },
     targetAudience: {
       description: '',
-      categories: [] as string[],
+      interests: [] as string[],
       ageRange: [18, 35] as [number, number],
-      genders: [] as string[],
-      countries: [] as string[]
+      ageGroups: {} as Record<string, number>,
+      genderSplit: { male: 50, female: 50, other: 0 },
+      countries: [] as string[],
+      topCountries: [] as Array<{country: string; percentage: number}>
     },
-    campaignFormat: [] as string[],
+    serviceFormat: [] as string[],
     campaignDuration: {
       startDate: '',
-      endDate: '',
-      isFlexible: false
+      endDate: ''
     },
     influencerRequirements: {
-      platforms: [] as string[],
-      minReach: 0,
-      maxReach: 0,
-      contentThemes: [] as string[],
-      engagementRate: 0,
-      locations: [] as string[]
+      minFollowers: 0,
+      maxFollowers: 0,
+      minEngagementRate: 0
     },
     contactInfo: {
       email: '',
       phone: '',
-      website: '',
-      preferredContact: 'email' as 'email' | 'phone' | 'chat'
+      website: ''
     },
-    priority: 'medium' as 'low' | 'medium' | 'high',
-    applicationDeadline: ''
+    paymentInfo: {
+      bankAccount: '',
+      cardNumber: '',
+      paypalEmail: '',
+      cryptoAddress: '',
+      accountHolder: ''
+    },
+    blacklistedCategories: [] as string[]
   });
 
   useEffect(() => {
     if (currentCard) {
+      // Convert old format to new format
+      const oldTopCountries = currentCard.targetAudience.countries || [];
+      const convertedCountries = oldTopCountries.slice(0, 3).map((country, index) => ({
+        country,
+        percentage: index === 0 ? 50 : index === 1 ? 30 : 20
+      }));
+
       setFormData({
         companyName: currentCard.companyName,
         campaignTitle: currentCard.campaignTitle,
         campaignDescription: currentCard.campaignDescription,
-        productType: currentCard.productType,
-        budget: currentCard.budget,
-        targetAudience: currentCard.targetAudience,
-        campaignFormat: currentCard.campaignFormat,
+        platform: currentCard.platform as any,
+        budget: {
+          amount: currentCard.budget.amount || 0,
+          currency: currentCard.budget.currency
+        },
+        targetAudience: {
+          description: currentCard.targetAudience.description,
+          interests: currentCard.targetAudience.interests || [],
+          ageRange: currentCard.targetAudience.ageRange,
+          ageGroups: currentCard.targetAudience.ageGroups || {},
+          genderSplit: currentCard.targetAudience.genderSplit || { male: 50, female: 50, other: 0 },
+          countries: currentCard.targetAudience.countries,
+          topCountries: convertedCountries
+        },
+        serviceFormat: currentCard.serviceFormat || [],
         campaignDuration: currentCard.campaignDuration,
         influencerRequirements: currentCard.influencerRequirements,
         contactInfo: currentCard.contactInfo,
-        priority: currentCard.priority,
-        applicationDeadline: currentCard.applicationDeadline || ''
+        paymentInfo: currentCard.paymentInfo || {
+          bankAccount: '',
+          cardNumber: '',
+          paypalEmail: '',
+          cryptoAddress: '',
+          accountHolder: ''
+        },
+        blacklistedCategories: currentCard.blacklistedCategories || []
       });
     } else {
       // Reset form for new card
@@ -113,28 +194,29 @@ export function AdvertiserCardModal({
         companyName: '',
         campaignTitle: '',
         campaignDescription: '',
-        productType: 'fashion',
-        budget: { type: 'range', amount: 0, min: 0, max: 0, currency: 'USD' },
+        platform: 'vk',
+        budget: { amount: 0, currency: 'RUB' },
         targetAudience: {
           description: '',
-          categories: [],
+          interests: [],
           ageRange: [18, 35],
-          genders: [],
-          countries: []
+          ageGroups: {},
+          genderSplit: { male: 50, female: 50, other: 0 },
+          countries: [],
+          topCountries: []
         },
-        campaignFormat: [],
-        campaignDuration: { startDate: '', endDate: '', isFlexible: false },
-        influencerRequirements: {
-          platforms: [],
-          minReach: 0,
-          maxReach: 0,
-          contentThemes: [],
-          engagementRate: 0,
-          locations: []
+        serviceFormat: [],
+        campaignDuration: { startDate: '', endDate: '' },
+        influencerRequirements: { minFollowers: 0, maxFollowers: 0, minEngagementRate: 0 },
+        contactInfo: { email: '', phone: '', website: '' },
+        paymentInfo: {
+          bankAccount: '',
+          cardNumber: '',
+          paypalEmail: '',
+          cryptoAddress: '',
+          accountHolder: ''
         },
-        contactInfo: { email: '', phone: '', website: '', preferredContact: 'email' },
-        priority: 'medium',
-        applicationDeadline: ''
+        blacklistedCategories: []
       });
     }
     setErrors({});
@@ -157,32 +239,30 @@ export function AdvertiserCardModal({
       newErrors.campaignDescription = 'Описание должно содержать минимум 20 символов';
     }
 
-    if (formData.budget.type === 'fixed' && formData.budget.amount <= 0) {
+    if (formData.budget.amount <= 0) {
       newErrors.budget = 'Укажите корректную сумму бюджета';
     }
 
-    if (formData.budget.type === 'range') {
-      if (formData.budget.min <= 0) {
-        newErrors.minBudget = 'Минимальный бюджет должен быть больше 0';
-      }
-      if (formData.budget.max <= 0) {
-        newErrors.maxBudget = 'Максимальный бюджет должен быть больше 0';
-      }
-      if (formData.budget.min > formData.budget.max) {
-        newErrors.budget = 'Минимальный бюджет не может быть больше максимального';
-      }
+    if (formData.serviceFormat.length === 0) {
+      newErrors.serviceFormat = 'Выберите хотя бы один формат услуги';
     }
 
-    if (formData.campaignFormat.length === 0) {
-      newErrors.campaignFormat = 'Выберите хотя бы один формат кампании';
-    }
-
-    if (formData.influencerRequirements.platforms.length === 0) {
-      newErrors.platforms = 'Выберите хотя бы одну платформу';
-    }
-
-    if (formData.targetAudience.countries.length === 0) {
+    if (formData.targetAudience.topCountries.length === 0) {
       newErrors.countries = 'Выберите хотя бы одну страну';
+    } else if (formData.targetAudience.topCountries.length > 3) {
+      newErrors.countries = 'Можно выбрать максимум 3 страны';
+    }
+
+    // Validate country percentages
+    const countrySum = formData.targetAudience.topCountries.reduce((sum, item) => sum + item.percentage, 0);
+    if (countrySum > 100) {
+      newErrors.countries = `Сумма процентов по странам не может превышать 100% (текущая: ${countrySum}%)`;
+    }
+
+    // Validate age group percentages
+    const ageGroupSum = Object.values(formData.targetAudience.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
+    if (ageGroupSum > 100) {
+      newErrors.ageGroups = `Сумма процентов по возрастным группам не может превышать 100% (текущая: ${ageGroupSum}%)`;
     }
 
     if (!formData.campaignDuration.startDate) {
@@ -223,7 +303,7 @@ export function AdvertiserCardModal({
       const cardData: Partial<AdvertiserCard> = {
         userId,
         ...formData,
-        isPriority: formData.priority === 'high'
+        isActive: true
       };
 
       let savedCard: AdvertiserCard;
@@ -251,6 +331,90 @@ export function AdvertiserCardModal({
     } else {
       setter([...array, item]);
     }
+  };
+
+  const handleInterestToggle = (interest: string) => {
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: {
+        ...prev.targetAudience,
+        interests: prev.targetAudience.interests.includes(interest)
+          ? prev.targetAudience.interests.filter(i => i !== interest)
+          : [...prev.targetAudience.interests, interest]
+      }
+    }));
+  };
+
+  const handleBlacklistToggle = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      blacklistedCategories: prev.blacklistedCategories.includes(category)
+        ? prev.blacklistedCategories.filter(c => c !== category)
+        : [...prev.blacklistedCategories, category]
+    }));
+  };
+
+  const handleAgeGroupChange = (ageGroup: string, percentage: number) => {
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: {
+        ...prev.targetAudience,
+        ageGroups: {
+          ...prev.targetAudience.ageGroups,
+          [ageGroup]: Math.max(0, Math.min(100, percentage))
+        }
+      }
+    }));
+  };
+
+  const handleCountryAdd = () => {
+    if (formData.targetAudience.topCountries.length >= 3) {
+      toast.error('Можно выбрать максимум 3 страны');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: {
+        ...prev.targetAudience,
+        topCountries: [
+          ...prev.targetAudience.topCountries,
+          { country: COUNTRIES[0], percentage: 0 }
+        ]
+      }
+    }));
+  };
+
+  const handleCountryRemove = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: {
+        ...prev.targetAudience,
+        topCountries: prev.targetAudience.topCountries.filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const handleCountryChange = (index: number, field: 'country' | 'percentage', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      targetAudience: {
+        ...prev.targetAudience,
+        topCountries: prev.targetAudience.topCountries.map((item, i) => 
+          i === index 
+            ? { ...item, [field]: field === 'percentage' ? Math.max(0, Math.min(100, Number(value))) : value }
+            : item
+        )
+      }
+    }));
+  };
+
+  const getAgeGroupSum = () => {
+    return Object.values(formData.targetAudience.ageGroups).reduce((sum, percentage) => sum + percentage, 0);
+  };
+
+  const getCountrySum = () => {
+    return formData.targetAudience.topCountries.reduce((sum, item) => sum + item.percentage, 0);
   };
 
   if (!isOpen) return null;
@@ -303,46 +467,29 @@ export function AdvertiserCardModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тип продукта/услуги *
+                  Название кампании *
                 </label>
-                <select
-                  value={formData.productType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, productType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  {PRODUCT_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  value={formData.campaignTitle}
+                  onChange={(e) => setFormData(prev => ({ ...prev, campaignTitle: e.target.value }))}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.campaignTitle ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Введите название кампании"
+                />
+                {errors.campaignTitle && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.campaignTitle}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Название кампании *
-              </label>
-              <input
-                type="text"
-                value={formData.campaignTitle}
-                onChange={(e) => setFormData(prev => ({ ...prev, campaignTitle: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.campaignTitle ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Введите название кампании"
-              />
-              {errors.campaignTitle && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.campaignTitle}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Описание кампании *
+                Описание задачи/бриф *
               </label>
               <textarea
                 value={formData.campaignDescription}
@@ -351,7 +498,7 @@ export function AdvertiserCardModal({
                 className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.campaignDescription ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="Опишите цели кампании, продукт/услугу, ожидания от сотрудничества..."
+                placeholder="Опишите задачу, цели кампании, требования к контенту..."
               />
               {errors.campaignDescription && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -362,294 +509,352 @@ export function AdvertiserCardModal({
             </div>
           </div>
 
-          {/* Budget */}
+          {/* Platform Selection */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Бюджет</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тип бюджета
-                </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="fixed"
-                      checked={formData.budget.type === 'fixed'}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        budget: { ...prev.budget, type: e.target.value as 'fixed' | 'range' }
-                      }))}
-                      className="mr-2"
-                    />
-                    Фиксированная сумма
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="range"
-                      checked={formData.budget.type === 'range'}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        budget: { ...prev.budget, type: e.target.value as 'fixed' | 'range' }
-                      }))}
-                      className="mr-2"
-                    />
-                    Диапазон
-                  </label>
-                </div>
-              </div>
-
-              {formData.budget.type === 'fixed' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Сумма бюджета *
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="number"
-                        value={formData.budget.amount}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          budget: { ...prev.budget, amount: parseInt(e.target.value) || 0 }
-                        }))}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                          errors.budget ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="2500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Валюта
-                    </label>
-                    <select
-                      value={formData.budget.currency}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        budget: { ...prev.budget, currency: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Минимальный бюджет *
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="number"
-                        value={formData.budget.min}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          budget: { ...prev.budget, min: parseInt(e.target.value) || 0 }
-                        }))}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                          errors.minBudget ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="1000"
-                      />
-                    </div>
-                    {errors.minBudget && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.minBudget}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Максимальный бюджет *
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="number"
-                        value={formData.budget.max}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          budget: { ...prev.budget, max: parseInt(e.target.value) || 0 }
-                        }))}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                          errors.maxBudget ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="5000"
-                      />
-                    </div>
-                    {errors.maxBudget && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.maxBudget}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Валюта
-                    </label>
-                    <select
-                      value={formData.budget.currency}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        budget: { ...prev.budget, currency: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-              {errors.budget && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.budget}
-                </p>
-              )}
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Площадка *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {PLATFORMS.map((platform) => (
+                <button
+                  key={platform.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, platform: platform.value as any }))}
+                  className={`p-3 border rounded-lg flex items-center justify-center transition-colors ${
+                    formData.platform === platform.value
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <span className="text-sm font-medium text-center">{platform.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Campaign Format */}
+          {/* Service Format */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Формат рекламы</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {CAMPAIGN_FORMATS.map((format) => (
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Формат услуги *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {SERVICE_FORMATS.map((format) => (
                 <button
                   key={format}
                   type="button"
                   onClick={() => handleArrayToggle(
-                    formData.campaignFormat,
+                    formData.serviceFormat,
                     format,
-                    (newFormats) => setFormData(prev => ({ ...prev, campaignFormat: newFormats }))
+                    (newFormats) => setFormData(prev => ({ ...prev, serviceFormat: newFormats }))
                   )}
                   className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                    formData.campaignFormat.includes(format)
+                    formData.serviceFormat.includes(format)
                       ? 'bg-blue-100 border-blue-300 text-blue-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  {format === 'post' ? 'Пост' :
-                   format === 'story' ? 'Сторис' :
-                   format === 'reel' ? 'Рилс' :
-                   format === 'video' ? 'Видео' :
-                   format === 'live' ? 'Прямой эфир' :
-                   format === 'unboxing' ? 'Распаковка' :
-                   format === 'review' ? 'Обзор' :
-                   format === 'tutorial' ? 'Туториал' :
-                   format === 'integration' ? 'Интеграция' : format}
+                  {format}
                 </button>
               ))}
             </div>
-            {errors.campaignFormat && (
+            {errors.serviceFormat && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
-                {errors.campaignFormat}
+                {errors.serviceFormat}
               </p>
             )}
           </div>
 
-          {/* Target Audience */}
+          {/* Budget */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Целевая аудитория</h3>
-            <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Бюджет</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Описание целевой аудитории
+                  Сумма бюджета *
                 </label>
-                <textarea
-                  value={formData.targetAudience.description}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    targetAudience: { ...prev.targetAudience, description: e.target.value }
-                  }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Опишите вашу целевую аудиторию..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Возрастной диапазон: {formData.targetAudience.ageRange[0]} - {formData.targetAudience.ageRange[1]}
-                </label>
-                <div className="flex space-x-4">
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
-                    type="range"
-                    min="13"
-                    max="65"
-                    value={formData.targetAudience.ageRange[0]}
+                    type="number"
+                    value={formData.budget.amount}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      targetAudience: {
-                        ...prev.targetAudience,
-                        ageRange: [parseInt(e.target.value), prev.targetAudience.ageRange[1]]
-                      }
+                      budget: { ...prev.budget, amount: parseInt(e.target.value) || 0 }
                     }))}
-                    className="flex-1"
-                  />
-                  <input
-                    type="range"
-                    min="13"
-                    max="65"
-                    value={formData.targetAudience.ageRange[1]}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      targetAudience: {
-                        ...prev.targetAudience,
-                        ageRange: [prev.targetAudience.ageRange[0], parseInt(e.target.value)]
-                      }
-                    }))}
-                    className="flex-1"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      errors.budget ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="50000"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Целевые страны *
-                </label>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  {COUNTRIES.map((country) => (
-                    <button
-                      key={country}
-                      type="button"
-                      onClick={() => handleArrayToggle(
-                        formData.targetAudience.countries,
-                        country,
-                        (newCountries) => setFormData(prev => ({
-                          ...prev,
-                          targetAudience: { ...prev.targetAudience, countries: newCountries }
-                        }))
-                      )}
-                      className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-                        formData.targetAudience.countries.includes(country)
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {country}
-                    </button>
-                  ))}
-                </div>
-                {errors.countries && (
+                {errors.budget && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.countries}
+                    {errors.budget}
                   </p>
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Валюта
+                </label>
+                <select
+                  value={formData.budget.currency}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    budget: { ...prev.budget, currency: e.target.value }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="RUB">₽ Рубли</option>
+                  <option value="USD">$ Доллары</option>
+                  <option value="EUR">€ Евро</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Target Audience Demographics */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Целевая аудитория</h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Описание целевой аудитории
+              </label>
+              <textarea
+                value={formData.targetAudience.description}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  targetAudience: { ...prev.targetAudience, description: e.target.value }
+                }))}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Опишите вашу целевую аудиторию..."
+              />
+            </div>
+
+            {/* Countries */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  География аудитории * (максимум 3 страны)
+                </label>
+                <button
+                  type="button"
+                  onClick={handleCountryAdd}
+                  disabled={formData.targetAudience.topCountries.length >= 3}
+                  className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Добавить страну</span>
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.targetAudience.topCountries.map((item, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <select
+                      value={item.country}
+                      onChange={(e) => handleCountryChange(index, 'country', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={item.percentage}
+                      onChange={(e) => handleCountryChange(index, 'percentage', e.target.value)}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                    <span className="text-sm text-gray-600">%</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCountryRemove(index)}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-2 text-sm text-gray-600">
+                Общий процент: {getCountrySum()}% / 100%
+                {getCountrySum() > 100 && (
+                  <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
+                )}
+              </div>
+              
+              {errors.countries && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.countries}
+                </p>
+              )}
+            </div>
+
+            {/* Interests */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Интересы аудитории
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {INTERESTS.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => handleInterestToggle(interest)}
+                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                      formData.targetAudience.interests.includes(interest)
+                        ? 'bg-purple-100 border-purple-300 text-purple-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Age Groups and Gender Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Age Groups */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Распределение по возрастным группам (%)
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {AGE_GROUPS.map((ageGroup) => (
+                    <div key={ageGroup}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        {ageGroup} лет
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.targetAudience.ageGroups[ageGroup] || 0}
+                        onChange={(e) => handleAgeGroupChange(ageGroup, parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-2 text-sm text-gray-600">
+                  Общий процент: {getAgeGroupSum()}% / 100%
+                  {getAgeGroupSum() > 100 && (
+                    <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
+                  )}
+                </div>
+                
+                {errors.ageGroups && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.ageGroups}
+                  </p>
+                )}
+              </div>
+
+              {/* Gender Split */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Распределение по полу (%)
+                </label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Мужчины
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.targetAudience.genderSplit.male}
+                      onChange={(e) => {
+                        const male = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - male;
+                        const female = Math.min(remaining, formData.targetAudience.genderSplit.female);
+                        const other = remaining - female;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          targetAudience: {
+                            ...prev.targetAudience,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Женщины
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.targetAudience.genderSplit.female}
+                      onChange={(e) => {
+                        const female = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - female;
+                        const male = Math.min(remaining, formData.targetAudience.genderSplit.male);
+                        const other = remaining - male;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          targetAudience: {
+                            ...prev.targetAudience,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Другое
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.targetAudience.genderSplit.other}
+                      onChange={(e) => {
+                        const other = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - other;
+                        const male = Math.min(remaining, formData.targetAudience.genderSplit.male);
+                        const female = remaining - male;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          targetAudience: {
+                            ...prev.targetAudience,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-2 text-sm text-gray-600">
+                  Общий процент: {formData.targetAudience.genderSplit.male + formData.targetAudience.genderSplit.female + formData.targetAudience.genderSplit.other}% / 100%
+                </div>
               </div>
             </div>
           </div>
@@ -657,7 +862,7 @@ export function AdvertiserCardModal({
           {/* Campaign Duration */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Сроки проведения кампании</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Дата начала *
@@ -710,191 +915,63 @@ export function AdvertiserCardModal({
                 )}
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Срок подачи заявок
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="date"
-                    value={formData.applicationDeadline}
-                    onChange={(e) => setFormData(prev => ({ ...prev, applicationDeadline: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Приоритет кампании
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="low">Низкий</option>
-                  <option value="medium">Средний</option>
-                  <option value="high">Высокий</option>
-                </select>
-              </div>
-            </div>
-
             {errors.timeline && (
               <p className="mt-2 text-sm text-red-600 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.timeline}
               </p>
             )}
-
-            <div className="mt-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.campaignDuration.isFlexible}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    campaignDuration: { ...prev.campaignDuration, isFlexible: e.target.checked }
-                  }))}
-                  className="mr-2"
-                />
-                Гибкие сроки (возможно обсуждение)
-              </label>
-            </div>
           </div>
 
           {/* Influencer Requirements */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Требования к инфлюенсеру</h3>
-            
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Платформы *
+                  Минимальное количество подписчиков
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {PLATFORMS.map((platform) => (
-                    <button
-                      key={platform}
-                      type="button"
-                      onClick={() => handleArrayToggle(
-                        formData.influencerRequirements.platforms,
-                        platform,
-                        (newPlatforms) => setFormData(prev => ({
-                          ...prev,
-                          influencerRequirements: { ...prev.influencerRequirements, platforms: newPlatforms }
-                        }))
-                      )}
-                      className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
-                        formData.influencerRequirements.platforms.includes(platform)
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {platform}
-                    </button>
-                  ))}
-                </div>
-                {errors.platforms && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.platforms}
-                  </p>
-                )}
+                <input
+                  type="number"
+                  value={formData.influencerRequirements.minFollowers}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    influencerRequirements: { ...prev.influencerRequirements, minFollowers: parseInt(e.target.value) || 0 }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="10000"
+                />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Минимальный охват
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.influencerRequirements.minReach}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      influencerRequirements: { ...prev.influencerRequirements, minReach: parseInt(e.target.value) || 0 }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="10000"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Максимальный охват
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.influencerRequirements.maxReach}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      influencerRequirements: { ...prev.influencerRequirements, maxReach: parseInt(e.target.value) || 0 }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="1000000"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Мин. вовлеченность (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.influencerRequirements.engagementRate}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      influencerRequirements: { ...prev.influencerRequirements, engagementRate: parseFloat(e.target.value) || 0 }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="3.0"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тематика контента
+                  Максимальное количество подписчиков
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {CONTENT_THEMES.map((theme) => (
-                    <button
-                      key={theme}
-                      type="button"
-                      onClick={() => handleArrayToggle(
-                        formData.influencerRequirements.contentThemes,
-                        theme,
-                        (newThemes) => setFormData(prev => ({
-                          ...prev,
-                          influencerRequirements: { ...prev.influencerRequirements, contentThemes: newThemes }
-                        }))
-                      )}
-                      className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                        formData.influencerRequirements.contentThemes.includes(theme)
-                          ? 'bg-green-100 border-green-300 text-green-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {theme === 'fashion' ? 'Мода' :
-                       theme === 'beauty' ? 'Красота' :
-                       theme === 'lifestyle' ? 'Образ жизни' :
-                       theme === 'travel' ? 'Путешествия' :
-                       theme === 'food' ? 'Еда' :
-                       theme === 'fitness' ? 'Фитнес' :
-                       theme === 'technology' ? 'Технологии' :
-                       theme === 'gaming' ? 'Игры' :
-                       theme === 'music' ? 'Музыка' :
-                       theme === 'art' ? 'Искусство' :
-                       theme === 'business' ? 'Бизнес' :
-                       theme === 'education' ? 'Образование' :
-                       theme === 'reviews' ? 'Обзоры' :
-                       theme === 'unboxing' ? 'Распаковка' : theme}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="number"
+                  value={formData.influencerRequirements.maxFollowers}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    influencerRequirements: { ...prev.influencerRequirements, maxFollowers: parseInt(e.target.value) || 0 }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="1000000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Минимальная вовлеченность (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.influencerRequirements.minEngagementRate}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    influencerRequirements: { ...prev.influencerRequirements, minEngagementRate: parseFloat(e.target.value) || 0 }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="3.0"
+                />
               </div>
             </div>
           </div>
@@ -902,7 +979,7 @@ export function AdvertiserCardModal({
           {/* Contact Information */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Контактные данные</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email для связи *
@@ -939,7 +1016,7 @@ export function AdvertiserCardModal({
                     contactInfo: { ...prev.contactInfo, phone: e.target.value }
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="+1-555-0123"
+                  placeholder="+7-xxx-xxx-xx-xx"
                 />
               </div>
 
@@ -958,25 +1035,123 @@ export function AdvertiserCardModal({
                   placeholder="https://company.com"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Payment Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Реквизиты для оплаты (опционально)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Банковский счет
+                </label>
+                <input
+                  type="text"
+                  value={formData.paymentInfo.bankAccount}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    paymentInfo: { ...prev.paymentInfo, bankAccount: e.target.value }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="40817810099910004312"
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Предпочтительный способ связи
+                  Номер карты
                 </label>
-                <select
-                  value={formData.contactInfo.preferredContact}
+                <input
+                  type="text"
+                  value={formData.paymentInfo.cardNumber}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    contactInfo: { ...prev.contactInfo, preferredContact: e.target.value as any }
+                    paymentInfo: { ...prev.paymentInfo, cardNumber: e.target.value }
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="email">Email</option>
-                  <option value="phone">Телефон</option>
-                  <option value="chat">Чат в платформе</option>
-                </select>
+                  placeholder="2202 2020 2020 2020"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PayPal Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.paymentInfo.paypalEmail}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    paymentInfo: { ...prev.paymentInfo, paypalEmail: e.target.value }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="payments@company.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Владелец счета/карты
+                </label>
+                <input
+                  type="text"
+                  value={formData.paymentInfo.accountHolder}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    paymentInfo: { ...prev.paymentInfo, accountHolder: e.target.value }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="ООО Компания"
+                />
               </div>
             </div>
+          </div>
+
+          {/* Blacklisted Categories */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Чёрный список категорий</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Выберите категории товаров/секторов бизнеса, с которыми вы НЕ хотите сотрудничать:
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {INTERESTS.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => handleBlacklistToggle(category)}
+                  className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                    formData.blacklistedCategories.includes(category)
+                      ? 'bg-red-100 border-red-300 text-red-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            {formData.blacklistedCategories.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-2">Исключенные категории:</p>
+                <div className="flex flex-wrap gap-1">
+                  {formData.blacklistedCategories.map((category, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs"
+                    >
+                      {category}
+                      <button
+                        type="button"
+                        onClick={() => handleBlacklistToggle(category)}
+                        className="ml-1 text-red-600 hover:text-red-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
