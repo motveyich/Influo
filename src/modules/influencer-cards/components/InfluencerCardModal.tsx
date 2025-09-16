@@ -775,44 +775,159 @@ export function InfluencerCardModal({
             {/* Interests */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Age Groups */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Распределение по возрастным группам (%)
+                Интересы аудитории
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {AGE_GROUPS.map((ageGroup) => (
-                  <div key={ageGroup}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {INTERESTS.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => handleInterestToggle(interest)}
+                    className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                      formData.audienceDemographics.interests.includes(interest)
+                        ? 'bg-purple-100 border-purple-300 text-purple-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Age Groups and Gender Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Age Groups */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Распределение по возрастным группам (%)
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {AGE_GROUPS.map((ageGroup) => (
+                    <div key={ageGroup}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        {ageGroup} лет
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.audienceDemographics.ageGroups[ageGroup] || 0}
+                        onChange={(e) => handleAgeGroupChange(ageGroup, parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-2 text-sm text-gray-600">
+                  Общий процент: {getAgeGroupSum()}% / 100%
+                  {getAgeGroupSum() > 100 && (
+                    <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
+                  )}
+                </div>
+                
+                {errors.ageGroups && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.ageGroups}
+                  </p>
+                )}
+              </div>
+
+              {/* Gender Split */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Распределение по полу (%)
+                </label>
+                <div className="space-y-3">
+                  <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      {ageGroup} лет
+                      Мужчины
                     </label>
                     <input
                       type="number"
                       min="0"
                       max="100"
-                      value={formData.audienceDemographics.ageGroups[ageGroup] || 0}
-                      onChange={(e) => handleAgeGroupChange(ageGroup, parseInt(e.target.value) || 0)}
+                      value={formData.audienceDemographics.genderSplit.male}
+                      onChange={(e) => {
+                        const male = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - male;
+                        const female = Math.min(remaining, formData.audienceDemographics.genderSplit.female);
+                        const other = remaining - female;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          audienceDemographics: {
+                            ...prev.audienceDemographics,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0"
                     />
                   </div>
-                ))}
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Женщины
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.audienceDemographics.genderSplit.female}
+                      onChange={(e) => {
+                        const female = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - female;
+                        const male = Math.min(remaining, formData.audienceDemographics.genderSplit.male);
+                        const other = remaining - male;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          audienceDemographics: {
+                            ...prev.audienceDemographics,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Другое
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.audienceDemographics.genderSplit.other}
+                      onChange={(e) => {
+                        const other = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                        const remaining = 100 - other;
+                        const male = Math.min(remaining, formData.audienceDemographics.genderSplit.male);
+                        const female = remaining - male;
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          audienceDemographics: {
+                            ...prev.audienceDemographics,
+                            genderSplit: { male, female, other }
+                          }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-2 text-sm text-gray-600">
+                  Общий процент: {formData.audienceDemographics.genderSplit.male + formData.audienceDemographics.genderSplit.female + formData.audienceDemographics.genderSplit.other}% / 100%
+                </div>
               </div>
-              
-              <div className="mt-2 text-sm text-gray-600">
-                Общий процент: {getAgeGroupSum()}% / 100%
-                {getAgeGroupSum() > 100 && (
-                  <span className="text-red-600 font-medium ml-2">Превышение лимита!</span>
-                )}
-              </div>
-              
-              {errors.ageGroups && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.ageGroups}
-                </p>
-              )}
             </div>
           </div>
         </div>
