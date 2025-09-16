@@ -14,18 +14,18 @@ interface InfluencerCardModalProps {
 }
 
 const PLATFORMS = [
-  { value: 'vk', label: 'ВКонтакте', icon: Zap },
-  { value: 'youtube', label: 'YouTube', icon: Youtube },
-  { value: 'instagram', label: 'Instagram', icon: Instagram },
-  { value: 'telegram', label: 'Telegram', icon: Zap },
-  { value: 'ok', label: 'Одноклассники', icon: Zap },
-  { value: 'facebook', label: 'Facebook', icon: Zap },
-  { value: 'twitter', label: 'Twitter / X', icon: Twitter },
-  { value: 'tiktok', label: 'TikTok', icon: Zap },
-  { value: 'twitch', label: 'Twitch', icon: Zap },
-  { value: 'rutube', label: 'RuTube', icon: Zap },
-  { value: 'yandex_zen', label: 'Яндекс.Дзен', icon: Zap },
-  { value: 'likee', label: 'Likee', icon: Zap }
+  { value: 'vk', label: 'ВКонтакте' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'ok', label: 'Одноклассники' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'twitter', label: 'Twitter / X' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'twitch', label: 'Twitch' },
+  { value: 'rutube', label: 'RuTube' },
+  { value: 'yandex_zen', label: 'Яндекс.Дзен' },
+  { value: 'likee', label: 'Likee' }
 ];
 
 const CONTENT_TYPES = [
@@ -399,19 +399,17 @@ export function InfluencerCardModal({
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {PLATFORMS.map((platform) => {
-                const Icon = platform.icon;
                 return (
                   <button
                     key={platform.value}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, platform: platform.value as any }))}
-                    className={`p-3 border rounded-lg flex flex-col items-center space-y-2 transition-colors ${
+                    className={`p-3 border rounded-lg flex items-center justify-center transition-colors ${
                       formData.platform === platform.value
                         ? 'border-purple-500 bg-purple-50 text-purple-700'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
-                    <Icon className="w-6 h-6" />
                     <span className="text-sm font-medium text-center">{platform.label}</span>
                   </button>
                 );
