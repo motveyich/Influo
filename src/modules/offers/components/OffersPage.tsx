@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { CollaborationOffer, OfferStatus } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { useAuth } from '../../../hooks/useAuth';
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
 type OfferTab = 'active' | 'completed';
 
 export function OffersPage() {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [offers, setOffers] = useState<CollaborationOffer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +43,7 @@ export function OffersPage() {
     if (currentUserId && !loading) {
       loadOffers();
     }
-  }, [currentUserId, loading, activeTab]);
+  }, [currentUserId, loading, activeTab, location.pathname]);
 
   const loadOffers = async () => {
     try {
