@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChatMessage } from '../../../core/types';
-import { CreditCard, CheckCircle, XCircle, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, AlertTriangle, Edit, Trash2, CheckCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -148,7 +148,12 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
               <p className={`text-xs mt-1 ${
                 isOwnMessage ? 'text-purple-100' : 'text-gray-500'
               }`}>
-                {formatMessageTime(message.timestamp)}
+                <div className="flex items-center space-x-1">
+                  <span>{formatMessageTime(message.timestamp)}</span>
+                  {isOwnMessage && message.isRead && (
+                    <CheckCheck className="w-3 h-3 text-purple-200" />
+                  )}
+                </div>
               </p>
             </div>
           </div>

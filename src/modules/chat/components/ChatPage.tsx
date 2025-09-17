@@ -83,6 +83,8 @@ export function ChatPage() {
   useEffect(() => {
     if (selectedConversation && currentUserId) {
       loadMessages(selectedConversation.id);
+      // Mark messages as read when conversation is selected
+      markConversationAsRead(selectedConversation.participantId);
     }
   }, [selectedConversation, currentUserId]);
 
@@ -215,6 +217,25 @@ export function ChatPage() {
       setMessages([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const markConversationAsRead = async (partnerId: string) => {
+    try {
+      await chatService.markMessagesAsRead(partnerId, currentUserId);
+      
+      // Update conversation unread count in UI
+      setConversations(prev => prev.map(conv => {
+        if (conv.participantId === partnerId) {
+          return {
+            ...conv,
+            unreadCount: 0
+          };
+        }
+        return conv;
+      }));
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
     }
   };
 
