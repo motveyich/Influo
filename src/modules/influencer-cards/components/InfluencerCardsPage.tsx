@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { InfluencerCard } from '../../../core/types';
+import { InfluencerCard, AdvertiserCard } from '../../../core/types';
 import { InfluencerCardDisplay } from './InfluencerCardDisplay';
+import { AdvertiserCardDisplay } from '../../advertiser-cards/components/AdvertiserCardDisplay';
 import { CardTypeSelectionModal } from './CardTypeSelectionModal';
 import { InfluencerCardModal } from './InfluencerCardModal';
+import { AdvertiserCardModal } from '../../advertiser-cards/components/AdvertiserCardModal';
 import { influencerCardService } from '../services/influencerCardService';
+import { advertiserCardService } from '../../advertiser-cards/services/advertiserCardService';
 import { isSupabaseConfigured } from '../../../core/supabase';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
-import { Search, Filter, Plus, Users, TrendingUp, Star, Grid, Target, Heart, Send, Trophy } from 'lucide-react';
+import { Search, Filter, Plus, Users, TrendingUp, Star, Grid, Target, Heart, Send, Trophy, Briefcase } from 'lucide-react';
 import { analytics } from '../../../core/analytics';
 import { useTranslation } from '../../../hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
 
-type TabType = 'influencers' | 'my_cards' | 'favorites';
+type TabType = 'influencers' | 'advertisers' | 'my_cards' | 'favorites';
 
 export function InfluencerCardsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('influencers');
   const [influencerCards, setInfluencerCards] = useState<InfluencerCard[]>([]);
+  const [advertiserCards, setAdvertiserCards] = useState<AdvertiserCard[]>([]);
   const [myInfluencerCards, setMyInfluencerCards] = useState<InfluencerCard[]>([]);
+  const [myAdvertiserCards, setMyAdvertiserCards] = useState<AdvertiserCard[]>([]);
   const [favoriteCards, setFavoriteCards] = useState<any[]>([]);
   
   // Filter states
@@ -33,8 +38,10 @@ export function InfluencerCardsPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [showInfluencerModal, setShowInfluencerModal] = useState(false);
+  const [showAdvertiserModal, setShowAdvertiserModal] = useState(false);
   const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
   const [editingInfluencerCard, setEditingInfluencerCard] = useState<InfluencerCard | null>(null);
+  const [editingAdvertiserCard, setEditingAdvertiserCard] = useState<AdvertiserCard | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -94,11 +101,19 @@ export function InfluencerCardsPage() {
           isActive: true
         });
         setInfluencerCards(cards);
+      } else if (activeTab === 'advertisers') {
+        const cards = await advertiserCardService.getAllCards({
+          platform: platformFilter !== 'all' ? platformFilter : undefined,
+          isActive: true
+        });
+        setAdvertiserCards(cards);
       } else if (activeTab === 'my_cards') {
-        const [influencerCards] = await Promise.all([
-          influencerCardService.getUserCards(currentUserId)
+        const [influencerCards, advertiserCards] = await Promise.all([
+          influencerCardService.getUserCards(currentUserId),
+          advertiserCardService.getUserCards(currentUserId)
         ]);
         setMyInfluencerCards(influencerCards);
+        setMyAdvertiserCards(advertiserCards);
       } else if (activeTab === 'favorites') {
         await loadFavorites();
       }
@@ -118,18 +133,25 @@ export function InfluencerCardsPage() {
       }
       
       const favorites = await favoriteService.getUserFavorites(currentUserId);
-      const influencerFavorites = favorites.filter(fav => fav.targetType === 'influencer_card');
+      const influencerFavorites = favorites.filter(fav => 
+        fav.targetType === 'influencer_card' || fav.targetType === 'advertiser_card'
+      );
       
       const cardPromises = influencerFavorites.map(async (fav) => {
         try {
-          return await influencerCardService.getCard(fav.targetId);
+          if (fav.targetType === 'influencer_card') {
+            return await influencerCardService.getCard(fav.targetId);
+          } else if (fav.targetType === 'advertiser_card') {
+            return await advertiserCardService.getCard(fav.targetId);
+          }
+          return null;
         } catch (error) {
           console.error('Failed to load favorite card:', error);
           return null;
         }
       });
       
-      const loadedCards = (await Promise.all(cardPromises)).filter(Boolean) as InfluencerCard[];
+      const loadedCards = (await Promise.all(cardPromises)).filter(Boolean);
       setFavoriteCards(loadedCards);
     } catch (error) {
       console.error('Failed to load favorites:', error);
@@ -151,7 +173,16 @@ export function InfluencerCardsPage() {
   };
 
   const handleCreateCard = () => {
-    setShowInfluencerModal(true);
+    setShowTypeSelectionModal(true);
+  };
+
+  const handleTypeSelected = (type: 'influencer' | 'advertiser') => {
+    setShowTypeSelectionModal(false);
+    if (type === 'influencer') {
+      setShowInfluencerModal(true);
+    } else {
+      setShowAdvertiserModal(true);
+    }
   };
 
   const handleInfluencerCardSaved = (card: InfluencerCard) => {
@@ -163,9 +194,23 @@ export function InfluencerCardsPage() {
     setEditingInfluencerCard(null);
   };
 
+  const handleAdvertiserCardSaved = (card: AdvertiserCard) => {
+    if (editingAdvertiserCard) {
+      setMyAdvertiserCards(prev => prev.map(c => c.id === card.id ? card : c));
+    } else {
+      setMyAdvertiserCards(prev => [card, ...prev]);
+    }
+    setEditingAdvertiserCard(null);
+  };
+
   const handleEditInfluencerCard = (card: InfluencerCard) => {
     setEditingInfluencerCard(card);
     setShowInfluencerModal(true);
+  };
+
+  const handleEditAdvertiserCard = (card: AdvertiserCard) => {
+    setEditingAdvertiserCard(card);
+    setShowAdvertiserModal(true);
   };
 
   const handleDeleteInfluencerCard = async (cardId: string) => {
@@ -181,6 +226,19 @@ export function InfluencerCardsPage() {
     }
   };
 
+  const handleDeleteAdvertiserCard = async (cardId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту карточку?')) return;
+
+    try {
+      await advertiserCardService.deleteCard(cardId);
+      setMyAdvertiserCards(prev => prev.filter(c => c.id !== cardId));
+      toast.success('Карточка рекламодателя удалена');
+    } catch (error) {
+      console.error('Failed to delete advertiser card:', error);
+      toast.error('Не удалось удалить карточку');
+    }
+  };
+
   const handleToggleInfluencerCardStatus = async (cardId: string, isActive: boolean) => {
     try {
       await influencerCardService.toggleCardStatus(cardId, isActive);
@@ -190,6 +248,19 @@ export function InfluencerCardsPage() {
       toast.success(isActive ? 'Карточка активирована' : 'Карточка деактивирована');
     } catch (error) {
       console.error('Failed to toggle influencer card status:', error);
+      toast.error('Не удалось изменить статус карточки');
+    }
+  };
+
+  const handleToggleAdvertiserCardStatus = async (cardId: string, isActive: boolean) => {
+    try {
+      await advertiserCardService.toggleCardStatus(cardId, isActive);
+      setMyAdvertiserCards(prev => prev.map(c => 
+        c.id === cardId ? { ...c, isActive } : c
+      ));
+      toast.success(isActive ? 'Карточка активирована' : 'Карточка деактивирована');
+    } catch (error) {
+      console.error('Failed to toggle advertiser card status:', error);
       toast.error('Не удалось изменить статус карточки');
     }
   };
@@ -221,28 +292,50 @@ export function InfluencerCardsPage() {
   };
 
   const matchesFilters = (card: InfluencerCard) => {
+    // Handle InfluencerCard filtering
+    if ('reach' in card) {
+      const influencerCard = card as InfluencerCard;
+      if (searchQuery && !influencerCard.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !influencerCard.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchQuery.toLowerCase())) &&
+          !influencerCard.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))) {
+        return false;
+      }
+      
+      if (platformFilter !== 'all' && influencerCard.platform !== platformFilter) {
+        return false;
+      }
+      
+      if (minFollowersFilter && influencerCard.reach.followers < parseInt(minFollowersFilter)) {
+        return false;
+      }
+      
+      if (maxFollowersFilter && influencerCard.reach.followers > parseInt(maxFollowersFilter)) {
+        return false;
+      }
+      
+      if (selectedCountries.length > 0 && !selectedCountries.some(country => 
+        influencerCard.audienceDemographics.topCountries.includes(country))) {
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Handle AdvertiserCard filtering
+    const advertiserCard = card as AdvertiserCard;
     if (searchQuery && !card.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !card.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchQuery.toLowerCase())) &&
-        !card.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))) {
+        !advertiserCard.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !advertiserCard.companyName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !advertiserCard.campaignDescription.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     
-    if (platformFilter !== 'all' && card.platform !== platformFilter) {
+    if (platformFilter !== 'all' && advertiserCard.platform !== platformFilter) {
       return false;
     }
     
-    if (minFollowersFilter && card.audienceDemographics.totalFollowers < parseInt(minFollowersFilter)) {
-      return false;
-    }
-    
-    if (maxFollowersFilter && card.audienceDemographics.totalFollowers > parseInt(maxFollowersFilter)) {
-      return false;
-    }
-    
-    if (selectedCountries.length > 0 && !selectedCountries.some(country => 
-      card.audienceDemographics.topCountries.includes(country))) {
-      return false;
-    }
+    // For advertiser cards, we don't filter by followers or countries
+    // as they don't have these properties
     
     return true;
   };
@@ -250,8 +343,13 @@ export function InfluencerCardsPage() {
   const getFilteredData = () => {
     if (activeTab === 'influencers') {
       return influencerCards.filter(card => matchesFilters(card));
+    } else if (activeTab === 'advertisers') {
+      return advertiserCards.filter(card => matchesFilters(card));
     } else if (activeTab === 'my_cards') {
-      return myInfluencerCards.filter(card => matchesFilters(card));
+      return [
+        ...myInfluencerCards.filter(card => matchesFilters(card)),
+        ...myAdvertiserCards.filter(card => matchesFilters(card))
+      ];
     } else if (activeTab === 'favorites') {
       return favoriteCards.filter(card => matchesFilters(card));
     }
@@ -259,12 +357,21 @@ export function InfluencerCardsPage() {
   };
 
   const influencerStats = {
-    total: myInfluencerCards.length,
+    total: myInfluencerCards.length + myAdvertiserCards.length,
     active: myInfluencerCards.filter(c => c.isActive).length,
     avgRating: myInfluencerCards.length > 0 
       ? myInfluencerCards.reduce((sum, c) => sum + c.rating, 0) / myInfluencerCards.length 
       : 0,
     campaigns: myInfluencerCards.reduce((sum, c) => sum + c.completedCampaigns, 0)
+  };
+
+  const advertiserStats = {
+    total: myAdvertiserCards.length,
+    active: myAdvertiserCards.filter(c => c.isActive).length,
+    avgRating: myAdvertiserCards.length > 0 && myAdvertiserCards[0].campaignStats
+      ? myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.averageRating || 0), 0) / myAdvertiserCards.length 
+      : 0,
+    campaigns: myAdvertiserCards.reduce((sum, c) => sum + (c.campaignStats?.completedCampaigns || 0), 0)
   };
 
   const filteredData = getFilteredData();
@@ -317,6 +424,20 @@ export function InfluencerCardsPage() {
             </button>
 
             <button
+              onClick={() => handleTabChange('advertisers')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'advertisers'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Briefcase className="w-4 h-4" />
+                <span>Рекламодатели</span>
+              </div>
+            </button>
+
+            <button
               onClick={() => handleTabChange('my_cards')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'my_cards'
@@ -327,13 +448,13 @@ export function InfluencerCardsPage() {
               <div className="flex items-center justify-center space-x-2">
                 <Grid className="w-4 h-4" />
                 <span>Мои карточки</span>
-                {myInfluencerCards.length > 0 && (
+                {(myInfluencerCards.length + myAdvertiserCards.length) > 0 && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     activeTab === 'my_cards'
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
-                    {myInfluencerCards.length}
+                    {myInfluencerCards.length + myAdvertiserCards.length}
                   </span>
                 )}
               </div>
@@ -366,44 +487,67 @@ export function InfluencerCardsPage() {
           {/* Stats */}
           <div className="p-6 border-b border-gray-200">
             {activeTab === 'my_cards' && (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="flex items-center">
-                    <Grid className="w-5 h-5 text-purple-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-600">Всего карточек</span>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center">
+                      <Grid className="w-5 h-5 text-purple-600" />
+                      <span className="ml-2 text-sm font-medium text-gray-600">Всего карточек</span>
+                    </div>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
                   </div>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
+                  
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                      <span className="ml-2 text-sm font-medium text-gray-600">Активные</span>
+                    </div>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active + advertiserStats.active}</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center">
+                      <Star className="w-5 h-5 text-yellow-600" />
+                      <span className="ml-2 text-sm font-medium text-gray-600">Средний рейтинг</span>
+                    </div>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">
+                      {((influencerStats.avgRating + advertiserStats.avgRating) / 2).toFixed(1)}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center">
+                      <Trophy className="w-5 h-5 text-blue-600" />
+                      <span className="ml-2 text-sm font-medium text-gray-600">Кампании</span>
+                    </div>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.campaigns + advertiserStats.campaigns}</p>
+                  </div>
                 </div>
                 
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="flex items-center">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-600">Активные</span>
+                {/* Breakdown by type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Users className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-800">Карточки инфлюенсера</span>
+                    </div>
+                    <p className="text-lg font-semibold text-purple-900">{myInfluencerCards.length}</p>
                   </div>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active}</p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="flex items-center">
-                    <Star className="w-5 h-5 text-yellow-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-600">Средний рейтинг</span>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Briefcase className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Карточки рекламодателя</span>
+                    </div>
+                    <p className="text-lg font-semibold text-blue-900">{myAdvertiserCards.length}</p>
                   </div>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.avgRating.toFixed(1)}</p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="flex items-center">
-                    <Trophy className="w-5 h-5 text-blue-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-600">Кампании</span>
-                  </div>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.campaigns}</p>
                 </div>
               </div>
             )}
           </div>
           
           {/* Filters */}
-          {activeTab === 'influencers' && (
+          {(activeTab === 'influencers' || activeTab === 'advertisers') && (
             <div className="p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <div className="flex-1 relative">
@@ -524,11 +668,13 @@ export function InfluencerCardsPage() {
                 <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {activeTab === 'influencers' ? 'Карточки инфлюенсеров не найдены' :
+                   activeTab === 'advertisers' ? 'Карточки рекламодателей не найдены' :
                    activeTab === 'my_cards' ? 'У вас пока нет карточек' :
                    'Избранные карточки не найдены'}
                 </h3>
                 <p className="text-gray-600 mb-4">
                   {activeTab === 'influencers' ? 'Попробуйте изменить фильтры поиска' :
+                   activeTab === 'advertisers' ? 'Попробуйте изменить фильтры поиска' :
                    activeTab === 'my_cards' ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве' :
                    'Добавьте карточки в избранное для быстрого доступа'}
                 </p>
@@ -543,22 +689,51 @@ export function InfluencerCardsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(activeTab === 'influencers' || activeTab === 'my_cards' || activeTab === 'favorites') && filteredData.map((card: InfluencerCard) => (
-                  <InfluencerCardDisplay
-                    key={card.id}
-                    card={card}
-                    showActions={activeTab === 'my_cards'}
-                    currentUserId={currentUserId}
-                    onEdit={activeTab === 'my_cards' ? handleEditInfluencerCard : undefined}
-                    onDelete={activeTab === 'my_cards' ? handleDeleteInfluencerCard : undefined}
-                    onToggleStatus={activeTab === 'my_cards' ? handleToggleInfluencerCardStatus : undefined}
-                  />
-                ))}
+                {filteredData.map((card: InfluencerCard | AdvertiserCard) => {
+                  // Check if this is an influencer card or advertiser card
+                  const isInfluencerCard = 'platform' in card && 'reach' in card;
+                  
+                  if (isInfluencerCard) {
+                    return (
+                      <InfluencerCardDisplay
+                        key={card.id}
+                        card={card as InfluencerCard}
+                        showActions={activeTab === 'my_cards'}
+                        currentUserId={currentUserId}
+                        onEdit={activeTab === 'my_cards' ? handleEditInfluencerCard : undefined}
+                        onDelete={activeTab === 'my_cards' ? handleDeleteInfluencerCard : undefined}
+                        onToggleStatus={activeTab === 'my_cards' ? handleToggleInfluencerCardStatus : undefined}
+                        onViewAnalytics={handleViewAnalytics}
+                      />
+                    );
+                  } else {
+                    return (
+                      <AdvertiserCardDisplay
+                        key={card.id}
+                        card={card as AdvertiserCard}
+                        showActions={activeTab === 'my_cards'}
+                        currentUserId={currentUserId}
+                        onEdit={activeTab === 'my_cards' ? handleEditAdvertiserCard : undefined}
+                        onDelete={activeTab === 'my_cards' ? handleDeleteAdvertiserCard : undefined}
+                        onToggleStatus={activeTab === 'my_cards' ? handleToggleAdvertiserCardStatus : undefined}
+                        onViewAnalytics={handleViewAnalytics}
+                      />
+                    );
+                  }
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Card Type Selection Modal */}
+      <CardTypeSelectionModal
+        isOpen={showTypeSelectionModal}
+        onClose={() => setShowTypeSelectionModal(false)}
+        onSelectType={handleTypeSelected}
+        profile={currentUserProfile}
+      />
 
       {/* Influencer Card Modal */}
       <InfluencerCardModal
@@ -570,6 +745,18 @@ export function InfluencerCardsPage() {
         currentCard={editingInfluencerCard}
         userId={currentUserId}
         onCardSaved={handleInfluencerCardSaved}
+      />
+
+      {/* Advertiser Card Modal */}
+      <AdvertiserCardModal
+        isOpen={showAdvertiserModal}
+        onClose={() => {
+          setShowAdvertiserModal(false);
+          setEditingAdvertiserCard(null);
+        }}
+        currentCard={editingAdvertiserCard}
+        userId={currentUserId}
+        onCardSaved={handleAdvertiserCardSaved}
       />
     </FeatureGate>
   );

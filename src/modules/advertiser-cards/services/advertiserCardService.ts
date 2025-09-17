@@ -212,10 +212,10 @@ export class AdvertiserCardService {
   private getStoredCards(): AdvertiserCard[] {
     try {
       const stored = localStorage.getItem('advertiser_cards');
-      return stored ? JSON.parse(stored) : this.getMockCards();
+      return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to load stored cards:', error);
-      return this.getMockCards();
+      return [];
     }
   }
 
