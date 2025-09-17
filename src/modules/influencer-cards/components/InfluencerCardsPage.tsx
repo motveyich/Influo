@@ -79,6 +79,7 @@ export function InfluencerCardsPage() {
   const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
   const [editingInfluencerCard, setEditingInfluencerCard] = useState<InfluencerCard | null>(null);
   const [editingAdvertiserCard, setEditingAdvertiserCard] = useState<AdvertiserCard | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -638,7 +639,8 @@ export function InfluencerCardsPage() {
           {/* Filters */}
           {(activeTab === 'influencers' || activeTab === 'advertisers' || activeTab === 'favorites') && (
             <div className="p-6 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              {/* Search and Filter Toggle */}
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -654,110 +656,366 @@ export function InfluencerCardsPage() {
                   />
                 </div>
                 
-                <select
-                  value={platformFilter}
-                  onChange={(e) => setPlatformFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  {getPlatformOptions().map(platform => (
-                    <option key={platform} value={platform}>
-                      {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
-                    </option>
-                  ))}
-                </select>
-                
-                {/* Influencer-specific filters */}
-                {shouldShowInfluencerFilters() && (
-                  <>
-                    <input
-                      type="number"
-                      placeholder="Мин. подписчиков"
-                      value={minFollowersFilter}
-                      onChange={(e) => setMinFollowersFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                    />
-                    
-                    <input
-                      type="number"
-                      placeholder="Макс. подписчиков"
-                      value={maxFollowersFilter}
-                      onChange={(e) => setMaxFollowersFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                    />
-                  </>
-                )}
-                
-                {/* Advertiser-specific filters */}
-                {shouldShowAdvertiserFilters() && (
-                  <>
-                    <input
-                      type="number"
-                      placeholder="Мин. бюджет"
-                      value={minBudgetFilter}
-                      onChange={(e) => setMinBudgetFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                    />
-                    
-                    <input
-                      type="number"
-                      placeholder="Макс. бюджет"
-                      value={maxBudgetFilter}
-                      onChange={(e) => setMaxBudgetFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                    />
-                  </>
-                )}
-                
-                <button
-                  onClick={clearFilters}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Очистить
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                      showFilters
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Фильтры</span>
+                    {(platformFilter !== 'all' || 
+                      minFollowersFilter || maxFollowersFilter || selectedCountries.length > 0 ||
+                      minBudgetFilter || maxBudgetFilter || selectedProductCategories.length > 0 || selectedServiceFormats.length > 0) && (
+                      <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
+                    )}
+                  </button>
+                  
+                  {(platformFilter !== 'all' || 
+                    minFollowersFilter || maxFollowersFilter || selectedCountries.length > 0 ||
+                    minBudgetFilter || maxBudgetFilter || selectedProductCategories.length > 0 || selectedServiceFormats.length > 0) && (
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Очистить
+                    </button>
+                  )}
+                </div>
               </div>
               
-              {/* Influencer-specific filters */}
-              {shouldShowInfluencerFilters() && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
-                  <div className="flex flex-wrap gap-2">
-                    {COUNTRIES.map(country => (
-                      <button
-                        key={country}
-                        onClick={() => handleInfluencerCountryToggle(country)}
-                        className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                          selectedCountries.includes(country)
-                            ? 'bg-purple-100 border-purple-300 text-purple-700'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {country}
-                      </button>
-                    ))}
+              {/* Collapsible Filters Section */}
+              {showFilters && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  {/* Platform Filter - Always shown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Платформа</label>
+                    <select
+                      value={platformFilter}
+                      onChange={(e) => setPlatformFilter(e.target.value)}
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {getPlatformOptions().map(platform => (
+                        <option key={platform} value={platform}>
+                          {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                  
+                  {/* Influencer-specific filters */}
+                  {shouldShowInfluencerFilters() && (
+                    <>
+                      {/* Followers Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Количество подписчиков</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <input
+                            type="number"
+                            placeholder="Минимум"
+                            value={minFollowersFilter}
+                            onChange={(e) => setMinFollowersFilter(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Максимум"
+                            value={maxFollowersFilter}
+                            onChange={(e) => setMaxFollowersFilter(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Countries */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                          {COUNTRIES.map(country => (
+                            <button
+                              key={country}
+                              onClick={() => handleInfluencerCountryToggle(country)}
+                              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                                selectedCountries.includes(country)
+                                  ? 'bg-purple-100 border-purple-300 text-purple-700'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {country}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Advertiser-specific filters */}
+                  {shouldShowAdvertiserFilters() && (
+                    <>
+                      {/* Budget Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Бюджет</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <input
+                            type="number"
+                            placeholder="Минимум"
+                            value={minBudgetFilter}
+                            onChange={(e) => setMinBudgetFilter(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Максимум"
+                            value={maxBudgetFilter}
+                            onChange={(e) => setMaxBudgetFilter(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Product Categories */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Категории продуктов</label>
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                          {PRODUCT_CATEGORIES.map(category => (
+                            <button
+                              key={category}
+                              onClick={() => handleProductCategoryToggle(category)}
+                              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                                selectedProductCategories.includes(category)
+                                  ? 'bg-blue-100 border-blue-300 text-blue-700'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Service Formats */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Форматы услуг</label>
+                        <div className="flex flex-wrap gap-2">
+                          {SERVICE_FORMATS.map(format => (
+                            <button
+                              key={format}
+                              onClick={() => handleServiceFormatToggle(format)}
+                              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                                selectedServiceFormats.includes(format)
+                                  ? 'bg-green-100 border-green-300 text-green-700'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {format}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               
-              {/* Advertiser-specific filters */}
-              {shouldShowAdvertiserFilters() && (
-                <div className="mt-4 space-y-4">
-                  {/* Product Categories */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Категории продуктов</label>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                      {PRODUCT_CATEGORIES.map(category => (
-                        <button
-                          key={category}
-                          onClick={() => handleProductCategoryToggle(category)}
-                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                            selectedProductCategories.includes(category)
-                              ? 'bg-blue-100 border-blue-300 text-blue-700'
-                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {category}
-                        </button>
-                      ))}
+              {/* Active Filters Summary */}
+              {!showFilters && (platformFilter !== 'all' || 
+                minFollowersFilter || maxFollowersFilter || selectedCountries.length > 0 ||
+                minBudgetFilter || maxBudgetFilter || selectedProductCategories.length > 0 || selectedServiceFormats.length > 0) && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm text-gray-600">Активные фильтры:</span>
+                  
+                  {platformFilter !== 'all' && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md">
+                      Платформа: {platformFilter}
+                    </span>
+                  )}
+                  
+                  {minFollowersFilter && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                      Мин. подписчиков: {minFollowersFilter}
+                    </span>
+                  )}
+                  
+                  {maxFollowersFilter && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                      Макс. подписчиков: {maxFollowersFilter}
+                    </span>
+                  )}
+                  
+                  {selectedCountries.length > 0 && (
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md">
+                      Страны: {selectedCountries.length}
+                    </span>
+                  )}
+                  
+                  {minBudgetFilter && (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-md">
+                      Мин. бюджет: {minBudgetFilter}
+                    </span>
+                  )}
+                  
+                  {maxBudgetFilter && (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-md">
+                      Макс. бюджет: {maxBudgetFilter}
+                    </span>
+                  )}
+                  
+                  {selectedProductCategories.length > 0 && (
+                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-md">
+                      Категории: {selectedProductCategories.length}
+                    </span>
+                  )}
+                  
+                  {selectedServiceFormats.length > 0 && (
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-md">
+                      Форматы: {selectedServiceFormats.length}
+                    </span>
+                  )}
+                  
+                  <button
+                    onClick={clearFilters}
+                    className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Очистить все
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Bulk Actions for Favorites */}
+          {activeTab === 'favorites' && favoriteCards.length > 0 && (
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Избранные карточки</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleBulkApplications}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Отправить заявки всем ({favoriteCards.length})</span>
+                  </button>
+                  <button
+                    onClick={() => loadFavorites()}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Обновить
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Content */}
+          <div className="p-6">
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-6 animate-pulse">
+                ))}
+              </div>
+            ) : filteredData.length === 0 ? (
+              <div className="text-center py-12">
+                <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {activeTab === 'influencers' ? 'Карточки инфлюенсеров не найдены' :
+                   activeTab === 'advertisers' ? 'Карточки рекламодателей не найдены' :
+                   activeTab === 'my_cards' ? 'У вас пока нет карточек' :
+                   'Избранные карточки не найдены'}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {activeTab === 'influencers' ? 'Попробуйте изменить фильтры поиска' :
+                   activeTab === 'advertisers' ? 'Попробуйте изменить фильтры поиска' :
+                   activeTab === 'my_cards' ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве' :
+                   'Добавьте карточки в избранное для быстрого доступа'}
+                </p>
+                {activeTab === 'my_cards' && (
+                  <button
+                    onClick={handleCreateCard}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                  >
+                    Создать первую карточку
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredData.map((card: InfluencerCard | AdvertiserCard) => {
+                  // Check if this is an influencer card or advertiser card
+                  const isInfluencerCard = 'platform' in card && 'reach' in card;
+                  
+                  if (isInfluencerCard) {
+                    return (
+                      <InfluencerCardDisplay
+                        key={card.id}
+                        card={card as InfluencerCard}
+                        showActions={activeTab === 'my_cards'}
+                        currentUserId={currentUserId}
+                        onEdit={activeTab === 'my_cards' ? handleEditInfluencerCard : undefined}
+                        onDelete={activeTab === 'my_cards' ? handleDeleteInfluencerCard : undefined}
+                        onToggleStatus={activeTab === 'my_cards' ? handleToggleInfluencerCardStatus : undefined}
+                        onViewAnalytics={handleViewAnalytics}
+                      />
+                    );
+                  } else {
+                    return (
+                      <AdvertiserCardDisplay
+                        key={card.id}
+                        card={card as AdvertiserCard}
+                        showActions={activeTab === 'my_cards'}
+                        currentUserId={currentUserId}
+                        onEdit={activeTab === 'my_cards' ? handleEditAdvertiserCard : undefined}
+                        onDelete={activeTab === 'my_cards' ? handleDeleteAdvertiserCard : undefined}
+                        onToggleStatus={activeTab === 'my_cards' ? handleToggleAdvertiserCardStatus : undefined}
+                        onViewAnalytics={handleViewAnalytics}
+                      />
+                    );
+                  }
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Card Type Selection Modal */}
+      <CardTypeSelectionModal
+        isOpen={showTypeSelectionModal}
+        onClose={() => setShowTypeSelectionModal(false)}
+        onSelectType={handleTypeSelected}
+        profile={currentUserProfile}
+      />
+
+      {/* Influencer Card Modal */}
+      <InfluencerCardModal
+        isOpen={showInfluencerModal}
+        onClose={() => {
+          setShowInfluencerModal(false);
+          setEditingInfluencerCard(null);
+        }}
+        currentCard={editingInfluencerCard}
+        userId={currentUserId}
+        onCardSaved={handleInfluencerCardSaved}
+      />
+
+      {/* Advertiser Card Modal */}
+      <AdvertiserCardModal
+        isOpen={showAdvertiserModal}
+        onClose={() => {
+          setShowAdvertiserModal(false);
+          setEditingAdvertiserCard(null);
+        }}
+        currentCard={editingAdvertiserCard}
+        userId={currentUserId}
+        onCardSaved={handleAdvertiserCardSaved}
+      />
+    </FeatureGate>
+  );
+}
                     </div>
                   </div>
                   
