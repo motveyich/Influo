@@ -8,21 +8,20 @@ export class ReviewService {
       this.validateReviewData(reviewData);
 
       const newReview = {
-        offer_id: reviewData.offerId,
+        deal_id: reviewData.offerId,
         reviewer_id: reviewData.reviewerId,
         reviewee_id: reviewData.revieweeId,
         rating: reviewData.rating,
         title: reviewData.title,
         comment: reviewData.comment,
+        collaboration_type: 'offer',
         is_public: reviewData.isPublic ?? true,
         helpful_votes: 0,
         metadata: reviewData.metadata || {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_REVIEWS)
+        .from('reviews')
         .insert([newReview])
         .select()
         .single();
@@ -37,7 +36,7 @@ export class ReviewService {
       // Track analytics
       analytics.track('collaboration_review_created', {
         review_id: transformedReview.id,
-        offer_id: reviewData.offerId,
+        deal_id: reviewData.offerId,
         rating: reviewData.rating,
         reviewer_id: reviewData.reviewerId
       });
@@ -52,13 +51,13 @@ export class ReviewService {
   async getOfferReviews(offerId: string): Promise<CollaborationReview[]> {
     try {
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_REVIEWS)
+        .from('reviews')
         .select(`
           *,
-          reviewer:user_profiles!reviewer_id(full_name, avatar),
-          reviewee:user_profiles!reviewee_id(full_name, avatar)
+          reviewer:user_profiles!reviews_reviewer_id_fkey(full_name, avatar),
+          reviewee:user_profiles!reviews_reviewee_id_fkey(full_name, avatar)
         `)
-        .eq('offer_id', offerId)
+        .eq('deal_id', offerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -75,11 +74,11 @@ export class ReviewService {
       const column = type === 'given' ? 'reviewer_id' : 'reviewee_id';
       
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_REVIEWS)
+        .from('reviews')
         .select(`
           *,
-          reviewer:user_profiles!reviewer_id(full_name, avatar),
-          reviewee:user_profiles!reviewee_id(full_name, avatar)
+          reviewer:user_profiles!reviews_reviewer_id_fkey(full_name, avatar),
+          reviewee:user_profiles!reviews_reviewee_id_fkey(full_name, avatar)
         `)
         .eq(column, userId)
         .eq('is_public', true)
@@ -98,9 +97,9 @@ export class ReviewService {
     try {
       // Check if offer is completed or terminated
       const { data: offer } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .select('status, influencer_id, advertiser_id, influencer_reviewed, advertiser_reviewed')
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .single();
 
       if (!offer || !['completed', 'terminated'].includes(offer.status)) {
@@ -132,9 +131,9 @@ export class ReviewService {
     try {
       // Get offer to determine which review flag to update
       const { data: offer } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .select('influencer_id, advertiser_id')
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .single();
 
       if (!offer) return;
@@ -142,9 +141,9 @@ export class ReviewService {
       const updateField = reviewerId === offer.influencer_id ? 'influencer_reviewed' : 'advertiser_reviewed';
 
       await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .update({ [updateField]: true })
-        .eq('id', offerId);
+        .eq('offer_id', offerId);
     } catch (error) {
       console.error('Failed to update offer review status:', error);
     }
@@ -169,7 +168,7 @@ export class ReviewService {
   private transformFromDatabase(dbData: any): CollaborationReview {
     return {
       id: dbData.id,
-      offerId: dbData.offer_id,
+      offerId: dbData.deal_id,
       reviewerId: dbData.reviewer_id,
       revieweeId: dbData.reviewee_id,
       rating: parseFloat(dbData.rating),
