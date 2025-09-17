@@ -110,13 +110,13 @@ export class AdvertiserCardService {
   }
 
   async getAllCards(filters?: {
-    productType?: string;
+    platform?: string;
     minBudget?: number;
     maxBudget?: number;
-    campaignFormat?: string;
-    countries?: string[];
+    productCategories?: string[];
+    serviceFormats?: string[];
+    searchQuery?: string;
     isActive?: boolean;
-    priority?: string;
   }): Promise<AdvertiserCard[]> {
     try {
       let cards = this.getStoredCards();
@@ -125,38 +125,48 @@ export class AdvertiserCardService {
         cards = cards.filter(card => card.isActive === filters.isActive);
       }
 
-      if (filters?.productType && filters.productType !== 'all') {
-        cards = cards.filter(card => card.productType === filters.productType);
+      if (filters?.platform && filters.platform !== 'all') {
+        cards = cards.filter(card => card.platform === filters.platform);
       }
 
-      if (filters?.campaignFormat && filters.campaignFormat !== 'all') {
-        cards = cards.filter(card => card.campaignFormat.includes(filters.campaignFormat));
+      if (filters?.productCategories && filters.productCategories.length > 0) {
+        cards = cards.filter(card => 
+          filters.productCategories!.some(category => 
+            card.productCategories.includes(category)
+          )
+        );
+      }
+
+      if (filters?.serviceFormats && filters.serviceFormats.length > 0) {
+        cards = cards.filter(card => 
+          filters.serviceFormats!.some(format => 
+            card.serviceFormat.includes(format)
+          )
+        );
       }
 
       if (filters?.minBudget) {
         cards = cards.filter(card => {
-          const budget = card.budget.type === 'fixed' ? card.budget.amount : card.budget.min;
-          return budget && budget >= filters.minBudget!;
+          return card.budget.amount && card.budget.amount >= filters.minBudget!;
         });
       }
 
       if (filters?.maxBudget) {
         cards = cards.filter(card => {
-          const budget = card.budget.type === 'fixed' ? card.budget.amount : card.budget.max;
-          return budget && budget <= filters.maxBudget!;
+          return card.budget.amount && card.budget.amount <= filters.maxBudget!;
         });
       }
 
-      if (filters?.countries && filters.countries.length > 0) {
+      if (filters?.searchQuery) {
+        const searchLower = filters.searchQuery.toLowerCase();
         cards = cards.filter(card =>
-          filters.countries!.some(country =>
-            card.targetAudience.countries.includes(country)
-          )
+          card.campaignTitle.toLowerCase().includes(searchLower) ||
+          card.companyName.toLowerCase().includes(searchLower) ||
+          card.campaignDescription.toLowerCase().includes(searchLower) ||
+          card.productCategories.some(cat => cat.toLowerCase().includes(searchLower)) ||
+          card.serviceFormat.some(format => format.toLowerCase().includes(searchLower)) ||
+          (card.targetAudience.interests && card.targetAudience.interests.some(interest => interest.toLowerCase().includes(searchLower)))
         );
-      }
-
-      if (filters?.priority && filters.priority !== 'all') {
-        cards = cards.filter(card => card.priority === filters.priority);
       }
 
       return cards.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

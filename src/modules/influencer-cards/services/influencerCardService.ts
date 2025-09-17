@@ -138,6 +138,7 @@ export class InfluencerCardService {
     minFollowers?: number;
     maxFollowers?: number;
     countries?: string[];
+    searchQuery?: string;
     isActive?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
@@ -161,6 +162,14 @@ export class InfluencerCardService {
 
       if (filters?.maxFollowers) {
         query = query.lte('reach->followers', filters.maxFollowers);
+      }
+
+      if (filters?.countries && filters.countries.length > 0) {
+        query = query.overlaps('audience_demographics->topCountries', filters.countries);
+      }
+
+      if (filters?.searchQuery) {
+        query = query.or(`service_details->description.ilike.%${filters.searchQuery}%,audience_demographics->interests.cs.["${filters.searchQuery}"]`);
       }
 
       query = query.order('created_at', { ascending: false });

@@ -20,6 +20,35 @@ import { useAuth } from '../../../hooks/useAuth';
 
 type TabType = 'influencers' | 'advertisers' | 'my_cards' | 'favorites';
 
+// Platform options for different card types
+const INFLUENCER_PLATFORMS = ['all', 'vk', 'youtube', 'instagram', 'telegram', 'ok', 'facebook', 'twitter', 'tiktok', 'twitch', 'rutube', 'yandex_zen', 'likee', 'multi'];
+const ADVERTISER_PLATFORMS = ['all', 'vk', 'youtube', 'instagram', 'telegram', 'ok', 'facebook', 'twitter', 'tiktok', 'twitch', 'rutube', 'yandex_zen', 'likee'];
+
+const PRODUCT_CATEGORIES = [
+  'Косметика', 'Химия для дома', 'Электроника', 'Одежда', 'Информационный продукт',
+  'Курсы', 'Заведения', 'Продукты питания', 'Напитки', 'Спортивные товары',
+  'Детские товары', 'Товары для дома', 'Мебель', 'Автомобили', 'Недвижимость',
+  'Финансовые услуги', 'Страхование', 'Медицинские услуги', 'Образовательные услуги',
+  'Туристические услуги', 'Развлечения', 'Игры и приложения', 'Программное обеспечение',
+  'Книги и издания', 'Музыка', 'Фильмы и сериалы', 'Подписки и сервисы',
+  'Криптовалюта', 'Инвестиции', 'Ювелирные изделия', 'Часы', 'Аксессуары',
+  'Обувь', 'Сумки', 'Парфюмерия', 'Средства по уходу', 'Витамины и БАДы',
+  'Спортивное питание', 'Диетические продукты', 'Органические продукты',
+  'Веганские продукты', 'Товары для животных', 'Садоводство', 'Инструменты',
+  'Строительные материалы', 'Канцелярские товары', 'Хобби и рукоделие',
+  'Музыкальные инструменты', 'Фототехника', 'Видеотехника', 'Компьютеры',
+  'Мобильные устройства', 'Бытовая техника', 'Климатическая техника',
+  'Освещение', 'Текстиль', 'Постельное белье', 'Посуда', 'Кухонная утварь', 'Другое'
+];
+
+const SERVICE_FORMATS = ['Пост', 'Видео', 'Рилс', 'Упоминание в видео'];
+
+const COUNTRIES = [
+  'Россия', 'Беларусь', 'Казахстан', 'Украина', 'Узбекистан', 'Киргизия',
+  'Таджикистан', 'Армения', 'Азербайджан', 'Молдова', 'Грузия', 'США',
+  'Германия', 'Великобритания', 'Франция', 'Италия', 'Испания', 'Канада',
+  'Австралия', 'Турция', 'Польша', 'Чехия'
+];
 export function InfluencerCardsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('influencers');
@@ -29,12 +58,20 @@ export function InfluencerCardsPage() {
   const [myAdvertiserCards, setMyAdvertiserCards] = useState<AdvertiserCard[]>([]);
   const [favoriteCards, setFavoriteCards] = useState<any[]>([]);
   
-  // Filter states
+  // Common filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
+  
+  // Influencer-specific filter states
   const [minFollowersFilter, setMinFollowersFilter] = useState<string>('');
   const [maxFollowersFilter, setMaxFollowersFilter] = useState<string>('');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  
+  // Advertiser-specific filter states
+  const [minBudgetFilter, setMinBudgetFilter] = useState<string>('');
+  const [maxBudgetFilter, setMaxBudgetFilter] = useState<string>('');
+  const [selectedProductCategories, setSelectedProductCategories] = useState<string[]>([]);
+  const [selectedServiceFormats, setSelectedServiceFormats] = useState<string[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [showInfluencerModal, setShowInfluencerModal] = useState(false);
@@ -48,16 +85,19 @@ export function InfluencerCardsPage() {
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
-  const platforms = ['all', 'instagram', 'youtube', 'twitter', 'tiktok', 'multi'];
-  const countries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France'];
-
   // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setPlatformFilter('all');
+    // Clear influencer filters
     setMinFollowersFilter('');
     setMaxFollowersFilter('');
     setSelectedCountries([]);
+    // Clear advertiser filters
+    setMinBudgetFilter('');
+    setMaxBudgetFilter('');
+    setSelectedProductCategories([]);
+    setSelectedServiceFormats([]);
   };
 
   // Handle tab change with filter reset
@@ -72,7 +112,7 @@ export function InfluencerCardsPage() {
     if (currentUserId && !loading) {
       loadData();
     }
-  }, [currentUserId, loading, activeTab, searchQuery, platformFilter, minFollowersFilter, maxFollowersFilter, selectedCountries]);
+  }, [currentUserId, loading, activeTab, searchQuery, platformFilter, minFollowersFilter, maxFollowersFilter, selectedCountries, minBudgetFilter, maxBudgetFilter, selectedProductCategories, selectedServiceFormats]);
 
   // Listen for favorites changes
   useEffect(() => {
@@ -96,14 +136,21 @@ export function InfluencerCardsPage() {
       if (activeTab === 'influencers') {
         const cards = await influencerCardService.getAllCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
-          minFollowers: minFollowersFilter || undefined,
-          maxFollowers: maxFollowersFilter || undefined,
+          minFollowers: minFollowersFilter ? parseInt(minFollowersFilter) : undefined,
+          maxFollowers: maxFollowersFilter ? parseInt(maxFollowersFilter) : undefined,
+          countries: selectedCountries.length > 0 ? selectedCountries : undefined,
+          searchQuery: searchQuery || undefined,
           isActive: true
         });
         setInfluencerCards(cards);
       } else if (activeTab === 'advertisers') {
         const cards = await advertiserCardService.getAllCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
+          minBudget: minBudgetFilter ? parseInt(minBudgetFilter) : undefined,
+          maxBudget: maxBudgetFilter ? parseInt(maxBudgetFilter) : undefined,
+          productCategories: selectedProductCategories.length > 0 ? selectedProductCategories : undefined,
+          serviceFormats: selectedServiceFormats.length > 0 ? selectedServiceFormats : undefined,
+          searchQuery: searchQuery || undefined,
           isActive: true
         });
         setAdvertiserCards(cards);
@@ -265,11 +312,27 @@ export function InfluencerCardsPage() {
     }
   };
 
-  const handleCountryToggle = (country: string) => {
+  const handleInfluencerCountryToggle = (country: string) => {
     setSelectedCountries(prev =>
       prev.includes(country)
         ? prev.filter(c => c !== country)
         : [...prev, country]
+    );
+  };
+
+  const handleProductCategoryToggle = (category: string) => {
+    setSelectedProductCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleServiceFormatToggle = (format: string) => {
+    setSelectedServiceFormats(prev =>
+      prev.includes(format)
+        ? prev.filter(f => f !== format)
+        : [...prev, format]
     );
   };
 
@@ -291,67 +354,74 @@ export function InfluencerCardsPage() {
     }
   };
 
-  const matchesFilters = (card: InfluencerCard) => {
-    // Handle InfluencerCard filtering
-    if ('reach' in card) {
-      const influencerCard = card as InfluencerCard;
-      if (searchQuery && !influencerCard.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !influencerCard.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchQuery.toLowerCase())) &&
-          !influencerCard.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))) {
-        return false;
-      }
-      
-      if (platformFilter !== 'all' && influencerCard.platform !== platformFilter) {
-        return false;
-      }
-      
-      if (minFollowersFilter && influencerCard.reach.followers < parseInt(minFollowersFilter)) {
-        return false;
-      }
-      
-      if (maxFollowersFilter && influencerCard.reach.followers > parseInt(maxFollowersFilter)) {
-        return false;
-      }
-      
-      if (selectedCountries.length > 0 && !selectedCountries.some(country => 
-        influencerCard.audienceDemographics.topCountries.includes(country))) {
-        return false;
-      }
-      
-      return true;
-    }
-    
-    // Handle AdvertiserCard filtering
-    const advertiserCard = card as AdvertiserCard;
-    if (searchQuery && !card.serviceDetails.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !advertiserCard.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !advertiserCard.companyName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !advertiserCard.campaignDescription.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    
-    if (platformFilter !== 'all' && advertiserCard.platform !== platformFilter) {
-      return false;
-    }
-    
-    // For advertiser cards, we don't filter by followers or countries
-    // as they don't have these properties
-    
-    return true;
-  };
-
   const getFilteredData = () => {
     if (activeTab === 'influencers') {
-      return influencerCards.filter(card => matchesFilters(card));
+      return influencerCards; // Filtering is now done in the service
     } else if (activeTab === 'advertisers') {
-      return advertiserCards.filter(card => matchesFilters(card));
+      return advertiserCards; // Filtering is now done in the service
     } else if (activeTab === 'my_cards') {
-      return [
-        ...myInfluencerCards.filter(card => matchesFilters(card)),
-        ...myAdvertiserCards.filter(card => matchesFilters(card))
-      ];
+      // For my cards, we still need client-side filtering since they come from different sources
+      const filteredInfluencerCards = myInfluencerCards.filter(card => {
+        if (searchQuery) {
+          const searchLower = searchQuery.toLowerCase();
+          if (!card.serviceDetails.description.toLowerCase().includes(searchLower) &&
+              !card.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchLower)) &&
+              !card.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchLower))) {
+            return false;
+          }
+        }
+        if (platformFilter !== 'all' && card.platform !== platformFilter) {
+          return false;
+        }
+        return true;
+      });
+      
+      const filteredAdvertiserCards = myAdvertiserCards.filter(card => {
+        if (searchQuery) {
+          const searchLower = searchQuery.toLowerCase();
+          if (!card.campaignTitle.toLowerCase().includes(searchLower) &&
+              !card.companyName.toLowerCase().includes(searchLower) &&
+              !card.campaignDescription.toLowerCase().includes(searchLower) &&
+              !card.productCategories.some(cat => cat.toLowerCase().includes(searchLower)) &&
+              !card.serviceFormat.some(format => format.toLowerCase().includes(searchLower))) {
+            return false;
+          }
+        }
+        if (platformFilter !== 'all' && card.platform !== platformFilter) {
+          return false;
+        }
+        return true;
+      });
+      
+      return [...filteredInfluencerCards, ...filteredAdvertiserCards];
     } else if (activeTab === 'favorites') {
-      return favoriteCards.filter(card => matchesFilters(card));
+      return favoriteCards.filter(card => {
+        if (searchQuery) {
+          const searchLower = searchQuery.toLowerCase();
+          // Check if it's an influencer card
+          if ('reach' in card) {
+            const influencerCard = card as InfluencerCard;
+            if (!influencerCard.serviceDetails.description.toLowerCase().includes(searchLower) &&
+                !influencerCard.serviceDetails.contentTypes.some(type => type.toLowerCase().includes(searchLower)) &&
+                !influencerCard.audienceDemographics.interests.some(interest => interest.toLowerCase().includes(searchLower))) {
+              return false;
+            }
+          } else {
+            // It's an advertiser card
+            const advertiserCard = card as AdvertiserCard;
+            if (!advertiserCard.campaignTitle.toLowerCase().includes(searchLower) &&
+                !advertiserCard.companyName.toLowerCase().includes(searchLower) &&
+                !advertiserCard.campaignDescription.toLowerCase().includes(searchLower) &&
+                !advertiserCard.productCategories.some(cat => cat.toLowerCase().includes(searchLower))) {
+              return false;
+            }
+          }
+        }
+        if (platformFilter !== 'all' && card.platform !== platformFilter) {
+          return false;
+        }
+        return true;
+      });
     }
     return [];
   };
@@ -375,6 +445,25 @@ export function InfluencerCardsPage() {
   };
 
   const filteredData = getFilteredData();
+
+  // Get platform options based on active tab
+  const getPlatformOptions = () => {
+    if (activeTab === 'influencers' || (activeTab === 'my_cards' && myInfluencerCards.length > 0) || (activeTab === 'favorites' && favoriteCards.some(card => 'reach' in card))) {
+      return INFLUENCER_PLATFORMS;
+    } else {
+      return ADVERTISER_PLATFORMS;
+    }
+  };
+
+  // Check if we should show influencer-specific filters
+  const shouldShowInfluencerFilters = () => {
+    return activeTab === 'influencers' || (activeTab === 'my_cards' && myInfluencerCards.length > 0);
+  };
+
+  // Check if we should show advertiser-specific filters
+  const shouldShowAdvertiserFilters = () => {
+    return activeTab === 'advertisers' || (activeTab === 'my_cards' && myAdvertiserCards.length > 0);
+  };
 
   return (
     <FeatureGate
@@ -547,14 +636,18 @@ export function InfluencerCardsPage() {
           </div>
           
           {/* Filters */}
-          {(activeTab === 'influencers' || activeTab === 'advertisers') && (
+          {(activeTab === 'influencers' || activeTab === 'advertisers' || activeTab === 'favorites') && (
             <div className="p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Поиск по описанию, типам контента, интересам..."
+                    placeholder={
+                      activeTab === 'influencers' ? "Поиск по описанию, типам контента, интересам..." :
+                      activeTab === 'advertisers' ? "Поиск по названию кампании, компании, описанию..." :
+                      "Поиск карточек..."
+                    }
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -566,28 +659,54 @@ export function InfluencerCardsPage() {
                   onChange={(e) => setPlatformFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  {platforms.map(platform => (
+                  {getPlatformOptions().map(platform => (
                     <option key={platform} value={platform}>
                       {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
                     </option>
                   ))}
                 </select>
                 
-                <input
-                  type="number"
-                  placeholder="Мин. подписчиков"
-                  value={minFollowersFilter}
-                  onChange={(e) => setMinFollowersFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                />
+                {/* Influencer-specific filters */}
+                {shouldShowInfluencerFilters() && (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Мин. подписчиков"
+                      value={minFollowersFilter}
+                      onChange={(e) => setMinFollowersFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                    />
+                    
+                    <input
+                      type="number"
+                      placeholder="Макс. подписчиков"
+                      value={maxFollowersFilter}
+                      onChange={(e) => setMaxFollowersFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                    />
+                  </>
+                )}
                 
-                <input
-                  type="number"
-                  placeholder="Макс. подписчиков"
-                  value={maxFollowersFilter}
-                  onChange={(e) => setMaxFollowersFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
-                />
+                {/* Advertiser-specific filters */}
+                {shouldShowAdvertiserFilters() && (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Мин. бюджет"
+                      value={minBudgetFilter}
+                      onChange={(e) => setMinBudgetFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                    />
+                    
+                    <input
+                      type="number"
+                      placeholder="Макс. бюджет"
+                      value={maxBudgetFilter}
+                      onChange={(e) => setMaxBudgetFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent w-40"
+                    />
+                  </>
+                )}
                 
                 <button
                   onClick={clearFilters}
@@ -597,25 +716,72 @@ export function InfluencerCardsPage() {
                 </button>
               </div>
               
-              {/* Country Filters */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
-                <div className="flex flex-wrap gap-2">
-                  {countries.map(country => (
-                    <button
-                      key={country}
-                      onClick={() => handleCountryToggle(country)}
-                      className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                        selectedCountries.includes(country)
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {country}
-                    </button>
-                  ))}
+              {/* Influencer-specific filters */}
+              {shouldShowInfluencerFilters() && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
+                  <div className="flex flex-wrap gap-2">
+                    {COUNTRIES.map(country => (
+                      <button
+                        key={country}
+                        onClick={() => handleInfluencerCountryToggle(country)}
+                        className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                          selectedCountries.includes(country)
+                            ? 'bg-purple-100 border-purple-300 text-purple-700'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {country}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Advertiser-specific filters */}
+              {shouldShowAdvertiserFilters() && (
+                <div className="mt-4 space-y-4">
+                  {/* Product Categories */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Категории продуктов</label>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                      {PRODUCT_CATEGORIES.map(category => (
+                        <button
+                          key={category}
+                          onClick={() => handleProductCategoryToggle(category)}
+                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                            selectedProductCategories.includes(category)
+                              ? 'bg-blue-100 border-blue-300 text-blue-700'
+                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Service Formats */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Форматы услуг</label>
+                    <div className="flex flex-wrap gap-2">
+                      {SERVICE_FORMATS.map(format => (
+                        <button
+                          key={format}
+                          onClick={() => handleServiceFormatToggle(format)}
+                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                            selectedServiceFormats.includes(format)
+                              ? 'bg-green-100 border-green-300 text-green-700'
+                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {format}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
