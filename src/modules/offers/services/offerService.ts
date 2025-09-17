@@ -11,16 +11,18 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
-        campaign_id: offerData.campaignId || null,
         influencer_card_id: offerData.influencerCardId || null,
-        title: offerData.title,
-        description: offerData.description,
-        proposed_rate: offerData.proposedRate,
-        currency: offerData.currency || 'USD',
-        deliverables: offerData.deliverables || [],
-        timeline: offerData.timeline,
+        campaign_id: offerData.campaignId || null,
+        details: {
+          title: offerData.title,
+          description: offerData.description,
+          proposed_rate: offerData.proposedRate,
+          currency: offerData.currency || 'USD',
+          deliverables: offerData.deliverables || [],
+          timeline: offerData.timeline
+        },
         status: 'pending',
-        current_stage: 'pre_payment',
+        timeline: {},
         metadata: offerData.metadata || {},
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -71,14 +73,16 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
-        title: offerData.title,
-        description: offerData.description,
-        proposed_rate: offerData.proposedRate,
-        currency: offerData.currency,
-        deliverables: offerData.deliverables,
-        timeline: offerData.timeline,
+        details: {
+          title: offerData.title,
+          description: offerData.description,
+          proposed_rate: offerData.proposedRate,
+          currency: offerData.currency,
+          deliverables: offerData.deliverables,
+          timeline: offerData.timeline
+        },
         status: 'pending',
-        current_stage: 'pre_payment',
+        timeline: {},
         metadata: {
           ...offerData.metadata,
           createdFromApplication: true,
@@ -134,25 +138,40 @@ export class OfferService {
         updated_at: new Date().toISOString()
       };
 
+      // Get current details to merge with updates
+      const { data: currentData } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .select('details')
+        .eq('id', offerId)
+        .single();
+
+      const currentDetails = currentData?.details || {};
+
       // Handle acceptance
       if (newStatus === 'accepted') {
-        updateData.accepted_at = new Date().toISOString();
-        updateData.accepted_rate = additionalData?.acceptedRate || currentOffer.proposedRate;
-        updateData.final_terms = additionalData?.finalTerms || {};
-        updateData.current_stage = 'work_in_progress';
+        updateData.details = {
+          ...currentDetails,
+          accepted_at: new Date().toISOString(),
+          accepted_rate: additionalData?.acceptedRate || currentOffer.proposedRate,
+          final_terms: additionalData?.finalTerms || {}
+        };
       }
 
       // Handle completion
       if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-        updateData.current_stage = 'completed';
+        updateData.details = {
+          ...currentDetails,
+          completed_at: new Date().toISOString()
+        };
       }
 
       // Handle termination
       if (newStatus === 'terminated') {
-        updateData.terminated_at = new Date().toISOString();
-        updateData.termination_reason = additionalData?.reason || '';
-        updateData.current_stage = 'completed';
+        updateData.details = {
+          ...currentDetails,
+          terminated_at: new Date().toISOString(),
+          termination_reason: additionalData?.reason || ''
+        };
       }
 
       const { data, error } = await supabase
@@ -367,28 +386,28 @@ export class OfferService {
   }
 
   private transformFromDatabase(dbData: any): CollaborationOffer {
+    const details = dbData.details || {};
     return {
       id: dbData.id,
       influencerId: dbData.influencer_id,
       advertiserId: dbData.advertiser_id,
       campaignId: dbData.campaign_id,
-      influencerCardId: dbData.influencer_card_id,
-      title: dbData.title,
-      description: dbData.description,
-      proposedRate: parseFloat(dbData.proposed_rate),
-      currency: dbData.currency,
-      deliverables: dbData.deliverables || [],
-      timeline: dbData.timeline,
+      title: details.title || '',
+      description: details.description || '',
+      proposedRate: parseFloat(details.proposed_rate || 0),
+      currency: details.currency || 'USD',
+      deliverables: details.deliverables || [],
+      timeline: details.timeline || '',
       status: dbData.status,
-      currentStage: dbData.current_stage,
-      acceptedAt: dbData.accepted_at,
-      acceptedRate: dbData.accepted_rate ? parseFloat(dbData.accepted_rate) : undefined,
-      finalTerms: dbData.final_terms || {},
-      completedAt: dbData.completed_at,
-      terminatedAt: dbData.terminated_at,
-      terminationReason: dbData.termination_reason,
-      influencerReviewed: dbData.influencer_reviewed,
-      advertiserReviewed: dbData.advertiser_reviewed,
+      currentStage: 'pre_payment', // Default stage since not in database
+      acceptedAt: details.accepted_at,
+      acceptedRate: details.accepted_rate ? parseFloat(details.accepted_rate) : undefined,
+      finalTerms: details.final_terms || {},
+      completedAt: details.completed_at,
+      terminatedAt: details.terminated_at,
+      terminationReason: details.termination_reason,
+      influencerReviewed: false, // Default since not in database
+      advertiserReviewed: false, // Default since not in database
       metadata: dbData.metadata || {},
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
