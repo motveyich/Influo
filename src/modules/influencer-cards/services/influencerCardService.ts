@@ -165,7 +165,7 @@ export class InfluencerCardService {
       }
 
       if (filters?.countries && filters.countries.length > 0) {
-        query = query.filter('audience_demographics->topCountries', 'ov', JSON.stringify(filters.countries));
+        query = query.filter('audience_demographics->topCountries', 'ov', filters.countries);
       }
 
       if (filters?.searchQuery) {
