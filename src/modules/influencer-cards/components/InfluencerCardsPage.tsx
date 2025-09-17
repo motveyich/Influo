@@ -641,19 +641,29 @@ export function InfluencerCardsPage() {
             <div className="p-6 border-b border-gray-200">
               {/* Search and Filter Toggle */}
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder={
-                      activeTab === 'influencers' ? "Поиск по описанию, типам контента, интересам..." :
-                      activeTab === 'advertisers' ? "Поиск по названию кампании, компании, описанию..." :
-                      "Поиск карточек..."
-                    }
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
+                <div className="flex-1 flex space-x-2">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder={
+                        activeTab === 'influencers' ? "Поиск по описанию, типам контента, интересам..." :
+                        activeTab === 'advertisers' ? "Поиск по названию кампании, компании, описанию..." :
+                        "Поиск карточек..."
+                      }
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && loadData()}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <button
+                    onClick={loadData}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Поиск</span>
+                  </button>
                 </div>
                 
                 <div className="flex space-x-2">
