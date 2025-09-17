@@ -15,18 +15,11 @@ interface InfluencerCardModalProps {
 }
 
 const PLATFORMS = [
-  { value: 'vk', label: 'ВКонтакте' },
-  { value: 'youtube', label: 'YouTube' },
   { value: 'instagram', label: 'Instagram' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'ok', label: 'Одноклассники' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'twitter', label: 'Twitter / X' },
   { value: 'tiktok', label: 'TikTok' },
-  { value: 'twitch', label: 'Twitch' },
-  { value: 'rutube', label: 'RuTube' },
-  { value: 'yandex_zen', label: 'Яндекс.Дзен' },
-  { value: 'likee', label: 'Likee' }
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'twitter', label: 'Twitter / X' },
+  { value: 'multi', label: 'Мульти-платформа' }
 ];
 
 const CONTENT_TYPES = [
@@ -109,7 +102,7 @@ export function InfluencerCardModal({
 
   // Form state
   const [formData, setFormData] = useState({
-    platform: 'vk' as const,
+    platform: 'instagram' as const,
     reach: {
       followers: 0,
       engagementRate: 0
@@ -171,7 +164,7 @@ export function InfluencerCardModal({
     } else {
       // Reset form for new card
       setFormData({
-        platform: 'vk',
+        platform: 'instagram',
         reach: { followers: 0, engagementRate: 0 },
         audienceDemographics: {
           ageGroups: {},
