@@ -89,7 +89,7 @@ export class OfferService {
       };
 
       const { data, error } = await supabase
-        .from('collaboration_offers')
+        .from(TABLES.COLLABORATION_OFFERS)
         .insert([newOffer])
         .select()
         .single();
