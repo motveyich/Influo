@@ -29,6 +29,14 @@ const CONTENT_TYPES = [
   'Упоминание в видео'
 ];
 
+// Mapping between display names and pricing keys
+const CONTENT_TYPE_PRICING_KEYS_MAP: Record<string, string> = {
+  'Пост': 'post',
+  'Видео': 'video',
+  'Рилс': 'reel',
+  'Упоминание в видео': 'mention'
+};
+
 const COUNTRIES = [
   'Россия',
   'Беларусь', 
@@ -115,12 +123,8 @@ export function InfluencerCardModal({
     },
     serviceDetails: {
       contentTypes: [] as string[],
-      pricing: {
-        post: 0,
-        video: 0,
-        reel: 0,
-        mention: 0
-      },
+      pricing: {} as Record<string, number>,
+      currency: 'RUB',
       blacklistedProductCategories: [] as string[],
       availability: true,
       description: ''
@@ -136,6 +140,19 @@ export function InfluencerCardModal({
         percentage: index === 0 ? 50 : index === 1 ? 30 : 20
       }));
 
+      // Convert old pricing format to new dynamic format
+      const oldPricing = currentCard.serviceDetails.pricing || {};
+      const convertedPricing: Record<string, number> = {};
+      
+      // Map old pricing structure to new dynamic structure
+      if (typeof oldPricing === 'object' && oldPricing !== null) {
+        Object.entries(oldPricing).forEach(([key, value]) => {
+          if (typeof value === 'number' && value > 0) {
+            convertedPricing[key] = value;
+          }
+        });
+      }
+
       setFormData({
         platform: currentCard.platform as any,
         reach: {
@@ -150,12 +167,8 @@ export function InfluencerCardModal({
         },
         serviceDetails: {
           contentTypes: currentCard.serviceDetails.contentTypes || [],
-          pricing: {
-            post: currentCard.serviceDetails.pricing?.post || 0,
-            video: currentCard.serviceDetails.pricing?.video || 0,
-            reel: currentCard.serviceDetails.pricing?.reel || 0,
-            mention: (currentCard.serviceDetails.pricing as any)?.mention || 0
-          },
+          pricing: convertedPricing,
+          currency: (currentCard.serviceDetails as any).currency || 'RUB',
           blacklistedProductCategories: currentCard.serviceDetails.blacklistedProductCategories || [],
           availability: currentCard.serviceDetails.availability ?? true,
           description: currentCard.serviceDetails.description || ''
@@ -174,7 +187,8 @@ export function InfluencerCardModal({
         },
         serviceDetails: {
           contentTypes: [],
-          pricing: { post: 0, video: 0, reel: 0, mention: 0 },
+          pricing: {},
+          currency: 'RUB',
           blacklistedProductCategories: [],
           availability: true,
           description: ''
@@ -225,6 +239,10 @@ export function InfluencerCardModal({
       newErrors.pricing = 'Установите цену хотя бы для одной услуги';
     }
 
+    if (!formData.serviceDetails.currency) {
+      newErrors.currency = 'Выберите валюту';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -237,7 +255,6 @@ export function InfluencerCardModal({
 
     setIsLoading(true);
     try {
-      // Convert to old format for database compatibility
       const cardData: Partial<InfluencerCard> = {
         userId,
         platform: formData.platform,
@@ -254,12 +271,8 @@ export function InfluencerCardModal({
         },
         serviceDetails: {
           ...formData.serviceDetails,
-          pricing: {
-            post: formData.serviceDetails.pricing.post,
-            story: 0, // Remove story pricing
-            reel: formData.serviceDetails.pricing.reel,
-            video: formData.serviceDetails.pricing.video
-          },
+          pricing: formData.serviceDetails.pricing,
+          currency: formData.serviceDetails.currency,
           blacklistedProductCategories: formData.serviceDetails.blacklistedProductCategories
         }
       };
@@ -284,13 +297,22 @@ export function InfluencerCardModal({
   };
 
   const handleContentTypeToggle = (contentType: string) => {
+    const pricingKey = CONTENT_TYPE_PRICING_KEYS_MAP[contentType];
+    
     setFormData(prev => ({
       ...prev,
       serviceDetails: {
         ...prev.serviceDetails,
         contentTypes: prev.serviceDetails.contentTypes.includes(contentType)
           ? prev.serviceDetails.contentTypes.filter(type => type !== contentType)
-          : [...prev.serviceDetails.contentTypes, contentType]
+          : [...prev.serviceDetails.contentTypes, contentType],
+        pricing: prev.serviceDetails.contentTypes.includes(contentType)
+          ? (() => {
+              const newPricing = { ...prev.serviceDetails.pricing };
+              delete newPricing[pricingKey];
+              return newPricing;
+            })()
+          : { ...prev.serviceDetails.pricing, [pricingKey]: 0 }
       }
     }));
   };
@@ -533,97 +555,71 @@ export function InfluencerCardModal({
 
             {/* Pricing */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Цены за услуги (₽) *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Пост
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.serviceDetails.pricing.post}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      serviceDetails: {
-                        ...prev.serviceDetails,
-                        pricing: {
-                          ...prev.serviceDetails.pricing,
-                          post: parseInt(e.target.value) || 0
-                        }
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                  />
+              <div className="flex justify-between items-center mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Цены за услуги *
+                </label>
+                <select
+                  value={formData.serviceDetails.currency}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    serviceDetails: {
+                      ...prev.serviceDetails,
+                      currency: e.target.value
+                    }
+                  }))}
+                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                >
+                  <option value="RUB">₽ Рубли</option>
+                  <option value="USD">$ Доллары</option>
+                  <option value="EUR">€ Евро</option>
+                </select>
+              </div>
+              
+              {Object.keys(formData.serviceDetails.pricing).length === 0 ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600">
+                    Выберите типы контента выше, чтобы указать цены
+                  </p>
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Видео
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.serviceDetails.pricing.video}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      serviceDetails: {
-                        ...prev.serviceDetails,
-                        pricing: {
-                          ...prev.serviceDetails.pricing,
-                          video: parseInt(e.target.value) || 0
-                        }
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                  />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(formData.serviceDetails.pricing).map(([pricingKey, price]) => {
+                    // Find the display name for this pricing key
+                    const displayName = Object.entries(CONTENT_TYPE_PRICING_KEYS_MAP)
+                      .find(([_, key]) => key === pricingKey)?.[0] || pricingKey;
+                    
+                    return (
+                      <div key={pricingKey}>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          {displayName}
+                        </label>
+                        <input
+                          type="number"
+                          value={price}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            serviceDetails: {
+                              ...prev.serviceDetails,
+                              pricing: {
+                                ...prev.serviceDetails.pricing,
+                                [pricingKey]: parseInt(e.target.value) || 0
+                              }
+                            }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Рилс
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.serviceDetails.pricing.reel}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      serviceDetails: {
-                        ...prev.serviceDetails,
-                        pricing: {
-                          ...prev.serviceDetails.pricing,
-                          reel: parseInt(e.target.value) || 0
-                        }
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Упоминание в видео
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.serviceDetails.pricing.mention}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      serviceDetails: {
-                        ...prev.serviceDetails,
-                        pricing: {
-                          ...prev.serviceDetails.pricing,
-                          mention: parseInt(e.target.value) || 0
-                        }
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
+              )}
+              
+              <div className="mt-2 text-sm text-gray-600">
+                Валюта: {formData.serviceDetails.currency === 'RUB' ? '₽ Рубли' : 
+                         formData.serviceDetails.currency === 'USD' ? '$ Доллары' : 
+                         '€ Евро'}
               </div>
               {errors.pricing && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">

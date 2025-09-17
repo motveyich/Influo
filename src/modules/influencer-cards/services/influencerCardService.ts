@@ -257,10 +257,13 @@ export class InfluencerCardService {
         errors.push('Service description must be at least 10 characters');
       }
       if (cardData.serviceDetails.pricing) {
-        const pricing = cardData.serviceDetails.pricing;
-        if (Object.values(pricing).some(price => price < 0)) {
+        if (Object.values(cardData.serviceDetails.pricing).some(price => price < 0)) {
           errors.push('Pricing cannot be negative');
         }
+      }
+      
+      if (cardData.serviceDetails.currency && !['RUB', 'USD', 'EUR'].includes(cardData.serviceDetails.currency)) {
+        errors.push('Invalid currency');
       }
     }
 
@@ -292,7 +295,13 @@ export class InfluencerCardService {
     if (cardData.platform) dbData.platform = cardData.platform;
     if (cardData.reach) dbData.reach = cardData.reach;
     if (cardData.audienceDemographics) dbData.audience_demographics = cardData.audienceDemographics;
-    if (cardData.serviceDetails) dbData.service_details = cardData.serviceDetails;
+    if (cardData.serviceDetails) {
+      dbData.service_details = {
+        ...cardData.serviceDetails,
+        pricing: cardData.serviceDetails.pricing || {},
+        currency: cardData.serviceDetails.currency || 'RUB'
+      };
+    }
     if (cardData.rating !== undefined) dbData.rating = cardData.rating;
     if (cardData.completedCampaigns !== undefined) dbData.completed_campaigns = cardData.completedCampaigns;
     if (cardData.isActive !== undefined) dbData.is_active = cardData.isActive;

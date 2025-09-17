@@ -107,12 +107,8 @@ export interface InfluencerCard {
   };
   serviceDetails: {
     contentTypes: string[];
-    pricing: {
-      post: number;
-      story: number;
-      reel: number;
-      video: number;
-    };
+    pricing: Record<string, number>;
+    currency: string;
     blacklistedProductCategories: string[];
     blacklistedProductCategories: string[];
   };
