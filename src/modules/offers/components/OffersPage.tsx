@@ -49,14 +49,8 @@ export function OffersPage() {
     try {
       setIsLoading(true);
       
-      // Загружаем все предложения пользователя (и отправленные, и полученные)
-      const [sentOffers, receivedOffers] = await Promise.all([
-        offerService.getUserOffers(currentUserId, 'sent'),
-        offerService.getUserOffers(currentUserId, 'received')
-      ]);
-      
-      // Объединяем все предложения
-      const allOffers = [...sentOffers, ...receivedOffers];
+      // Загружаем все предложения, где пользователь является участником
+      const allOffers = await offerService.getOffersByParticipant(currentUserId);
       
       // Фильтруем по вкладке
       const filteredByTab = allOffers.filter(offer => {

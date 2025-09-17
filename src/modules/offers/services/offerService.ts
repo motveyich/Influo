@@ -221,21 +221,19 @@ export class OfferService {
     }
   }
 
-  async getUserOffers(userId: string, type: 'sent' | 'received'): Promise<CollaborationOffer[]> {
+  async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
     try {
-      const column = type === 'sent' ? 'influencer_id' : 'advertiser_id';
-      
       const { data, error } = await supabase
         .from(TABLES.COLLABORATION_OFFERS)
         .select('*')
-        .eq(column, userId)
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       return data.map(offer => this.transformFromDatabase(offer));
     } catch (error) {
-      console.error('Failed to get user offers:', error);
+      console.error('Failed to get offers by participant:', error);
       throw error;
     }
   }
