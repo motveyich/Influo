@@ -246,7 +246,7 @@ export class UserSettingsService {
 
   private getDefaultSettings(userId: string): UserSettings {
     return {
-      id: `settings_${userId}`,
+      id: userId,
       userId,
       security: {
         twoFactorEnabled: false,
