@@ -10,6 +10,7 @@ import { InfluencerCardDetailPage } from './modules/influencer-cards/components/
 import { HomePage } from './modules/home/components/HomePage';
 import { AdminPanel } from './modules/admin/components/AdminPanel';
 import { OffersPage } from './modules/offers/components/OffersPage';
+import { SettingsPage } from './modules/settings/components/SettingsPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/offers" element={<OffersPage />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Layout>
         <Toaster

@@ -12,6 +12,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { isSupabaseConfigured } from '../core/supabase';
 import { useTranslation } from '../hooks/useTranslation';
 import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
@@ -31,6 +32,7 @@ export function Layout({ children }: LayoutProps) {
   const [showSupabaseWarning, setShowSupabaseWarning] = React.useState(false);
   const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
   const { t } = useTranslation();
+  const { settings } = useUserSettings(user?.id || '');
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
@@ -47,7 +49,15 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Админ-панель', href: '/admin', icon: Shield }
   ];
 
-  const navigation = isModerator ? [...baseNavigation, ...adminNavigation] : baseNavigation;
+  const settingsNavigation = [
+    { name: 'Настройки', href: '/settings', icon: Settings }
+  ];
+
+  const navigation = [
+    ...baseNavigation,
+    ...(isModerator ? adminNavigation : []),
+    ...settingsNavigation
+  ];
 
   React.useEffect(() => {
     // Check Supabase configuration
@@ -55,6 +65,26 @@ export function Layout({ children }: LayoutProps) {
       setShowSupabaseWarning(true);
     }
   }, []);
+
+  // Apply theme from settings
+  React.useEffect(() => {
+    if (settings?.interface.theme) {
+      const theme = settings.interface.theme;
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        // System theme
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    }
+  }, [settings?.interface.theme]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();

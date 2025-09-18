@@ -616,3 +616,71 @@ export interface AIAnalysisResult {
   confidence: number;
   riskFactors?: string[];
 }
+
+// User Settings Types
+export interface UserSettings {
+  id: string;
+  userId: string;
+  
+  // Security settings
+  security: {
+    twoFactorEnabled: boolean;
+    passwordLastChanged: string;
+    activeSessions: Array<{
+      id: string;
+      deviceInfo: string;
+      lastActive: string;
+      ipAddress?: string;
+      isCurrent: boolean;
+    }>;
+  };
+  
+  // Privacy settings
+  privacy: {
+    hideEmail: boolean;
+    hidePhone: boolean;
+    hideSocialMedia: boolean;
+    profileVisibility: 'public' | 'contacts_only' | 'private';
+  };
+  
+  // Notification settings
+  notifications: {
+    email: {
+      applications: boolean;
+      messages: boolean;
+      payments: boolean;
+      reviews: boolean;
+      marketing: boolean;
+    };
+    push: {
+      enabled: boolean;
+      applications: boolean;
+      messages: boolean;
+      payments: boolean;
+      reviews: boolean;
+    };
+    frequency: 'immediate' | 'daily' | 'weekly';
+    soundEnabled: boolean;
+  };
+  
+  // Interface settings
+  interface: {
+    theme: 'light' | 'dark' | 'system';
+    language: 'ru' | 'en';
+    fontSize: 'small' | 'medium' | 'large';
+    dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+    timeFormat: '12h' | '24h';
+    timezone: string;
+  };
+  
+  // Account status
+  account: {
+    isActive: boolean;
+    isDeactivated: boolean;
+    deactivatedAt?: string;
+    deactivationReason?: string;
+  };
+  
+  createdAt: string;
+  updatedAt: string;
+}
