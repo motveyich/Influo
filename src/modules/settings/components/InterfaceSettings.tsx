@@ -236,9 +236,9 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
               <div className="text-center">
                 <Type className={`mx-auto mb-2 ${
                   size === 'small' ? 'w-4 h-4' : 
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{langInfo.nativeName}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{langInfo.name}</p>
-                <span className={`font-medium text-gray-900 ${
+                  size === 'medium' ? 'w-5 h-5' : 'w-6 h-6'
+                }`} />
+                <span className={`font-medium text-gray-900 dark:text-gray-100 ${
                   size === 'small' ? 'text-sm' : 
                   size === 'medium' ? 'text-base' : 'text-lg'
                 }`}>
@@ -292,7 +292,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleTimeFormatUpdate('12h')}
-                className={`p-3 border rounded-lg text-sm transition-colors ${
+                className={\`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '12h'
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
                     : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
@@ -302,7 +302,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
               </button>
               <button
                 onClick={() => handleTimeFormatUpdate('24h')}
-                className={`p-3 border rounded-lg text-sm transition-colors ${
+                className={\`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '24h'
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
                     : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
