@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { isSupabaseConfigured } from '../core/supabase';
+import { applyInterfaceSettings } from '../core/interfaceSettingsUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
 import { AuthModal } from './AuthModal';
@@ -61,25 +62,12 @@ export function Layout({ children }: LayoutProps) {
     }
   }, []);
 
-  // Apply theme from settings
+  // Apply interface settings from user settings
   React.useEffect(() => {
-    if (settings?.interface?.theme) {
-      const theme = settings.interface.theme;
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        // System theme
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
+    if (settings?.interface) {
+      applyInterfaceSettings(settings.interface);
     }
-  }, [settings?.interface?.theme]);
+  }, [settings?.interface]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserSettings } from '../core/types';
 import { userSettingsService } from '../services/userSettingsService';
-import { i18n } from '../core/i18n';
+import { applyInterfaceSettings } from '../core/interfaceSettingsUtils';
 
 export function useUserSettings(userId: string) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -22,7 +22,9 @@ export function useUserSettings(userId: string) {
       setSettings(userSettings);
       
       // Apply interface settings immediately
-      applyInterfaceSettings(userSettings.interface);
+      if (userSettings.interface) {
+        applyInterfaceSettings(userSettings.interface);
+      }
     } catch (err: any) {
       console.error('Failed to load user settings:', err);
       setError(err.message || 'Failed to load settings');
@@ -39,7 +41,7 @@ export function useUserSettings(userId: string) {
       setSettings(updatedSettings);
       
       // Apply interface settings if they were updated
-      if (updates.interface) {
+      if (updates.interface && updatedSettings.interface) {
         applyInterfaceSettings(updatedSettings.interface);
       }
       
@@ -48,45 +50,6 @@ export function useUserSettings(userId: string) {
       console.error('Failed to update settings:', err);
       setError(err.message || 'Failed to update settings');
       throw err;
-    }
-  };
-
-  const applyInterfaceSettings = (interfaceSettings: UserSettings['interface']) => {
-    // Apply theme
-    if (interfaceSettings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (interfaceSettings.theme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      // System theme
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-
-    // Apply language
-    if (interfaceSettings.language) {
-      i18n.setLanguage(interfaceSettings.language);
-    }
-
-    // Apply font size
-    const fontSizeClasses = {
-      small: 'text-sm',
-      medium: 'text-base',
-      large: 'text-lg'
-    };
-    
-    // Remove existing font size classes
-    document.documentElement.classList.remove('text-sm', 'text-base', 'text-lg');
-    document.documentElement.classList.add(fontSizeClasses[interfaceSettings.fontSize]);
-
-    // Apply timezone
-    if (interfaceSettings.timezone) {
-      // Store timezone for date formatting
-      localStorage.setItem('user_timezone', interfaceSettings.timezone);
     }
   };
 
