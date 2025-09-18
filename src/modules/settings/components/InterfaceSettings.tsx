@@ -37,6 +37,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
 
   const handleThemeUpdate = async (theme: UserSettings['interface']['theme']) => {
     try {
+      console.log('🎨 Updating theme to:', theme);
       await onUpdateSettings({
         interface: {
           ...settings.interface,
@@ -45,21 +46,25 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
       });
       toast.success('Тема интерфейса обновлена');
     } catch (error) {
+      console.error('Failed to update theme:', error);
       toast.error('Не удалось обновить тему');
     }
   };
 
   const handleLanguageUpdate = async (language: UserSettings['interface']['language']) => {
     try {
+      console.log('🌐 Updating language to:', language);
       await onUpdateSettings({
         interface: {
           ...settings.interface,
           language
         }
       });
-      // Language change is applied automatically by the hook
+      // Update the i18n service immediately
+      setLanguage(language);
       toast.success('Язык интерфейса изменен');
     } catch (error) {
+      console.error('Failed to update language:', error);
       toast.error('Не удалось изменить язык');
     }
   };

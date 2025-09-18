@@ -1,48 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
-import { ProfileCard } from './ProfileCard';
 import { ProfileSetupModal } from './ProfileSetupModal';
 import { ProfileCompletionBanner } from './ProfileCompletionBanner';
-import { profileService } from '../services/profileService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useUserSettings } from '../../../hooks/useUserSettings';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../hooks/useProfileCompletion';
 import { SecuritySettings } from '../../settings/components/SecuritySettings';
 import { NotificationSettings } from '../../settings/components/NotificationSettings';
 import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
 import { SupportSettings } from '../../settings/components/SupportSettings';
 import { 
-  Search, 
-  Filter, 
-  Users, 
-  TrendingUp, 
-  Star, 
-  Plus,
   User,
+  Users,
   Briefcase,
   Shield,
   Bell,
   Palette,
   HelpCircle,
-  LogOut,
   Save,
-  AlertCircle
+  Instagram,
+  Youtube,
+  Twitter,
+  Globe,
+  DollarSign,
+  Loader2
 } from 'lucide-react';
-import { analytics } from '../../../core/analytics';
 import toast from 'react-hot-toast';
 
 type ProfileTab = 'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support';
 
 export function ProfilesPage() {
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'influencer' | 'advertiser'>('all');
-  const [isLoading, setIsLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('basic');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -62,83 +53,63 @@ export function ProfilesPage() {
     isLoading: settingsLoading 
   } = useUserSettings(currentUserId);
 
-  useEffect(() => {
-    if (currentUserId && !loading) {
-      loadProfiles();
-    }
-  }, [currentUserId, loading]);
-
-  const loadProfiles = async () => {
-    try {
-      setIsLoading(true);
-      // Mock profiles for now - replace with actual API call
-      const mockProfiles: UserProfile[] = [];
-      setProfiles(mockProfiles);
-    } catch (error) {
-      console.error('Failed to load profiles:', error);
-      toast.error(t('profile.errors.loadFailed'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    analytics.trackSearch(query, { 
-      filter: selectedFilter,
-      section: 'profiles'
-    });
-  };
-
-  const handleCreateProfile = () => {
-    setEditingProfile(null);
-    setShowProfileModal(true);
-  };
-
-  const handleEditProfile = (profile: UserProfile) => {
-    setEditingProfile(profile);
-    setShowProfileModal(true);
-  };
-
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
-    if (editingProfile) {
-      setProfiles(prev => prev.map(p => 
-        p.userId === updatedProfile.userId ? updatedProfile : p
-      ));
-    } else {
-      setProfiles(prev => [updatedProfile, ...prev]);
-    }
     refreshProfile();
+    toast.success(t('profile.success.updated'));
   };
 
-  const filteredProfiles = profiles.filter(profile => {
-    const matchesSearch = profile.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         profile.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleSettingsUpdate = async (updates: any) => {
+    if (isUpdating) return; // Prevent spam clicks
     
-    const matchesFilter = selectedFilter === 'all' || 
-                         (selectedFilter === 'influencer' && profile.influencerData) ||
-                         (selectedFilter === 'advertiser' && profile.advertiserData);
-    
-    return matchesSearch && matchesFilter;
-  });
+    setIsUpdating(true);
+    try {
+      const result = await updateSettings(updates);
+      return result;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const navigation = [
-    { id: 'basic', label: 'Основная информация', icon: User },
-    { id: 'influencer', label: 'Инфлюенсер', icon: Users },
-    { id: 'advertiser', label: 'Рекламодатель', icon: Briefcase },
+    { id: 'basic', label: t('profile.basicInfo'), icon: User },
+    { id: 'influencer', label: t('profile.influencerSettings'), icon: Users },
+    { id: 'advertiser', label: t('profile.advertiserSettings'), icon: Briefcase },
     { id: 'security', label: 'Безопасность', icon: Shield },
     { id: 'notifications', label: 'Уведомления', icon: Bell },
     { id: 'interface', label: 'Интерфейс', icon: Palette },
     { id: 'support', label: 'Поддержка', icon: HelpCircle }
   ];
 
+  const getSocialIcon = (platform: string) => {
+    switch (platform) {
+      case 'instagram':
+        return <Instagram className="w-4 h-4" />;
+      case 'youtube':
+        return <Youtube className="w-4 h-4" />;
+      case 'twitter':
+        return <Twitter className="w-4 h-4" />;
+      default:
+        return <Globe className="w-4 h-4" />;
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const renderTabContent = () => {
+    // Show loading for settings tabs
     if (settingsLoading && ['security', 'notifications', 'interface', 'support'].includes(activeTab)) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Загрузка настроек...</p>
+            <Loader2 className="animate-spin h-8 w-8 text-purple-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}...</p>
           </div>
         </div>
       );
@@ -146,8 +117,6 @@ export function ProfilesPage() {
 
     switch (activeTab) {
       case 'basic':
-      case 'influencer':
-      case 'advertiser':
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
@@ -158,175 +127,81 @@ export function ProfilesPage() {
               />
             )}
 
-            {/* Profile Editor */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            {/* Basic Information */}
+            <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {activeTab === 'basic' ? 'Основная информация' :
-                     activeTab === 'influencer' ? 'Настройки инфлюенсера' :
-                     'Настройки рекламодателя'}
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {t('profile.basicInfo')}
                   </h2>
-                  <p className="text-sm text-gray-600">
-                    {activeTab === 'basic' ? 'Управление основной информацией профиля' :
-                     activeTab === 'influencer' ? 'Настройка профиля инфлюенсера' :
-                     'Настройка профиля рекламодателя'}
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('profile.manageBasicInfo')}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowProfileModal(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                  disabled={isUpdating}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Редактировать</span>
+                  {isUpdating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{isUpdating ? t('common.loading') : t('common.edit')}</span>
                 </button>
               </div>
 
-              {/* Profile Information Display */}
               {currentUserProfile ? (
-                <div className="space-y-6">
-                  {activeTab === 'basic' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Полное имя</label>
-                        <p className="text-sm text-gray-900">{currentUserProfile.fullName || 'Не указано'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <p className="text-sm text-gray-900">{currentUserProfile.email}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-                        <p className="text-sm text-gray-900">{currentUserProfile.phone || 'Не указан'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Местоположение</label>
-                        <p className="text-sm text-gray-900">{currentUserProfile.location || 'Не указано'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">О себе</label>
-                        <p className="text-sm text-gray-900">{currentUserProfile.bio || 'Не указано'}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'influencer' && (
-                    <div className="space-y-6">
-                      {currentUserProfile.influencerData ? (
-                        <>
-                          <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-3">Социальные сети</h3>
-                            {currentUserProfile.influencerData.socialMediaLinks?.length > 0 ? (
-                              <div className="space-y-2">
-                                {currentUserProfile.influencerData.socialMediaLinks.map((link, index) => (
-                                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-                                    <span className="text-sm font-medium text-gray-900 capitalize">{link.platform}</span>
-                                    <span className="text-sm text-gray-600">{link.username || link.url}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-600">Социальные сети не добавлены</p>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-3">Метрики</h3>
-                            <div className="grid grid-cols-3 gap-4">
-                              <div className="text-center p-3 bg-gray-50 rounded-md">
-                                <p className="text-lg font-semibold text-gray-900">
-                                  {currentUserProfile.influencerData.metrics?.totalFollowers?.toLocaleString() || '0'}
-                                </p>
-                                <p className="text-xs text-gray-600">Подписчики</p>
-                              </div>
-                              <div className="text-center p-3 bg-gray-50 rounded-md">
-                                <p className="text-lg font-semibold text-gray-900">
-                                  {currentUserProfile.influencerData.metrics?.engagementRate?.toFixed(1) || '0'}%
-                                </p>
-                                <p className="text-xs text-gray-600">Вовлеченность</p>
-                              </div>
-                              <div className="text-center p-3 bg-gray-50 rounded-md">
-                                <p className="text-lg font-semibold text-gray-900">
-                                  {currentUserProfile.influencerData.metrics?.averageViews?.toLocaleString() || '0'}
-                                </p>
-                                <p className="text-xs text-gray-600">Просмотры</p>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">Профиль инфлюенсера не настроен</h3>
-                          <p className="text-gray-600 mb-4">Настройте профиль инфлюенсера для доступа к функциям платформы</p>
-                          <button
-                            onClick={() => setShowProfileModal(true)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-                          >
-                            Настроить профиль
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'advertiser' && (
-                    <div className="space-y-6">
-                      {currentUserProfile.advertiserData ? (
-                        <>
-                          <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-3">Информация о компании</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Название компании</label>
-                                <p className="text-sm text-gray-900">{currentUserProfile.advertiserData.companyName || 'Не указано'}</p>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Отрасль</label>
-                                <p className="text-sm text-gray-900">{currentUserProfile.advertiserData.industry || 'Не указана'}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-3">Статистика</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="text-center p-3 bg-gray-50 rounded-md">
-                                <p className="text-lg font-semibold text-gray-900">
-                                  {currentUserProfile.advertiserData.previousCampaigns || 0}
-                                </p>
-                                <p className="text-xs text-gray-600">Кампании</p>
-                              </div>
-                              <div className="text-center p-3 bg-gray-50 rounded-md">
-                                <p className="text-lg font-semibold text-gray-900">
-                                  ${currentUserProfile.advertiserData.averageBudget?.toLocaleString() || '0'}
-                                </p>
-                                <p className="text-xs text-gray-600">Средний бюджет</p>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">Профиль рекламодателя не настроен</h3>
-                          <p className="text-gray-600 mb-4">Настройте профиль рекламодателя для создания кампаний</p>
-                          <button
-                            onClick={() => setShowProfileModal(true)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-                          >
-                            Настроить профиль
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.fullName')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {currentUserProfile.fullName || t('profile.notSpecified')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.email')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{currentUserProfile.email}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.phone')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {currentUserProfile.phone || t('profile.notSpecified')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.location')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {currentUserProfile.location || t('profile.notSpecified')}
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.aboutMe')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {currentUserProfile.bio || t('profile.notSpecified')}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Профиль не создан</h3>
-                  <p className="text-gray-600 mb-4">Создайте профиль для начала работы на платформе</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Профиль не создан
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Создайте профиль для начала работы на платформе
+                  </p>
                   <button
                     onClick={() => setShowProfileModal(true)}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
@@ -339,11 +214,304 @@ export function ProfilesPage() {
           </div>
         );
 
+      case 'influencer':
+        return (
+          <div className="space-y-6">
+            {/* Profile Completion Banner */}
+            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+              <ProfileCompletionBanner
+                profile={currentUserProfile}
+                onCompleteProfile={() => setShowProfileModal(true)}
+              />
+            )}
+
+            {/* Influencer Settings */}
+            <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {t('profile.influencerSettings')}
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('profile.setupInfluencerProfile')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  disabled={isUpdating}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{isUpdating ? t('common.loading') : t('common.edit')}</span>
+                </button>
+              </div>
+
+              {currentUserProfile?.influencerData ? (
+                <div className="space-y-6">
+                  {/* Social Networks */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.socialNetworks')}
+                    </h3>
+                    {currentUserProfile.influencerData.socialMediaLinks?.length > 0 ? (
+                      <div className="space-y-2">
+                        {currentUserProfile.influencerData.socialMediaLinks.map((link, index) => (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                            {getSocialIcon(link.platform)}
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+                              {link.platform}
+                            </span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {link.username || link.url}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('profile.socialNetworks')} {t('profile.notAdded')}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Metrics */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.metrics')}
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.influencerData.metrics?.totalFollowers?.toLocaleString() || '0'}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.subscribers')}</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.influencerData.metrics?.engagementRate?.toFixed(1) || '0'}%
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.engagement')}</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.influencerData.metrics?.averageViews?.toLocaleString() || '0'}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.views')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content Categories */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.contentCategoriesAndPricing')}
+                    </h3>
+                    
+                    {/* Categories */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {t('profile.categories')}
+                      </h4>
+                      {currentUserProfile.influencerData.contentCategories?.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {currentUserProfile.influencerData.contentCategories.map((category, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                            >
+                              {category}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {t('profile.noCategoriesAdded')}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Pricing */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {t('profile.pricing')}
+                      </h4>
+                      {currentUserProfile.influencerData.pricing && 
+                       Object.values(currentUserProfile.influencerData.pricing).some(price => price > 0) ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {Object.entries(currentUserProfile.influencerData.pricing).map(([type, price]) => (
+                            price > 0 && (
+                              <div key={type} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-center">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+                                  {type}
+                                </p>
+                                <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                  {formatCurrency(price)}
+                                </p>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {t('profile.noPricingSet')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {t('profile.influencerSettings')} {t('profile.notConfigured')}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Настройте профиль инфлюенсера для доступа к функциям платформы
+                  </p>
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                  >
+                    {t('profile.setupProfile')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'advertiser':
+        return (
+          <div className="space-y-6">
+            {/* Profile Completion Banner */}
+            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+              <ProfileCompletionBanner
+                profile={currentUserProfile}
+                onCompleteProfile={() => setShowProfileModal(true)}
+              />
+            )}
+
+            {/* Advertiser Settings */}
+            <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {t('profile.advertiserSettings')}
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('profile.setupAdvertiserProfile')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  disabled={isUpdating}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{isUpdating ? t('common.loading') : t('common.edit')}</span>
+                </button>
+              </div>
+
+              {currentUserProfile?.advertiserData ? (
+                <div className="space-y-6">
+                  {/* Company Information */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.companyInformation')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('profile.companyName')}
+                        </label>
+                        <p className="text-sm text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.advertiserData.companyName || t('profile.notSpecified')}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('profile.industry')}
+                        </label>
+                        <p className="text-sm text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.advertiserData.industry || t('profile.notSet')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Statistics */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.statistics')}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {currentUserProfile.advertiserData.previousCampaigns || 0}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.campaigns')}</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          ${currentUserProfile.advertiserData.averageBudget?.toLocaleString() || '0'}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.averageBudget')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Budget Range */}
+                  {currentUserProfile.advertiserData.campaignPreferences?.budgetRange && (
+                    <div>
+                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                        {t('profile.budgetRange')}
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="w-5 h-5 text-green-600" />
+                          <span className="text-sm text-gray-900 dark:text-gray-100">
+                            {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.min)} - 
+                            {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.max)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {t('profile.advertiserSettings')} {t('profile.notConfigured')}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Настройте профиль рекламодателя для создания кампаний
+                  </p>
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                  >
+                    {t('profile.setupProfile')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
       case 'security':
         return settings ? (
           <SecuritySettings
             settings={settings}
-            onUpdateSettings={updateSettings}
+            onUpdateSettings={handleSettingsUpdate}
             changePassword={changePassword}
             enableTwoFactor={enableTwoFactor}
             disableTwoFactor={disableTwoFactor}
@@ -353,8 +521,11 @@ export function ProfilesPage() {
             userId={currentUserId}
           />
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-gray-600">Настройки безопасности недоступны</p>
+          <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек безопасности...</p>
+            </div>
           </div>
         );
 
@@ -362,11 +533,14 @@ export function ProfilesPage() {
         return settings ? (
           <NotificationSettings
             settings={settings}
-            onUpdateSettings={updateSettings}
+            onUpdateSettings={handleSettingsUpdate}
           />
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-gray-600">Настройки уведомлений недоступны</p>
+          <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек уведомлений...</p>
+            </div>
           </div>
         );
 
@@ -374,11 +548,14 @@ export function ProfilesPage() {
         return settings ? (
           <InterfaceSettings
             settings={settings}
-            onUpdateSettings={updateSettings}
+            onUpdateSettings={handleSettingsUpdate}
           />
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-gray-600">Настройки интерфейса недоступны</p>
+          <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек интерфейса...</p>
+            </div>
           </div>
         );
 
@@ -393,9 +570,11 @@ export function ProfilesPage() {
   return (
     <div className="flex h-[calc(100vh-200px)]">
       {/* Sidebar Navigation */}
-      <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+      <div className="w-64 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-600 overflow-y-auto">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-6">Профиль и настройки</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+            {t('profile.profileAndSettings')}
+          </h1>
           
           <nav className="space-y-1">
             {navigation.map((item) => {
@@ -406,8 +585,8 @@ export function ProfilesPage() {
                   onClick={() => setActiveTab(item.id as ProfileTab)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === item.id
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -420,7 +599,7 @@ export function ProfilesPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-900">
         <div className="p-6">
           {renderTabContent()}
         </div>
@@ -429,11 +608,8 @@ export function ProfilesPage() {
       {/* Profile Setup Modal */}
       <ProfileSetupModal
         isOpen={showProfileModal}
-        onClose={() => {
-          setShowProfileModal(false);
-          setEditingProfile(null);
-        }}
-        currentProfile={editingProfile || currentUserProfile}
+        onClose={() => setShowProfileModal(false)}
+        currentProfile={currentUserProfile}
         onProfileUpdated={handleProfileUpdated}
       />
     </div>

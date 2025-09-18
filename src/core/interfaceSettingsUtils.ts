@@ -3,23 +3,33 @@ import { UserSettings } from './types';
 
 export function applyInterfaceSettings(interfaceSettings: UserSettings['interface']) {
   try {
+    console.log('🎨 Applying interface settings:', interfaceSettings);
+    
     // Apply theme
     if (interfaceSettings.theme === 'dark') {
+      console.log('🌙 Applying dark theme');
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     } else if (interfaceSettings.theme === 'light') {
+      console.log('☀️ Applying light theme');
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     } else {
       // System theme
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      console.log('🖥️ Applying system theme, prefers dark:', prefersDark);
       if (prefersDark) {
         document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
       }
     }
 
     // Apply language
     if (interfaceSettings.language) {
+      console.log('🌐 Applying language:', interfaceSettings.language);
       i18n.setLanguage(interfaceSettings.language);
     }
 
@@ -32,13 +42,19 @@ export function applyInterfaceSettings(interfaceSettings: UserSettings['interfac
     
     // Remove existing font size classes
     document.documentElement.classList.remove('text-sm', 'text-base', 'text-lg');
-    document.documentElement.classList.add(fontSizeClasses[interfaceSettings.fontSize]);
+    if (interfaceSettings.fontSize && fontSizeClasses[interfaceSettings.fontSize]) {
+      document.documentElement.classList.add(fontSizeClasses[interfaceSettings.fontSize]);
+      console.log('📝 Applied font size:', interfaceSettings.fontSize);
+    }
 
     // Apply timezone
     if (interfaceSettings.timezone) {
       // Store timezone for date formatting
       localStorage.setItem('user_timezone', interfaceSettings.timezone);
+      console.log('🕐 Applied timezone:', interfaceSettings.timezone);
     }
+    
+    console.log('✅ Interface settings applied successfully');
   } catch (error) {
     console.error('Failed to apply interface settings:', error);
   }
