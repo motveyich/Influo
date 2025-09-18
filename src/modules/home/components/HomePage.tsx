@@ -214,10 +214,10 @@ export function HomePage() {
           </h1>
           <p className="mt-1 text-sm text-gray-600">
             Ваш центр управления инфлюенс-маркетингом
-          </p>
+              {t('home.welcome')}
           {lastRefresh && (
             <p className="text-xs text-gray-500 mt-1">
-              Последнее обновление: {lastRefresh.toLocaleTimeString()}
+              {t('home.subtitle')}
             </p>
           )}
         </div>
@@ -235,10 +235,10 @@ export function HomePage() {
       {campaignStats && (
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Ваша статистика</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('home.yourStats')}</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Activity className="w-4 h-4" />
-              <span>Обновлено сегодня</span>
+              <span>{t('home.updatedToday')}</span>
             </div>
           </div>
           
@@ -246,60 +246,60 @@ export function HomePage() {
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
                 <Target className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">Активные кампании</span>
+                <span className="text-sm font-medium text-gray-600">{t('home.activeCampaigns')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campaignStats.activeCampaigns}</p>
               <p className="text-sm text-blue-600">
-                {campaignStats.activeCampaigns === 0 ? 'Нет активных' : 'Запущено'}
+                {campaignStats.activeCampaigns === 0 ? t('home.noActive') : t('home.launched')}
               </p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium text-gray-600">Заявки</span>
+                <span className="text-sm font-medium text-gray-600">{t('home.applications')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingApplications}</p>
               <p className="text-sm text-orange-600">
-                {campaignStats.pendingApplications === 0 ? 'Нет новых' : 'Ожидают ответа'}
+                {campaignStats.pendingApplications === 0 ? t('home.noNew') : t('home.awaitingResponse')}
               </p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
                 <MessageCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-600">Неотвеченные</span>
+                <span className="text-sm font-medium text-gray-600">{t('home.unread')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campaignStats.unreadMessages}</p>
               <p className="text-sm text-green-600">
-                {campaignStats.unreadMessages === 0 ? 'Все прочитано' : 'Новые сообщения'}
+                {campaignStats.unreadMessages === 0 ? t('home.allRead') : t('home.newMessages')}
               </p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
                 <DollarSign className="w-5 h-5 text-red-600" />
-                <span className="text-sm font-medium text-gray-600">Ждут выплат</span>
+                <span className="text-sm font-medium text-gray-600">{t('home.awaitingPayouts')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingPayouts}</p>
               <p className="text-sm text-red-600">
-                {campaignStats.pendingPayouts === 0 ? 'Нет ожидающих' : 'Требуют внимания'}
+                {campaignStats.pendingPayouts === 0 ? t('home.noAwaiting') : t('home.requireAttention')}
               </p>
             </div>
           
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center space-x-2 mb-2">
                 <Star className="w-5 h-5 text-yellow-600" />
-                <span className="text-sm font-medium text-gray-600">Рейтинг</span>
+                <span className="text-sm font-medium text-gray-600">{t('home.rating')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
                 {campaignStats.accountRating > 0 ? campaignStats.accountRating : '—'}
               </p>
               <p className="text-sm text-yellow-600">
                 {campaignStats.totalReviews === 0 ? (
-                  <span className="text-gray-500">Нет отзывов</span>
+                  <span className="text-gray-500">{t('home.noReviews')}</span>
                 ) : (
-                  `Из ${campaignStats.totalReviews} отзывов`
+                  t('home.fromReviews', { count: campaignStats.totalReviews })
                 )}
               </p>
             </div>
@@ -312,11 +312,11 @@ export function HomePage() {
                 <div className="flex items-center space-x-3">
                   <Star className="w-5 h-5 text-yellow-600" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-yellow-800">Получите первый отзыв</h4>
-                    <p className="text-sm text-yellow-700">Завершите сделку и попросите клиента оставить отзыв для повышения доверия.</p>
+                    <h4 className="text-sm font-medium text-yellow-800">{t('home.getFirstReview')}</h4>
+                    <p className="text-sm text-yellow-700">{t('home.completeDealsForReviews')}</p>
                   </div>
                   <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md text-sm transition-colors">
-                    Узнать как
+                    {t('home.learnHow')}
                   </button>
                 </div>
               </div>
@@ -327,14 +327,14 @@ export function HomePage() {
                 <div className="flex items-center space-x-3">
                   <Target className="w-5 h-5 text-blue-600" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-blue-800">Создайте первую кампанию</h4>
-                    <p className="text-sm text-blue-700">Запустите автоматическую кампанию для поиска инфлюенсеров.</p>
+                    <h4 className="text-sm font-medium text-blue-800">{t('home.createFirstCampaign')}</h4>
+                    <p className="text-sm text-blue-700">{t('home.launchAutomaticCampaign')}</p>
                   </div>
                   <button 
                     onClick={() => window.location.href = '/campaigns'}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
                   >
-                    Создать
+                    {t('home.create')}
                   </button>
                 </div>
               </div>
@@ -345,16 +345,16 @@ export function HomePage() {
                 <div className="flex items-center space-x-3">
                   <Bell className="w-5 h-5 text-orange-600" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-orange-800">У вас {campaignStats.pendingApplications} новых заявок</h4>
-                    <p className="text-sm text-orange-700">Рассмотрите заявки и ответьте инфлюенсерам.</p>
+                    <h4 className="text-sm font-medium text-orange-800">{t('home.newApplications', { count: campaignStats.pendingApplications })}</h4>
+                    <p className="text-sm text-orange-700">{t('home.reviewApplications')}</p>
                   </div>
                   <button 
                     onClick={() => window.location.href = '/chat'}
                     className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
                   >
-                    Просмотреть
+                    {t('home.review')}
                   </button>
-                </div>
+                {t('home.lastUpdated')}: {lastRefresh.toLocaleTimeString()}
               </div>
             )}
           </div>
@@ -368,7 +368,7 @@ export function HomePage() {
           {/* Platform Events */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">События платформы</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('home.platformEvents')}</h2>
             </div>
             
             <div className="divide-y divide-gray-200">
@@ -408,7 +408,7 @@ export function HomePage() {
           {/* Platform Updates */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Обновления платформы</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('home.platformUpdates')}</h2>
             </div>
             
             <div className="divide-y divide-gray-200">
@@ -425,7 +425,7 @@ export function HomePage() {
                         </h3>
                         {update.isImportant && (
                           <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-                            Важно
+                            {t('home.important')}
                           </span>
                         )}
                       </div>
@@ -446,7 +446,7 @@ export function HomePage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Топ инфлюенсеров</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('home.topInfluencers')}</h2>
                 <Trophy className="w-5 h-5 text-yellow-600" />
               </div>
             </div>
@@ -488,8 +488,9 @@ export function HomePage() {
                         <span>{influencer.rating.toFixed(1)}</span>
                       </div>
                       <span>{influencer.completedDeals} сделок</span>
+                      <span>{influencer.completedDeals} {t('home.deals')}</span>
                       {influencer.totalReach && (
-                        <span>{formatNumber(influencer.totalReach)} охват</span>
+                        <span>{formatNumber(influencer.totalReach)} {t('home.reach')}</span>
                       )}
                     </div>
                   </div>
@@ -506,7 +507,7 @@ export function HomePage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Топ рекламодателей</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('home.topAdvertisers')}</h2>
                 <Award className="w-5 h-5 text-blue-600" />
               </div>
             </div>
@@ -547,8 +548,8 @@ export function HomePage() {
                         <Star className="w-3 h-3 text-yellow-400 fill-current" />
                         <span>{advertiser.rating.toFixed(1)}</span>
                       </div>
-                      <span>{advertiser.completedDeals} кампаний</span>
-                      <span>{advertiser.successRate}% успешность</span>
+                      <span>{advertiser.completedDeals} {t('home.campaigns')}</span>
+                      <span>{advertiser.successRate}% {t('home.successRate')}</span>
                     </div>
                   </div>
                   

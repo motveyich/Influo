@@ -95,8 +95,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('profile.notifications')}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.notificationDescription')}</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.notifications')}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.notificationsDescription')}</p>
       </div>
 
       {/* Email Notifications */}
@@ -104,16 +104,16 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
         <div className="flex items-center space-x-3 mb-6">
           <Mail className="w-5 h-5 text-blue-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('profile.emailNotifications')}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.emailNotificationsDescription')}</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.emailNotifications')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.emailNotificationsDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('profile.newApplications')}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.newApplicationsDescription')}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.newApplications')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.newApplicationsDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -129,8 +129,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Новые сообщения</p>
-              <p className="text-xs text-gray-600">Уведомления о новых сообщениях в чате</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.newMessages')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.newMessagesDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -145,8 +145,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Платежи и оплаты</p>
-              <p className="text-xs text-gray-600">Уведомления о статусе платежей</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.paymentsAndBilling')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.paymentsDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -161,8 +161,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Отзывы и рейтинги</p>
-              <p className="text-xs text-gray-600">Уведомления о новых отзывах</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.reviewsAndRatings')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.reviewsDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -177,8 +177,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Маркетинговые рассылки</p>
-              <p className="text-xs text-gray-600">Новости платформы и специальные предложения</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.marketingEmails')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.marketingDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -198,16 +198,16 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
         <div className="flex items-center space-x-3 mb-6">
           <Smartphone className="w-5 h-5 text-green-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Push-уведомления</h3>
-            <p className="text-sm text-gray-600">Мгновенные уведомления в браузере</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.pushNotifications')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.pushNotificationsDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Включить push-уведомления</p>
-              <p className="text-xs text-gray-600">Основной переключатель для всех push-уведомлений</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.enablePushNotifications')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.pushNotificationsToggle')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -224,8 +224,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
             <>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Заявки</p>
-                  <p className="text-xs text-gray-600">Push-уведомления о новых заявках</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.applications')}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.pushApplicationsDescription')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -240,8 +240,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Сообщения</p>
-                  <p className="text-xs text-gray-600">Push-уведомления о новых сообщениях</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.messages')}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.pushMessagesDescription')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -256,8 +256,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Платежи</p>
-                  <p className="text-xs text-gray-600">Push-уведомления о платежах</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.payments')}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.pushPaymentsDescription')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -272,8 +272,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Отзывы</p>
-                  <p className="text-xs text-gray-600">Push-уведомления о новых отзывах</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.reviews')}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.pushReviewsDescription')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -295,8 +295,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
         <div className="flex items-center space-x-3 mb-6">
           <Clock className="w-5 h-5 text-orange-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Частота уведомлений</h3>
-            <p className="text-sm text-gray-600">Как часто получать уведомления</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.notificationFrequency')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.frequencyDescription')}</p>
           </div>
         </div>
 
@@ -311,8 +311,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
               className="text-purple-600 border-gray-300 focus:ring-purple-500"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Немедленно</p>
-              <p className="text-xs text-gray-600">Получать уведомления сразу при возникновении событий</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.immediately')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.immediatelyDescription')}</p>
             </div>
           </label>
 
@@ -326,8 +326,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
               className="text-purple-600 border-gray-300 focus:ring-purple-500"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Раз в день</p>
-              <p className="text-xs text-gray-600">Ежедневная сводка всех уведомлений</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.daily')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.dailyDescription')}</p>
             </div>
           </label>
 
@@ -341,8 +341,8 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
               className="text-purple-600 border-gray-300 focus:ring-purple-500"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Раз в неделю</p>
-              <p className="text-xs text-gray-600">Еженедельная сводка активности</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.weekly')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.weeklyDescription')}</p>
             </div>
           </label>
         </div>
@@ -358,11 +358,11 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
               <VolumeX className="w-5 h-5 text-gray-400" />
             )}
             <div>
-              <h3 className="text-md font-medium text-gray-900">Звуковые уведомления</h3>
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.soundNotifications')}</h3>
               <p className="text-sm text-gray-600">
                 {settings.notifications.soundEnabled 
-                  ? 'Звуковые сигналы включены'
-                  : 'Звуковые сигналы отключены'
+                  ? t('settings.soundEnabled')
+                  : t('settings.soundDisabled')
                 }
               </p>
             </div>
@@ -375,7 +375,7 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
                 : 'bg-green-600 hover:bg-green-700 text-white'
             }`}
           >
-            {settings.notifications.soundEnabled ? 'Отключить звук' : 'Включить звук'}
+            {settings.notifications.soundEnabled ? t('settings.disableSound') : t('settings.enableSound')}
           </button>
         </div>
       </div>

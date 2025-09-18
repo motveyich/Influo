@@ -135,11 +135,11 @@ export function OffersPage() {
       ];
     } else {
       return [
-        { value: 'all', label: 'Все статусы' },
-        { value: 'completed', label: 'Завершены' },
-        { value: 'declined', label: 'Отклонены' },
-        { value: 'cancelled', label: 'Отменены' },
-        { value: 'terminated', label: 'Расторгнуты' }
+        { value: 'all', label: t('offers.allStatuses') },
+        { value: 'completed', label: t('offers.completed') },
+        { value: 'declined', label: t('offers.declined') },
+        { value: 'cancelled', label: t('offers.cancelled') },
+        { value: 'terminated', label: t('offers.terminated') }
       ];
     }
   };
@@ -156,23 +156,23 @@ export function OffersPage() {
   };
 
   const getTabLabel = (tab: OfferTab) => {
-    return tab === 'active' ? 'Действующие' : 'Завершённые';
+    return tab === 'active' ? t('offers.active') : t('offers.completed');
   };
 
   const getEmptyStateMessage = () => {
     if (activeTab === 'active') {
       return {
         icon: <PlayCircle className="w-16 h-16 text-gray-400" />,
-        title: 'Нет действующих предложений',
-        subtitle: 'Действующие предложения о сотрудничестве появятся здесь',
-        description: 'Предложения создаются автоматически при согласовании сотрудничества через автоматические кампании или карточки инфлюенсеров/рекламодателей.'
+        title: t('offers.noActiveOffers'),
+        subtitle: t('offers.activeOffersDescription'),
+        description: t('offers.offersCreatedDescription')
       };
     } else {
       return {
         icon: <Archive className="w-16 h-16 text-gray-400" />,
-        title: 'Нет завершённых предложений',
-        subtitle: 'Завершённые и отклонённые предложения появятся здесь',
-        description: 'После завершения, отклонения или отмены предложений они будут отображаться в этой вкладке.'
+        title: t('offers.noCompletedOffers'),
+        subtitle: t('offers.completedOffersDescription'),
+        description: t('offers.afterCompletionDescription')
       };
     }
   };
@@ -180,17 +180,17 @@ export function OffersPage() {
   return (
     <FeatureGate
       profile={currentUserProfile}
-      requiredSection="any"
-      featureName="Предложения"
-      onCompleteProfile={() => window.location.href = '/profiles'}
-    >
+        { value: 'all', label: t('offers.allStatuses') },
+        { value: 'pending', label: t('offers.awaitingResponse') },
+        { value: 'accepted', label: t('offers.accepted') },
+        { value: 'in_progress', label: t('offers.inWork') }
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Предложения о сотрудничестве</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('offers.title')}</h1>
             <p className="mt-1 text-sm text-gray-600">
-              Управление предложениями, созданными через автоматические кампании и карточки
+              {t('offers.subtitle')}
             </p>
           </div>
           
@@ -199,9 +199,9 @@ export function OffersPage() {
             <div className="flex items-start space-x-2">
               <AlertTriangle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs font-medium text-blue-800">Как создавать предложения?</p>
+                <p className="text-xs font-medium text-blue-800">{t('offers.howToCreateOffers')}</p>
                 <p className="text-xs text-blue-700 mt-1">
-                  Предложения создаются автоматически при откликах на карточки и кампании
+                  {t('offers.offersCreatedAutomatically')}
                 </p>
               </div>
             </div>
@@ -213,7 +213,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <Target className="w-5 h-5 text-purple-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Всего</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.total')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.total}</p>
           </div>
@@ -221,7 +221,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <PlayCircle className="w-5 h-5 text-blue-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Действующие</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.activeOffers')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.activeCount}</p>
           </div>
@@ -229,7 +229,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <Archive className="w-5 h-5 text-gray-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Завершённые</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.completedOffers')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.completedCount}</p>
           </div>
@@ -237,7 +237,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <Clock className="w-5 h-5 text-yellow-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Ожидают</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.pending')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.pending}</p>
           </div>
@@ -245,7 +245,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <Users className="w-5 h-5 text-blue-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">В работе</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.inProgress')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.inProgress}</p>
           </div>
@@ -253,7 +253,7 @@ export function OffersPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <DollarSign className="w-5 h-5 text-green-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Доход</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.income')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">
               {formatCurrency(stats.totalValue)}
@@ -271,7 +271,7 @@ export function OffersPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                     activeTab === tab
-                      ? 'text-purple-600 border-purple-600 bg-purple-50'
+                      ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
                       : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -280,7 +280,7 @@ export function OffersPage() {
                     {((tab === 'active' && stats.activeCount > 0) || (tab === 'completed' && stats.completedCount > 0)) && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activeTab === tab
-                          ? 'bg-purple-600 text-white'
+                          ? 'bg-purple-600 text-white dark:bg-purple-500'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {tab === 'active' ? stats.activeCount : stats.completedCount}
@@ -299,7 +299,7 @@ export function OffersPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Поиск предложений..."
+                  placeholder={t('offers.searchOffers')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"

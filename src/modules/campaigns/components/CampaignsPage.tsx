@@ -251,18 +251,18 @@ export function CampaignsPage() {
           </div>
           
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Настройте профиль рекламодателя
+            {t('profile.setupAdvertiserProfile')}
           </h3>
           
           <p className="text-gray-600 mb-6">
-            Для доступа к автоматическим кампаниям необходимо заполнить соответствующий раздел профиля.
+            {t('profile.setupAdvertiserDescription')}
           </p>
 
           <button
             onClick={() => window.location.href = '/profiles'}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
           >
-            Перейти к настройкам профиля
+            {t('profile.goToProfileSettings')}
           </button>
         </div>
       ) : (
@@ -271,12 +271,12 @@ export function CampaignsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {showMyCampaigns ? 'Мои автоматические кампании' : 'Автоматические кампании'}
+              {showMyCampaigns ? t('campaigns.myAutomaticCampaigns') : t('campaigns.automaticTitle')}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
               {showMyCampaigns 
-                ? 'Управляйте автоматическими кампаниями с ИИ-подбором инфлюенсеров'
-                : 'Система автоматического подбора инфлюенсеров для ваших кампаний'
+                ? t('campaigns.automaticCampaignsDescription')
+                : t('campaigns.automaticSubtitle')
               }
             </p>
           </div>
@@ -296,10 +296,10 @@ export function CampaignsPage() {
             {showMyCampaigns && (
               <button 
                 onClick={handleCreateCampaign}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl dark:text-white"
               >
                 <Plus className="w-4 h-4" />
-                <span>Создать автоматическую кампанию</span>
+                <span>{t('campaigns.createAutomaticCampaign')}</span>
               </button>
             )}
           </div>
@@ -326,7 +326,7 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <DollarSign className="w-5 h-5 text-blue-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.stats.totalBudget')}</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.totalBudget')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">
               ${(stats.totalBudget / 1000).toFixed(0)}K
@@ -347,7 +347,7 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Успешные сделки</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.successfulDeals')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.accepted}</p>
           </div>
@@ -355,7 +355,7 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <XCircle className="w-5 h-5 text-red-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Отклонённые заявки</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.rejectedApplications')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">
               {Math.floor(stats.totalApplicants * 0.2)}
@@ -365,7 +365,7 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <TrendingUp className="w-5 h-5 text-purple-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Процент успешности</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.successRate')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">
               {stats.totalApplicants > 0 ? Math.round((stats.accepted / stats.totalApplicants) * 100) : 0}%
@@ -375,9 +375,9 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <Clock className="w-5 h-5 text-blue-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">Среднее время отклика</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.averageResponseTime')}</span>
             </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">2.5 ч</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">2.5 {t('campaigns.hours')}</p>
           </div>
         </div>
 
@@ -387,7 +387,7 @@ export function CampaignsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Поиск кампаний, брендов..."
+              placeholder={t('campaigns.searchCampaigns')}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -402,7 +402,7 @@ export function CampaignsPage() {
                 onChange={(e) => setSelectedFilter(e.target.value as any)}
                 className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
-                <option value="all">Все статусы</option>
+                <option value="all">{t('campaigns.allStatuses')}</option>
                 <option value="active">{t('campaigns.status.active')}</option>
                 <option value="draft">{t('campaigns.status.draft')}</option>
                 <option value="completed">{t('campaigns.status.completed')}</option>
@@ -416,7 +416,7 @@ export function CampaignsPage() {
             >
               {platforms.map(platform => (
                 <option key={platform} value={platform}>
-                  {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                  {platform === 'all' ? t('campaigns.allPlatforms') : platform.charAt(0).toUpperCase() + platform.slice(1)}
                 </option>
               ))}
             </select>

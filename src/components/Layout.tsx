@@ -38,16 +38,16 @@ export function Layout({ children }: LayoutProps) {
   const { settings } = useUserSettings(currentUserId);
 
   const baseNavigation = [
-    { name: 'Главная', href: '/', icon: Zap },
+    { name: t('nav.home'), href: '/', icon: Zap },
     { name: t('nav.profiles'), href: '/profiles', icon: Users },
-    { name: 'Автоматические кампании', href: '/campaigns', icon: Target },
+    { name: t('nav.automaticCampaigns'), href: '/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
-    { name: 'Предложения', href: '/offers', icon: MessageCircle },
+    { name: t('nav.offers'), href: '/offers', icon: MessageCircle },
     { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
   ];
 
   const adminNavigation = [
-    { name: 'Админ-панель', href: '/admin', icon: Shield }
+    { name: t('nav.adminPanel'), href: '/admin', icon: Shield }
   ];
 
   const navigation = [

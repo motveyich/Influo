@@ -503,13 +503,13 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('influencers')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'influencers'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Users className="w-4 h-4" />
-                <span>Инфлюенсеры</span>
+                <span>{t('influencerCards.influencers')}</span>
               </div>
             </button>
 
@@ -517,13 +517,13 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('advertisers')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'advertisers'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Briefcase className="w-4 h-4" />
-                <span>Рекламодатели</span>
+                <span>{t('influencerCards.advertisers')}</span>
               </div>
             </button>
 
@@ -531,17 +531,17 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('my_cards')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'my_cards'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Grid className="w-4 h-4" />
-                <span>Мои карточки</span>
+                <span>{t('influencerCards.myCards')}</span>
                 {(myInfluencerCards.length + myAdvertiserCards.length) > 0 && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     activeTab === 'my_cards'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-purple-600 text-white dark:bg-purple-500'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {myInfluencerCards.length + myAdvertiserCards.length}
@@ -554,17 +554,17 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('favorites')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'favorites'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50'
+                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Heart className="w-4 h-4" />
-                <span>Избранное</span>
+                <span>{t('influencerCards.favorites')}</span>
                 {favoriteCards.length > 0 && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     activeTab === 'favorites'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-purple-600 text-white dark:bg-purple-500'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {favoriteCards.length}
@@ -582,7 +582,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <Grid className="w-5 h-5 text-purple-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">Всего карточек</span>
+                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.totalCards')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
                   </div>
@@ -590,7 +590,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <TrendingUp className="w-5 h-5 text-green-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">Активные</span>
+                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.active')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active + advertiserStats.active}</p>
                   </div>
@@ -598,7 +598,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <Star className="w-5 h-5 text-yellow-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">Средний рейтинг</span>
+                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.avgRating')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">
                       {((influencerStats.avgRating + advertiserStats.avgRating) / 2).toFixed(1)}
@@ -608,7 +608,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <Trophy className="w-5 h-5 text-blue-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">Кампании</span>
+                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.campaigns')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.campaigns + advertiserStats.campaigns}</p>
                   </div>
@@ -619,7 +619,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <Users className="w-4 h-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-800">Карточки инфлюенсера</span>
+                      <span className="text-sm font-medium text-purple-800">{t('influencerCards.influencerCards')}</span>
                     </div>
                     <p className="text-lg font-semibold text-purple-900">{myInfluencerCards.length}</p>
                   </div>
@@ -627,7 +627,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <Briefcase className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">Карточки рекламодателя</span>
+                      <span className="text-sm font-medium text-blue-800">{t('influencerCards.advertiserCards')}</span>
                     </div>
                     <p className="text-lg font-semibold text-blue-900">{myAdvertiserCards.length}</p>
                   </div>
@@ -678,9 +678,9 @@ export function InfluencerCardsPage() {
                     <Filter className="w-4 h-4" />
                     <span>Фильтры</span>
                     {(platformFilter !== 'all' || 
-                      minFollowersFilter || maxFollowersFilter || selectedCountries.length > 0 ||
-                      minBudgetFilter || maxBudgetFilter || selectedProductCategories.length > 0 || selectedServiceFormats.length > 0) && (
-                      <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
+                      activeTab === 'influencers' ? t('influencerCards.searchByDescription') :
+                      activeTab === 'advertisers' ? t('influencerCards.searchByCampaign') :
+                      t('influencerCards.searchCards')
                     )}
                   </button>
                   
@@ -693,7 +693,7 @@ export function InfluencerCardsPage() {
                     >
                       Очистить
                     </button>
-                  )}
+                  <span>{t('influencerCards.search')}</span>
                 </div>
               </div>
               
@@ -702,7 +702,7 @@ export function InfluencerCardsPage() {
                 <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                   {/* Platform Filter - Always shown */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Платформа</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.platform')}</label>
                     <select
                       value={platformFilter}
                       onChange={(e) => setPlatformFilter(e.target.value)}
@@ -710,7 +710,7 @@ export function InfluencerCardsPage() {
                     >
                       {getPlatformOptions().map(platform => (
                         <option key={platform} value={platform}>
-                          {platform === 'all' ? 'Все платформы' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                          {platform === 'all' ? t('influencerCards.allPlatforms') : platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </option>
                       ))}
                     </select>
@@ -721,18 +721,18 @@ export function InfluencerCardsPage() {
                     <>
                       {/* Followers Range */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Количество подписчиков</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.followersCount')}</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <input
                             type="number"
-                            placeholder="Минимум"
+                            placeholder={t('influencerCards.minimum')}
                             value={minFollowersFilter}
                             onChange={(e) => setMinFollowersFilter(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           />
                           <input
                             type="number"
-                            placeholder="Максимум"
+                            placeholder={t('influencerCards.maximum')}
                             value={maxFollowersFilter}
                             onChange={(e) => setMaxFollowersFilter(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -742,7 +742,7 @@ export function InfluencerCardsPage() {
                       
                       {/* Countries */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Целевые страны</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.targetCountries')}</label>
                         <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                           {COUNTRIES.map(country => (
                             <button
@@ -750,7 +750,7 @@ export function InfluencerCardsPage() {
                               onClick={() => handleInfluencerCountryToggle(country)}
                               className={`px-3 py-1 text-sm rounded-md border transition-colors ${
                                 selectedCountries.includes(country)
-                                  ? 'bg-purple-100 border-purple-300 text-purple-700'
+                                  ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
                                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -767,18 +767,18 @@ export function InfluencerCardsPage() {
                     <>
                       {/* Budget Range */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Бюджет</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.budget')}</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <input
                             type="number"
-                            placeholder="Минимум"
+                            placeholder={t('influencerCards.minimum')}
                             value={minBudgetFilter}
                             onChange={(e) => setMinBudgetFilter(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           />
                           <input
                             type="number"
-                            placeholder="Максимум"
+                            placeholder={t('influencerCards.maximum')}
                             value={maxBudgetFilter}
                             onChange={(e) => setMaxBudgetFilter(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -788,7 +788,7 @@ export function InfluencerCardsPage() {
                       
                       {/* Product Categories */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Категории продуктов</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.productCategories')}</label>
                         <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                           {PRODUCT_CATEGORIES.map(category => (
                             <button
@@ -796,7 +796,7 @@ export function InfluencerCardsPage() {
                               onClick={() => handleProductCategoryToggle(category)}
                               className={`px-3 py-1 text-sm rounded-md border transition-colors ${
                                 selectedProductCategories.includes(category)
-                                  ? 'bg-blue-100 border-blue-300 text-blue-700'
+                                  ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -808,7 +808,7 @@ export function InfluencerCardsPage() {
                       
                       {/* Service Formats */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Форматы услуг</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.serviceFormats')}</label>
                         <div className="flex flex-wrap gap-2">
                           {SERVICE_FORMATS.map(format => (
                             <button
@@ -816,7 +816,7 @@ export function InfluencerCardsPage() {
                               onClick={() => handleServiceFormatToggle(format)}
                               className={`px-3 py-1 text-sm rounded-md border transition-colors ${
                                 selectedServiceFormats.includes(format)
-                                  ? 'bg-green-100 border-green-300 text-green-700'
+                                  ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:text-green-300'
                                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -835,53 +835,53 @@ export function InfluencerCardsPage() {
                 minFollowersFilter || maxFollowersFilter || selectedCountries.length > 0 ||
                 minBudgetFilter || maxBudgetFilter || selectedProductCategories.length > 0 || selectedServiceFormats.length > 0) && (
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm text-gray-600">Активные фильтры:</span>
+                  <span className="text-sm text-gray-600">{t('influencerCards.activeFilters')}:</span>
                   
                   {platformFilter !== 'all' && (
                     <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md">
-                      Платформа: {platformFilter}
+                      {t('influencerCards.platform')}: {platformFilter}
                     </span>
                   )}
                   
                   {minFollowersFilter && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
-                      Мин. подписчиков: {minFollowersFilter}
+                      {t('influencerCards.minFollowers')}: {minFollowersFilter}
                     </span>
                   )}
                   
                   {maxFollowersFilter && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
-                      Макс. подписчиков: {maxFollowersFilter}
+                      {t('influencerCards.maxFollowers')}: {maxFollowersFilter}
                     </span>
                   )}
                   
                   {selectedCountries.length > 0 && (
                     <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md">
-                      Страны: {selectedCountries.length}
+                      {t('influencerCards.countries')}: {selectedCountries.length}
                     </span>
                   )}
                   
                   {minBudgetFilter && (
                     <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-md">
-                      Мин. бюджет: {minBudgetFilter}
+                      {t('influencerCards.minBudget')}: {minBudgetFilter}
                     </span>
                   )}
                   
                   {maxBudgetFilter && (
                     <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-md">
-                      Макс. бюджет: {maxBudgetFilter}
+                      {t('influencerCards.maxBudget')}: {maxBudgetFilter}
                     </span>
                   )}
                   
                   {selectedProductCategories.length > 0 && (
-                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-md">
-                      Категории: {selectedProductCategories.length}
+                  <span>{t('influencerCards.filters')}</span>
+                      {t('influencerCards.categories')}: {selectedProductCategories.length}
                     </span>
                   )}
                   
                   {selectedServiceFormats.length > 0 && (
                     <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-md">
-                      Форматы: {selectedServiceFormats.length}
+                      {t('influencerCards.formats')}: {selectedServiceFormats.length}
                     </span>
                   )}
                   
@@ -889,7 +889,7 @@ export function InfluencerCardsPage() {
                     onClick={clearFilters}
                     className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md hover:bg-gray-200 transition-colors"
                   >
-                    Очистить все
+                    {t('influencerCards.clearAll')}
                   </button>
                 </div>
               )}
@@ -900,20 +900,20 @@ export function InfluencerCardsPage() {
           {activeTab === 'favorites' && favoriteCards.length > 0 && (
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Избранные карточки</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('influencerCards.favoriteCards')}</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={handleBulkApplications}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
                   >
                     <Send className="w-4 h-4" />
-                    <span>Отправить заявки всем ({favoriteCards.length})</span>
+                    <span>{t('influencerCards.sendApplicationsToAll', { count: favoriteCards.length })}</span>
                   </button>
                   <button
                     onClick={() => loadFavorites()}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    Обновить
+                    {t('influencerCards.update')}
                   </button>
                 </div>
               </div>
@@ -944,23 +944,23 @@ export function InfluencerCardsPage() {
               <div className="text-center py-12">
                 <Grid className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {activeTab === 'influencers' ? 'Карточки инфлюенсеров не найдены' :
-                   activeTab === 'advertisers' ? 'Карточки рекламодателей не найдены' :
-                   activeTab === 'my_cards' ? 'У вас пока нет карточек' :
-                   'Избранные карточки не найдены'}
+                  {activeTab === 'influencers' ? t('influencerCards.noInfluencerCards') :
+                   activeTab === 'advertisers' ? t('influencerCards.noAdvertiserCards') :
+                   activeTab === 'my_cards' ? t('influencerCards.noMyCards') :
+                   t('influencerCards.noFavoriteCards')}
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {activeTab === 'influencers' ? 'Попробуйте изменить фильтры поиска' :
-                   activeTab === 'advertisers' ? 'Попробуйте изменить фильтры поиска' :
-                   activeTab === 'my_cards' ? 'Создайте свою первую карточку, чтобы начать получать предложения о сотрудничестве' :
-                   'Добавьте карточки в избранное для быстрого доступа'}
+                  {activeTab === 'influencers' ? t('influencerCards.tryChangingFilters') :
+                   activeTab === 'advertisers' ? t('influencerCards.tryChangingFilters') :
+                   activeTab === 'my_cards' ? t('influencerCards.createFirstCardDescription') :
+                   t('influencerCards.addToFavoritesDescription')}
                 </p>
                 {activeTab === 'my_cards' && (
                   <button
                     onClick={handleCreateCard}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
                   >
-                    Создать первую карточку
+                    {t('influencerCards.createFirstCard')}
                   </button>
                 )}
               </div>

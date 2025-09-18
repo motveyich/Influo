@@ -20,6 +20,7 @@
 
 .dark .bg-white {
   background-color: #1e293b !important;
+  color: #f1f5f9 !important;
 }
 
 .dark .bg-gray-50 {
@@ -32,6 +33,134 @@
 
 .dark .bg-gray-200 {
   background-color: #475569 !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: #581c87 !important;
+  color: #e9d5ff !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: #1e3a8a !important;
+  color: #dbeafe !important;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d !important;
+  color: #dcfce7 !important;
+}
+
+.dark .bg-yellow-50 {
+  background-color: #713f12 !important;
+  color: #fef3c7 !important;
+}
+
+.dark .bg-red-50 {
+  background-color: #7f1d1d !important;
+  color: #fecaca !important;
+}
+
+.dark .bg-indigo-50 {
+  background-color: #312e81 !important;
+  color: #e0e7ff !important;
+}
+
+/* Fix active tab text color in dark theme */
+.dark .text-purple-600 {
+  color: #c084fc !important;
+}
+
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+.dark .text-green-600 {
+  color: #4ade80 !important;
+}
+
+.dark .text-yellow-600 {
+  color: #facc15 !important;
+}
+
+.dark .text-red-600 {
+  color: #f87171 !important;
+}
+
+.dark .text-indigo-600 {
+  color: #818cf8 !important;
+}
+
+/* Ensure text is readable on colored backgrounds in dark theme */
+.dark .text-purple-700 {
+  color: #e9d5ff !important;
+}
+
+.dark .text-blue-700 {
+  color: #dbeafe !important;
+}
+
+.dark .text-green-700 {
+  color: #dcfce7 !important;
+}
+
+.dark .text-yellow-700 {
+  color: #fef3c7 !important;
+}
+
+.dark .text-red-700 {
+  color: #fecaca !important;
+}
+
+.dark .text-indigo-700 {
+  color: #e0e7ff !important;
+}
+
+.dark .text-purple-800 {
+  color: #e9d5ff !important;
+}
+
+.dark .text-blue-800 {
+  color: #dbeafe !important;
+}
+
+.dark .text-green-800 {
+  color: #dcfce7 !important;
+}
+
+.dark .text-yellow-800 {
+  color: #fef3c7 !important;
+}
+
+.dark .text-red-800 {
+  color: #fecaca !important;
+}
+
+.dark .text-indigo-800 {
+  color: #e0e7ff !important;
+}
+
+.dark .text-purple-900 {
+  color: #f3e8ff !important;
+}
+
+.dark .text-blue-900 {
+  color: #eff6ff !important;
+}
+
+.dark .text-green-900 {
+  color: #f0fdf4 !important;
+}
+
+.dark .text-yellow-900 {
+  color: #fefce8 !important;
+}
+
+.dark .text-red-900 {
+  color: #fef2f2 !important;
+}
+
+.dark .text-indigo-900 {
+  color: #eef2ff !important;
 }
 
 .dark .text-gray-900 {
@@ -54,12 +183,64 @@
   color: #64748b !important;
 }
 
+.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
 .dark .border-gray-200 {
   border-color: #475569 !important;
 }
 
 .dark .border-gray-300 {
   border-color: #64748b !important;
+}
+
+.dark .border-purple-200 {
+  border-color: #7c3aed !important;
+}
+
+.dark .border-blue-200 {
+  border-color: #2563eb !important;
+}
+
+.dark .border-green-200 {
+  border-color: #16a34a !important;
+}
+
+.dark .border-yellow-200 {
+  border-color: #eab308 !important;
+}
+
+.dark .border-red-200 {
+  border-color: #dc2626 !important;
+}
+
+.dark .border-indigo-200 {
+  border-color: #4f46e5 !important;
+}
+
+.dark .border-purple-300 {
+  border-color: #a855f7 !important;
+}
+
+.dark .border-blue-300 {
+  border-color: #3b82f6 !important;
+}
+
+.dark .border-green-300 {
+  border-color: #22c55e !important;
+}
+
+.dark .border-yellow-300 {
+  border-color: #facc15 !important;
+}
+
+.dark .border-red-300 {
+  border-color: #ef4444 !important;
+}
+
+.dark .border-indigo-300 {
+  border-color: #6366f1 !important;
 }
 
 .dark input,
@@ -75,6 +256,46 @@
 .dark select:focus {
   border-color: #a855f7 !important;
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1) !important;
+}
+
+/* Fix button text visibility in dark theme */
+.dark button {
+  color: inherit;
+}
+
+.dark .bg-purple-600 {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-blue-600 {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-green-600 {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-yellow-600 {
+  background-color: #eab308 !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-red-600 {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-orange-600 {
+  background-color: #ea580c !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-indigo-600 {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
 }
 
 /* Loading animations */

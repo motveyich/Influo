@@ -140,8 +140,8 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Интерфейс</h2>
-        <p className="text-sm text-gray-600">Персонализация внешнего вида и поведения интерфейса</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.interface')}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.interfaceDescription')}</p>
       </div>
 
       {/* Theme Settings */}
@@ -149,26 +149,26 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
         <div className="flex items-center space-x-3 mb-6">
           <Palette className="w-5 h-5 text-purple-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Тема оформления</h3>
-            <p className="text-sm text-gray-600">Выберите светлую, темную тему или системную</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.themeDesign')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.chooseTheme')}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {(['light', 'dark'] as const).map((theme) => (
             <button
               key={theme}
               onClick={() => handleThemeUpdate(theme)}
               className={`p-4 border-2 rounded-lg transition-all duration-200 ${
                 settings.interface.theme === theme
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900 dark:border-purple-400'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  ? 'border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-900 dark:border-purple-400 dark:text-purple-100'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 dark:text-gray-100'
               }`}
             >
               <div className="flex flex-col items-center space-y-2">
                 {getThemeIcon(theme)}
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {theme === 'light' ? 'Светлая' : 'Темная'}
+                  {theme === 'light' ? t('settings.light') : t('settings.dark')}
                 </span>
               </div>
             </button>
@@ -181,8 +181,8 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
         <div className="flex items-center space-x-3 mb-6">
           <Languages className="w-5 h-5 text-blue-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Язык интерфейса</h3>
-            <p className="text-sm text-gray-600">Выберите язык для отображения интерфейса</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.interfaceLanguage')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.chooseLanguage')}</p>
           </div>
         </div>
 
@@ -217,8 +217,8 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
         <div className="flex items-center space-x-3 mb-6">
           <Type className="w-5 h-5 text-green-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Размер шрифта</h3>
-            <p className="text-sm text-gray-600">Настройка размера текста в интерфейсе</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.fontSize')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.fontSizeDescription')}</p>
           </div>
         </div>
 
@@ -229,21 +229,21 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
               onClick={() => handleFontSizeUpdate(size)}
               className={`p-4 border-2 rounded-lg transition-all duration-200 ${
                 settings.interface.fontSize === size
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-900 dark:text-green-100'
+                  : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
               }`}
             >
               <div className="text-center">
                 <Type className={`mx-auto mb-2 ${
                   size === 'small' ? 'w-4 h-4' : 
-                  size === 'medium' ? 'w-5 h-5' : 'w-6 h-6'
-                } text-green-600`} />
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{langInfo.nativeName}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{langInfo.name}</p>
                 <span className={`font-medium text-gray-900 ${
                   size === 'small' ? 'text-sm' : 
                   size === 'medium' ? 'text-base' : 'text-lg'
                 }`}>
-                  {size === 'small' ? 'Маленький' : 
-                   size === 'medium' ? 'Средний' : 'Большой'}
+                  {size === 'small' ? t('settings.small') : 
+                   size === 'medium' ? t('settings.medium') : t('settings.large')}
                 </span>
               </div>
             </button>
@@ -256,16 +256,16 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
         <div className="flex items-center space-x-3 mb-6">
           <Calendar className="w-5 h-5 text-indigo-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Дата и время</h3>
-            <p className="text-sm text-gray-600">Формат отображения даты, времени и часовой пояс</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.dateAndTime')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.dateTimeDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-6">
           {/* Date Format */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Формат даты
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('settings.dateFormat')}
             </label>
             <div className="grid grid-cols-3 gap-3">
               {(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] as const).map((format) => (
@@ -274,8 +274,8 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
                   onClick={() => handleDateFormatUpdate(format)}
                   className={`p-3 border rounded-lg text-sm transition-colors ${
                     settings.interface.dateFormat === format
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-300 hover:border-gray-400'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
+                      : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
                   }`}
                 >
                   {format}
@@ -286,42 +286,42 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
 
           {/* Time Format */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Формат времени
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('settings.timeFormat')}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleTimeFormatUpdate('12h')}
                 className={`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '12h'
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
+                    : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
                 }`}
               >
-                12-часовой (2:30 PM)
+                {t('settings.hour12')}
               </button>
               <button
                 onClick={() => handleTimeFormatUpdate('24h')}
                 className={`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '24h'
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
+                    : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
                 }`}
               >
-                24-часовой (14:30)
+                {t('settings.hour24')}
               </button>
             </div>
           </div>
 
           {/* Timezone */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Часовой пояс
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('settings.timezone')}
             </label>
             <select
               value={settings.interface.timezone}
               onChange={(e) => handleTimezoneUpdate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>

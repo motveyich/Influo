@@ -84,8 +84,8 @@ export function SecuritySettings({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('profile.security')}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.securityDescription')}</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.security')}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.securityDescription')}</p>
       </div>
 
       {/* Password Section */}
@@ -94,9 +94,9 @@ export function SecuritySettings({
           <div className="flex items-center space-x-3">
             <Key className="w-5 h-5 text-blue-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('profile.password')}</h3>
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.password')}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('profile.lastChanged')}: {new Date(settings.security.passwordLastChanged).toLocaleDateString()}
+                {t('settings.lastChanged')}: {new Date(settings.security.passwordLastChanged).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -117,11 +117,11 @@ export function SecuritySettings({
           <div className="flex items-center space-x-3">
             <Smartphone className="w-5 h-5 text-green-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">Двухфакторная аутентификация</h3>
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.twoFactorAuth')}</h3>
               <p className="text-sm text-gray-600">
                 {settings.security.twoFactorEnabled 
-                  ? 'Включена - дополнительная защита активна'
-                  : 'Отключена - рекомендуем включить для безопасности'
+                  ? t('settings.twoFactorEnabled')
+                  : t('settings.twoFactorDisabled')
                 }
               </p>
             </div>
@@ -134,7 +134,7 @@ export function SecuritySettings({
                 : 'bg-green-600 hover:bg-green-700 text-white'
             }`}
           >
-            {settings.security.twoFactorEnabled ? 'Отключить 2FA' : 'Включить 2FA'}
+            {settings.security.twoFactorEnabled ? t('settings.disable2FA') : t('settings.enable2FA')}
           </button>
         </div>
       </div>
@@ -145,9 +145,9 @@ export function SecuritySettings({
           <div className="flex items-center space-x-3">
             <LogOut className="w-5 h-5 text-orange-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">Активные сессии</h3>
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.activeSessions')}</h3>
               <p className="text-sm text-gray-600">
-                Управление устройствами, с которых выполнен вход
+                {t('settings.activeSessionsDescription')}
               </p>
             </div>
           </div>
@@ -155,7 +155,7 @@ export function SecuritySettings({
             onClick={handleSignOutAllDevices}
             className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
-            Выйти со всех устройств
+            {t('settings.signOutAllDevices')}
           </button>
         </div>
 
@@ -165,16 +165,16 @@ export function SecuritySettings({
             <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Текущее устройство</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.currentDevice')}</p>
                 <p className="text-xs text-gray-600">
                   {navigator.userAgent.includes('Chrome') ? 'Chrome' : 
                    navigator.userAgent.includes('Firefox') ? 'Firefox' : 
                    navigator.userAgent.includes('Safari') ? 'Safari' : 'Браузер'} • 
-                  Сейчас активен
+                  {t('settings.activeNow')}
                 </p>
               </div>
             </div>
-            <span className="text-xs text-green-600 font-medium">Активна</span>
+            <span className="text-xs text-green-600 font-medium">{t('settings.activeSession')}</span>
           </div>
         </div>
       </div>
@@ -184,16 +184,16 @@ export function SecuritySettings({
         <div className="flex items-center space-x-3 mb-6">
           <Eye className="w-5 h-5 text-purple-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Настройки приватности</h3>
-            <p className="text-sm text-gray-600">Контроль видимости личной информации</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.privacySettings')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.privacyDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Скрыть email адрес</p>
-              <p className="text-xs text-gray-600">Email не будет виден другим пользователям</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.hideEmail')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.hideEmailDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -208,8 +208,8 @@ export function SecuritySettings({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Скрыть номер телефона</p>
-              <p className="text-xs text-gray-600">Телефон не будет виден другим пользователям</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.hidePhone')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.hidePhoneDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -224,8 +224,8 @@ export function SecuritySettings({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Скрыть социальные сети</p>
-              <p className="text-xs text-gray-600">Ссылки на соцсети не будут видны другим</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.hideSocialMedia')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('settings.hideSocialMediaDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -245,37 +245,37 @@ export function SecuritySettings({
         <div className="flex items-center space-x-3 mb-6">
           <AlertTriangle className="w-5 h-5 text-red-600" />
           <div>
-            <h3 className="text-md font-medium text-red-900">Опасная зона</h3>
-            <p className="text-sm text-red-700">Необратимые действия с аккаунтом</p>
+            <h3 className="text-md font-medium text-red-900 dark:text-red-100">{t('settings.dangerZone')}</h3>
+            <p className="text-sm text-red-700 dark:text-red-300">{t('settings.dangerZoneDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-red-900">Временно деактивировать аккаунт</p>
-              <p className="text-xs text-red-700">Скрыть профиль, сохранив возможность восстановления</p>
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">{t('settings.deactivateAccount')}</p>
+              <p className="text-xs text-red-700 dark:text-red-300">{t('settings.deactivateDescription')}</p>
             </div>
             <button
               onClick={() => setShowDeactivateModal(true)}
               className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
             >
               <UserX className="w-4 h-4" />
-              <span>Деактивировать</span>
+              <span>{t('settings.deactivate')}</span>
             </button>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-red-900">Удалить аккаунт навсегда</p>
-              <p className="text-xs text-red-700">Полное удаление всех данных без возможности восстановления</p>
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">{t('settings.deleteAccountPermanently')}</p>
+              <p className="text-xs text-red-700 dark:text-red-300">{t('settings.deleteDescription')}</p>
             </div>
             <button
               onClick={() => setShowDeleteModal(true)}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Удалить аккаунт</span>
+              <span>{t('settings.deleteAccount')}</span>
             </button>
           </div>
         </div>

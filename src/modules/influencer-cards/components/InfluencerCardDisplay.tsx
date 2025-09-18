@@ -276,7 +276,7 @@ export function InfluencerCardDisplay({
               {formatNumber(card.reach.followers)}
             </span>
           </div>
-          <p className="text-xs text-gray-600">Подписчики</p>
+          <p className="text-xs text-gray-600">{t('influencerCards.subscribers')}</p>
         </div>
         
         <div className="text-center">
@@ -286,7 +286,7 @@ export function InfluencerCardDisplay({
               {card.reach.engagementRate.toFixed(1)}%
             </span>
           </div>
-          <p className="text-xs text-gray-600">Вовлеченность</p>
+          <p className="text-xs text-gray-600">{t('influencerCards.engagement')}</p>
         </div>
       </div>
 
@@ -391,7 +391,7 @@ export function InfluencerCardDisplay({
                 }`}
               >
                 <Send className="w-4 h-4" />
-                <span>{isLoading ? 'Отправка...' : 'Откликнуться'}</span>
+                <span>{isLoading ? t('influencerCards.sending') : t('influencerCards.respond')}</span>
               </button>
               
               <button
@@ -401,7 +401,7 @@ export function InfluencerCardDisplay({
                     ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
-                title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+                title={isFavorite ? t('influencerCards.removeFromFavorites') : t('influencerCards.addToFavorites')}
               >
                 <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
               </button>
@@ -414,7 +414,7 @@ export function InfluencerCardDisplay({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Написать</span>
+                <span>{t('influencerCards.sendMessage')}</span>
               </button>
               
               <button
@@ -422,13 +422,13 @@ export function InfluencerCardDisplay({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span>Подробнее</span>
+                <span>{t('influencerCards.moreDetails')}</span>
               </button>
               
               <button
                 onClick={() => setShowReportModal(true)}
                 className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                title="Пожаловаться"
+                title={t('influencerCards.report')}
               >
                 <Flag className="w-4 h-4" />
               </button>
@@ -442,11 +442,11 @@ export function InfluencerCardDisplay({
             <div className="flex items-center space-x-2">
               <Users className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">
-                Это ваша карточка
+                {t('influencerCards.thisIsYourCard')}
               </span>
             </div>
             <p className="text-sm text-blue-700 mt-1">
-              Перейдите в "Мои карточки" для редактирования
+              {t('influencerCards.goToMyCards')}
             </p>
           </div>
         )}
@@ -460,7 +460,7 @@ export function InfluencerCardDisplay({
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1"
               >
                 <Edit className="w-4 h-4" />
-                <span>Редактировать</span>
+               <span>{t('influencerCards.edit')}</span>
               </button>
               
               <button
@@ -470,14 +470,14 @@ export function InfluencerCardDisplay({
                     ? 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
                     : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
                 }`}
-                title={card.isActive ? 'Деактивировать карточку' : 'Активировать карточку'}
+               title={card.isActive ? t('influencerCards.deactivate') : t('influencerCards.activate')}
               >
                 {card.isActive ? (
                   <ToggleRight className="w-4 h-4" />
                 ) : (
                   <ToggleLeft className="w-4 h-4" />
                 )}
-                <span>{card.isActive ? 'Активна' : 'Неактивна'}</span>
+               <span>{card.isActive ? t('influencerCards.active') : t('influencerCards.inactive')}</span>
               </button>
             </div>
 
@@ -487,16 +487,16 @@ export function InfluencerCardDisplay({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span>Подробнее</span>
+                <span>{t('influencerCards.moreDetails')}</span>
               </button>
               
               <button
                 onClick={() => onDelete?.(card.id)}
                 className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                title="Удалить карточку"
+                title={t('influencerCards.delete')}
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Удалить</span>
+                <span>{t('influencerCards.delete')}</span>
               </button>
             </div>
           </div>
