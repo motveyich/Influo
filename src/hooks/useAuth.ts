@@ -90,11 +90,13 @@ export function useAuth() {
           console.warn('⚠️ [useAuth] Supabase connection failed (network error). User is assumed not blocked.');
           setIsBlocked(false);
           setError(null);
+          setBlockCheckLoading(false);
           return;
         }
         console.warn('⚠️ [useAuth] Database fetch error:', fetchError);
         setIsBlocked(false);
         setError(null);
+        setBlockCheckLoading(false);
         return;
       }
       
@@ -103,6 +105,7 @@ export function useAuth() {
         // Don't set blocked state if we can't check
         setIsBlocked(false);
         setError(null);
+        setBlockCheckLoading(false);
         return;
       }
       
@@ -110,6 +113,7 @@ export function useAuth() {
         console.log('⚠️ [useAuth] No profile found for user, assuming not blocked');
         setIsBlocked(false);
         setError(null);
+        setBlockCheckLoading(false);
         return;
       }
       
