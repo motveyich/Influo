@@ -9,8 +9,7 @@ import {
   Menu,
   X,
   Zap,
-  Shield,
-  Settings
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -50,14 +49,9 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Админ-панель', href: '/admin', icon: Shield }
   ];
 
-  const settingsNavigation = [
-    { name: 'Настройки', href: '/settings', icon: Settings }
-  ];
-
   const navigation = [
     ...baseNavigation,
-    ...(isModerator ? adminNavigation : []),
-    ...settingsNavigation
+    ...(isModerator ? adminNavigation : [])
   ];
 
   React.useEffect(() => {

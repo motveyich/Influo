@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
 import { profileService } from '../services/profileService';
+import { useUserSettings } from '../../../hooks/useUserSettings';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { X, User, Briefcase, Instagram, Youtube, Twitter, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+import { SecuritySettings } from '../../settings/components/SecuritySettings';
+import { NotificationSettings } from '../../settings/components/NotificationSettings';
+import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
+import { SupportSettings } from '../../settings/components/SupportSettings';
+import { 
+  X, 
+  User, 
+  Briefcase, 
+  Instagram, 
+  Youtube, 
+  Twitter, 
+  Plus, 
+  Trash2, 
+  Save, 
+  AlertCircle,
+  Shield,
+  Bell,
+  Palette,
+  HelpCircle
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ProfileSetupModalProps {
@@ -13,10 +33,13 @@ interface ProfileSetupModalProps {
 }
 
 export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUpdated }: ProfileSetupModalProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support'>('basic');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+  
+  // Get user settings
+  const { settings, updateSettings } = useUserSettings(currentProfile?.userId || '');
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
@@ -436,10 +459,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab('basic')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'basic'
                 ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
                 : 'text-gray-600 hover:text-gray-900'
@@ -452,7 +475,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
           </button>
           <button
             onClick={() => setActiveTab('influencer')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'influencer'
                 ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
                 : 'text-gray-600 hover:text-gray-900'
@@ -465,7 +488,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
           </button>
           <button
             onClick={() => setActiveTab('advertiser')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'advertiser'
                 ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
                 : 'text-gray-600 hover:text-gray-900'
@@ -474,6 +497,58 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
             <div className="flex items-center justify-center space-x-2">
               <Briefcase className="w-4 h-4" />
               <span>Рекламодатель</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'security'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Shield className="w-4 h-4" />
+              <span>Безопасность</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'notifications'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Bell className="w-4 h-4" />
+              <span>Уведомления</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('interface')}
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'interface'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Palette className="w-4 h-4" />
+              <span>Интерфейс</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('support')}
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'support'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <HelpCircle className="w-4 h-4" />
+              <span>Поддержка</span>
             </div>
           </button>
         </div>
@@ -939,6 +1014,32 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'security' && settings && (
+            <SecuritySettings 
+              settings={settings} 
+              onUpdateSettings={updateSettings}
+              userId={currentProfile?.userId || ''}
+            />
+          )}
+
+          {activeTab === 'notifications' && settings && (
+            <NotificationSettings 
+              settings={settings} 
+              onUpdateSettings={updateSettings}
+            />
+          )}
+
+          {activeTab === 'interface' && settings && (
+            <InterfaceSettings 
+              settings={settings} 
+              onUpdateSettings={updateSettings}
+            />
+          )}
+
+          {activeTab === 'support' && (
+            <SupportSettings />
           )}
         </div>
 
