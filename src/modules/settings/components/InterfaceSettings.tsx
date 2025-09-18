@@ -292,7 +292,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleTimeFormatUpdate('12h')}
-                className={\`p-3 border rounded-lg text-sm transition-colors ${
+                className={`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '12h'
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
                     : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
@@ -302,7 +302,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
               </button>
               <button
                 onClick={() => handleTimeFormatUpdate('24h')}
-                className={\`p-3 border rounded-lg text-sm transition-colors ${
+                className={`p-3 border rounded-lg text-sm transition-colors ${
                   settings.interface.timeFormat === '24h'
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100'
                     : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-100'
