@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme base styles */
 @layer base {
   html {
     @apply transition-colors duration-200;
@@ -11,75 +10,71 @@
   .dark {
     color-scheme: dark;
   }
-  
-  /* Dark theme backgrounds */
-  .dark body {
-    @apply bg-dark-900 text-gray-100;
-  }
-  
-  .dark .bg-white {
-    @apply bg-dark-800;
-  }
-  
-  .dark .bg-gray-50 {
-    @apply bg-dark-900;
-  }
-  
-  .dark .bg-gray-100 {
-    @apply bg-dark-700;
-  }
-  
-  .dark .bg-gray-200 {
-    @apply bg-dark-600;
-  }
-  
-  /* Dark theme text colors */
-  .dark .text-gray-900 {
-    @apply text-gray-100;
-  }
-  
-  .dark .text-gray-800 {
-    @apply text-gray-200;
-  }
-  
-  .dark .text-gray-700 {
-    @apply text-gray-300;
-  }
-  
-  .dark .text-gray-600 {
-    @apply text-gray-400;
-  }
-  
-  /* Dark theme borders */
-  .dark .border-gray-200 {
-    @apply border-dark-600;
-  }
-  
-  .dark .border-gray-300 {
-    @apply border-dark-500;
-  }
-  
-  /* Dark theme form elements */
-  .dark input,
-  .dark textarea,
-  .dark select {
-    @apply bg-dark-700 border-dark-500 text-gray-100;
-  }
-  
-  .dark input:focus,
-  .dark textarea:focus,
-  .dark select:focus {
-    @apply border-purple-400 ring-purple-400;
-  }
-  
-  /* Dark theme buttons */
-  .dark .bg-purple-600 {
-    background-color: #9333ea;
-  }
-  
-  .dark .hover\:bg-purple-700:hover {
-    background-color: #7c3aed;
-  }
+}
+
+/* Dark theme styles */
+.dark {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #475569 !important;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #64748b !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #475569 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #64748b !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #334155 !important;
+  border-color: #64748b !important;
+  color: #f1f5f9 !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1) !important;
 }
 
 /* Loading animations */

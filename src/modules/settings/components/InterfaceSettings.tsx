@@ -155,21 +155,20 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {(['light', 'dark', 'system'] as const).map((theme) => (
+          {(['light', 'dark'] as const).map((theme) => (
             <button
               key={theme}
               onClick={() => handleThemeUpdate(theme)}
               className={`p-4 border-2 rounded-lg transition-all duration-200 ${
                 settings.interface.theme === theme
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900 dark:border-purple-400'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
             >
               <div className="flex flex-col items-center space-y-2">
                 {getThemeIcon(theme)}
-                <span className="text-sm font-medium text-gray-900">
-                  {theme === 'light' ? 'Светлая' : 
-                   theme === 'dark' ? 'Темная' : 'Системная'}
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {theme === 'light' ? 'Светлая' : 'Темная'}
                 </span>
               </div>
             </button>

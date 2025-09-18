@@ -665,7 +665,7 @@ export interface UserSettings {
   
   // Interface settings
   interface: {
-    theme: 'light' | 'dark' | 'system';
+    theme: 'light' | 'dark';
     language: 'ru' | 'en';
     fontSize: 'small' | 'medium' | 'large';
     dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';

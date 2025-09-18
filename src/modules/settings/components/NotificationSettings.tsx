@@ -9,7 +9,12 @@ interface NotificationSettingsProps {
 }
 
 export function NotificationSettings({ settings, onUpdateSettings }: NotificationSettingsProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { t } = useTranslation();
+
   const handleEmailNotificationUpdate = async (category: keyof UserSettings['notifications']['email'], value: boolean) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       await onUpdateSettings({
         notifications: {
@@ -20,13 +25,17 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
           }
         }
       });
-      toast.success('Настройки email-уведомлений обновлены');
+      toast.success(t('profile.emailNotificationsUpdated'));
     } catch (error) {
-      toast.error('Не удалось обновить настройки email');
+      toast.error(t('profile.failedToUpdateEmail'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handlePushNotificationUpdate = async (category: keyof UserSettings['notifications']['push'], value: boolean) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       await onUpdateSettings({
         notifications: {
@@ -37,13 +46,17 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
           }
         }
       });
-      toast.success('Настройки push-уведомлений обновлены');
+      toast.success(t('profile.pushNotificationsUpdated'));
     } catch (error) {
-      toast.error('Не удалось обновить настройки push-уведомлений');
+      toast.error(t('profile.failedToUpdatePush'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleFrequencyUpdate = async (frequency: UserSettings['notifications']['frequency']) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       await onUpdateSettings({
         notifications: {
@@ -51,13 +64,17 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
           frequency
         }
       });
-      toast.success('Частота уведомлений обновлена');
+      toast.success(t('profile.frequencyUpdated'));
     } catch (error) {
-      toast.error('Не удалось обновить частоту уведомлений');
+      toast.error(t('profile.failedToUpdateFrequency'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleSoundToggle = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       await onUpdateSettings({
         notifications: {
@@ -65,9 +82,11 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
           soundEnabled: !settings.notifications.soundEnabled
         }
       });
-      toast.success(settings.notifications.soundEnabled ? 'Звук отключен' : 'Звук включен');
+      toast.success(settings.notifications.soundEnabled ? t('profile.soundDisabled') : t('profile.soundEnabled'));
     } catch (error) {
-      toast.error('Не удалось изменить настройки звука');
+      toast.error(t('profile.failedToUpdateSound'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -75,34 +94,35 @@ export function NotificationSettings({ settings, onUpdateSettings }: Notificatio
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Уведомления</h2>
-        <p className="text-sm text-gray-600">Настройка способов и частоты получения уведомлений</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('profile.notifications')}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.notificationDescription')}</p>
       </div>
 
       {/* Email Notifications */}
-      <div className="bg-gray-50 rounded-lg p-6">
+      <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
         <div className="flex items-center space-x-3 mb-6">
           <Mail className="w-5 h-5 text-blue-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Email-уведомления</h3>
-            <p className="text-sm text-gray-600">Получение уведомлений на электронную почту</p>
+            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('profile.emailNotifications')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.emailNotificationsDescription')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Новые заявки</p>
-              <p className="text-xs text-gray-600">Уведомления о новых заявках на сотрудничество</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('profile.newApplications')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.newApplicationsDescription')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={settings.notifications.email.applications}
                 onChange={(e) => handleEmailNotificationUpdate('applications', e.target.checked)}
+                disabled={isUpdating}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 peer-disabled:opacity-50"></div>
             </label>
           </div>
 

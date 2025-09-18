@@ -39,12 +39,16 @@ export function SecuritySettings({
   deleteAccount,
   userId 
 }: SecuritySettingsProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const { t } = useTranslation();
   
   const handlePrivacyUpdate = async (field: keyof UserSettings['privacy'], value: boolean) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       await onUpdateSettings({
         privacy: {
@@ -52,20 +56,26 @@ export function SecuritySettings({
           [field]: value
         }
       });
-      toast.success('Настройки приватности обновлены');
+      toast.success(t('profile.privacySettingsUpdated'));
     } catch (error) {
-      toast.error('Не удалось обновить настройки приватности');
+      toast.error(t('profile.failedToUpdatePrivacy'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleSignOutAllDevices = async () => {
-    if (!confirm('Выйти со всех устройств? Вам потребуется войти заново.')) return;
+    if (!confirm(t('profile.signOutAllDevicesConfirm'))) return;
+    if (isUpdating) return;
+    setIsUpdating(true);
 
     try {
       await signOutAllDevices();
-      toast.success('Выход со всех устройств выполнен');
+      toast.success(t('profile.signedOutAllDevices'));
     } catch (error: any) {
-      toast.error(error.message || 'Не удалось выйти со всех устройств');
+      toast.error(error.message || t('profile.failedToSignOutAllDevices'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -73,27 +83,29 @@ export function SecuritySettings({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Безопасность</h2>
-        <p className="text-sm text-gray-600">Управление безопасностью и приватностью аккаунта</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('profile.security')}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.securityDescription')}</p>
       </div>
 
       {/* Password Section */}
-      <div className="bg-gray-50 rounded-lg p-6">
+      <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Key className="w-5 h-5 text-blue-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">Пароль</h3>
-              <p className="text-sm text-gray-600">
-                Последнее изменение: {new Date(settings.security.passwordLastChanged).toLocaleDateString('ru-RU')}
+              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('profile.password')}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('profile.lastChanged')}: {new Date(settings.security.passwordLastChanged).toLocaleDateString()}
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            disabled={isUpdating}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
-            Изменить пароль
+            {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{t('profile.changePassword')}</span>
           </button>
         </div>
       </div>

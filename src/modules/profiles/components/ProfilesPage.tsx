@@ -74,10 +74,10 @@ export function ProfilesPage() {
     { id: 'basic', label: t('profile.basicInfo'), icon: User },
     { id: 'influencer', label: t('profile.influencerSettings'), icon: Users },
     { id: 'advertiser', label: t('profile.advertiserSettings'), icon: Briefcase },
-    { id: 'security', label: 'Безопасность', icon: Shield },
-    { id: 'notifications', label: 'Уведомления', icon: Bell },
-    { id: 'interface', label: 'Интерфейс', icon: Palette },
-    { id: 'support', label: 'Поддержка', icon: HelpCircle }
+    { id: 'security', label: t('profile.security'), icon: Shield },
+    { id: 'notifications', label: t('profile.notifications'), icon: Bell },
+    { id: 'interface', label: t('profile.interface'), icon: Palette },
+    { id: 'support', label: t('profile.support'), icon: HelpCircle }
   ];
 
   const getSocialIcon = (platform: string) => {
@@ -109,7 +109,12 @@ export function ProfilesPage() {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <Loader2 className="animate-spin h-8 w-8 text-purple-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}...</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              {activeTab === 'security' ? t('profile.loadingSecuritySettings') :
+               activeTab === 'notifications' ? t('profile.loadingNotificationSettings') :
+               activeTab === 'interface' ? t('profile.loadingInterfaceSettings') :
+               t('profile.loadingSettings')}
+            </p>
           </div>
         </div>
       );
@@ -186,10 +191,18 @@ export function ProfilesPage() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.aboutMe')}
+                      {t('profile.fields.bio')}
                     </label>
                     <p className="text-sm text-gray-900 dark:text-gray-100">
                       {currentUserProfile.bio || t('profile.notSpecified')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('profile.fields.website')}
+                    </label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                      {currentUserProfile.website || t('profile.notSpecified')}
                     </p>
                   </div>
                 </div>
@@ -197,16 +210,17 @@ export function ProfilesPage() {
                 <div className="text-center py-8">
                   <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    Профиль не создан
+                    {t('profile.profileNotCreated')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Создайте профиль для начала работы на платформе
+                    {t('profile.createProfileDescription')}
                   </p>
                   <button
                     onClick={() => setShowProfileModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                    disabled={isUpdating}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Создать профиль
+                    {t('profile.createProfile')}
                   </button>
                 </div>
               )}
@@ -268,6 +282,11 @@ export function ProfilesPage() {
                             <span className="text-sm text-gray-600 dark:text-gray-400">
                               {link.username || link.url}
                             </span>
+                            {link.verified && (
+                              <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                                {t('common.verified')}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -308,58 +327,73 @@ export function ProfilesPage() {
                   {/* Content Categories */}
                   <div>
                     <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.contentCategoriesAndPricing')}
+                      {t('profile.categories')}
                     </h3>
-                    
-                    {/* Categories */}
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t('profile.categories')}
-                      </h4>
-                      {currentUserProfile.influencerData.contentCategories?.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {currentUserProfile.influencerData.contentCategories.map((category, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm"
-                            >
-                              {category}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {t('profile.noCategoriesAdded')}
-                        </p>
-                      )}
-                    </div>
+                    {currentUserProfile.influencerData.contentCategories?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {currentUserProfile.influencerData.contentCategories.map((category, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('profile.noCategoriesAdded')}
+                      </p>
+                    )}
+                  </div>
 
-                    {/* Pricing */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t('profile.pricing')}
-                      </h4>
-                      {currentUserProfile.influencerData.pricing && 
-                       Object.values(currentUserProfile.influencerData.pricing).some(price => price > 0) ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {Object.entries(currentUserProfile.influencerData.pricing).map(([type, price]) => (
-                            price > 0 && (
-                              <div key={type} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-center">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
-                                  {type}
-                                </p>
-                                <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                  {formatCurrency(price)}
-                                </p>
-                              </div>
-                            )
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {t('profile.noPricingSet')}
-                        </p>
-                      )}
+                  {/* Pricing */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('profile.pricing')}
+                    </h3>
+                    {currentUserProfile.influencerData.pricing && 
+                     Object.values(currentUserProfile.influencerData.pricing).some(price => price > 0) ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(currentUserProfile.influencerData.pricing).map(([type, price]) => (
+                          price > 0 && (
+                            <div key={type} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-center">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+                                {type}
+                              </p>
+                              <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                {formatCurrency(price)}
+                              </p>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('profile.noPricingSet')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Availability */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      {t('common.available')}
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        currentUserProfile.influencerData.availableForCollabs ? 'bg-green-400' : 'bg-red-400'
+                      }`}></div>
+                      <span className={`text-sm font-medium ${
+                        currentUserProfile.influencerData.availableForCollabs 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {currentUserProfile.influencerData.availableForCollabs 
+                          ? t('common.available') 
+                          : t('common.unavailable')
+                        }
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -367,14 +401,15 @@ export function ProfilesPage() {
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {t('profile.influencerSettings')} {t('profile.notConfigured')}
+                    {t('profile.influencerNotConfigured')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Настройте профиль инфлюенсера для доступа к функциям платформы
+                    {t('profile.setupInfluencerDescription')}
                   </p>
                   <button
                     onClick={() => setShowProfileModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                    disabled={isUpdating}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('profile.setupProfile')}
                   </button>
@@ -476,7 +511,7 @@ export function ProfilesPage() {
                       </h3>
                       <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
                         <div className="flex items-center space-x-2">
-                          <DollarSign className="w-5 h-5 text-green-600" />
+                          <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                           <span className="text-sm text-gray-900 dark:text-gray-100">
                             {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.min)} - 
                             {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.max)}
@@ -485,19 +520,68 @@ export function ProfilesPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Preferred Platforms */}
+                  {currentUserProfile.advertiserData.campaignPreferences?.preferredPlatforms?.length > 0 && (
+                    <div>
+                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                        {t('campaigns.platforms')}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {currentUserProfile.advertiserData.campaignPreferences.preferredPlatforms.map((platform, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm capitalize"
+                          >
+                            {platform}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Target Audience */}
+                  {currentUserProfile.advertiserData.campaignPreferences?.targetAudience && (
+                    <div>
+                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                        {t('campaigns.demographics')}
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.ageRange')}:</span>
+                          <span className="text-sm text-gray-900 dark:text-gray-100">
+                            {currentUserProfile.advertiserData.campaignPreferences.targetAudience.ageRange[0]} - 
+                            {currentUserProfile.advertiserData.campaignPreferences.targetAudience.ageRange[1]} {t('time.yearsAgo').replace(' назад', '').replace(' ago', '')}
+                          </span>
+                        </div>
+                        {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries?.length > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.targetCountries')}:</span>
+                            <span className="text-sm text-gray-900 dark:text-gray-100">
+                              {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.slice(0, 3).join(', ')}
+                              {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.length > 3 && 
+                                ` +${currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.length - 3}`
+                              }
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {t('profile.advertiserSettings')} {t('profile.notConfigured')}
+                    {t('profile.advertiserNotConfigured')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Настройте профиль рекламодателя для создания кампаний
+                    {t('profile.setupAdvertiserDescription')}
                   </p>
                   <button
                     onClick={() => setShowProfileModal(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                    disabled={isUpdating}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('profile.setupProfile')}
                   </button>
@@ -524,7 +608,7 @@ export function ProfilesPage() {
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
               <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
-              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек безопасности...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingSecuritySettings')}</p>
             </div>
           </div>
         );
@@ -539,7 +623,7 @@ export function ProfilesPage() {
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
               <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
-              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек уведомлений...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingNotificationSettings')}</p>
             </div>
           </div>
         );
@@ -554,7 +638,7 @@ export function ProfilesPage() {
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
               <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
-              <p className="text-gray-600 dark:text-gray-400">Загрузка настроек интерфейса...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingInterfaceSettings')}</p>
             </div>
           </div>
         );
@@ -583,7 +667,8 @@ export function ProfilesPage() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as ProfileTab)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  disabled={isUpdating}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     activeTab === item.id
                       ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'
@@ -591,6 +676,9 @@ export function ProfilesPage() {
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
+                  {isUpdating && activeTab === item.id && (
+                    <Loader2 className="w-4 h-4 animate-spin ml-auto" />
+                  )}
                 </button>
               );
             })}

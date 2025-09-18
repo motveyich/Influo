@@ -10,21 +10,10 @@ export function applyInterfaceSettings(interfaceSettings: UserSettings['interfac
       console.log('🌙 Applying dark theme');
       document.documentElement.classList.add('dark');
       document.body.classList.add('dark');
-    } else if (interfaceSettings.theme === 'light') {
+    } else {
       console.log('☀️ Applying light theme');
       document.documentElement.classList.remove('dark');
       document.body.classList.remove('dark');
-    } else {
-      // System theme
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      console.log('🖥️ Applying system theme, prefers dark:', prefersDark);
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
     }
 
     // Apply language
