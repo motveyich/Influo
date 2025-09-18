@@ -10,11 +10,6 @@ import { SecuritySettings } from '../../settings/components/SecuritySettings';
 import { NotificationSettings } from '../../settings/components/NotificationSettings';
 import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
 import { SupportSettings } from '../../settings/components/SupportSettings';
-import { useUserSettings } from '../../../hooks/useUserSettings';
-import { SecuritySettings } from '../../settings/components/SecuritySettings';
-import { NotificationSettings } from '../../settings/components/NotificationSettings';
-import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
-import { SupportSettings } from '../../settings/components/SupportSettings';
 import { 
   User, 
   Instagram, 
