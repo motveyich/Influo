@@ -459,7 +459,93 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 overflow-x-auto">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('basic')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'basic'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>{t('profile.basicInfo')}</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('influencer')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'influencer'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Instagram className="w-4 h-4" />
+              <span>Инфлюенсер</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('advertiser')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'advertiser'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Briefcase className="w-4 h-4" />
+              <span>Рекламодатель</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'security'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Безопасность</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'notifications'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              <span>Уведомления</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('interface')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'interface'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Palette className="w-4 h-4" />
+              <span>Интерфейс</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('support')}
+              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'support'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Поддержка</span>
+            </button>
+          </nav>
+        </div>
           <button
             onClick={() => setActiveTab('basic')}
             className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${
