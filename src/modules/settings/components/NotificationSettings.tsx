@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserSettings } from '../../../core/types';
 import { Bell, Mail, Smartphone, Volume2, VolumeX, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface NotificationSettingsProps {
   settings: UserSettings;
