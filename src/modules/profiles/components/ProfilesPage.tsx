@@ -525,18 +525,6 @@ export function ProfilesPage() {
               </button>
               
               <button
-                onClick={() => setActiveTab('reviews')}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'reviews'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <Star className="w-4 h-4" />
-                <span>Отзывы и рейтинг</span>
-              </button>
-              
-              <button
                 onClick={handleSignOut}
                 className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
               >
