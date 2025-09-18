@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { CollaborationOffer, OfferStatus } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { useAuth } from '../../../hooks/useAuth';
+import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
@@ -27,6 +28,7 @@ type OfferTab = 'active' | 'completed';
 
 export function OffersPage() {
   const location = useLocation();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [offers, setOffers] = useState<CollaborationOffer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
