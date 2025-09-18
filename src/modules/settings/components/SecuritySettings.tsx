@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { UserSettings } from '../../../core/types';
-import { useUserSettings } from '../../../hooks/useUserSettings';
 import { 
   Shield, 
   Key, 
@@ -20,24 +19,31 @@ import toast from 'react-hot-toast';
 interface SecuritySettingsProps {
   settings: UserSettings;
   onUpdateSettings: (updates: Partial<UserSettings>) => Promise<UserSettings>;
+  changePassword: (current: string, newPassword: string) => Promise<void>;
+  enableTwoFactor: () => Promise<{ qrCode: string; secret: string }>;
+  disableTwoFactor: (code: string) => Promise<void>;
+  signOutAllDevices: () => Promise<void>;
+  deactivateAccount: (reason?: string) => Promise<void>;
+  deleteAccount: (confirmationText: string) => Promise<void>;
   userId: string;
 }
 
-export function SecuritySettings({ settings, onUpdateSettings, userId }: SecuritySettingsProps) {
+export function SecuritySettings({ 
+  settings, 
+  onUpdateSettings, 
+  changePassword,
+  enableTwoFactor,
+  disableTwoFactor,
+  signOutAllDevices,
+  deactivateAccount,
+  deleteAccount,
+  userId 
+}: SecuritySettingsProps) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   
-  const { 
-    changePassword, 
-    enableTwoFactor, 
-    disableTwoFactor, 
-    signOutAllDevices, 
-    deactivateAccount, 
-    deleteAccount 
-  } = useUserSettings(userId);
-
   const handlePrivacyUpdate = async (field: keyof UserSettings['privacy'], value: boolean) => {
     try {
       await onUpdateSettings({

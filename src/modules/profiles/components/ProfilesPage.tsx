@@ -10,12 +10,19 @@ import { SecuritySettings } from '../../settings/components/SecuritySettings';
 import { NotificationSettings } from '../../settings/components/NotificationSettings';
 import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
 import { SupportSettings } from '../../settings/components/SupportSettings';
+import { useUserSettings } from '../../../hooks/useUserSettings';
+import { SecuritySettings } from '../../settings/components/SecuritySettings';
+import { NotificationSettings } from '../../settings/components/NotificationSettings';
+import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
+import { SupportSettings } from '../../settings/components/SupportSettings';
 import { 
   User, 
   Instagram, 
   Briefcase, 
   Shield, 
   Bell, 
+  Palette,
+  HelpCircle,
   Palette,
   HelpCircle,
   LogOut, 
@@ -42,6 +49,7 @@ export function ProfilesPage() {
   const { user, loading, signOut } = useAuth();
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile, updateProfile, refresh } = useProfileCompletion(currentUserId);
+  const { settings, updateSettings, changePassword, enableTwoFactor, disableTwoFactor, signOutAllDevices, deactivateAccount, deleteAccount } = useUserSettings(currentUserId);
   const { settings, updateSettings } = useUserSettings(currentUserId);
 
   // Basic info state
@@ -513,6 +521,30 @@ export function ProfilesPage() {
               >
                 <Bell className="w-4 h-4" />
                 <span>Уведомления</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('interface')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'interface'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Palette className="w-4 h-4" />
+                <span>Интерфейс</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('support')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'support'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>Поддержка</span>
               </button>
               
               <button
@@ -1050,20 +1082,13 @@ export function ProfilesPage() {
                   <SecuritySettings 
                     settings={settings} 
                     onUpdateSettings={updateSettings}
+                    changePassword={changePassword}
+                    enableTwoFactor={enableTwoFactor}
+                    disableTwoFactor={disableTwoFactor}
+                    signOutAllDevices={signOutAllDevices}
+                    deactivateAccount={deactivateAccount}
+                    deleteAccount={deleteAccount}
                     userId={currentUserId}
-                  />
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Загрузка настроек безопасности...</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Notifications Tab */}
-            {activeTab === 'notifications' && (
-              <div className="p-6">
                 {settings ? (
                   <NotificationSettings 
                     settings={settings} 
@@ -1099,37 +1124,6 @@ export function ProfilesPage() {
             {activeTab === 'support' && (
               <div className="p-6">
                 <SupportSettings />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Clear Confirmation Modal */}
-      {showClearModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Подтвердите действие</h3>
-              <button
-                onClick={() => setShowClearModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-6 h-6 text-red-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-2">
-                    Очистить раздел "{clearSection === 'basic' ? 'Основная информация' : clearSection === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель'}"?
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    Все данные в этом разделе будут удалены. Это действие нельзя отменить.
-                  </p>
-                </div>
               </div>
             </div>
             
