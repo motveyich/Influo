@@ -49,6 +49,7 @@ const COUNTRIES = [
   'Германия', 'Великобритания', 'Франция', 'Италия', 'Испания', 'Канада',
   'Австралия', 'Турция', 'Польша', 'Чехия'
 ];
+
 export function InfluencerCardsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('influencers');
@@ -677,11 +678,6 @@ export function InfluencerCardsPage() {
                   >
                     <Filter className="w-4 h-4" />
                     <span>Фильтры</span>
-                    {(platformFilter !== 'all' || 
-                      activeTab === 'influencers' ? t('influencerCards.searchByDescription') :
-                      activeTab === 'advertisers' ? t('influencerCards.searchByCampaign') :
-                      t('influencerCards.searchCards')
-                    )}
                   </button>
                   
                   {(platformFilter !== 'all' || 
@@ -693,7 +689,7 @@ export function InfluencerCardsPage() {
                     >
                       Очистить
                     </button>
-                  <span>{t('influencerCards.search')}</span>
+                  )}
                 </div>
               </div>
               
@@ -874,7 +870,7 @@ export function InfluencerCardsPage() {
                   )}
                   
                   {selectedProductCategories.length > 0 && (
-                  <span>{t('influencerCards.filters')}</span>
+                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-md">
                       {t('influencerCards.categories')}: {selectedProductCategories.length}
                     </span>
                   )}
