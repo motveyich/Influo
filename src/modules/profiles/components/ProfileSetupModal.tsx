@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
 import { profileService } from '../services/profileService';
-import { useUserSettings } from '../../../hooks/useUserSettings';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { SecuritySettings } from '../../settings/components/SecuritySettings';
-import { NotificationSettings } from '../../settings/components/NotificationSettings';
-import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
-import { SupportSettings } from '../../settings/components/SupportSettings';
 import { 
   X, 
   User, 
@@ -17,11 +12,7 @@ import {
   Plus, 
   Trash2, 
   Save, 
-  AlertCircle,
-  Shield,
-  Bell,
-  Palette,
-  HelpCircle
+  AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -33,13 +24,10 @@ interface ProfileSetupModalProps {
 }
 
 export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUpdated }: ProfileSetupModalProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser'>('basic');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
-  
-  // Get user settings
-  const { settings, updateSettings } = useUserSettings(currentProfile?.userId || '');
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
@@ -495,54 +483,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
             >
               <Briefcase className="w-4 h-4" />
               <span>Рекламодатель</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'security'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              <span>Безопасность</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'notifications'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Bell className="w-4 h-4" />
-              <span>Уведомления</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('interface')}
-              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'interface'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Palette className="w-4 h-4" />
-              <span>Интерфейс</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('support')}
-              className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'support'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>Поддержка</span>
             </button>
           </nav>
         </div>
@@ -1008,32 +948,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
                 </div>
               </div>
             </div>
-          )}
-
-          {activeTab === 'security' && settings && (
-            <SecuritySettings 
-              settings={settings} 
-              onUpdateSettings={updateSettings}
-              userId={currentProfile?.userId || ''}
-            />
-          )}
-
-          {activeTab === 'notifications' && settings && (
-            <NotificationSettings 
-              settings={settings} 
-              onUpdateSettings={updateSettings}
-            />
-          )}
-
-          {activeTab === 'interface' && settings && (
-            <InterfaceSettings 
-              settings={settings} 
-              onUpdateSettings={updateSettings}
-            />
-          )}
-
-          {activeTab === 'support' && (
-            <SupportSettings />
           )}
         </div>
 

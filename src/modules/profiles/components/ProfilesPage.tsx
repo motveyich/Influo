@@ -5,12 +5,19 @@ import { ProfileCompletionBanner } from './ProfileCompletionBanner';
 import { useProfileCompletion } from '../hooks/useProfileCompletion';
 import { useAuth } from '../../../hooks/useAuth';
 import { profileService } from '../services/profileService';
+import { useUserSettings } from '../../../hooks/useUserSettings';
+import { SecuritySettings } from '../../settings/components/SecuritySettings';
+import { NotificationSettings } from '../../settings/components/NotificationSettings';
+import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
+import { SupportSettings } from '../../settings/components/SupportSettings';
 import { 
   User, 
   Instagram, 
   Briefcase, 
   Shield, 
   Bell, 
+  Palette,
+  HelpCircle,
   LogOut, 
   Save,
   Camera,
@@ -25,7 +32,7 @@ import {
 import toast from 'react-hot-toast';
 
 export function ProfilesPage() {
-  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'reviews'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support' | 'reviews'>('basic');
   const [isLoading, setIsLoading] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearSection, setClearSection] = useState<'basic' | 'influencer' | 'advertiser' | null>(null);
@@ -35,6 +42,7 @@ export function ProfilesPage() {
   const { user, loading, signOut } = useAuth();
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile, updateProfile, refresh } = useProfileCompletion(currentUserId);
+  const { settings, updateSettings } = useUserSettings(currentUserId);
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
@@ -505,6 +513,30 @@ export function ProfilesPage() {
               >
                 <Bell className="w-4 h-4" />
                 <span>Уведомления</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('interface')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'interface'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Palette className="w-4 h-4" />
+                <span>Интерфейс</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('support')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'support'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>Поддержка</span>
               </button>
               
               <button
@@ -1014,103 +1046,59 @@ export function ProfilesPage() {
             {/* Security Tab */}
             {activeTab === 'security' && (
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Безопасность</h3>
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-3">Изменить пароль</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Текущий пароль
-                        </label>
-                        <input
-                          type="password"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Введите текущий пароль"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Новый пароль
-                        </label>
-                        <input
-                          type="password"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Введите новый пароль"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Подтвердите новый пароль
-                        </label>
-                        <input
-                          type="password"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Подтвердите новый пароль"
-                        />
-                      </div>
-                      <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                        Обновить пароль
-                      </button>
-                    </div>
+                {settings ? (
+                  <SecuritySettings 
+                    settings={settings} 
+                    onUpdateSettings={updateSettings}
+                    userId={currentUserId}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка настроек безопасности...</p>
                   </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h4 className="text-md font-medium text-gray-900 mb-3">Двухфакторная аутентификация</h4>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Добавьте дополнительный уровень безопасности к вашему аккаунту
-                    </p>
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                      Включить 2FA
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Уведомления</h3>
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Email уведомления</h4>
-                    <div className="space-y-3">
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                        <span className="text-sm text-gray-700">Новые предложения о сотрудничестве</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                        <span className="text-sm text-gray-700">Сообщения в чате</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                        <span className="text-sm text-gray-700">Маркетинговые рассылки</span>
-                      </label>
-                    </div>
+                {settings ? (
+                  <NotificationSettings 
+                    settings={settings} 
+                    onUpdateSettings={updateSettings}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка настроек уведомлений...</p>
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div className="border-t border-gray-200 pt-6">
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Push уведомления</h4>
-                    <div className="space-y-3">
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                        <span className="text-sm text-gray-700">Новые сообщения</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                        <span className="text-sm text-gray-700">Обновления предложений</span>
-                      </label>
-                    </div>
+            {/* Interface Tab */}
+            {activeTab === 'interface' && (
+              <div className="p-6">
+                {settings ? (
+                  <InterfaceSettings 
+                    settings={settings} 
+                    onUpdateSettings={updateSettings}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка настроек интерфейса...</p>
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div className="pt-6">
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                      Сохранить настройки
-                    </button>
-                  </div>
-                </div>
+            {/* Support Tab */}
+            {activeTab === 'support' && (
+              <div className="p-6">
+                <SupportSettings />
               </div>
             )}
           </div>
