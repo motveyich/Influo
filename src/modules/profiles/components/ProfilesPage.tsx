@@ -1089,6 +1089,19 @@ export function ProfilesPage() {
                     deactivateAccount={deactivateAccount}
                     deleteAccount={deleteAccount}
                     userId={currentUserId}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка настроек безопасности...</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div className="p-6">
                 {settings ? (
                   <NotificationSettings 
                     settings={settings} 
@@ -1125,9 +1138,24 @@ export function ProfilesPage() {
               <div className="p-6">
                 <SupportSettings />
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Clear Section Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Очистить раздел</h3>
             </div>
-            
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+            <p className="text-gray-600 mb-6">
+              Вы уверены, что хотите очистить все данные в разделе "{clearSection === 'basic' ? 'Основная информация' : clearSection === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель'}"? 
+              Это действие нельзя отменить.
+            </p>
+            <div className="flex items-center justify-end space-x-3">
               <button
                 onClick={() => setShowClearModal(false)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
