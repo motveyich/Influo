@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   Zap,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUserSettings } from '../hooks/useUserSettings';
