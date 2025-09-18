@@ -18,8 +18,6 @@ import {
   Bell, 
   Palette,
   HelpCircle,
-  Palette,
-  HelpCircle,
   LogOut, 
   Save,
   Camera,
@@ -45,7 +43,6 @@ export function ProfilesPage() {
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile, updateProfile, refresh } = useProfileCompletion(currentUserId);
   const { settings, updateSettings, changePassword, enableTwoFactor, disableTwoFactor, signOutAllDevices, deactivateAccount, deleteAccount } = useUserSettings(currentUserId);
-  const { settings, updateSettings } = useUserSettings(currentUserId);
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
