@@ -32,9 +32,9 @@ export function Layout({ children }: LayoutProps) {
   const [showSupabaseWarning, setShowSupabaseWarning] = React.useState(false);
   const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
   const { t } = useTranslation();
-  const { settings } = useUserSettings(user?.id || '');
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
+  const { settings } = useUserSettings(currentUserId);
 
   const baseNavigation = [
     { name: 'Главная', href: '/', icon: Zap },
@@ -63,7 +63,7 @@ export function Layout({ children }: LayoutProps) {
 
   // Apply theme from settings
   React.useEffect(() => {
-    if (settings?.interface.theme) {
+    if (settings?.interface?.theme) {
       const theme = settings.interface.theme;
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -79,7 +79,7 @@ export function Layout({ children }: LayoutProps) {
         }
       }
     }
-  }, [settings?.interface.theme]);
+  }, [settings?.interface?.theme]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();

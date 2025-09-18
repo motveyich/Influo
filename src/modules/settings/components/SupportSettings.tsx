@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../hooks/useAuth';
 import { 
   HelpCircle, 
   Mail, 
@@ -6,12 +7,17 @@ import {
   FileText, 
   ExternalLink,
   Send,
-  CheckCircle
+  CheckCircle,
+  Clock,
+  User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function SupportSettings() {
+  const { user } = useAuth();
   const [showContactForm, setShowContactForm] = useState(false);
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [contactForm, setContactForm] = useState({
     subject: '',
     category: 'general',
@@ -20,6 +26,45 @@ export function SupportSettings() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  React.useEffect(() => {
+    if (user?.id) {
+      loadSupportTickets();
+    }
+  }, [user?.id]);
+
+  const loadSupportTickets = async () => {
+    try {
+      setIsLoadingTickets(true);
+      // Mock support tickets for now - will be replaced with actual API
+      const mockTickets = [
+        {
+          id: '1',
+          subject: 'Проблема с загрузкой профиля',
+          category: 'technical',
+          status: 'open',
+          priority: 'normal',
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          lastResponse: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          responseCount: 3
+        },
+        {
+          id: '2',
+          subject: 'Вопрос по оплате',
+          category: 'billing',
+          status: 'resolved',
+          priority: 'high',
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          lastResponse: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          responseCount: 5
+        }
+      ];
+      setSupportTickets(mockTickets);
+    } catch (error) {
+      console.error('Failed to load support tickets:', error);
+    } finally {
+      setIsLoadingTickets(false);
+    }
+  };
   const handleSubmitSupport = async () => {
     if (!contactForm.subject.trim() || !contactForm.message.trim()) {
       toast.error('Заполните тему и сообщение');
@@ -30,6 +75,19 @@ export function SupportSettings() {
     try {
       // Simulate support ticket submission
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Add new ticket to the list
+      const newTicket = {
+        id: Date.now().toString(),
+        subject: contactForm.subject,
+        category: contactForm.category,
+        status: 'open',
+        priority: contactForm.priority,
+        createdAt: new Date().toISOString(),
+        lastResponse: new Date().toISOString(),
+        responseCount: 1
+      };
+      setSupportTickets(prev => [newTicket, ...prev]);
       
       toast.success('Обращение отправлено! Мы ответим в течение 24 часов.');
       setContactForm({
@@ -46,12 +104,138 @@ export function SupportSettings() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'in_progress':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'resolved':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'closed':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'Открыто';
+      case 'in_progress':
+        return 'В работе';
+      case 'resolved':
+        return 'Решено';
+      case 'closed':
+        return 'Закрыто';
+      default:
+        return status;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'text-red-600';
+      case 'high':
+        return 'text-orange-600';
+      case 'normal':
+        return 'text-blue-600';
+      case 'low':
+        return 'text-gray-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Поддержка</h2>
         <p className="text-sm text-gray-600">Получите помощь и обратитесь в службу поддержки</p>
+      </div>
+
+      {/* My Support Tickets */}
+      <div className="bg-gray-50 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <MessageCircle className="w-5 h-5 text-purple-600" />
+            <div>
+              <h3 className="text-md font-medium text-gray-900">Мои обращения</h3>
+              <p className="text-sm text-gray-600">
+                История ваших обращений в службу поддержки
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => loadSupportTickets()}
+            className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+          >
+            Обновить
+          </button>
+        </div>
+
+        {isLoadingTickets ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка обращений...</p>
+          </div>
+        ) : supportTickets.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Нет обращений</h4>
+            <p className="text-gray-600 mb-4">У вас пока нет обращений в службу поддержки</p>
+            <button
+              onClick={() => setShowContactForm(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Создать первое обращение
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {supportTickets.map((ticket) => (
+              <div key={ticket.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h4 className="text-sm font-medium text-gray-900">{ticket.subject}</h4>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(ticket.status)}`}>
+                        {getStatusLabel(ticket.status)}
+                      </span>
+                      <span className={`text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
+                        {ticket.priority === 'urgent' ? 'Срочно' :
+                         ticket.priority === 'high' ? 'Высокий' :
+                         ticket.priority === 'normal' ? 'Обычный' : 'Низкий'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-4 text-xs text-gray-600">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Создано: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MessageCircle className="w-3 h-3" />
+                        <span>{ticket.responseCount} сообщений</span>
+                      </div>
+                      <span>Последний ответ: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Navigate to support chat - will be implemented with support system
+                      toast.info('Чат поддержки будет доступен в следующем обновлении');
+                    }}
+                    className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+                  >
+                    Открыть чат
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Contact Support */}
