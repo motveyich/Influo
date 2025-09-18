@@ -74,11 +74,11 @@
   
   /* Dark theme buttons */
   .dark .bg-purple-600 {
-    @apply bg-purple-600;
+    background-color: #9333ea;
   }
   
   .dark .hover\:bg-purple-700:hover {
-    @apply bg-purple-700;
+    background-color: #7c3aed;
   }
 }
 
