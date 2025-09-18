@@ -180,10 +180,7 @@ export function OffersPage() {
   return (
     <FeatureGate
       profile={currentUserProfile}
-        { value: 'all', label: t('offers.allStatuses') },
-        { value: 'pending', label: t('offers.awaitingResponse') },
-        { value: 'accepted', label: t('offers.accepted') },
-        { value: 'in_progress', label: t('offers.inWork') }
+    >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
