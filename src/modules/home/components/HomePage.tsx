@@ -63,6 +63,11 @@ interface CampaignStats {
   totalBudgetThisMonth: number;
   successfulDeals: number;
   averageResponseTime: number;
+  pendingApplications: number;
+  unreadMessages: number;
+  pendingPayouts: number;
+  accountRating: number;
+  totalReviews: number;
 }
 
 export function HomePage() {
@@ -214,10 +219,10 @@ export function HomePage() {
           </h1>
           <p className="mt-1 text-sm text-gray-600">
             Ваш центр управления инфлюенс-маркетингом
-              {t('home.welcome')}
+          </p>
           {lastRefresh && (
             <p className="text-xs text-gray-500 mt-1">
-              {t('home.subtitle')}
+              {t('home.lastUpdated')}: {lastRefresh.toLocaleTimeString()}
             </p>
           )}
         </div>
@@ -354,7 +359,7 @@ export function HomePage() {
                   >
                     {t('home.review')}
                   </button>
-                {t('home.lastUpdated')}: {lastRefresh.toLocaleTimeString()}
+                </div>
               </div>
             )}
           </div>
@@ -487,7 +492,6 @@ export function HomePage() {
                         <Star className="w-3 h-3 text-yellow-400 fill-current" />
                         <span>{influencer.rating.toFixed(1)}</span>
                       </div>
-                      <span>{influencer.completedDeals} сделок</span>
                       <span>{influencer.completedDeals} {t('home.deals')}</span>
                       {influencer.totalReach && (
                         <span>{formatNumber(influencer.totalReach)} {t('home.reach')}</span>
