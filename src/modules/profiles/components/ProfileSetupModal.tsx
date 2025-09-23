@@ -62,6 +62,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   // Advertiser data state
   const [advertiserData, setAdvertiserData] = useState({
     companyName: '',
+    organizationWebsite: '',
     industry: '',
     campaignPreferences: {
       preferredPlatforms: [],
@@ -77,9 +78,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         interests: []
       },
       campaignTypes: []
-    } as AdvertiserPreferences,
-    previousCampaigns: 0,
-    averageBudget: 0
+    } as AdvertiserPreferences
   });
 
   const [newSocialLink, setNewSocialLink] = useState({
@@ -163,6 +162,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       if (currentProfile.advertiserData) {
         setAdvertiserData({
           companyName: currentProfile.advertiserData.companyName || '',
+          organizationWebsite: (currentProfile.advertiserData as any).organizationWebsite || '',
           industry: currentProfile.advertiserData.industry || '',
           campaignPreferences: currentProfile.advertiserData.campaignPreferences || {
             preferredPlatforms: [],
@@ -178,9 +178,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               interests: []
             },
             campaignTypes: []
-          },
-          previousCampaigns: currentProfile.advertiserData.previousCampaigns || 0,
-          averageBudget: currentProfile.advertiserData.averageBudget || 0
+          }
         });
       }
     } else {
@@ -212,6 +210,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       });
       setAdvertiserData({
         companyName: '',
+        organizationWebsite: '',
         industry: '',
         campaignPreferences: {
           preferredPlatforms: [],
@@ -227,9 +226,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
             interests: []
           },
           campaignTypes: []
-        },
-        previousCampaigns: 0,
-        averageBudget: 0
+        }
       });
     }
   }, [currentProfile, isOpen, initialTab]);
@@ -393,6 +390,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const clearAdvertiserData = () => {
     setAdvertiserData({
       companyName: '',
+      organizationWebsite: '',
       industry: '',
       campaignPreferences: {
         preferredPlatforms: [],
@@ -408,9 +406,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           interests: []
         },
         campaignTypes: []
-      },
-      previousCampaigns: 0,
-      averageBudget: 0
+      }
     });
   };
 
@@ -718,21 +714,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                       placeholder="3.5"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('profile.fields.averageViews')}
-                    </label>
-                    <input
-                      type="number"
-                      value={influencerData.metrics.averageViews}
-                      onChange={(e) => setInfluencerData(prev => ({
-                        ...prev,
-                        metrics: { ...prev.metrics, averageViews: parseInt(e.target.value) || 0 }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="5000"
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -824,14 +805,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('profile.fields.companyName')}
+                    Название организации
                   </label>
                   <input
                     type="text"
                     value={advertiserData.companyName}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, companyName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder={t('profile.placeholders.companyName')}
+                    placeholder="Введите название организации"
                   />
                 </div>
 
@@ -857,27 +838,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('profile.fields.previousCampaigns')}
+                    Веб-сайт организации
                   </label>
                   <input
-                    type="number"
-                    value={advertiserData.previousCampaigns}
-                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, previousCampaigns: parseInt(e.target.value) || 0 }))}
+                    type="url"
+                    value={advertiserData.organizationWebsite || ''}
+                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, organizationWebsite: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('profile.fields.averageBudget')}
-                  </label>
-                  <input
-                    type="number"
-                    value={advertiserData.averageBudget}
-                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, averageBudget: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="5000"
+                    placeholder="https://organization.com"
                   />
                 </div>
               </div>

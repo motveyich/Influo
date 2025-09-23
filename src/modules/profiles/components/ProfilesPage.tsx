@@ -404,7 +404,7 @@ export function ProfilesPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('profile.companyName')}
+                          Название организации
                         </label>
                         <p className="text-sm text-gray-900 dark:text-gray-100">
                           {currentUserProfile.advertiserData.companyName || t('profile.notSpecified')}
@@ -418,6 +418,21 @@ export function ProfilesPage() {
                           {currentUserProfile.advertiserData.industry || t('profile.notSet')}
                         </p>
                       </div>
+                      {(currentUserProfile.advertiserData as any).organizationWebsite && (
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Веб-сайт организации
+                          </label>
+                          <a 
+                            href={(currentUserProfile.advertiserData as any).organizationWebsite}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                          >
+                            {(currentUserProfile.advertiserData as any).organizationWebsite}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
