@@ -43,17 +43,6 @@ interface PlatformEvent {
   publishedAt: string;
 }
 
-interface TopUser {
-  id: string;
-  name: string;
-  avatar?: string;
-  userType: 'influencer' | 'advertiser';
-  rating: number;
-  completedDeals: number;
-  totalReach?: number;
-  successRate: number;
-}
-
 interface CampaignStats {
   totalCampaigns: number;
   activeCampaigns: number;
@@ -73,8 +62,6 @@ interface CampaignStats {
 export function HomePage() {
   const [platformUpdates, setPlatformUpdates] = useState<PlatformUpdate[]>([]);
   const [platformEvents, setPlatformEvents] = useState<PlatformEvent[]>([]);
-  const [topInfluencers, setTopInfluencers] = useState<TopUser[]>([]);
-  const [topAdvertisers, setTopAdvertisers] = useState<TopUser[]>([]);
   const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -97,21 +84,15 @@ export function HomePage() {
       const [
         updatesData,
         eventsData,
-        influencersData,
-        advertisersData,
         statsData
       ] = await Promise.all([
         homeService.getPlatformUpdates(),
         homeService.getPlatformEvents(),
-        homeService.getTopInfluencers(),
-        homeService.getTopAdvertisers(),
         homeService.getCampaignStats(currentUserId)
       ]);
 
       setPlatformUpdates(updatesData);
       setPlatformEvents(eventsData);
-      setTopInfluencers(influencersData);
-      setTopAdvertisers(advertisersData);
       setCampaignStats(statsData);
       setLastRefresh(new Date());
     } catch (error) {
@@ -366,204 +347,87 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
 
           {/* Platform Events */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">{t('home.platformEvents')}</h2>
-            </div>
-            
-            <div className="divide-y divide-gray-200">
-              {platformEvents.map((event) => (
-                <div key={event.id} className="p-6">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      {getEventTypeIcon(event.type)}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-md font-medium text-gray-900 mb-1">
-                        {event.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {event.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(parseISO(event.publishedAt), { addSuffix: true })}
-                        </span>
-                        {event.participantCount && (
-                          <span className="text-xs text-purple-600 font-medium">
-                            {event.participantCount} участников
-                          </span>
-                        )}
+          {platformEvents.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">{t('home.platformEvents')}</h2>
+              </div>
+              
+              <div className="divide-y divide-gray-200">
+                {platformEvents.map((event) => (
+                  <div key={event.id} className="p-6">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        {getEventTypeIcon(event.type)}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Platform Updates */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">{t('home.platformUpdates')}</h2>
-            </div>
-            
-            <div className="divide-y divide-gray-200">
-              {platformUpdates.map((update) => (
-                <div key={update.id} className={`p-4 ${update.isImportant ? 'bg-yellow-50' : ''}`}>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      {getUpdateTypeIcon(update.type)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-medium text-gray-900">
-                          {update.title}
+                      <div className="flex-1">
+                        <h3 className="text-md font-medium text-gray-900 mb-1">
+                          {event.title}
                         </h3>
-                        {update.isImportant && (
-                          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-                            {t('home.important')}
+                        <p className="text-sm text-gray-600 mb-2">
+                          {event.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
+                            {formatDistanceToNow(parseISO(event.publishedAt), { addSuffix: true })}
                           </span>
-                        )}
+                          {event.participantCount && (
+                            <span className="text-xs text-purple-600 font-medium">
+                              {event.participantCount} участников
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {update.description}
-                      </p>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(parseISO(update.publishedAt), { addSuffix: true })}
-                      </span>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Influencers */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">{t('home.topInfluencers')}</h2>
-                <Trophy className="w-5 h-5 text-yellow-600" />
+                ))}
               </div>
             </div>
-            
-            <div className="p-6 space-y-4">
-              {topInfluencers.map((influencer, index) => (
-                <div key={influencer.id} className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                      index === 1 ? 'bg-gray-100 text-gray-700' :
-                      index === 2 ? 'bg-orange-100 text-orange-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
-                      {influencer.avatar ? (
-                        <img 
-                          src={influencer.avatar} 
-                          alt={influencer.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white font-semibold text-sm">
-                          {influencer.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {influencer.name}
-                    </p>
-                    <div className="flex items-center space-x-3 text-xs text-gray-600">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                        <span>{influencer.rating.toFixed(1)}</span>
-                      </div>
-                      <span>{influencer.completedDeals} {t('home.deals')}</span>
-                      {influencer.totalReach && (
-                        <span>{formatNumber(influencer.totalReach)} {t('home.reach')}</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <button className="text-purple-600 hover:text-purple-700">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
-          {/* Top Advertisers */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">{t('home.topAdvertisers')}</h2>
-                <Award className="w-5 h-5 text-blue-600" />
+          {/* Platform Updates */}
+          {platformUpdates.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">{t('home.platformUpdates')}</h2>
+              </div>
+              
+              <div className="divide-y divide-gray-200">
+                {platformUpdates.map((update) => (
+                  <div key={update.id} className={`p-4 ${update.isImportant ? 'bg-yellow-50' : ''}`}>
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        {getUpdateTypeIcon(update.type)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {update.title}
+                          </h3>
+                          {update.isImportant && (
+                            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+                              {t('home.important')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {update.description}
+                        </p>
+                        <span className="text-xs text-gray-500">
+                          {formatDistanceToNow(parseISO(update.publishedAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            
-            <div className="p-6 space-y-4">
-              {topAdvertisers.map((advertiser, index) => (
-                <div key={advertiser.id} className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                      index === 1 ? 'bg-gray-100 text-gray-700' :
-                      index === 2 ? 'bg-orange-100 text-orange-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-green-400 rounded-full flex items-center justify-center">
-                      {advertiser.avatar ? (
-                        <img 
-                          src={advertiser.avatar} 
-                          alt={advertiser.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white font-semibold text-sm">
-                          {advertiser.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {advertiser.name}
-                    </p>
-                    <div className="flex items-center space-x-3 text-xs text-gray-600">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                        <span>{advertiser.rating.toFixed(1)}</span>
-                      </div>
-                      <span>{advertiser.completedDeals} {t('home.campaigns')}</span>
-                      <span>{advertiser.successRate}% {t('home.successRate')}</span>
-                    </div>
-                  </div>
-                  
-                  <button className="text-blue-600 hover:text-blue-700">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
