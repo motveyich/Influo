@@ -579,7 +579,6 @@ export function InfluencerCardsPage() {
           <div className="p-6 border-b border-gray-200">
             {activeTab === 'my_cards' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="grid grid-cols-3 gap-6">
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
@@ -605,17 +604,6 @@ export function InfluencerCardsPage() {
                     <p className="mt-1 text-2xl font-semibold text-gray-900">
                       {((influencerStats.avgRating + advertiserStats.avgRating) / 2).toFixed(1)}
                     </p>
-                  </div>
-                    </div>
-                    <p className="text-lg font-semibold text-purple-900">{myInfluencerCards.length}</p>
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Briefcase className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">{t('influencerCards.advertiserCards')}</span>
-                    </div>
-                    <p className="text-lg font-semibold text-blue-900">{myAdvertiserCards.length}</p>
                   </div>
                 </div>
               </div>
