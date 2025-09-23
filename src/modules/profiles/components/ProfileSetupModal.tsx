@@ -577,14 +577,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('profile.fields.organizationWebsite')}
+                  {t('profile.fields.bio')} *
                 </label>
                 <textarea
                   value={basicInfo.bio}
                   onChange={(e) => setBasicInfo(prev => ({ ...prev, bio: e.target.value }))}
                   rows={4}
                   className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  placeholder={t('profile.placeholders.organizationWebsite')}
+                    errors.bio ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder={t('profile.placeholders.bio')}
                 />
@@ -599,7 +599,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     {basicInfo.bio.length}/1500 символов
                   </p>
                 </div>
-                  <option value="">{t('common.select')} {t('profile.fields.industry').toLowerCase()}</option>
+              </div>
             </div>
           )}
 
