@@ -577,14 +577,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('profile.fields.bio')} *
+                  {t('profile.fields.organizationWebsite')}
                 </label>
                 <textarea
                   value={basicInfo.bio}
                   onChange={(e) => setBasicInfo(prev => ({ ...prev, bio: e.target.value }))}
                   rows={4}
                   className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.bio ? 'border-red-300' : 'border-gray-300'
+                  placeholder={t('profile.placeholders.organizationWebsite')}
                   }`}
                   placeholder={t('profile.placeholders.bio')}
                 />
@@ -599,7 +599,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     {basicInfo.bio.length}/1500 символов
                   </p>
                 </div>
-              </div>
+                  <option value="">{t('common.select')} {t('profile.fields.industry').toLowerCase()}</option>
             </div>
           )}
 
@@ -724,7 +724,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                 <div className="mb-4">
                   {/* Predefined categories as buttons */}
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Выберите категории из списка:
+                    {t('profile.selectCategoriesFromList')}:
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
                     {getPredefinedCategories().map((category) => (
@@ -746,7 +746,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   
                   {/* Custom category input */}
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Или добавьте свою категорию:
+                    {t('profile.orAddCustomCategory')}:
                   </label>
                   <div className="flex space-x-2">
                     <input
