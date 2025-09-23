@@ -586,6 +586,16 @@ export function InfluencerCardsPage() {
                       <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.totalCards')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
+                    <div className="mt-2 text-xs text-gray-500 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Инфлюенсер:</span>
+                        <span className="font-medium">{myInfluencerCards.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Рекламодатель:</span>
+                        <span className="font-medium">{myAdvertiserCards.length}</span>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
