@@ -309,14 +309,6 @@ export function CampaignsPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
-              <Target className="w-5 h-5 text-purple-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.stats.total')}</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.total}</p>
-          </div>
-        
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
               <TrendingUp className="w-5 h-5 text-green-600" />
               <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.stats.active')}</span>
             </div>
@@ -340,44 +332,13 @@ export function CampaignsPage() {
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.totalApplicants}</p>
           </div>
-        </div>
-
-        {/* Extended Campaign Statistics */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.successfulDeals')}</span>
+              <DollarSign className="w-5 h-5 text-red-600" />
+              <span className="ml-2 text-sm font-medium text-gray-600">Ждут выплат</span>
             </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.accepted}</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <XCircle className="w-5 h-5 text-red-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.rejectedApplications')}</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {Math.floor(stats.totalApplicants * 0.2)}
-            </p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <TrendingUp className="w-5 h-5 text-purple-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.successRate')}</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {stats.totalApplicants > 0 ? Math.round((stats.accepted / stats.totalApplicants) * 100) : 0}%
-            </p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.averageResponseTime')}</span>
-            </div>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">2.5 {t('campaigns.hours')}</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">0</p>
           </div>
         </div>
 

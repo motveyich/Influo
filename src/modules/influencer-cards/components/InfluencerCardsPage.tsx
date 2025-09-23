@@ -605,14 +605,6 @@ export function InfluencerCardsPage() {
                       {((influencerStats.avgRating + advertiserStats.avgRating) / 2).toFixed(1)}
                     </p>
                   </div>
-                  
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <div className="flex items-center">
-                      <Trophy className="w-5 h-5 text-blue-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.campaigns')}</span>
-                    </div>
-                    <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.campaigns + advertiserStats.campaigns}</p>
-                  </div>
                 </div>
                 
                 {/* Breakdown by type */}

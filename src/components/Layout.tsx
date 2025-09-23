@@ -172,7 +172,9 @@ export function Layout({ children }: LayoutProps) {
               <nav className="hidden md:flex space-x-8">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname.startsWith(item.href);
+                  const isActive = item.href === '/' 
+                    ? location.pathname === '/' 
+                    : location.pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.name}

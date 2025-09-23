@@ -224,7 +224,7 @@ export function HomePage() {
             <h2 className="text-lg font-semibold text-gray-900">{t('home.yourStats')}</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Activity className="w-4 h-4" />
-              <span>{t('home.updatedToday')}</span>
+              <span>Ваша статистика</span>
             </div>
           </div>
           

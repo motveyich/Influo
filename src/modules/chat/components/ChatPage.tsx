@@ -949,10 +949,21 @@ export function ChatPage() {
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 {getTabIcon(activeTab)}
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {getEmptyStateMessage(activeTab).title}
-              </h3>
-              <p className="text-gray-600">{getEmptyStateMessage(activeTab).subtitle}</p>
+              {filteredConversations.length === 0 ? (
+                <>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {getEmptyStateMessage(activeTab).title}
+                  </h3>
+                  <p className="text-gray-600">{getEmptyStateMessage(activeTab).subtitle}</p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Выберите чат для общения
+                  </h3>
+                  <p className="text-gray-600">Выберите диалог из списка слева, чтобы начать общение</p>
+                </>
+              )}
             </div>
           </div>
         )}
