@@ -68,7 +68,7 @@ export class HomeService {
 
   async getPlatformEvents(): Promise<PlatformEvent[]> {
     try {
-      // Получаем события из базы данных
+      // Получаем только события, созданные вручную через админ-панель
       const dbEvents = await contentManagementService.getPublishedEvents();
       
       // Преобразуем в формат PlatformEvent
@@ -81,7 +81,6 @@ export class HomeService {
         publishedAt: event.publishedAt
       }));
       
-      // Возвращаем только события, созданные через админ-панель
       return transformedEvents;
     } catch (error) {
       console.error('Failed to fetch platform events:', error);
@@ -230,65 +229,6 @@ export class HomeService {
       totalReviews: 0,
       completedDeals: 0
     };
-  }
-
-  private async getRecentCampaignLaunches(): Promise<PlatformEvent[]> {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.CAMPAIGNS)
-        .select('campaign_id, title, brand, created_at, metrics')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-
-      return data.map(campaign => ({
-        id: campaign.campaign_id,
-        title: `Запущена кампания "${campaign.title}"`,
-        description: `Бренд ${campaign.brand} запустил новую кампанию. Уже ${campaign.metrics?.applicants || 0} заявок получено.`,
-        type: 'campaign_launch' as const,
-        participantCount: campaign.metrics?.applicants || 0,
-        publishedAt: campaign.created_at
-      }));
-    } catch (error) {
-      // Handle network/connection errors specifically
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.warn('Supabase connection failed when fetching recent campaigns, using empty array');
-        return [];
-      }
-      console.error('Failed to fetch recent campaigns:', error);
-      return [];
-    }
-  }
-
-  private async getRecentAchievements(): Promise<PlatformEvent[]> {
-    try {
-      // Получаем пользователей с высокими достижениями
-      const { data, error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('user_id, full_name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(2);
-
-      if (error) throw error;
-
-      return data.map(user => ({
-        id: `achievement_${user.user_id}`,
-        title: `${user.full_name} присоединился к платформе`,
-        description: `Добро пожаловать в сообщество Influo!`,
-        type: 'achievement' as const,
-        publishedAt: user.created_at
-      }));
-    } catch (error) {
-      // Handle network/connection errors specifically
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.warn('Supabase connection failed when fetching achievements, using empty array');
-        return [];
-      }
-      console.error('Failed to fetch achievements:', error);
-      return [];
-    }
   }
 
 }
