@@ -319,7 +319,7 @@ export function AIChatPanel({
         <div className="flex items-center space-x-2">
           <input
             type="text"
-            placeholder="Задайте вопрос о диалоге..."
+            placeholder={t('chat.aiAssistant.askQuestion')}
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendUserQuestion()}
@@ -344,15 +344,15 @@ export function AIChatPanel({
             className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
           >
             <BarChart3 className="w-3 h-3" />
-            <span>{isAnalyzing ? 'Анализирую...' : 'Анализ диалога'}</span>
+            <span>{isAnalyzing ? 'Анализирую...' : t('chat.aiAssistant.analyzeDialog')}</span>
           </button>
           
           <button
-            onClick={() => setUserQuestion('Какие риски ты видишь в нашем диалоге?')}
+            onClick={() => setUserQuestion(t('chat.aiAssistant.riskAssessment'))}
             className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1"
           >
             <Zap className="w-3 h-3" />
-            <span>Оценка рисков</span>
+            <span>{t('chat.aiAssistant.riskAssessment')}</span>
           </button>
         </div>
 

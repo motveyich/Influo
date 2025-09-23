@@ -594,21 +594,21 @@ export function ChatPage() {
     switch (tab) {
       case 'main':
         return {
-          title: 'Нет активных чатов',
-          subtitle: 'Активные диалоги появятся здесь после первого ответа получателя',
-          tip: 'Отправьте заявку на карточку или кампанию, чтобы начать диалог'
+          title: t('chat.noMainChats'),
+          subtitle: t('chat.mainChatsDescription'),
+          tip: t('chat.sendApplicationsToStartChats')
         };
       case 'new':
         return {
-          title: 'Нет новых чатов',
-          subtitle: 'Новые диалоги и предложения появятся здесь',
-          tip: 'Отправляйте заявки и предложения для начала новых диалогов'
+          title: t('chat.noNewChats'),
+          subtitle: t('chat.newChatsDescription'),
+          tip: t('chat.sendApplicationsToStartChats')
         };
       case 'restricted':
         return {
-          title: 'Нет ограниченных чатов',
-          subtitle: 'Заблокированные пользователи появятся здесь',
-          tip: 'Вы можете заблокировать пользователей из активных чатов'
+          title: t('chat.noRestrictedChats'),
+          subtitle: t('chat.restrictedChatsDescription'),
+          tip: t('chat.blockUsersFromActiveChats')
         };
     }
   };
@@ -635,7 +635,11 @@ export function ChatPage() {
               >
                 <div className="flex items-center justify-center space-x-2">
                   {getTabIcon(tab)}
-                  <span>{getTabLabel(tab)}</span>
+                  <span>
+                    {tab === 'main' ? t('chat.mainChats') :
+                     tab === 'new' ? t('chat.newChats') :
+                     t('chat.restrictedChats')}
+                  </span>
                   {tabCounts[tab] > 0 && (
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       activeTab === tab
@@ -692,7 +696,7 @@ export function ChatPage() {
                 {getEmptyStateMessage(activeTab).subtitle}
               </p>
               <div className="space-y-2 text-sm text-gray-500">
-                <p>💡 Совет:</p>
+                <p>💡 {t('chat.tip')}</p>
                 <p>{getEmptyStateMessage(activeTab).tip}</p>
               </div>
             </div>

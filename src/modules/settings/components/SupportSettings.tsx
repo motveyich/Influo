@@ -122,13 +122,13 @@ export function SupportSettings() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'open':
-        return 'Открыто';
+        return t('settings.ticketStatuses.open');
       case 'in_progress':
-        return 'В работе';
+        return t('settings.ticketStatuses.inProgress');
       case 'resolved':
-        return 'Решено';
+        return t('settings.ticketStatuses.resolved');
       case 'closed':
-        return 'Закрыто';
+        return t('settings.ticketStatuses.closed');
       default:
         return status;
     }
@@ -162,9 +162,9 @@ export function SupportSettings() {
           <div className="flex items-center space-x-3">
             <MessageCircle className="w-5 h-5 text-purple-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">Мои обращения</h3>
+              <h3 className="text-md font-medium text-gray-900">{t('settings.myTickets')}</h3>
               <p className="text-sm text-gray-600">
-                История ваших обращений в службу поддержки
+                {t('settings.ticketsDescription')}
               </p>
             </div>
           </div>
@@ -172,7 +172,7 @@ export function SupportSettings() {
             onClick={() => loadSupportTickets()}
             className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
           >
-            Обновить
+            {t('settings.refresh')}
           </button>
         </div>
 
@@ -184,13 +184,13 @@ export function SupportSettings() {
         ) : supportTickets.length === 0 ? (
           <div className="text-center py-8">
             <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">Нет обращений</h4>
-            <p className="text-gray-600 mb-4">У вас пока нет обращений в службу поддержки</p>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">{t('settings.noTickets')}</h4>
+            <p className="text-gray-600 mb-4">{t('settings.noTicketsDescription')}</p>
             <button
               onClick={() => setShowContactForm(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
-              Создать первое обращение
+              {t('settings.createFirstTicket')}
             </button>
           </div>
         ) : (
@@ -213,13 +213,13 @@ export function SupportSettings() {
                     <div className="flex items-center space-x-4 text-xs text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>Создано: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>{t('settings.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} сообщений</span>
+                        <span>{ticket.responseCount} {t('settings.messages')}</span>
                       </div>
-                      <span>Последний ответ: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                      <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                   <button
@@ -229,7 +229,7 @@ export function SupportSettings() {
                     }}
                     className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
                   >
-                    Открыть чат
+                    {t('settings.openChat')}
                   </button>
                 </div>
               </div>
@@ -244,9 +244,9 @@ export function SupportSettings() {
           <div className="flex items-center space-x-3">
             <MessageCircle className="w-5 h-5 text-blue-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">Обратиться в поддержку</h3>
+              <h3 className="text-md font-medium text-gray-900">{t('settings.contactSupport')}</h3>
               <p className="text-sm text-gray-600">
-                Свяжитесь с нашей командой поддержки для решения вопросов
+                {t('settings.contactSupportDescription')}
               </p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export function SupportSettings() {
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
           >
             <Mail className="w-4 h-4" />
-            <span>Написать в поддержку</span>
+            <span>{t('settings.writeToSupport')}</span>
           </button>
         </div>
       </div>

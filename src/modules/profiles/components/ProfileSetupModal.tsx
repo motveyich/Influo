@@ -613,7 +613,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   onClick={clearInfluencerData}
                   className="text-sm text-red-600 hover:text-red-800 transition-colors"
                 >
-                  Очистить раздел
+                  {t('profile.clearSection')}
                 </button>
               </div>
               
@@ -798,7 +798,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   onClick={clearAdvertiserData}
                   className="text-sm text-red-600 hover:text-red-800 transition-colors"
                 >
-                  Очистить раздел
+                  {t('profile.clearSection')}
                 </button>
               </div>
               
