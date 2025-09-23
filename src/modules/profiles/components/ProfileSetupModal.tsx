@@ -805,14 +805,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Название организации
+                    {t('profile.fields.organizationName')}
                   </label>
                   <input
                     type="text"
                     value={advertiserData.companyName}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, companyName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Введите название организации"
+                    placeholder={t('profile.placeholders.organizationName')}
                   />
                 </div>
 
@@ -838,14 +838,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Веб-сайт организации
+                    {t('profile.fields.organizationWebsite')}
                   </label>
                   <input
                     type="url"
                     value={advertiserData.organizationWebsite || ''}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, organizationWebsite: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://organization.com"
+                    placeholder={t('profile.placeholders.organizationWebsite')}
                   />
                 </div>
               </div>

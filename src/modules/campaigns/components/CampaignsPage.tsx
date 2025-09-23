@@ -336,7 +336,7 @@ export function CampaignsPage() {
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <DollarSign className="w-5 h-5 text-red-600" />
-              <span className="ml-2 text-sm font-medium text-gray-600">{t('campaigns.awaitingPayouts')}</span>
+              <span className="ml-2 text-sm font-medium text-gray-600">{t('home.awaitingPayouts')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">0</p>
           </div>

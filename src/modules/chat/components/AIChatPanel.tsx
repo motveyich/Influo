@@ -359,29 +359,29 @@ export function AIChatPanel({
         {/* Quick questions */}
         <div className="flex flex-wrap gap-1">
           <button
-            onClick={() => setUserQuestion('Как развивать этот диалог дальше?')}
+            onClick={() => setUserQuestion(t('chat.aiAssistant.nextSteps'))}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
-            Следующие шаги?
+            {t('chat.aiAssistant.nextSteps')}
           </button>
           <button
-            onClick={() => setUserQuestion('Проанализируй тональность нашего общения')}
+            onClick={() => setUserQuestion(t('chat.aiAssistant.sentiment'))}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
-            Тональность
+            {t('chat.aiAssistant.sentiment')}
           </button>
           <button
-            onClick={() => setUserQuestion('Какие условия стоит обсудить?')}
+            onClick={() => setUserQuestion(t('chat.aiAssistant.conditions'))}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
-            Условия
+            {t('chat.aiAssistant.conditions')}
           </button>
         </div>
 
         {/* Status */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            🧠 DeepSeek V3 • Ваш персональный AI-помощник • {conversationMessages.length < 2 ? 'Ожидание диалога' : 'Готов анализировать'}
+            🧠 DeepSeek V3 • {t('chat.aiAssistant.personalAssistant')} • {conversationMessages.length < 2 ? 'Ожидание диалога' : t('chat.aiAssistant.readyToAnalyze')}
           </p>
         </div>
       </div>

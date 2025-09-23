@@ -636,9 +636,7 @@ export function ChatPage() {
                 <div className="flex items-center justify-center space-x-2">
                   {getTabIcon(tab)}
                   <span>
-                    {tab === 'main' ? t('chat.mainChats') :
-                     tab === 'new' ? t('chat.newChats') :
-                     t('chat.restrictedChats')}
+                    {getTabLabel(tab)}
                   </span>
                   {tabCounts[tab] > 0 && (
                     <span className={`px-2 py-1 text-xs rounded-full ${

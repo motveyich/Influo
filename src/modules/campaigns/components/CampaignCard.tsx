@@ -279,7 +279,7 @@ export function CampaignCard({
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {campaign.status === 'active' ? 'Подать заявку' : 'Недоступно'}
+            {campaign.status === 'active' ? t('campaigns.applyToCampaign') : t('common.unavailable')}
           </button>
           <button
             onClick={() => setShowReportModal(true)}

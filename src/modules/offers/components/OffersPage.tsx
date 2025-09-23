@@ -130,18 +130,18 @@ export function OffersPage() {
   const getStatusFiltersForTab = (): { value: OfferStatus | 'all'; label: string }[] => {
     if (activeTab === 'active') {
       return [
-        { value: 'all', label: 'Все статусы' },
-        { value: 'pending', label: 'Ожидают ответа' },
-        { value: 'accepted', label: 'Приняты' },
-        { value: 'in_progress', label: 'В работе' }
+        { value: 'all', label: t('offers.allStatuses') },
+        { value: 'pending', label: t('offers.status.pending') },
+        { value: 'accepted', label: t('offers.status.accepted') },
+        { value: 'in_progress', label: t('offers.status.inProgress') }
       ];
     } else {
       return [
         { value: 'all', label: t('offers.allStatuses') },
-        { value: 'completed', label: t('offers.completed') },
-        { value: 'declined', label: t('offers.declined') },
-        { value: 'cancelled', label: t('offers.cancelled') },
-        { value: 'terminated', label: t('offers.terminated') }
+        { value: 'completed', label: t('offers.status.completed') },
+        { value: 'declined', label: t('offers.status.declined') },
+        { value: 'cancelled', label: t('offers.status.cancelled') },
+        { value: 'terminated', label: t('offers.status.terminated') }
       ];
     }
   };

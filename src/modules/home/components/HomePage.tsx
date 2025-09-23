@@ -387,8 +387,8 @@ export function HomePage() {
           ) : (
             <div className="p-8 text-center">
               <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Нет обновлений</h3>
-              <p className="text-gray-600">Обновления платформы появятся здесь</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('home.noUpdates')}</h3>
+              <p className="text-gray-600">{t('home.updatesWillAppearHere')}</p>
             </div>
           )}
         </div>
@@ -432,8 +432,8 @@ export function HomePage() {
           ) : (
             <div className="p-8 text-center">
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Нет событий</h3>
-              <p className="text-gray-600">События платформы появятся здесь</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('home.noEvents')}</h3>
+              <p className="text-gray-600">{t('home.eventsWillAppearHere')}</p>
             </div>
           )}
         </div>
