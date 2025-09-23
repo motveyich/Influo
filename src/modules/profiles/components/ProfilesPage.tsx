@@ -33,6 +33,7 @@ type ProfileTab = 'basic' | 'influencer' | 'advertiser' | 'security' | 'notifica
 export function ProfilesPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('basic');
+  const [activeModalTab, setActiveModalTab] = useState<'basic' | 'influencer' | 'advertiser'>('basic');
   const [isUpdating, setIsUpdating] = useState(false);
 
   const { user, loading } = useAuth();
@@ -144,7 +145,10 @@ export function ProfilesPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowProfileModal(true)}
+                  onClick={() => {
+                    setActiveModalTab('basic');
+                    setShowProfileModal(true);
+                  }}
                   disabled={isUpdating}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -216,7 +220,10 @@ export function ProfilesPage() {
                     {t('profile.createProfileDescription')}
                   </p>
                   <button
-                    onClick={() => setShowProfileModal(true)}
+                    onClick={() => {
+                      setActiveModalTab('basic');
+                      setShowProfileModal(true);
+                    }}
                     disabled={isUpdating}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -251,7 +258,10 @@ export function ProfilesPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowProfileModal(true)}
+                  onClick={() => {
+                    setActiveModalTab('influencer');
+                    setShowProfileModal(true);
+                  }}
                   disabled={isUpdating}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -297,33 +307,6 @@ export function ProfilesPage() {
                     )}
                   </div>
                   
-                  {/* Metrics */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.metrics')}
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.influencerData.metrics?.totalFollowers?.toLocaleString() || '0'}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.subscribers')}</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.influencerData.metrics?.engagementRate?.toFixed(1) || '0'}%
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.engagement')}</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.influencerData.metrics?.averageViews?.toLocaleString() || '0'}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.views')}</p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Content Categories */}
                   <div>
                     <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
@@ -346,56 +329,6 @@ export function ProfilesPage() {
                       </p>
                     )}
                   </div>
-
-                  {/* Pricing */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.pricing')}
-                    </h3>
-                    {currentUserProfile.influencerData.pricing && 
-                     Object.values(currentUserProfile.influencerData.pricing).some(price => price > 0) ? (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {Object.entries(currentUserProfile.influencerData.pricing).map(([type, price]) => (
-                          price > 0 && (
-                            <div key={type} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-center">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
-                                {type}
-                              </p>
-                              <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                {formatCurrency(price)}
-                              </p>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {t('profile.noPricingSet')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Availability */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('common.available')}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        currentUserProfile.influencerData.availableForCollabs ? 'bg-green-400' : 'bg-red-400'
-                      }`}></div>
-                      <span className={`text-sm font-medium ${
-                        currentUserProfile.influencerData.availableForCollabs 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {currentUserProfile.influencerData.availableForCollabs 
-                          ? t('common.available') 
-                          : t('common.unavailable')
-                        }
-                      </span>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -407,7 +340,10 @@ export function ProfilesPage() {
                     {t('profile.setupInfluencerDescription')}
                   </p>
                   <button
-                    onClick={() => setShowProfileModal(true)}
+                    onClick={() => {
+                      setActiveModalTab('influencer');
+                      setShowProfileModal(true);
+                    }}
                     disabled={isUpdating}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -442,7 +378,10 @@ export function ProfilesPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowProfileModal(true)}
+                  onClick={() => {
+                    setActiveModalTab('advertiser');
+                    setShowProfileModal(true);
+                  }}
                   disabled={isUpdating}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -482,27 +421,6 @@ export function ProfilesPage() {
                     </div>
                   </div>
                   
-                  {/* Statistics */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.statistics')}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.advertiserData.previousCampaigns || 0}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.campaigns')}</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          ${currentUserProfile.advertiserData.averageBudget?.toLocaleString() || '0'}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('profile.averageBudget')}</p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Budget Range */}
                   {currentUserProfile.advertiserData.campaignPreferences?.budgetRange && (
                     <div>
@@ -579,7 +497,10 @@ export function ProfilesPage() {
                     {t('profile.setupAdvertiserDescription')}
                   </p>
                   <button
-                    onClick={() => setShowProfileModal(true)}
+                    onClick={() => {
+                      setActiveModalTab('advertiser');
+                      setShowProfileModal(true);
+                    }}
                     disabled={isUpdating}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -696,8 +617,12 @@ export function ProfilesPage() {
       {/* Profile Setup Modal */}
       <ProfileSetupModal
         isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
+        onClose={() => {
+          setShowProfileModal(false);
+          setActiveModalTab('basic');
+        }}
         currentProfile={currentUserProfile}
+        initialTab={activeModalTab}
         onProfileUpdated={handleProfileUpdated}
       />
     </div>

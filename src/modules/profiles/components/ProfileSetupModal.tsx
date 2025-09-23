@@ -20,11 +20,12 @@ interface ProfileSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentProfile?: UserProfile | null;
+  initialTab?: 'basic' | 'influencer' | 'advertiser';
   onProfileUpdated: (profile: UserProfile) => void;
 }
 
-export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUpdated }: ProfileSetupModalProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser'>('basic');
+export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab = 'basic', onProfileUpdated }: ProfileSetupModalProps) {
+  const [activeTab, setActiveTab] = useState<'basic' | 'influencer' | 'advertiser'>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
@@ -124,6 +125,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
   ];
 
   useEffect(() => {
+    // Set active tab when modal opens
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+    
     if (currentProfile) {
       setBasicInfo({
         fullName: currentProfile.fullName || '',
@@ -226,7 +232,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, onProfileUp
         averageBudget: 0
       });
     }
-  }, [currentProfile, isOpen]);
+  }, [currentProfile, isOpen, initialTab]);
 
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
