@@ -580,7 +580,8 @@ export function InfluencerCardsPage() {
             {activeTab === 'my_cards' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <Grid className="w-5 h-5 text-purple-600" />
                       <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.totalCards')}</span>
@@ -588,7 +589,7 @@ export function InfluencerCardsPage() {
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
                   </div>
                   
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <TrendingUp className="w-5 h-5 text-green-600" />
                       <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.active')}</span>
@@ -596,7 +597,7 @@ export function InfluencerCardsPage() {
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active + advertiserStats.active}</p>
                   </div>
                   
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <Star className="w-5 h-5 text-yellow-600" />
                       <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.avgRating')}</span>
@@ -605,14 +606,6 @@ export function InfluencerCardsPage() {
                       {((influencerStats.avgRating + advertiserStats.avgRating) / 2).toFixed(1)}
                     </p>
                   </div>
-                </div>
-                
-                {/* Breakdown by type */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Users className="w-4 h-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-800">{t('influencerCards.influencerCards')}</span>
                     </div>
                     <p className="text-lg font-semibold text-purple-900">{myInfluencerCards.length}</p>
                   </div>

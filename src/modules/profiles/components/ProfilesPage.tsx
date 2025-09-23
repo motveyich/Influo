@@ -668,14 +668,14 @@ export function ProfilesPage() {
                   key={item.id}
                   onClick={() => setActiveTab(item.id as ProfileTab)}
                   disabled={isUpdating}
-                  className={`w-full flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full flex items-center px-4 py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left ${
                     activeTab === item.id
                       ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'
                   }`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 flex-shrink-0 mr-3" />
+                  <span className="flex-1">{item.label}</span>
                   {isUpdating && activeTab === item.id && (
                     <Loader2 className="w-4 h-4 animate-spin ml-auto" />
                   )}
