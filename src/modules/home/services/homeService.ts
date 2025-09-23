@@ -81,15 +81,8 @@ export class HomeService {
         publishedAt: event.publishedAt
       }));
       
-      // Получаем реальные события из базы данных (кампании и достижения)
-      const recentCampaigns = await this.getRecentCampaignLaunches();
-      const achievements = await this.getRecentAchievements();
-      
-      // Объединяем все события
-      const allEvents = [...transformedEvents, ...recentCampaigns, ...achievements];
-      
-      // Возвращаем только реальные данные
-      return allEvents;
+      // Возвращаем только события, созданные через админ-панель
+      return transformedEvents;
     } catch (error) {
       console.error('Failed to fetch platform events:', error);
       return [];

@@ -347,85 +347,93 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Main Content */}
-        <div className="space-y-6">
-
-          {/* Platform Events */}
-          {platformEvents.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">{t('home.platformEvents')}</h2>
-              </div>
-              
-              <div className="divide-y divide-gray-200">
-                {platformEvents.map((event) => (
-                  <div key={event.id} className="p-6">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        {getEventTypeIcon(event.type)}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-md font-medium text-gray-900 mb-1">
-                          {event.title}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Platform Updates */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">{t('home.platformUpdates')}</h2>
+          </div>
+          
+          {platformUpdates.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {platformUpdates.map((update) => (
+                <div key={update.id} className={`p-4 ${update.isImportant ? 'bg-yellow-50' : ''}`}>
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {getUpdateTypeIcon(update.type)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {update.title}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {event.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            {formatDistanceToNow(parseISO(event.publishedAt), { addSuffix: true })}
+                        {update.isImportant && (
+                          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+                            {t('home.important')}
                           </span>
-                          {event.participantCount && (
-                            <span className="text-xs text-purple-600 font-medium">
-                              {event.participantCount} участников
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {update.description}
+                      </p>
+                      <span className="text-xs text-gray-500">
+                        {formatDistanceToNow(parseISO(update.publishedAt), { addSuffix: true })}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Нет обновлений</h3>
+              <p className="text-gray-600">Обновления платформы появятся здесь</p>
             </div>
           )}
+        </div>
 
-          {/* Platform Updates */}
-          {platformUpdates.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">{t('home.platformUpdates')}</h2>
-              </div>
-              
-              <div className="divide-y divide-gray-200">
-                {platformUpdates.map((update) => (
-                  <div key={update.id} className={`p-4 ${update.isImportant ? 'bg-yellow-50' : ''}`}>
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        {getUpdateTypeIcon(update.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {update.title}
-                          </h3>
-                          {update.isImportant && (
-                            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
-                              {t('home.important')}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {update.description}
-                        </p>
+        {/* Platform Events */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">{t('home.platformEvents')}</h2>
+          </div>
+          
+          {platformEvents.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {platformEvents.map((event) => (
+                <div key={event.id} className="p-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {getEventTypeIcon(event.type)}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-md font-medium text-gray-900 mb-1">
+                        {event.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {event.description}
+                      </p>
+                      <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(parseISO(update.publishedAt), { addSuffix: true })}
+                          {formatDistanceToNow(parseISO(event.publishedAt), { addSuffix: true })}
                         </span>
+                        {event.participantCount && (
+                          <span className="text-xs text-purple-600 font-medium">
+                            {event.participantCount} {t('home.participants')}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Нет событий</h3>
+              <p className="text-gray-600">События платформы появятся здесь</p>
             </div>
           )}
         </div>
