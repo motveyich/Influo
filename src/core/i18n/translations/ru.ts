@@ -241,7 +241,6 @@ export const ru: TranslationKeys = {
       location: 'Местоположение',
       aboutMe: 'О себе',
       bio: 'О себе',
-      location: 'Местоположение',
       website: 'Веб-сайт',
       avatar: 'Аватар',
       companyName: 'Название компании',
