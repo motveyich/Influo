@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AIChatMessage, AIChatThread, ChatMessage } from '../../../core/types';
 import { aiChatService } from '../../../services/aiChatService';
+import { useTranslation } from '../../../hooks/useTranslation';
 import { Bot, Send, Brain, Minimize2, Maximize2, Zap, BarChart3, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -20,6 +21,7 @@ export function AIChatPanel({
   onToggleVisibility, 
   conversationMessages 
 }: AIChatPanelProps) {
+  const { t } = useTranslation();
   const [thread, setThread] = useState<AIChatThread | null>(null);
   const [aiMessages, setAiMessages] = useState<AIChatMessage[]>([]);
   const [userQuestion, setUserQuestion] = useState('');
