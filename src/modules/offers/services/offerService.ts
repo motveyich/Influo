@@ -73,6 +73,7 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
+        campaign_id: offerData.campaignId || null,
         details: {
           title: offerData.title,
           description: offerData.description,

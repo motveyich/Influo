@@ -88,6 +88,7 @@ export class ApplicationService {
           influencerId: influencerId!,
           advertiserId: advertiserId!,
           applicationId: transformedApplication.id,
+          campaignId: applicationData.targetType === 'campaign' ? applicationData.targetReferenceId : null,
           title: applicationData.applicationData?.message?.substring(0, 50) + '...' || 'Предложение о сотрудничестве',
           description: applicationData.applicationData?.message || 'Предложение создано из заявки',
           proposedRate: applicationData.applicationData?.proposedRate || 1000,
