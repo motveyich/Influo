@@ -189,22 +189,32 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
   );
 
   function getUserRole(userId: string, metadata: any): 'payer' | 'payee' | 'none' {
-    if (metadata?.payerId === userId) return 'payer';
-    if (metadata?.payeeId === userId) return 'payee';
+    // Check for explicit payer/payee IDs in metadata
+    if (metadata?.payerId && metadata.payerId === userId) return 'payer';
+    if (metadata?.payeeId && metadata.payeeId === userId) return 'payee';
+    
+    // Fallback: try to determine from offer structure if available
+    if (metadata?.offerId) {
+      // In most cases, advertiser is payer and influencer is payee
+      // This is a fallback when explicit IDs are not available
+      return 'none'; // Return none to be safe if we can't determine role
+    }
+    
     return 'none';
   }
 
   function shouldShowButton(button: any, userRole: 'payer' | 'payee' | 'none', currentStatus?: string): boolean {
+    // Don't show any buttons if we can't determine the user's role
+    if (userRole === 'none') {
+      return false;
+    }
+    
     // Кнопки для плательщика (рекламодателя)
     const payerButtons = ['paying', 'paid', 'failed'];
     // Кнопки для получателя (инфлюенсера)
-    const payeeButtons = ['confirmed', 'cancelled'];
+    const payeeButtons = ['confirm_received', 'payment_not_received'];
 
     if (userRole === 'payer' && payerButtons.includes(button.id)) {
-      // Дополнительная логика для кнопки "failed" - показывать только в статусе "paying"
-      if (button.id === 'failed' && currentStatus !== 'paying') {
-        return false;
-      }
       // Дополнительная логика для кнопки "failed" - показывать только в статусе "paying"
       if (button.id === 'failed' && currentStatus !== 'paying') {
         return false;
@@ -213,12 +223,12 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
     }
     
     if (userRole === 'payee' && payeeButtons.includes(button.id)) {
-      // Кнопка "confirmed" только при статусе "paid"
-      if (button.id === 'confirmed' && currentStatus !== 'paid') {
+      // Кнопка "confirm_received" только при статусе "paid"
+      if (button.id === 'confirm_received' && currentStatus !== 'paid') {
         return false;
       }
-      // Кнопка "confirmed" только при статусе "paid"
-      if (button.id === 'confirmed' && currentStatus !== 'paid') {
+      // Кнопка "payment_not_received" только при статусе "paid"
+      if (button.id === 'payment_not_received' && currentStatus !== 'paid') {
         return false;
       }
       return true;
