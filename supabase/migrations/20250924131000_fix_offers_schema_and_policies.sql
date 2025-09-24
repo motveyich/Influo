@@ -8,6 +8,8 @@
 
 -- Offers schema adjustments
 DO $$
+DECLARE
+  conname text;
 BEGIN
   -- Add influencer_card_id if missing
   IF NOT EXISTS (
