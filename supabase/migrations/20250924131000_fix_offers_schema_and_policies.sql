@@ -35,18 +35,14 @@ BEGIN
   END IF;
 
   -- Replace status check constraint with the set used by the app
-  -- Drop any existing CHECK on offers.status
-  PERFORM (
-    SELECT 1 FROM pg_constraint c
+  -- Drop any existing CHECK on offers.status (safe even if none)
+  PERFORM 1;
+  FOR conname IN
+    SELECT c.conname
+    FROM pg_constraint c
     JOIN pg_class t ON t.oid = c.conrelid
     JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY (c.conkey)
     WHERE t.relname = 'offers' AND a.attname = 'status' AND c.contype = 'c'
-  );
-
-  FOR SELECT conname FROM pg_constraint c
-      JOIN pg_class t ON t.oid = c.conrelid
-      WHERE t.relname = 'offers' AND c.contype = 'c'
-  INTO STRICT conname
   LOOP
     EXECUTE format('ALTER TABLE offers DROP CONSTRAINT IF EXISTS %I', conname);
   END LOOP;
