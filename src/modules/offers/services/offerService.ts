@@ -73,6 +73,7 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
+        campaign_id: offerData.campaignId || null,
         details: {
           title: offerData.title,
           description: offerData.description,
@@ -142,7 +143,7 @@ export class OfferService {
       const { data: currentData } = await supabase
         .from(TABLES.COLLABORATION_OFFERS)
         .select('details')
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .single();
 
       const currentDetails = currentData?.details || {};

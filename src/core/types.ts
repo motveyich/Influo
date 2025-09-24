@@ -110,7 +110,6 @@ export interface InfluencerCard {
     pricing: Record<string, number>;
     currency: string;
     blacklistedProductCategories: string[];
-    blacklistedProductCategories: string[];
   };
   rating: number;
   completedCampaigns: number;
