@@ -175,9 +175,9 @@ export class OfferService {
       }
 
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .update(updateData)
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .select()
         .single();
 
@@ -206,9 +206,9 @@ export class OfferService {
   async getOffer(offerId: string): Promise<CollaborationOffer | null> {
     try {
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .select('*')
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .maybeSingle();
 
       if (error) throw error;
@@ -224,7 +224,7 @@ export class OfferService {
   async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
     try {
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from('offers')
         .select('*')
         .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .order('created_at', { ascending: false });
@@ -386,7 +386,7 @@ export class OfferService {
   private transformFromDatabase(dbData: any): CollaborationOffer {
     const details = dbData.details || {};
     return {
-      id: dbData.id,
+      id: dbData.offer_id,
       influencerId: dbData.influencer_id,
       advertiserId: dbData.advertiser_id,
       campaignId: dbData.campaign_id,
