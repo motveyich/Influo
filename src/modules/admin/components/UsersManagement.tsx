@@ -90,6 +90,11 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
       await adminService.deleteUser(userId, currentUser!.id, userRole!);
       console.log('✅ [UsersManagement] AdminService call completed, reloading users');
       
+      // Optimistically update UI
+      setUsers(prevUsers => prevUsers.map(u => 
+        u.userId === userId ? { ...u, is_deleted: true, deleted_at: new Date().toISOString() } as UserProfile : u
+      ));
+
       // Force reload users to see the change
       await loadUsers();
       onStatsUpdate();
@@ -113,6 +118,11 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
 
   const handleRestoreUser = async (userId: string) => {
     try {
+      // Optimistically update UI
+      setUsers(prevUsers => prevUsers.map(u => 
+        u.userId === userId ? { ...u, is_deleted: false, deleted_at: null } as UserProfile : u
+      ));
+
       await adminService.restoreUser(userId, currentUser!.id);
       await loadUsers();
       onStatsUpdate();
