@@ -243,7 +243,9 @@ export class PaymentRequestService {
           amount: request.amount,
           paymentType: request.paymentType,
           paymentDetails: request.paymentDetails,
-          status: request.status
+          status: request.status,
+          payerId: offer.advertiser_id,
+          payeeId: offer.influencer_id
         }
       });
     } catch (error) {
@@ -262,9 +264,23 @@ export class PaymentRequestService {
 
       if (!offer) return;
 
-      const isAdvertiserAction = request.createdBy !== offer.advertiser_id;
-      const senderId = isAdvertiserAction ? offer.advertiser_id : offer.influencer_id;
-      const receiverId = isAdvertiserAction ? offer.influencer_id : offer.advertiser_id;
+      // Determine sender and receiver based on the status change
+      let senderId: string;
+      let receiverId: string;
+      
+      if (['paying', 'paid', 'failed'].includes(newStatus)) {
+        // Advertiser actions
+        senderId = offer.advertiser_id;
+        receiverId = offer.influencer_id;
+      } else if (newStatus === 'confirmed') {
+        // Influencer confirming receipt
+        senderId = offer.influencer_id;
+        receiverId = offer.advertiser_id;
+      } else {
+        // Default fallback
+        senderId = request.createdBy;
+        receiverId = request.createdBy === offer.advertiser_id ? offer.influencer_id : offer.advertiser_id;
+      }
 
       let messageContent = '';
       switch (newStatus) {
@@ -293,7 +309,9 @@ export class PaymentRequestService {
           paymentRequestId: request.id,
           offerId: request.offerId,
           actionType: `payment_${newStatus}`,
-          amount: request.amount
+          amount: request.amount,
+          payerId: offer.advertiser_id,
+          payeeId: offer.influencer_id
         }
       });
     } catch (error) {

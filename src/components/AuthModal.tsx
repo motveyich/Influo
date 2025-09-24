@@ -56,6 +56,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (error) {
           if (error.name === 'AccountBlockedError') {
             setErrors({ email: error.message });
+          } else if (error.status === 400) {
+            if (error.message.includes('Email not confirmed')) {
+              setErrors({ email: t('auth.emailNotConfirmed') });
+            } else {
+              setErrors({ email: t('auth.invalidCredentials') });
+            }
           } else if (error.message.includes('Invalid login credentials')) {
             setErrors({ email: t('auth.invalidCredentials') });
           } else if (error.message.includes('Email not confirmed')) {

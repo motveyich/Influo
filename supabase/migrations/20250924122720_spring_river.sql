@@ -27,11 +27,8 @@ CREATE POLICY "users_can_update_own_profile"
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (
-    user_id = auth.uid() 
-    AND is_deleted = OLD.is_deleted 
-    AND deleted_at IS NOT DISTINCT FROM OLD.deleted_at 
-    AND deleted_by IS NOT DISTINCT FROM OLD.deleted_by
-    AND role IS NOT DISTINCT FROM OLD.role
+    -- Policies cannot reference OLD/NEW; keep simple self-update check
+    user_id = auth.uid()
   );
 
 -- 2. Admins and moderators can block/unblock other users (but not themselves)

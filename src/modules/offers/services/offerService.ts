@@ -332,7 +332,9 @@ export class OfferService {
           offerId: offer.id,
           actionType: 'offer_created',
           proposedRate: offer.proposedRate,
-          timeline: offer.timeline
+          timeline: offer.timeline,
+          payerId: offer.advertiserId,
+          payeeId: offer.influencerId
         }
       });
     } catch (error) {
@@ -342,9 +344,23 @@ export class OfferService {
 
   private async sendStatusUpdateNotification(offer: CollaborationOffer, newStatus: OfferStatus): Promise<void> {
     try {
-      const isInfluencerAction = offer.influencerId;
-      const senderId = isInfluencerAction ? offer.advertiserId : offer.influencerId;
-      const receiverId = isInfluencerAction ? offer.influencerId : offer.advertiserId;
+      // Determine who is sending the notification based on the status change
+      let senderId: string;
+      let receiverId: string;
+      
+      if (newStatus === 'accepted' || newStatus === 'declined') {
+        // Advertiser is responding to influencer's offer
+        senderId = offer.advertiserId;
+        receiverId = offer.influencerId;
+      } else if (newStatus === 'cancelled') {
+        // Influencer is cancelling their own offer
+        senderId = offer.influencerId;
+        receiverId = offer.advertiserId;
+      } else {
+        // For other statuses, determine based on who would typically perform the action
+        senderId = offer.influencerId;
+        receiverId = offer.advertiserId;
+      }
 
       let messageContent = '';
       switch (newStatus) {
@@ -375,7 +391,9 @@ export class OfferService {
         metadata: {
           offerId: offer.id,
           actionType: `offer_${newStatus}`,
-          newStatus
+          newStatus,
+          payerId: offer.advertiserId,
+          payeeId: offer.influencerId
         }
       });
     } catch (error) {
