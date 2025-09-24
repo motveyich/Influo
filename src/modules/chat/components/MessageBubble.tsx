@@ -13,6 +13,16 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
   const isOwnMessage = message.senderId === currentUserId;
   const isInteractive = message.metadata?.isInteractive && message.metadata?.buttons;
   
+  // Determine user role for this specific message
+  const getUserRole = (): 'payer' | 'payee' | 'none' => {
+    // Check for explicit payer/payee IDs in metadata
+    if (message.metadata?.payerId && message.metadata.payerId === currentUserId) return 'payer';
+    if (message.metadata?.payeeId && message.metadata.payeeId === currentUserId) return 'payee';
+    return 'none';
+  };
+
+  const userRole = getUserRole();
+
   const formatMessageTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -39,6 +49,28 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
       default:
         return null;
     }
+  };
+
+  const shouldShowButton = (button: any): boolean => {
+    // Don't show any buttons if we can't determine the user's role
+    if (userRole === 'none') {
+      return false;
+    }
+    
+    // Кнопки для плательщика (рекламодателя)
+    const payerButtons = ['confirm_payment', 'paying', 'paid', 'failed'];
+    // Кнопки для получателя (инфлюенсера)  
+    const payeeButtons = ['confirm_received', 'payment_not_received'];
+
+    if (userRole === 'payer' && payerButtons.includes(button.action)) {
+      return true;
+    }
+    
+    if (userRole === 'payee' && payeeButtons.includes(button.action)) {
+      return true;
+    }
+
+    return false;
   };
 
   const getButtonStyle = (style?: string) => {
@@ -168,11 +200,9 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
         {/* Interactive buttons */}
         {isInteractive && message.metadata?.buttons && (
           <div className="mt-2 space-y-2">
-            {!isOwnMessage && message.metadata.buttons.filter((button: any) => {
-              // Фильтруем кнопки на основе роли пользователя
-              const userRole = getUserRole(currentUserId, message.metadata);
-              return shouldShowButton(button, userRole, message.metadata?.status);
-            }).map((button: any) => (
+            {!isOwnMessage && message.metadata.buttons
+              .filter((button: any) => shouldShowButton(button))
+              .map((button: any) => (
               <button
                 key={button.id}
                 onClick={() => onInteraction(button.action, message.id, button.dealId)}
@@ -187,53 +217,4 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
       </div>
     </div>
   );
-
-  function getUserRole(userId: string, metadata: any): 'payer' | 'payee' | 'none' {
-    // Check for explicit payer/payee IDs in metadata
-    if (metadata?.payerId && metadata.payerId === userId) return 'payer';
-    if (metadata?.payeeId && metadata.payeeId === userId) return 'payee';
-    
-    // Fallback: try to determine from offer structure if available
-    if (metadata?.offerId) {
-      // In most cases, advertiser is payer and influencer is payee
-      // This is a fallback when explicit IDs are not available
-      return 'none'; // Return none to be safe if we can't determine role
-    }
-    
-    return 'none';
-  }
-
-  function shouldShowButton(button: any, userRole: 'payer' | 'payee' | 'none', currentStatus?: string): boolean {
-    // Don't show any buttons if we can't determine the user's role
-    if (userRole === 'none') {
-      return false;
-    }
-    
-    // Кнопки для плательщика (рекламодателя)
-    const payerButtons = ['paying', 'paid', 'failed'];
-    // Кнопки для получателя (инфлюенсера)
-    const payeeButtons = ['confirm_received', 'payment_not_received'];
-
-    if (userRole === 'payer' && payerButtons.includes(button.id)) {
-      // Дополнительная логика для кнопки "failed" - показывать только в статусе "paying"
-      if (button.id === 'failed' && currentStatus !== 'paying') {
-        return false;
-      }
-      return true;
-    }
-    
-    if (userRole === 'payee' && payeeButtons.includes(button.id)) {
-      // Кнопка "confirm_received" только при статусе "paid"
-      if (button.id === 'confirm_received' && currentStatus !== 'paid') {
-        return false;
-      }
-      // Кнопка "payment_not_received" только при статусе "paid"
-      if (button.id === 'payment_not_received' && currentStatus !== 'paid') {
-        return false;
-      }
-      return true;
-    }
-
-    return false;
-  }
 }
