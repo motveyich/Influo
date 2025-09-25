@@ -5,28 +5,7 @@ import { paymentRequestService } from '../services/paymentRequestService';
 import { reviewService } from '../services/reviewService';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
-import { 
-  X, 
-  Clock, 
-  DollarSign, 
-  Calendar, 
-  CheckCircle, 
-  XCircle,
-  CreditCard,
-  Star,
-  MessageCircle,
-  Edit,
-  Trash2,
-  Play,
-  Square,
-  Trophy,
-  Ban,
-  AlertTriangle,
-  Plus,
-  User,
-  FileText,
-  History
-} from 'lucide-react';
+import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
