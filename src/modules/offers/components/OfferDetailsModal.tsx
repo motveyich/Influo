@@ -56,7 +56,10 @@ export function OfferDetailsModal({
 
   const isInfluencer = currentUserId === offer.influencerId;
   const isAdvertiser = currentUserId === offer.advertiserId;
+  const isInitiator = currentUserId === offer.initiatedBy;
+  const isReceiver = !isInitiator;
   const userRole = isInfluencer ? 'influencer' : 'advertiser';
+  const roleInOffer = isInitiator ? 'Отправитель' : 'Получатель';
 
   useEffect(() => {
     if (isOpen && offer.id) {
@@ -155,12 +158,14 @@ export function OfferDetailsModal({
 
     // Pending status actions
     if (offer.status === 'pending') {
-      if (isAdvertiser) {
+      if (isReceiver) {
+        // Получатель может принять или отклонить
         actions.push(
           { label: 'Принять предложение', action: 'accepted', style: 'success', icon: CheckCircle },
           { label: 'Отклонить', action: 'declined', style: 'danger', icon: XCircle }
         );
-      } else if (isInfluencer) {
+      } else if (isInitiator) {
+        // Инициатор может только отменить
         actions.push(
           { label: 'Отменить предложение', action: 'cancelled', style: 'neutral', icon: XCircle }
         );
@@ -292,7 +297,7 @@ export function OfferDetailsModal({
                  offer.status === 'declined' ? 'Отклонено' : 'Отменено'}
               </span>
               <span className="text-sm text-gray-600">
-                Ваша роль: {isInfluencer ? 'Инфлюенсер' : 'Рекламодатель'}
+                Ваша роль: {isInfluencer ? 'Инфлюенсер' : 'Рекламодатель'} ({roleInOffer})
               </span>
             </div>
           </div>
@@ -627,7 +632,7 @@ export function OfferDetailsModal({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Роль:</span>
                     <span className="font-medium text-gray-900">
-                      {isInfluencer ? 'Инфлюенсер' : 'Рекламодатель'}
+                      {isInfluencer ? 'Инфлюенсер' : 'Рекламодатель'} ({roleInOffer})
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -644,9 +649,10 @@ export function OfferDetailsModal({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Текущий этап:</span>
                     <span className="font-medium text-gray-900">
-                      {offer.currentStage === 'pre_payment' ? 'До оплаты' :
-                       offer.currentStage === 'work_in_progress' ? 'Работа в процессе' :
-                       offer.currentStage === 'post_payment' ? 'После оплаты' : 'Завершено'}
+                      {offer.currentStage === 'negotiation' ? 'Переговоры' :
+                       offer.currentStage === 'payment' ? 'Оплата' :
+                       offer.currentStage === 'work' ? 'Работа в процессе' :
+                       offer.currentStage === 'completion' ? 'Завершение' : 'Отзывы'}
                     </span>
                   </div>
                   {offer.acceptedAt && (

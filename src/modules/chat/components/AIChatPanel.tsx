@@ -27,7 +27,6 @@ export function AIChatPanel({
   const [userQuestion, setUserQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize AI thread when panel opens
@@ -36,17 +35,6 @@ export function AIChatPanel({
       initializeAIThread();
     }
   }, [currentUserId, partnerId, isVisible]);
-
-  // Auto-trigger analysis when conversation messages change
-  useEffect(() => {
-    if (thread && conversationMessages.length >= 2 && autoAnalysisEnabled) {
-      // Trigger analysis every 3 new messages
-      const shouldAnalyze = conversationMessages.length % 3 === 0;
-      if (shouldAnalyze) {
-        triggerConversationAnalysis();
-      }
-    }
-  }, [conversationMessages, thread, autoAnalysisEnabled]);
 
   // Scroll to bottom when new AI messages arrive
   useEffect(() => {
@@ -73,6 +61,11 @@ export function AIChatPanel({
 
   const triggerConversationAnalysis = async () => {
     if (!thread || isAnalyzing || conversationMessages.length < 2) return;
+
+    if (conversationMessages.length < 2) {
+      toast.error('Недостаточно сообщений для анализа (минимум 2)');
+      return;
+    }
 
     try {
       setIsAnalyzing(true);
@@ -239,15 +232,14 @@ export function AIChatPanel({
             )}
           </div>
           
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={autoAnalysisEnabled}
-              onChange={(e) => setAutoAnalysisEnabled(e.target.checked)}
-              className="w-3 h-3 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-xs text-gray-600">Авто-анализ</span>
-          </label>
+          <button
+            onClick={triggerConversationAnalysis}
+            disabled={isAnalyzing || conversationMessages.length < 2}
+            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 flex items-center space-x-1"
+          >
+            <BarChart3 className="w-3 h-3" />
+            <span>{isAnalyzing ? 'Анализ...' : 'Анализ'}</span>
+          </button>
         </div>
       </div>
 
@@ -351,6 +343,7 @@ export function AIChatPanel({
           
           <button
             onClick={() => setUserQuestion(t('chat.aiAssistant.riskAssessment'))}
+            disabled={conversationMessages.length < 2}
             className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center space-x-1"
           >
             <Zap className="w-3 h-3" />
@@ -362,18 +355,21 @@ export function AIChatPanel({
         <div className="flex flex-wrap gap-1">
           <button
             onClick={() => setUserQuestion(t('chat.aiAssistant.nextSteps'))}
+            disabled={conversationMessages.length < 2}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
             {t('chat.aiAssistant.nextSteps')}
           </button>
           <button
             onClick={() => setUserQuestion(t('chat.aiAssistant.sentiment'))}
+            disabled={conversationMessages.length < 2}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
             {t('chat.aiAssistant.sentiment')}
           </button>
           <button
             onClick={() => setUserQuestion(t('chat.aiAssistant.conditions'))}
+            disabled={conversationMessages.length < 2}
             className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
           >
             {t('chat.aiAssistant.conditions')}
@@ -383,7 +379,7 @@ export function AIChatPanel({
         {/* Status */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            🧠 DeepSeek V3 • {t('chat.aiAssistant.personalAssistant')} • {conversationMessages.length < 2 ? 'Ожидание диалога' : t('chat.aiAssistant.readyToAnalyze')}
+            🧠 DeepSeek V3 • {t('chat.aiAssistant.personalAssistant')} • {conversationMessages.length < 2 ? 'Ожидание диалога (мин. 2 сообщения)' : `${conversationMessages.length} сообщений для анализа`}
           </p>
         </div>
       </div>

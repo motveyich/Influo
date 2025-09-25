@@ -51,6 +51,10 @@ export function useAuth() {
           // Force logout
           authService.signOut();
           alert('Ваш аккаунт был заблокирован администратором. Вы будете перенаправлены на страницу входа.');
+        } else if (payload.new && payload.new.is_deleted === false) {
+          console.log('✅ [useAuth] User unblocked via real-time update');
+          setIsBlocked(false);
+          setError(null);
         }
       })
       .subscribe();
@@ -120,17 +124,23 @@ export function useAuth() {
       console.log('✅ [useAuth] User status check result:', { 
         userId: authState.user.id, 
         profile,
-        isDeleted: profile?.is_deleted 
+        isDeleted: profile?.is_deleted,
+        deletedAt: profile?.deleted_at
       });
       
-      if (profile?.is_deleted === true) {
+      // Проверяем точно на true, а не на truthy значение
+      if (profile && profile.is_deleted === true) {
         console.log('🚨 [useAuth] User is blocked, setting blocked state and forcing logout');
         setIsBlocked(true);
         // Force logout for blocked users
         await authService.signOut();
         alert('Ваш аккаунт был заблокирован администратором.');
-      } else {
+      } else if (profile && profile.is_deleted === false) {
         console.log('✅ [useAuth] User is not blocked');
+        setIsBlocked(false);
+        setError(null);
+      } else if (!profile) {
+        console.log('⚠️ [useAuth] No profile found, assuming user is not blocked');
         setIsBlocked(false);
         setError(null);
       }
