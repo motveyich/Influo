@@ -252,20 +252,6 @@ export function ChatPage() {
         // Current user received a message, check if this should move chat to main
         updateConversationStatus(transformedMessage.senderId);
       }
-      
-      // Trigger AI analysis for new messages
-      if (selectedConversation && transformedMessage.senderId === selectedConversation.participantId) {
-        // Update messages state and trigger analysis
-        setTimeout(() => {
-          const updatedMessages = [...messages, transformedMessage];
-          if (updatedMessages.length >= 2) {
-            // Trigger AI analysis through the AI panel
-            window.dispatchEvent(new CustomEvent('triggerAIAnalysis', { 
-              detail: { messages: updatedMessages } 
-            }));
-          }
-        }, 500);
-      }
     }
   };
 

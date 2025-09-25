@@ -167,10 +167,12 @@ export class AdminService {
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-      const hasPermission = await roleService.checkPermission(restoredBy, 'admin');
+      const hasPermission = await roleService.checkPermission(restoredBy, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
+
+      console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
 
       const { error } = await supabase
         .from(TABLES.USER_PROFILES)
@@ -181,7 +183,12 @@ export class AdminService {
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [AdminService] Failed to restore user:', error);
+        throw error;
+      }
+
+      console.log('✅ [AdminService] User restored successfully');
 
       // Log the action
       await this.logAction(restoredBy, 'user_restored', 'user_profile', userId);

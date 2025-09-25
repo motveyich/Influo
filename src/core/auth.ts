@@ -108,7 +108,8 @@ class AuthService {
         
         console.log('✅ [AuthService] User profile check result:', profile);
         
-        if (profile?.is_deleted === true) {
+        // Проверяем точно на true, а не на truthy значение
+        if (profile && profile.is_deleted === true) {
           console.log('🚨 [AuthService] User is blocked, preventing login');
           // Sign out the user immediately
           await supabase.auth.signOut();
@@ -119,6 +120,8 @@ class AuthService {
               name: 'AccountBlockedError'
             } 
           };
+        } else {
+          console.log('✅ [AuthService] User is not blocked, allowing login');
         }
       } catch (profileError) {
         console.error('❌ [AuthService] Exception while checking user status:', profileError);

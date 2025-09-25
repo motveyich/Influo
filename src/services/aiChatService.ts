@@ -359,18 +359,7 @@ export class AIChatService {
     };
   }
 
-  async triggerAutoAnalysis(currentUserId: string, partnerId: string, chatMessages: ChatMessage[]): Promise<void> {
-    try {
-      // Only auto-analyze every 3 messages to avoid spam
-      if (chatMessages.length % 3 !== 0) return;
-      
-      const thread = await this.getOrCreatePersonalThread(currentUserId);
-      await this.analyzeConversationWithAI(thread.id, chatMessages, currentUserId, partnerId);
-    } catch (error) {
-      console.error('Failed to trigger auto analysis:', error);
-      // Don't throw error for auto-analysis failures
-    }
-  }
+  // Удаляем автоанализ - теперь только по запросу пользователя
 }
 
 export const aiChatService = new AIChatService();

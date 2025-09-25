@@ -99,6 +99,16 @@ export function OffersPage() {
   const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
     return offer.influencerId === currentUserId ? 'influencer' : 'advertiser';
   };
+  
+  const getUserRoleInOffer = (offer: CollaborationOffer) => {
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const baseRole = getUserRole(offer);
+    return {
+      baseRole,
+      isInitiator,
+      roleLabel: `${baseRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель'} (${isInitiator ? 'Отправитель' : 'Получатель'})`
+    };
+  };
 
   const filteredOffers = offers.filter(offer => {
     const matchesSearch = offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

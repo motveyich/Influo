@@ -112,8 +112,12 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
   };
 
   const handleRestoreUser = async (userId: string) => {
+    if (!confirm('Вы уверены, что хотите разблокировать этого пользователя?')) return;
+
     try {
+      console.log('🔧 [UsersManagement] Starting user restoration for:', userId);
       await adminService.restoreUser(userId, currentUser!.id);
+      console.log('✅ [UsersManagement] User restoration completed, reloading users');
       await loadUsers();
       onStatsUpdate();
       toast.success('Пользователь восстановлен');

@@ -197,15 +197,21 @@ export function OfferCard({
 
   const getAvailableActions = () => {
     const actions = [];
+    
+    // Определяем роль пользователя в предложении
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const isReceiver = !isInitiator && (currentUserId === offer.influencerId || currentUserId === offer.advertiserId);
 
     // Pending status actions
     if (offer.status === 'pending') {
-      if (userRole === 'advertiser') {
+      if (isReceiver) {
+        // Получатель может принять или отклонить
         actions.push(
           { label: 'Принять', action: 'accepted', style: 'success' },
           { label: 'Отклонить', action: 'declined', style: 'danger' }
         );
-      } else if (userRole === 'influencer') {
+      } else if (isInitiator) {
+        // Инициатор может только отменить
         actions.push(
           { label: 'Отменить', action: 'cancelled', style: 'neutral' }
         );
@@ -223,22 +229,23 @@ export function OfferCard({
     return actions;
   };
 
-  const getUserRoleLabel = () => {
-    return userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+  const getUserRoleInOffer = () => {
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const role = userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+    const roleType = isInitiator ? 'Отправитель' : 'Получатель';
+    return `${role} (${roleType})`;
   };
 
   const getPartnerInfo = () => {
-    if (userRole === 'influencer') {
-      return {
-        label: 'Рекламодатель',
-        id: offer.advertiserId
-      };
-    } else {
-      return {
-        label: 'Инфлюенсер', 
-        id: offer.influencerId
-      };
-    }
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const partnerId = currentUserId === offer.influencerId ? offer.advertiserId : offer.influencerId;
+    const partnerRole = currentUserId === offer.influencerId ? 'Рекламодатель' : 'Инфлюенсер';
+    const partnerType = isInitiator ? 'Получатель' : 'Отправитель';
+    
+    return {
+      label: `${partnerRole} (${partnerType})`,
+      id: partnerId
+    };
   };
 
   const availableActions = getAvailableActions();
@@ -264,7 +271,7 @@ export function OfferCard({
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
             <div className="flex items-center space-x-1">
               <User className="w-4 h-4" />
-              <span>Ваша роль: {getUserRoleLabel()}</span>
+              <span>Ваша роль: {getUserRoleInOffer()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Users className="w-4 h-4" />

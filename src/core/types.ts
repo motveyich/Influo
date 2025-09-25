@@ -493,6 +493,7 @@ export interface CollaborationOffer {
   advertiserId: string;
   campaignId?: string;
   influencerCardId?: string;
+  initiatedBy?: string;
   
   // Offer details
   title: string;
@@ -504,7 +505,11 @@ export interface CollaborationOffer {
   
   // Status and stages
   status: OfferStatus;
-  currentStage: CollaborationStage;
+  currentStage: 'negotiation' | 'payment' | 'work' | 'completion' | 'review';
+  
+  // Response tracking
+  influencerResponse: 'pending' | 'accepted' | 'declined' | 'counter';
+  advertiserResponse: 'pending' | 'accepted' | 'declined' | 'counter';
   
   // Acceptance details
   acceptedAt?: string;

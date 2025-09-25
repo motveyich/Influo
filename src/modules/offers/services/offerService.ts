@@ -13,6 +13,7 @@ export class OfferService {
         advertiser_id: offerData.advertiserId,
         influencer_card_id: offerData.influencerCardId || null,
         campaign_id: offerData.campaignId || null,
+        initiated_by: offerData.initiatedBy || offerData.influencerId, // По умолчанию инициатор - инфлюенсер
         details: {
           title: offerData.title,
           description: offerData.description,
@@ -22,6 +23,10 @@ export class OfferService {
           timeline: offerData.timeline
         },
         status: 'pending',
+        current_stage: 'negotiation',
+        influencer_response: 'pending',
+        advertiser_response: 'pending',
+        final_terms: '{}',
         timeline: {},
         metadata: offerData.metadata || {},
         created_at: new Date().toISOString(),
@@ -73,6 +78,7 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
+        initiated_by: offerData.influencerId, // Инфлюенсер инициирует через заявку
         details: {
           title: offerData.title,
           description: offerData.description,
@@ -82,6 +88,10 @@ export class OfferService {
           timeline: offerData.timeline
         },
         status: 'pending',
+        current_stage: 'negotiation',
+        influencer_response: 'pending',
+        advertiser_response: 'pending',
+        final_terms: '{}',
         timeline: {},
         metadata: {
           ...offerData.metadata,
@@ -155,6 +165,16 @@ export class OfferService {
           accepted_rate: additionalData?.acceptedRate || currentOffer.proposedRate,
           final_terms: additionalData?.finalTerms || {}
         };
+        
+        // Обновляем поля ответов в зависимости от того, кто принимает
+        if (userId === currentOffer.influencerId) {
+          updateData.influencer_response = 'accepted';
+        } else if (userId === currentOffer.advertiserId) {
+          updateData.advertiser_response = 'accepted';
+        }
+        
+        // Переводим в статус "в работе" если обе стороны согласились
+        updateData.current_stage = 'work';
       }
 
       // Handle completion
@@ -163,6 +183,7 @@ export class OfferService {
           ...currentDetails,
           completed_at: new Date().toISOString()
         };
+        updateData.current_stage = 'completion';
       }
 
       // Handle termination
@@ -172,6 +193,15 @@ export class OfferService {
           terminated_at: new Date().toISOString(),
           termination_reason: additionalData?.reason || ''
         };
+      }
+      
+      // Handle decline
+      if (newStatus === 'declined') {
+        if (userId === currentOffer.influencerId) {
+          updateData.influencer_response = 'declined';
+        } else if (userId === currentOffer.advertiserId) {
+          updateData.advertiser_response = 'declined';
+        }
       }
 
       const { data, error } = await supabase
@@ -275,14 +305,22 @@ export class OfferService {
   }
 
   private validateStatusChangePermission(offer: CollaborationOffer, newStatus: OfferStatus, userId: string): void {
-    // Only advertiser can accept/decline offers
-    if ((newStatus === 'accepted' || newStatus === 'declined') && userId !== offer.advertiserId) {
-      throw new Error('Only advertiser can accept or decline offers');
+    // Получатель предложения может принять/отклонить
+    if (newStatus === 'accepted' || newStatus === 'declined') {
+      // Определяем, кто является получателем на основе инициатора
+      const isInfluencerInitiated = offer.influencerId === (offer as any).initiated_by;
+      const receiver = isInfluencerInitiated ? offer.advertiserId : offer.influencerId;
+      
+      if (userId !== receiver) {
+        throw new Error('Only the receiver can accept or decline offers');
+      }
     }
 
-    // Only influencer can cancel offers before acceptance
-    if (newStatus === 'cancelled' && offer.status === 'pending' && userId !== offer.influencerId) {
-      throw new Error('Only influencer can cancel pending offers');
+    // Инициатор может отменить предложение до принятия
+    if (newStatus === 'cancelled' && offer.status === 'pending') {
+      if (userId !== (offer as any).initiated_by) {
+        throw new Error('Only the initiator can cancel pending offers');
+      }
     }
 
     // Both parties can complete or terminate after acceptance
@@ -390,6 +428,7 @@ export class OfferService {
       influencerId: dbData.influencer_id,
       advertiserId: dbData.advertiser_id,
       campaignId: dbData.campaign_id,
+      initiatedBy: dbData.initiated_by,
       title: details.title || '',
       description: details.description || '',
       proposedRate: parseFloat(details.proposed_rate || 0),
@@ -397,15 +436,17 @@ export class OfferService {
       deliverables: details.deliverables || [],
       timeline: details.timeline || '',
       status: dbData.status,
-      currentStage: 'pre_payment', // Default stage since not in database
+      currentStage: dbData.current_stage || 'negotiation',
       acceptedAt: details.accepted_at,
       acceptedRate: details.accepted_rate ? parseFloat(details.accepted_rate) : undefined,
-      finalTerms: details.final_terms || {},
+      finalTerms: dbData.final_terms || {},
       completedAt: details.completed_at,
       terminatedAt: details.terminated_at,
       terminationReason: details.termination_reason,
-      influencerReviewed: false, // Default since not in database
-      advertiserReviewed: false, // Default since not in database
+      influencerReviewed: dbData.influencer_reviewed || false,
+      advertiserReviewed: dbData.advertiser_reviewed || false,
+      influencerResponse: dbData.influencer_response || 'pending',
+      advertiserResponse: dbData.advertiser_response || 'pending',
       metadata: dbData.metadata || {},
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
