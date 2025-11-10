@@ -110,28 +110,56 @@ export class AnalyticsService {
         return;
       }
 
-      // Initialize with token
-      (window as any).mixpanel.init(mixpanelToken, {
-        debug: import.meta.env.DEV,
-        track_pageview: true,
-        persistence: 'localStorage'
-      });
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        console.warn('Mixpanel initialization skipped: not running in a browser environment');
+        return;
+      }
 
-      // Load Mixpanel
-      const script = document.createElement('script');
-      script.src = 'https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js';
-      script.async = true;
-      document.head.appendChild(script);
+      const initMixpanel = () => {
+        const mixpanel = (window as any).mixpanel;
+        if (!mixpanel || typeof mixpanel.init !== 'function') {
+          console.warn('Mixpanel library loaded but global mixpanel object is unavailable');
+          return;
+        }
 
-      script.onload = () => {
-        this.isMixpanelLoaded = true;
-        this.flushEventQueue();
+        try {
+          mixpanel.init(mixpanelToken, {
+            debug: import.meta.env.DEV,
+            track_pageview: true,
+            persistence: 'localStorage'
+          });
+          this.isMixpanelLoaded = true;
+          this.flushEventQueue();
+        } catch (initError) {
+          console.warn('Failed to initialize Mixpanel:', initError);
+          this.isMixpanelLoaded = false;
+        }
       };
 
-      script.onerror = () => {
-        console.warn('Failed to load Mixpanel. Events will be stored locally.');
-        this.isMixpanelLoaded = false;
-      };
+      // If Mixpanel is already available (e.g., script loaded earlier), initialize immediately
+      if ((window as any).mixpanel && typeof (window as any).mixpanel.init === 'function') {
+        initMixpanel();
+        return;
+      }
+
+      // Avoid injecting the script multiple times
+      if (!document.querySelector('script[data-mixpanel-loader]')) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js';
+        script.async = true;
+        script.setAttribute('data-mixpanel-loader', 'true');
+
+        script.onload = () => {
+          initMixpanel();
+        };
+
+        script.onerror = () => {
+          console.warn('Failed to load Mixpanel. Events will be stored locally.');
+          this.isMixpanelLoaded = false;
+        };
+
+        document.head.appendChild(script);
+      }
     } catch (error) {
       console.warn('Mixpanel initialization failed:', error);
       this.isMixpanelLoaded = false;
