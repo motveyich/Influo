@@ -223,13 +223,6 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
         </div>
       )}
 
-      {/* Legacy influencer card details */}
-      {false && ( // Disabled legacy code
-        <div className="border-t border-gray-200 pt-4">
-          {/* Legacy influencer card code */}
-        </div>
-      )}
-
       {/* Action Button */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">

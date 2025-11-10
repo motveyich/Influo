@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
-import { 
-  HelpCircle, 
-  Mail, 
-  MessageCircle, 
-  FileText, 
+import React, { useState } from "react";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  HelpCircle,
+  Mail,
+  MessageCircle,
+  FileText,
   ExternalLink,
   Send,
   CheckCircle,
   Clock,
-  User
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+  User,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 export function SupportSettings() {
   const { user } = useAuth();
@@ -19,10 +19,10 @@ export function SupportSettings() {
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [contactForm, setContactForm] = useState({
-    subject: '',
-    category: 'general',
-    message: '',
-    priority: 'normal'
+    subject: "",
+    category: "general",
+    message: "",
+    priority: "normal",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,67 +38,75 @@ export function SupportSettings() {
       // Mock support tickets for now - will be replaced with actual API
       const mockTickets = [
         {
-          id: '1',
-          subject: 'Проблема с загрузкой профиля',
-          category: 'technical',
-          status: 'open',
-          priority: 'normal',
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 3
+          id: "1",
+          subject: "Проблема с загрузкой профиля",
+          category: "technical",
+          status: "open",
+          priority: "normal",
+          createdAt: new Date(
+            Date.now() - 2 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          lastResponse: new Date(
+            Date.now() - 1 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          responseCount: 3,
         },
         {
-          id: '2',
-          subject: 'Вопрос по оплате',
-          category: 'billing',
-          status: 'resolved',
-          priority: 'high',
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 5
-        }
+          id: "2",
+          subject: "Вопрос по оплате",
+          category: "billing",
+          status: "resolved",
+          priority: "high",
+          createdAt: new Date(
+            Date.now() - 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          lastResponse: new Date(
+            Date.now() - 5 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          responseCount: 5,
+        },
       ];
       setSupportTickets(mockTickets);
     } catch (error) {
-      console.error('Failed to load support tickets:', error);
+      console.error("Failed to load support tickets:", error);
     } finally {
       setIsLoadingTickets(false);
     }
   };
   const handleSubmitSupport = async () => {
     if (!contactForm.subject.trim() || !contactForm.message.trim()) {
-      toast.error('Заполните тему и сообщение');
+      toast.error("Заполните тему и сообщение");
       return;
     }
 
     setIsSubmitting(true);
     try {
       // Simulate support ticket submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Add new ticket to the list
       const newTicket = {
         id: Date.now().toString(),
         subject: contactForm.subject,
         category: contactForm.category,
-        status: 'open',
+        status: "open",
         priority: contactForm.priority,
         createdAt: new Date().toISOString(),
         lastResponse: new Date().toISOString(),
-        responseCount: 1
+        responseCount: 1,
       };
-      setSupportTickets(prev => [newTicket, ...prev]);
-      
-      toast.success('Обращение отправлено! Мы ответим в течение 24 часов.');
+      setSupportTickets((prev) => [newTicket, ...prev]);
+
+      toast.success("Обращение отправлено! Мы ответим в течение 24 часов.");
       setContactForm({
-        subject: '',
-        category: 'general',
-        message: '',
-        priority: 'normal'
+        subject: "",
+        category: "general",
+        message: "",
+        priority: "normal",
       });
       setShowContactForm(false);
     } catch (error) {
-      toast.error('Не удалось отправить обращение');
+      toast.error("Не удалось отправить обращение");
     } finally {
       setIsSubmitting(false);
     }
@@ -106,29 +114,29 @@ export function SupportSettings() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'resolved':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+      case "open":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "in_progress":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "resolved":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "closed":
+        return "bg-gray-100 text-gray-700 border-gray-200";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'open':
-        return t('settings.ticketStatuses.open');
-      case 'in_progress':
-        return t('settings.ticketStatuses.inProgress');
-      case 'resolved':
-        return t('settings.ticketStatuses.resolved');
-      case 'closed':
-        return t('settings.ticketStatuses.closed');
+      case "open":
+        return t("settings.ticketStatuses.open");
+      case "in_progress":
+        return t("settings.ticketStatuses.inProgress");
+      case "resolved":
+        return t("settings.ticketStatuses.resolved");
+      case "closed":
+        return t("settings.ticketStatuses.closed");
       default:
         return status;
     }
@@ -136,16 +144,16 @@ export function SupportSettings() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent':
-        return 'text-red-600';
-      case 'high':
-        return 'text-orange-600';
-      case 'normal':
-        return 'text-blue-600';
-      case 'low':
-        return 'text-gray-600';
+      case "urgent":
+        return "text-red-600";
+      case "high":
+        return "text-orange-600";
+      case "normal":
+        return "text-blue-600";
+      case "low":
+        return "text-gray-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
   return (
@@ -153,7 +161,9 @@ export function SupportSettings() {
       {/* Header */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Поддержка</h2>
-        <p className="text-sm text-gray-600">Получите помощь и обратитесь в службу поддержки</p>
+        <p className="text-sm text-gray-600">
+          Получите помощь и обратитесь в службу поддержки
+        </p>
       </div>
 
       {/* My Support Tickets */}
@@ -162,9 +172,11 @@ export function SupportSettings() {
           <div className="flex items-center space-x-3">
             <MessageCircle className="w-5 h-5 text-purple-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">{t('settings.myTickets')}</h3>
+              <h3 className="text-md font-medium text-gray-900">
+                {t("settings.myTickets")}
+              </h3>
               <p className="text-sm text-gray-600">
-                {t('settings.ticketsDescription')}
+                {t("settings.ticketsDescription")}
               </p>
             </div>
           </div>
@@ -172,7 +184,7 @@ export function SupportSettings() {
             onClick={() => loadSupportTickets()}
             className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
           >
-            {t('settings.refresh')}
+            {t("settings.refresh")}
           </button>
         </div>
 
@@ -184,52 +196,83 @@ export function SupportSettings() {
         ) : supportTickets.length === 0 ? (
           <div className="text-center py-8">
             <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">{t('settings.noTickets')}</h4>
-            <p className="text-gray-600 mb-4">{t('settings.noTicketsDescription')}</p>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">
+              {t("settings.noTickets")}
+            </h4>
+            <p className="text-gray-600 mb-4">
+              {t("settings.noTicketsDescription")}
+            </p>
             <button
               onClick={() => setShowContactForm(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
-              {t('settings.createFirstTicket')}
+              {t("settings.createFirstTicket")}
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             {supportTickets.map((ticket) => (
-              <div key={ticket.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+              <div
+                key={ticket.id}
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="text-sm font-medium text-gray-900">{ticket.subject}</h4>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(ticket.status)}`}>
+                      <h4 className="text-sm font-medium text-gray-900">
+                        {ticket.subject}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(ticket.status)}`}
+                      >
                         {getStatusLabel(ticket.status)}
                       </span>
-                      <span className={`text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority === 'urgent' ? 'Срочно' :
-                         ticket.priority === 'high' ? 'Высокий' :
-                         ticket.priority === 'normal' ? 'Обычный' : 'Низкий'}
+                      <span
+                        className={`text-xs font-medium ${getPriorityColor(ticket.priority)}`}
+                      >
+                        {ticket.priority === "urgent"
+                          ? "Срочно"
+                          : ticket.priority === "high"
+                            ? "Высокий"
+                            : ticket.priority === "normal"
+                              ? "Обычный"
+                              : "Низкий"}
                       </span>
                     </div>
                     <div className="flex items-center space-x-4 text-xs text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{t('settings.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>
+                          {t("settings.created")}:{" "}
+                          {new Date(ticket.createdAt).toLocaleDateString(
+                            "ru-RU",
+                          )}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} {t('settings.messages')}</span>
+                        <span>
+                          {ticket.responseCount} {t("settings.messagesCount")}
+                        </span>
                       </div>
-                      <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                      <span>
+                        {t("settings.lastResponse")}:{" "}
+                        {new Date(ticket.lastResponse).toLocaleDateString(
+                          "ru-RU",
+                        )}
+                      </span>
                     </div>
                   </div>
                   <button
                     onClick={() => {
                       // Navigate to support chat - will be implemented with support system
-                      toast.info('Чат поддержки будет доступен в следующем обновлении');
+                      toast.info(
+                        "Чат поддержки будет доступен в следующем обновлении",
+                      );
                     }}
                     className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
                   >
-                    {t('settings.openChat')}
+                    {t("settings.openChat")}
                   </button>
                 </div>
               </div>
@@ -244,9 +287,11 @@ export function SupportSettings() {
           <div className="flex items-center space-x-3">
             <MessageCircle className="w-5 h-5 text-blue-600" />
             <div>
-              <h3 className="text-md font-medium text-gray-900">{t('settings.contactSupport')}</h3>
+              <h3 className="text-md font-medium text-gray-900">
+                {t("settings.contactSupport")}
+              </h3>
               <p className="text-sm text-gray-600">
-                {t('settings.contactSupportDescription')}
+                {t("settings.contactSupportDescription")}
               </p>
             </div>
           </div>
@@ -255,7 +300,7 @@ export function SupportSettings() {
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
           >
             <Mail className="w-4 h-4" />
-            <span>{t('settings.writeToSupport')}</span>
+            <span>{t("settings.writeToSupport")}</span>
           </button>
         </div>
       </div>
@@ -265,8 +310,12 @@ export function SupportSettings() {
         <div className="flex items-center space-x-3 mb-6">
           <HelpCircle className="w-5 h-5 text-green-600" />
           <div>
-            <h3 className="text-md font-medium text-gray-900">Быстрая помощь</h3>
-            <p className="text-sm text-gray-600">Часто задаваемые вопросы и руководства</p>
+            <h3 className="text-md font-medium text-gray-900">
+              Быстрая помощь
+            </h3>
+            <p className="text-sm text-gray-600">
+              Часто задаваемые вопросы и руководства
+            </p>
           </div>
         </div>
 
@@ -277,8 +326,12 @@ export function SupportSettings() {
           >
             <FileText className="w-5 h-5 text-purple-600" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Руководство пользователя</p>
-              <p className="text-xs text-gray-600">Полное руководство по использованию платформы</p>
+              <p className="text-sm font-medium text-gray-900">
+                Руководство пользователя
+              </p>
+              <p className="text-xs text-gray-600">
+                Полное руководство по использованию платформы
+              </p>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400" />
           </a>
@@ -290,7 +343,9 @@ export function SupportSettings() {
             <HelpCircle className="w-5 h-5 text-blue-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">FAQ</p>
-              <p className="text-xs text-gray-600">Ответы на часто задаваемые вопросы</p>
+              <p className="text-xs text-gray-600">
+                Ответы на часто задаваемые вопросы
+              </p>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400" />
           </a>
@@ -302,7 +357,9 @@ export function SupportSettings() {
             <MessageCircle className="w-5 h-5 text-green-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">Сообщество</p>
-              <p className="text-xs text-gray-600">Форум пользователей и обсуждения</p>
+              <p className="text-xs text-gray-600">
+                Форум пользователей и обсуждения
+              </p>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400" />
           </a>
@@ -313,8 +370,12 @@ export function SupportSettings() {
           >
             <FileText className="w-5 h-5 text-orange-600" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Политика конфиденциальности</p>
-              <p className="text-xs text-gray-600">Как мы обрабатываем ваши данные</p>
+              <p className="text-sm font-medium text-gray-900">
+                Политика конфиденциальности
+              </p>
+              <p className="text-xs text-gray-600">
+                Как мы обрабатываем ваши данные
+              </p>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400" />
           </a>
@@ -326,9 +387,11 @@ export function SupportSettings() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Обратиться в поддержку</h3>
-              <button 
-                onClick={() => setShowContactForm(false)} 
+              <h3 className="text-lg font-semibold text-gray-900">
+                Обратиться в поддержку
+              </h3>
+              <button
+                onClick={() => setShowContactForm(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-6 h-6" />
@@ -343,7 +406,12 @@ export function SupportSettings() {
                   </label>
                   <select
                     value={contactForm.category}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, category: e.target.value }))}
+                    onChange={(e) =>
+                      setContactForm((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="general">Общие вопросы</option>
@@ -361,13 +429,26 @@ export function SupportSettings() {
                   </label>
                   <select
                     value={contactForm.priority}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, priority: e.target.value }))}
+                    onChange={(e) =>
+                      setContactForm((prev) => ({
+                        ...prev,
+                        priority: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="low">{t('settings.ticketPriorities.low')}</option>
-                    <option value="normal">{t('settings.ticketPriorities.normal')}</option>
-                    <option value="high">{t('settings.ticketPriorities.high')}</option>
-                    <option value="urgent">{t('settings.ticketPriorities.urgent')}</option>
+                    <option value="low">
+                      {t("settings.ticketPriorities.low")}
+                    </option>
+                    <option value="normal">
+                      {t("settings.ticketPriorities.normal")}
+                    </option>
+                    <option value="high">
+                      {t("settings.ticketPriorities.high")}
+                    </option>
+                    <option value="urgent">
+                      {t("settings.ticketPriorities.urgent")}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -379,7 +460,12 @@ export function SupportSettings() {
                 <input
                   type="text"
                   value={contactForm.subject}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Кратко опишите проблему или вопрос"
                 />
@@ -391,7 +477,12 @@ export function SupportSettings() {
                 </label>
                 <textarea
                   value={contactForm.message}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      message: e.target.value,
+                    }))
+                  }
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Опишите вашу проблему или вопрос подробно. Включите шаги для воспроизведения, если это техническая проблема."
@@ -405,9 +496,11 @@ export function SupportSettings() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-blue-800">Время ответа</h4>
+                    <h4 className="text-sm font-medium text-blue-800">
+                      Время ответа
+                    </h4>
                     <p className="text-sm text-blue-700 mt-1">
-                      Мы отвечаем на обращения в течение 24 часов в рабочие дни. 
+                      Мы отвечаем на обращения в течение 24 часов в рабочие дни.
                       Срочные вопросы обрабатываются приоритетно.
                     </p>
                   </div>
@@ -424,11 +517,17 @@ export function SupportSettings() {
               </button>
               <button
                 onClick={handleSubmitSupport}
-                disabled={isSubmitting || !contactForm.subject.trim() || !contactForm.message.trim()}
+                disabled={
+                  isSubmitting ||
+                  !contactForm.subject.trim() ||
+                  !contactForm.message.trim()
+                }
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                <span>{isSubmitting ? 'Отправка...' : 'Отправить обращение'}</span>
+                <span>
+                  {isSubmitting ? "Отправка..." : "Отправить обращение"}
+                </span>
               </button>
             </div>
           </div>
