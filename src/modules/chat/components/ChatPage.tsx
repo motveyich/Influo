@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChatMessage } from '../../../core/types';
 import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
@@ -9,7 +9,6 @@ import { MessageBubble } from './MessageBubble';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
-import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { supabase } from '../../../core/supabase';
 import toast from 'react-hot-toast';
@@ -53,32 +52,34 @@ export function ChatPage() {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for userId parameter in URL
+    if (!currentUserId || loading) {
+      return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const userIdParam = urlParams.get('userId');
+    let targetOverride: string | null = null;
+
     if (userIdParam) {
+      targetOverride = userIdParam;
       setTargetUserId(userIdParam);
       // Clear the URL parameter
       window.history.replaceState({}, '', '/chat');
     }
     
-    if (currentUserId && !loading) {
-      loadConversations();
-      loadBlockedUsers();
-    }
+    const blockedSet = loadBlockedUsers();
+    loadConversations(blockedSet, targetOverride ?? targetUserId);
     
     // Subscribe to real-time chat messages
-    if (currentUserId) {
-      const subscription = realtimeService.subscribeToChatMessages(
-        currentUserId,
-        handleNewMessage
-      );
+    realtimeService.subscribeToChatMessages(
+      currentUserId,
+      handleNewMessage
+    );
 
-      return () => {
-        realtimeService.unsubscribe(`chat_${currentUserId}`);
-      };
-    }
-  }, [currentUserId, loading]);
+    return () => {
+      realtimeService.unsubscribe(`chat_${currentUserId}`);
+    };
+  }, [currentUserId, loading, targetUserId, loadBlockedUsers, loadConversations]);
 
   useEffect(() => {
     if (selectedConversation && currentUserId) {
@@ -92,86 +93,30 @@ export function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  const loadBlockedUsers = async () => {
+  const loadBlockedUsers = useCallback((): Set<string> => {
     try {
+      if (!currentUserId) {
+        setBlockedUsers(new Set());
+        return new Set();
+      }
       // Load blocked users from user profile or separate table
       // For now, using localStorage as a simple implementation
       const blocked = localStorage.getItem(`blocked_users_${currentUserId}`);
       if (blocked) {
-        setBlockedUsers(new Set(JSON.parse(blocked)));
+        const parsed = JSON.parse(blocked) as string[];
+        const blockedSet = new Set<string>(parsed);
+        setBlockedUsers(blockedSet);
+        return blockedSet;
       }
     } catch (error) {
       console.error('Failed to load blocked users:', error);
     }
-  };
+    const emptySet = new Set<string>();
+    setBlockedUsers(emptySet);
+    return emptySet;
+  }, [currentUserId]);
 
-  const loadConversations = async () => {
-    try {
-      setIsLoading(true);
-      const loadedConversations = await chatService.getUserConversations(currentUserId);
-      
-      // Enhance conversations with chat type and restrictions
-      const enhancedConversations = await Promise.all(
-        loadedConversations.map(async (conv) => {
-          const isBlocked = blockedUsers.has(conv.participantId);
-          const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
-          const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
-          
-          let chatType: 'main' | 'new' | 'restricted' = 'main';
-          let canSendMessage = true;
-
-          if (isBlocked) {
-            chatType = 'restricted';
-            canSendMessage = false;
-          } else if (!hasReceiverResponded && initiatedBy !== currentUserId) {
-            // This is a new chat where current user is receiver and hasn't responded
-            chatType = 'new';
-            canSendMessage = true;
-          } else if (!hasReceiverResponded && initiatedBy === currentUserId) {
-            // This is a new chat where current user initiated and receiver hasn't responded
-            chatType = 'new';
-            canSendMessage = false; // Can't send more messages until receiver responds
-          }
-
-          return {
-            ...conv,
-            chatType,
-            canSendMessage,
-            isBlocked,
-            initiatedBy,
-            hasReceiverResponded
-          };
-        })
-      );
-      
-      setConversations(enhancedConversations);
-      
-      // If we have a target user ID, try to find or create that conversation
-      if (targetUserId) {
-        const existingConversation = enhancedConversations.find(conv => conv.participantId === targetUserId);
-        if (existingConversation) {
-          setSelectedConversation(existingConversation);
-        } else {
-          // Create a new conversation entry for the target user
-          await createNewConversation(targetUserId);
-        }
-        setTargetUserId(null); // Clear after processing
-      } else if (!selectedConversation && enhancedConversations.length > 0) {
-        // Auto-select first conversation in current tab
-        const tabConversations = enhancedConversations.filter(conv => conv.chatType === activeTab);
-        if (tabConversations.length > 0) {
-          setSelectedConversation(tabConversations[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-      setConversations([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createNewConversation = async (userId: string) => {
+  const createNewConversation = useCallback(async (userId: string) => {
     try {
       // Get user profile to create conversation entry
       const { data: userProfile } = await supabase
@@ -202,12 +147,93 @@ export function ChatPage() {
       console.error('Failed to create new conversation:', error);
       toast.error('Не удалось создать диалог');
     }
-  };
+  }, [currentUserId]);
+
+  const loadConversations = useCallback(
+    async (
+      blockedSetOverride?: Set<string>,
+      targetUserOverride?: string | null
+    ) => {
+      if (!currentUserId) {
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const loadedConversations = await chatService.getUserConversations(currentUserId);
+        const effectiveBlockedUsers = blockedSetOverride ?? blockedUsers;
+        
+        // Enhance conversations with chat type and restrictions
+        const enhancedConversations = await Promise.all(
+          loadedConversations.map(async (conv) => {
+            const isBlocked = effectiveBlockedUsers.has(conv.participantId);
+            const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
+            const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
+            
+            let chatType: 'main' | 'new' | 'restricted' = 'main';
+            let canSendMessage = true;
+
+            if (isBlocked) {
+              chatType = 'restricted';
+              canSendMessage = false;
+            } else if (!hasReceiverResponded && initiatedBy !== currentUserId) {
+              // This is a new chat where current user is receiver and hasn't responded
+              chatType = 'new';
+              canSendMessage = true;
+            } else if (!hasReceiverResponded && initiatedBy === currentUserId) {
+              // This is a new chat where current user initiated and receiver hasn't responded
+              chatType = 'new';
+              canSendMessage = false; // Can't send more messages until receiver responds
+            }
+
+            return {
+              ...conv,
+              chatType,
+              canSendMessage,
+              isBlocked,
+              initiatedBy,
+              hasReceiverResponded
+            };
+          })
+        );
+        
+        setConversations(enhancedConversations);
+        
+        const targetToSelect = targetUserOverride ?? targetUserId;
+        
+        // If we have a target user ID, try to find or create that conversation
+        if (targetToSelect) {
+          const existingConversation = enhancedConversations.find(conv => conv.participantId === targetToSelect);
+          if (existingConversation) {
+            setSelectedConversation(existingConversation);
+          } else {
+            // Create a new conversation entry for the target user
+            await createNewConversation(targetToSelect);
+          }
+          if (targetUserId) {
+            setTargetUserId(null); // Clear after processing stored target
+          }
+        } else if (!selectedConversation && enhancedConversations.length > 0) {
+          // Auto-select first conversation in current tab
+          const tabConversations = enhancedConversations.filter(conv => conv.chatType === activeTab);
+          if (tabConversations.length > 0) {
+            setSelectedConversation(tabConversations[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+        setConversations([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [currentUserId, blockedUsers, targetUserId, selectedConversation, activeTab, createNewConversation]
+  );
 
   const loadMessages = async (conversationId: string) => {
     try {
       setIsLoading(true);
-      const partnerId = selectedConversation?.participantId;
+      const partnerId = conversationId || selectedConversation?.participantId;
       if (partnerId) {
         const loadedMessages = await chatService.getConversation(currentUserId, partnerId);
         setMessages(loadedMessages);

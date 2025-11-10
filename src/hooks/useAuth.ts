@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { authService, AuthState } from '../core/auth';
 import { UserRole } from '../core/types';
 import { roleService } from '../services/roleService';
@@ -11,6 +11,7 @@ export function useAuth() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockCheckLoading, setBlockCheckLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const userId = authState.user?.id || null;
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
@@ -18,31 +19,39 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
     if (authState.user) {
       loadUserRole();
       checkUserStatus();
-      subscribeToUserUpdates();
+      unsubscribe = subscribeToUserUpdates();
     } else {
       setUserRole('user');
       setRoleLoading(false);
       setIsBlocked(false);
       setBlockCheckLoading(false);
     }
-  }, [authState.user]);
 
-  const subscribeToUserUpdates = () => {
-    if (!authState.user) return;
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [authState.user, loadUserRole, checkUserStatus, subscribeToUserUpdates]);
 
-    console.log('🔧 [useAuth] Setting up real-time subscription for user:', authState.user.id);
+  const subscribeToUserUpdates = useCallback(() => {
+    if (!userId) return;
+
+    console.log('🔧 [useAuth] Setting up real-time subscription for user:', userId);
     
     // Subscribe to real-time updates for user profile
     const channel = supabase
-      .channel(`user_profile_${authState.user.id}`)
+      .channel(`user_profile_${userId}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'user_profiles',
-        filter: `user_id=eq.${authState.user.id}`,
+        filter: `user_id=eq.${userId}`,
       }, (payload) => {
         console.log('🔄 [useAuth] Real-time profile update received:', payload);
         if (payload.new && payload.new.is_deleted === true) {
@@ -59,53 +68,56 @@ export function useAuth() {
       console.log('🔧 [useAuth] Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  };
+  }, [userId]);
   
-  const checkUserStatus = async () => {
+  const checkUserStatus = useCallback(async () => {
     try {
       setBlockCheckLoading(true);
-      if (!authState.user) return;
+      if (!userId) {
+        setIsBlocked(false);
+        setError(null);
+        return;
+      }
       
       // Check if Supabase is configured before making database calls
       if (!isSupabaseConfigured()) {
         console.warn('⚠️ [useAuth] Supabase not configured, skipping user status check');
         setIsBlocked(false);
+        setError(null);
         return;
       }
       
-      console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
+      console.log('🔧 [useAuth] Checking user status for:', userId);
       
-      let profile, error;
+      let profile;
+      let profileError;
       try {
         const result = await supabase
           .from('user_profiles')
           .select('is_deleted, deleted_at')
-          .eq('user_id', authState.user.id)
+          .eq('user_id', userId)
           .maybeSingle();
         profile = result.data;
-        error = result.error;
+        profileError = result.error;
       } catch (fetchError) {
         // Handle network/connection errors gracefully
         if (fetchError instanceof TypeError && fetchError.message === 'Failed to fetch') {
           console.warn('⚠️ [useAuth] Supabase connection failed (network error). User is assumed not blocked.');
           setIsBlocked(false);
           setError(null);
-          setBlockCheckLoading(false);
           return;
         }
         console.warn('⚠️ [useAuth] Database fetch error:', fetchError);
         setIsBlocked(false);
         setError(null);
-        setBlockCheckLoading(false);
         return;
       }
       
-      if (error) {
-        console.error('❌ [useAuth] Failed to check user status:', error);
+      if (profileError) {
+        console.error('❌ [useAuth] Failed to check user status:', profileError);
         // Don't set blocked state if we can't check
         setIsBlocked(false);
         setError(null);
-        setBlockCheckLoading(false);
         return;
       }
       
@@ -113,12 +125,11 @@ export function useAuth() {
         console.log('⚠️ [useAuth] No profile found for user, assuming not blocked');
         setIsBlocked(false);
         setError(null);
-        setBlockCheckLoading(false);
         return;
       }
       
       console.log('✅ [useAuth] User status check result:', { 
-        userId: authState.user.id, 
+        userId, 
         profile,
         isDeleted: profile?.is_deleted 
       });
@@ -140,8 +151,17 @@ export function useAuth() {
       // Handle specific network errors more gracefully
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         console.warn('⚠️ [useAuth] Network error during user status check (Supabase connection issue). Assuming user is not blocked.');
-      } else if (error && (error as any).message?.includes('Failed to fetch')) {
-        console.warn('⚠️ [useAuth] Supabase fetch error, likely configuration issue. Assuming user is not blocked.');
+      } else {
+        const message =
+          typeof error === 'object' &&
+          error !== null &&
+          'message' in error &&
+          typeof (error as { message: unknown }).message === 'string'
+            ? (error as { message: string }).message
+            : null;
+        if (message?.includes('Failed to fetch')) {
+          console.warn('⚠️ [useAuth] Supabase fetch error, likely configuration issue. Assuming user is not blocked.');
+        }
       }
       
       // Always assume user is not blocked for any error to prevent false blocks
@@ -150,12 +170,17 @@ export function useAuth() {
     } finally {
       setBlockCheckLoading(false);
     }
-  };
+  }, [userId]);
 
-  const loadUserRole = async () => {
+  const loadUserRole = useCallback(async () => {
+    if (!userId) {
+      setUserRole('user');
+      setRoleLoading(false);
+      return;
+    }
     try {
       setRoleLoading(true);
-      const role = await roleService.getUserRole(authState.user!.id);
+      const role = await roleService.getUserRole(userId);
       setUserRole(role);
     } catch (error) {
       console.error('Failed to load user role:', error);
@@ -163,7 +188,7 @@ export function useAuth() {
     } finally {
       setRoleLoading(false);
     }
-  };
+  }, [userId]);
 
   return {
     user: authState.user,
@@ -172,6 +197,7 @@ export function useAuth() {
     roleLoading,
     isBlocked,
     blockCheckLoading,
+    error,
     isAuthenticated: !!authState.user,
     isAdmin: userRole === 'admin',
     isModerator: userRole === 'moderator' || userRole === 'admin',
