@@ -217,7 +217,7 @@ export function SupportSettings() {
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} {t('settings.messages')}</span>
+                        <span>{ticket.responseCount} {t('settings.ticketMessages')}</span>
                       </div>
                       <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
                     </div>
