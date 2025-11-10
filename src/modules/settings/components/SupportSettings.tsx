@@ -213,13 +213,13 @@ export function SupportSettings() {
                     <div className="flex items-center space-x-4 text-xs text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{t('settings.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>{t('settings.ticketList.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} {t('settings.messages')}</span>
+                          <span>{ticket.responseCount} {t('settings.ticketList.messages')}</span>
                       </div>
-                      <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                        <span>{t('settings.ticketList.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                   <button
@@ -229,7 +229,7 @@ export function SupportSettings() {
                     }}
                     className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
                   >
-                    {t('settings.openChat')}
+                      {t('settings.ticketList.openChat')}
                   </button>
                 </div>
               </div>

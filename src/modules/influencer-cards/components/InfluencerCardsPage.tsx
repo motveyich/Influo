@@ -601,7 +601,7 @@ export function InfluencerCardsPage() {
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
                       <TrendingUp className="w-5 h-5 text-green-600" />
-                      <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.active')}</span>
+                        <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.activeCount')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.active + advertiserStats.active}</p>
                   </div>
