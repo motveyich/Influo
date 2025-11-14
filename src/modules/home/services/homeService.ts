@@ -140,12 +140,12 @@ export class HomeService {
         // Для инфлюенсера - окна в статусе paid (нужно подтвердить получение)
         const { data: offers } = await supabase
           .from(TABLES.COLLABORATION_OFFERS)
-          .select('id, influencer_id, advertiser_id')
+          .select('offer_id, influencer_id, advertiser_id')
           .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
           .in('status', ['accepted', 'in_progress']);
 
         if (offers && offers.length > 0) {
-          const offerIds = offers.map(o => o.id);
+          const offerIds = offers.map(o => o.offer_id);
 
           // Получаем окна оплаты для этих предложений
           const { data: paymentRequests } = await supabase
@@ -156,7 +156,7 @@ export class HomeService {
           if (paymentRequests) {
             // Подсчитываем окна, требующие действий от текущего пользователя
             pendingPayoutsCount = paymentRequests.filter(pr => {
-              const offer = offers.find(o => o.id === pr.offer_id);
+              const offer = offers.find(o => o.offer_id === pr.offer_id);
               if (!offer) return false;
 
               const isAdvertiser = offer.advertiser_id === userId;
