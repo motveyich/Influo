@@ -38,16 +38,16 @@ export function Layout({ children }: LayoutProps) {
   const { settings } = useUserSettings(currentUserId);
 
   const baseNavigation = [
-    { name: t('nav.home'), href: '/', icon: Zap },
-    { name: t('nav.profiles'), href: '/profiles', icon: Users },
-    { name: t('nav.automaticCampaigns'), href: '/campaigns', icon: Target },
-    { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
-    { name: t('nav.offers'), href: '/offers', icon: MessageCircle },
-    { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
+    { name: t('nav.home'), href: '/app', icon: Zap },
+    { name: t('nav.profiles'), href: '/app/profiles', icon: Users },
+    { name: t('nav.automaticCampaigns'), href: '/app/campaigns', icon: Target },
+    { name: t('nav.influencerCards'), href: '/app/influencer-cards', icon: Grid },
+    { name: t('nav.offers'), href: '/app/offers', icon: MessageCircle },
+    { name: t('nav.chat'), href: '/app/chat', icon: MessageCircle },
   ];
 
   const adminNavigation = [
-    { name: t('nav.adminPanel'), href: '/admin', icon: Shield }
+    { name: t('nav.adminPanel'), href: '/app/admin', icon: Shield }
   ];
 
   const navigation = [
@@ -137,7 +137,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <Link to="/" className="flex items-center space-x-2">
+                <Link to="/app" className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
@@ -149,8 +149,8 @@ export function Layout({ children }: LayoutProps) {
               <nav className="hidden md:flex space-x-8">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isActive = item.href === '/' 
-                    ? location.pathname === '/' 
+                  const isActive = item.href === '/app'
+                    ? location.pathname === '/app'
                     : location.pathname.startsWith(item.href);
                   return (
                     <Link
