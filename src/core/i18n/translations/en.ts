@@ -470,7 +470,7 @@ export const en: TranslationKeys = {
     audienceDemographics: 'Audience Demographics',
     contentTypes: 'Content Types',
     serviceDescription: 'Service Description',
-    pricing: 'Pricing (USD)',
+    pricing: 'Pricing',
     targetCountries: 'Target Countries',
     audienceInterests: 'Audience Interests',
     ageDistribution: 'Age Distribution (%)',

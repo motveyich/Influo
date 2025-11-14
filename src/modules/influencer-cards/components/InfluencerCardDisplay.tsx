@@ -175,9 +175,9 @@ export function InfluencerCardDisplay({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'RUB',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -329,9 +329,16 @@ export function InfluencerCardDisplay({
         <div className="flex items-center space-x-2">
           <MapPin className="w-4 h-4 text-gray-400" />
           <span className="text-sm text-gray-600">
-            {card.audienceDemographics.topCountries.slice(0, 3).join(', ')}
-            {card.audienceDemographics.topCountries.length > 3 && 
-              ` +${card.audienceDemographics.topCountries.length - 3} more`
+            {Array.isArray(card.audienceDemographics.topCountries)
+              ? card.audienceDemographics.topCountries.slice(0, 3).join(', ')
+              : Object.keys(card.audienceDemographics.topCountries).slice(0, 3).join(', ')
+            }
+            {(Array.isArray(card.audienceDemographics.topCountries)
+              ? card.audienceDemographics.topCountries.length
+              : Object.keys(card.audienceDemographics.topCountries).length) > 3 &&
+              ` +${(Array.isArray(card.audienceDemographics.topCountries)
+                ? card.audienceDemographics.topCountries.length
+                : Object.keys(card.audienceDemographics.topCountries).length) - 3} more`
             }
           </span>
         </div>

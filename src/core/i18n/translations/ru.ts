@@ -474,7 +474,7 @@ export const ru: TranslationKeys = {
     audienceDemographics: 'Демография аудитории',
     contentTypes: 'Типы контента',
     serviceDescription: 'Описание услуг',
-    pricing: 'Цены (USD)',
+    pricing: 'Цены',
     targetCountries: 'Целевые страны',
     audienceInterests: 'Интересы аудитории',
     ageDistribution: 'Распределение по возрастным группам (%)',
