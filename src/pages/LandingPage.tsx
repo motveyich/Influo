@@ -15,12 +15,12 @@ export function LandingPage() {
   };
 
   const navigation = [
-    { name: 'Главная', href: '/' },
-    { name: 'Инфлюенсеры', href: '/profiles' },
-    { name: 'Кампании', href: '/campaigns' },
-    { name: 'Карточки', href: '/influencer-cards' },
-    { name: 'Предложения', href: '/offers' },
-    { name: 'Чат', href: '/chat' },
+    { name: 'Главная', href: '/', icon: Zap },
+    { name: 'Инфлюенсеры', href: '/profiles', icon: Users },
+    { name: 'Кампании', href: '/campaigns', icon: Target },
+    { name: 'Карточки', href: '/influencer-cards', icon: Grid },
+    { name: 'Предложения', href: '/offers', icon: HandCoins },
+    { name: 'Чат', href: '/chat', icon: MessageCircle },
   ];
 
   const features = [
@@ -72,8 +72,9 @@ export function LandingPage() {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex space-x-8">
               {navigation.map((item) => {
+                const Icon = item.icon;
                 const isActive = item.href === '/'
                   ? location.pathname === '/'
                   : location.pathname.startsWith(item.href);
@@ -81,13 +82,14 @@ export function LandingPage() {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    {item.name}
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
                   </Link>
                 );
               })}
@@ -96,13 +98,13 @@ export function LandingPage() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => handleAuthClick('signin')}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Войти
               </button>
               <button
                 onClick={() => handleAuthClick('signup')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all shadow-md hover:shadow-lg"
               >
                 Регистрация
               </button>
@@ -127,13 +129,13 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => handleAuthClick('signin')}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="px-12 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[200px]"
             >
               Войти
             </button>
             <button
               onClick={() => handleAuthClick('signup')}
-              className="px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-50 transition-colors border-2 border-gray-200"
+              className="px-12 py-4 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-50 transition-colors border-2 border-gray-200 min-w-[200px]"
             >
               Создать аккаунт
             </button>
