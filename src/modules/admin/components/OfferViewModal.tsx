@@ -95,6 +95,26 @@ export function OfferViewModal({ isOpen, onClose, offer }: OfferViewModalProps) 
             </div>
           )}
 
+          {/* Deliverables */}
+          {offer.deliverables && offer.deliverables.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                Формат рекламы
+              </h3>
+              <div className="space-y-2">
+                {offer.deliverables.map((deliverable: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800"
+                  >
+                    <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                    <span className="text-sm text-gray-900 dark:text-white">{deliverable}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Integration Details */}
           {integrationDetails && (
             <div>
@@ -119,7 +139,7 @@ export function OfferViewModal({ isOpen, onClose, offer }: OfferViewModalProps) 
                 {integrationDetails.productDescription && (
                   <div>
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      Описание продукта
+                      Описание рекламируемого продукта
                     </h4>
                     <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-md border border-amber-200 dark:border-amber-800">
                       <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
@@ -141,26 +161,6 @@ export function OfferViewModal({ isOpen, onClose, offer }: OfferViewModalProps) 
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Deliverables */}
-          {offer.deliverables && offer.deliverables.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                Результаты работы
-              </h3>
-              <div className="space-y-2">
-                {offer.deliverables.map((deliverable: string, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800"
-                  >
-                    <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
-                    <span className="text-sm text-gray-900 dark:text-white">{deliverable}</span>
-                  </div>
-                ))}
               </div>
             </div>
           )}

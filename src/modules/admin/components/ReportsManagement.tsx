@@ -78,18 +78,32 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
 
       const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId).catch(() => []);
 
-      // Получить информацию об участниках
-      const { data: influencerProfile } = await supabase
+      // Получить информацию об участниках с email
+      const { data: influencerData } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role, company_name, bio, website, industry')
+        .select('full_name, avatar_url, role, company_name, bio, website, industry, user_id')
         .eq('user_id', offer.influencerId)
         .maybeSingle();
 
-      const { data: advertiserProfile } = await supabase
+      const { data: advertiserData } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role, company_name, bio, website, industry')
+        .select('full_name, avatar_url, role, company_name, bio, website, industry, user_id')
         .eq('user_id', offer.advertiserId)
         .maybeSingle();
+
+      // Получить email из auth.users
+      const { data: influencerAuth } = await supabase.auth.admin.getUserById(offer.influencerId).catch(() => ({ data: { user: null } }));
+      const { data: advertiserAuth } = await supabase.auth.admin.getUserById(offer.advertiserId).catch(() => ({ data: { user: null } }));
+
+      const influencerProfile = influencerData ? {
+        ...influencerData,
+        email: influencerAuth?.user?.email || 'email не указан'
+      } : null;
+
+      const advertiserProfile = advertiserData ? {
+        ...advertiserData,
+        email: advertiserAuth?.user?.email || 'email не указан'
+      } : null;
 
       // Получить ID чата из offer или найти его
       let chatId = (offer as any).chatId;
