@@ -40,9 +40,12 @@ export function DemoHomePage() {
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Добро пожаловать, Демо-пользователь!</h1>
+        <h1 className="text-3xl font-bold mb-2">Добро пожаловать в Influo!</h1>
+        <p className="text-lg text-white mb-2">
+          Платформа для инфлюенсер-маркетинга нового поколения
+        </p>
         <p className="text-purple-100">
-          Это демонстрационная версия платформы. Все данные вымышленные.
+          Это демонстрационная версия. Зарегистрируйтесь, чтобы получить полный доступ ко всем возможностям.
         </p>
       </div>
 
