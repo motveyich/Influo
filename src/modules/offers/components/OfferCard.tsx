@@ -43,19 +43,20 @@ export function OfferCard({
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
   const [paymentRequests, setPaymentRequests] = React.useState<PaymentRequest[]>([]);
   const [paymentWindowsLoading, setPaymentWindowsLoading] = React.useState(false);
+  const [paymentWindowsLoaded, setPaymentWindowsLoaded] = React.useState(false);
 
-  // Загружаем окна оплаты при первом открытии
   React.useEffect(() => {
-    if (showPaymentWindows && paymentRequests.length === 0) {
+    if (!paymentWindowsLoaded) {
       loadPaymentWindows();
     }
-  }, [showPaymentWindows]);
+  }, []);
 
   const loadPaymentWindows = async () => {
     try {
       setPaymentWindowsLoading(true);
       const payments = await paymentRequestService.getOfferPaymentRequests(offer.id);
       setPaymentRequests(payments);
+      setPaymentWindowsLoaded(true);
     } catch (error) {
       console.error('Failed to load payment windows:', error);
       toast.error('Не удалось загрузить окна оплаты');
@@ -343,12 +344,7 @@ export function OfferCard({
       {/* Payment Windows Section */}
       <div className="border-t border-gray-200 pt-4 mb-4">
         <button
-          onClick={() => {
-            setShowPaymentWindows(!showPaymentWindows);
-            if (!showPaymentWindows && paymentRequests.length === 0) {
-              loadPaymentWindows();
-            }
-          }}
+          onClick={() => setShowPaymentWindows(!showPaymentWindows)}
           className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <div className="flex items-center space-x-2">

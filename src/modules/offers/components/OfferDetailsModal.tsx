@@ -5,6 +5,7 @@ import { paymentRequestService } from '../services/paymentRequestService';
 import { reviewService } from '../services/reviewService';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
+import { ReportModal } from '../../../components/ReportModal';
 import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -30,6 +31,7 @@ export function OfferDetailsModal({
   const [offerHistory, setOfferHistory] = useState<any[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
 
@@ -69,12 +71,25 @@ export function OfferDetailsModal({
     }
   };
 
-  const handleStatusUpdate = async (newStatus: OfferStatus, additionalData?: any) => {
+  const handleStatusUpdate = async (newStatus: any, additionalData?: any) => {
+    if (newStatus === 'report') {
+      setShowReportModal(true);
+      return;
+    }
+
+    if (newStatus === 'dispute') {
+      const reason = prompt('Укажите причину оспаривания решения:');
+      if (!reason) return;
+
+      setShowReportModal(true);
+      return;
+    }
+
     try {
       const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
       onOfferUpdated(updatedOffer);
-      await loadOfferDetails(); // Reload to get updated history
-      
+      await loadOfferDetails();
+
       const statusMessages = {
         'accepted': 'Предложение принято',
         'declined': 'Предложение отклонено',
@@ -82,7 +97,7 @@ export function OfferDetailsModal({
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
       };
-      
+
       toast.success(statusMessages[newStatus] || 'Статус обновлен');
     } catch (error: any) {
       console.error('Failed to update offer status:', error);
@@ -162,11 +177,25 @@ export function OfferDetailsModal({
       }
     }
 
+    // Accepted status - can report
+    if (offer.status === 'accepted' || offer.status === 'in_progress') {
+      actions.push(
+        { label: 'Пожаловаться на сотрудничество', action: 'report', style: 'warning', icon: AlertTriangle }
+      );
+    }
+
     // In progress actions (both roles)
     if (offer.status === 'in_progress') {
       actions.push(
         { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy },
         { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
+      );
+    }
+
+    // Completed/Terminated - can dispute
+    if (offer.status === 'completed' || offer.status === 'terminated') {
+      actions.push(
+        { label: 'Оспорить решение', action: 'dispute', style: 'warning', icon: AlertTriangle }
       );
     }
 
@@ -201,7 +230,8 @@ export function OfferDetailsModal({
         );
       } else if (payment.status === 'paid') {
         actions.push(
-          { label: 'Подтвердить получение', action: 'confirmed', style: 'success' }
+          { label: 'Подтвердить получение', action: 'confirmed', style: 'success' },
+          { label: 'Не получил', action: 'failed', style: 'danger' }
         );
       }
     } else if (isAdvertiser) {
@@ -582,6 +612,7 @@ export function OfferDetailsModal({
                           className={`w-full px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                             action.style === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
                             action.style === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                            action.style === 'warning' ? 'bg-orange-600 hover:bg-orange-700 text-white' :
                             'bg-gray-600 hover:bg-gray-700 text-white'
                           }`}
                         >
@@ -691,6 +722,15 @@ export function OfferDetailsModal({
           reviewerId={currentUserId}
           revieweeId={isInfluencer ? offer.advertiserId : offer.influencerId}
           onReviewCreated={handleReviewCreated}
+        />
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType="offer"
+          targetId={offer.id}
+          targetTitle={offer.title}
         />
       </div>
     </div>
