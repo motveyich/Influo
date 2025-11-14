@@ -324,9 +324,9 @@ export class OfferService {
       }
     }
 
-    // Both parties can complete or terminate after acceptance
-    if ((newStatus === 'completed' || newStatus === 'terminated') && 
-        offer.status === 'in_progress' &&
+    // Both parties can complete or terminate after acceptance or in progress
+    if ((newStatus === 'completed' || newStatus === 'terminated') &&
+        (offer.status === 'accepted' || offer.status === 'in_progress') &&
         userId !== offer.influencerId && userId !== offer.advertiserId) {
       throw new Error('Only participants can complete or terminate offers');
     }
@@ -338,7 +338,7 @@ export class OfferService {
   private validateStatusTransition(currentStatus: OfferStatus, newStatus: OfferStatus): void {
     const validTransitions: Record<OfferStatus, OfferStatus[]> = {
       'pending': ['accepted', 'declined', 'cancelled'],
-      'accepted': ['in_progress'],
+      'accepted': ['in_progress', 'completed', 'terminated'],
       'declined': [], // Final state
       'in_progress': ['completed', 'terminated'],
       'completed': [], // Final state

@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { ContentReport, ReportType } from '../../../core/types';
 import { moderationService } from '../../../services/moderationService';
 import { useAuth } from '../../../hooks/useAuth';
-import { 
-  Flag, 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Flag,
+  Eye,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   User,
   Target,
   MessageCircle,
   Grid,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -84,13 +85,13 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
   const getReportTypeLabel = (reportType: ReportType) => {
     switch (reportType) {
       case 'spam':
-        return 'Спам';
-      case 'inappropriate':
-        return 'Неподходящий контент';
+        return 'Скам';
       case 'fake':
-        return 'Поддельная информация';
+        return 'Введение в заблуждение, неверная информация';
       case 'harassment':
         return 'Домогательства';
+      case 'inappropriate':
+        return 'Неподходящий контент';
       case 'copyright':
         return 'Авторские права';
       default:

@@ -99,6 +99,18 @@ export function OfferDetailsModal({
       };
 
       toast.success(statusMessages[newStatus] || 'Статус обновлен');
+
+      // Автоматически открыть окно отзыва после завершения или расторжения
+      if (newStatus === 'completed' || newStatus === 'terminated') {
+        // Проверяем, может ли пользователь оставить отзыв
+        const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId);
+        if (canLeaveReview) {
+          setCanReview(true);
+          setTimeout(() => {
+            setShowReviewModal(true);
+          }, 500);
+        }
+      }
     } catch (error: any) {
       console.error('Failed to update offer status:', error);
       toast.error(error.message || 'Не удалось обновить статус');
