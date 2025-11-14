@@ -117,13 +117,13 @@ export class HomeService {
         activeCampaigns = campaigns?.length || 0;
       }
 
-      // 2. Заявки на сотрудничество (полученные пользователем)
-      const { data: applications } = await supabase
-        .from(TABLES.APPLICATIONS)
+      // 2. Предложения о сотрудничестве, ожидающие ответа пользователя
+      const { data: pendingOffers } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
         .select('id')
-        .eq('target_id', userId)
-        .eq('status', 'sent');
-      const pendingApplications = applications?.length || 0;
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+        .eq('status', 'pending');
+      const pendingApplications = pendingOffers?.length || 0;
 
       // 3. Неотвеченные сообщения
       const { data: unreadMessages } = await supabase
@@ -133,18 +133,51 @@ export class HomeService {
         .eq('is_read', false);
       const unreadCount = unreadMessages?.length || 0;
 
-      // 4. Ждут выплат (deals в статусе pending payout)
+      // 4. Ждут выплат (окна оплаты, ожидающие действий)
       let pendingPayoutsCount = 0;
       try {
-        // Count payment requests awaiting confirmation
-        const { data: pendingPaymentRequests } = await supabase
-          .from('payment_windows')
-          .select('id')
-          .or(`payer_id.eq.${userId},payee_id.eq.${userId}`)
-          .in('status', ['pending', 'paying', 'paid']);
-        pendingPayoutsCount = pendingPaymentRequests?.length || 0;
-      } catch (dealsError) {
-        console.log('Payment windows table not yet created:', dealsError);
+        // Для рекламодателя - окна в статусе pending (нужно оплатить)
+        // Для инфлюенсера - окна в статусе paid (нужно подтвердить получение)
+        const { data: offers } = await supabase
+          .from(TABLES.COLLABORATION_OFFERS)
+          .select('id, influencer_id, advertiser_id')
+          .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+          .in('status', ['accepted', 'in_progress']);
+
+        if (offers && offers.length > 0) {
+          const offerIds = offers.map(o => o.id);
+
+          // Получаем окна оплаты для этих предложений
+          const { data: paymentRequests } = await supabase
+            .from(TABLES.PAYMENT_REQUESTS)
+            .select('id, offer_id, status')
+            .in('offer_id', offerIds);
+
+          if (paymentRequests) {
+            // Подсчитываем окна, требующие действий от текущего пользователя
+            pendingPayoutsCount = paymentRequests.filter(pr => {
+              const offer = offers.find(o => o.id === pr.offer_id);
+              if (!offer) return false;
+
+              const isAdvertiser = offer.advertiser_id === userId;
+              const isInfluencer = offer.influencer_id === userId;
+
+              // Для рекламодателя - окна pending и paying
+              if (isAdvertiser && ['pending', 'paying'].includes(pr.status)) {
+                return true;
+              }
+
+              // Для инфлюенсера - окна paid (ожидают подтверждения)
+              if (isInfluencer && pr.status === 'paid') {
+                return true;
+              }
+
+              return false;
+            }).length;
+          }
+        }
+      } catch (error) {
+        console.log('Error counting payment requests:', error);
         pendingPayoutsCount = 0;
       }
 

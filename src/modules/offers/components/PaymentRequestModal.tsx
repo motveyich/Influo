@@ -116,19 +116,31 @@ export function PaymentRequestModal({
 
     setIsLoading(true);
     try {
-      const requestData: Partial<PaymentRequest> = {
-        offerId,
-        createdBy,
-        ...formData
-      };
+      let savedRequest: PaymentRequest;
 
-      const createdRequest = await paymentRequestService.createPaymentRequest(requestData);
-      toast.success('Окно оплаты создано успешно!');
-      onPaymentRequestCreated(createdRequest);
+      if (existingRequest) {
+        // Update existing payment request
+        savedRequest = await paymentRequestService.updatePaymentRequest(
+          existingRequest.id,
+          formData
+        );
+        toast.success('Окно оплаты обновлено успешно!');
+      } else {
+        // Create new payment request
+        const requestData: Partial<PaymentRequest> = {
+          offerId,
+          createdBy,
+          ...formData
+        };
+        savedRequest = await paymentRequestService.createPaymentRequest(requestData);
+        toast.success('Окно оплаты создано успешно!');
+      }
+
+      onPaymentRequestCreated(savedRequest);
       onClose();
     } catch (error: any) {
-      console.error('Failed to create payment request:', error);
-      toast.error(error.message || 'Не удалось создать окно оплаты');
+      console.error('Failed to save payment request:', error);
+      toast.error(error.message || 'Не удалось сохранить окно оплаты');
     } finally {
       setIsLoading(false);
     }
