@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Zap, Target, Users, MessageCircle, TrendingUp, Shield, Globe, Rocket } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Zap, Target, Users, MessageCircle, TrendingUp, Shield, Globe, Rocket, Grid, HandCoins } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 
 export function LandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
+  const location = useLocation();
+
   const handleAuthClick = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
+
+  const navigation = [
+    { name: 'Главная', href: '/' },
+    { name: 'Инфлюенсеры', href: '/profiles' },
+    { name: 'Кампании', href: '/campaigns' },
+    { name: 'Карточки', href: '/influencer-cards' },
+    { name: 'Предложения', href: '/offers' },
+    { name: 'Чат', href: '/chat' },
+  ];
 
   const features = [
     {
@@ -52,11 +63,35 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Influo</span>
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">Influo</span>
+              </Link>
             </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-1">
+              {navigation.map((item) => {
+                const isActive = item.href === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
 
             <div className="flex items-center space-x-4">
               <button
@@ -90,12 +125,12 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/profiles"
+            <button
+              onClick={() => handleAuthClick('signin')}
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Попробовать демо
-            </Link>
+              Войти
+            </button>
             <button
               onClick={() => handleAuthClick('signup')}
               className="px-8 py-4 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-50 transition-colors border-2 border-gray-200"
