@@ -11,7 +11,6 @@ import { HomePage } from './modules/home/components/HomePage';
 import { AdminPanel } from './modules/admin/components/AdminPanel';
 import { OffersPage } from './modules/offers/components/OffersPage';
 import { DemoProvider } from './demo/DemoContext';
-import { DemoWelcomePage } from './demo/pages/DemoWelcomePage';
 import { DemoLayout } from './demo/components/DemoLayout';
 import { DemoHomePage } from './demo/pages/DemoHomePage';
 import { DemoProfilesPage } from './demo/pages/DemoProfilesPage';
@@ -26,35 +25,77 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <Routes>
-            {/* Demo Routes */}
-            <Route path="/demo" element={<DemoWelcomePage />} />
-            <Route path="/demo/*" element={
+            {/* Demo Routes - Default */}
+            <Route path="/" element={
               <DemoLayout>
-                <Routes>
-                  <Route index element={<DemoHomePage />} />
-                  <Route path="profiles" element={<DemoProfilesPage />} />
-                  <Route path="campaigns" element={<DemoCampaignsPage />} />
-                  <Route path="influencer-cards" element={<DemoInfluencerCardsPage />} />
-                  <Route path="offers" element={<DemoOffersPage />} />
-                  <Route path="chat" element={<DemoChatPage />} />
-                </Routes>
+                <DemoHomePage />
+              </DemoLayout>
+            } />
+            <Route path="/profiles" element={
+              <DemoLayout>
+                <DemoProfilesPage />
+              </DemoLayout>
+            } />
+            <Route path="/campaigns" element={
+              <DemoLayout>
+                <DemoCampaignsPage />
+              </DemoLayout>
+            } />
+            <Route path="/influencer-cards" element={
+              <DemoLayout>
+                <DemoInfluencerCardsPage />
+              </DemoLayout>
+            } />
+            <Route path="/offers" element={
+              <DemoLayout>
+                <DemoOffersPage />
+              </DemoLayout>
+            } />
+            <Route path="/chat" element={
+              <DemoLayout>
+                <DemoChatPage />
               </DemoLayout>
             } />
 
-            {/* Real App Routes */}
-            <Route path="/" element={<Navigate to="/demo" replace />} />
-            <Route path="/app/*" element={
+            {/* Real App Routes - After Auth */}
+            <Route path="/app" element={
               <Layout>
-                <Routes>
-                  <Route index element={<HomePage />} />
-                  <Route path="profiles" element={<ProfilesPage />} />
-                  <Route path="campaigns" element={<CampaignsPage />} />
-                  <Route path="influencer-cards" element={<InfluencerCardsPage />} />
-                  <Route path="influencer-cards/:cardId" element={<InfluencerCardDetailPage />} />
-                  <Route path="chat" element={<ChatPage />} />
-                  <Route path="offers" element={<OffersPage />} />
-                  <Route path="admin" element={<AdminPanel />} />
-                </Routes>
+                <HomePage />
+              </Layout>
+            } />
+            <Route path="/app/profiles" element={
+              <Layout>
+                <ProfilesPage />
+              </Layout>
+            } />
+            <Route path="/app/campaigns" element={
+              <Layout>
+                <CampaignsPage />
+              </Layout>
+            } />
+            <Route path="/app/influencer-cards" element={
+              <Layout>
+                <InfluencerCardsPage />
+              </Layout>
+            } />
+            <Route path="/app/influencer-cards/:cardId" element={
+              <Layout>
+                <InfluencerCardDetailPage />
+              </Layout>
+            } />
+            <Route path="/app/chat" element={
+              <Layout>
+                <ChatPage />
+              </Layout>
+            } />
+            <Route path="/app/offers" element={
+              <Layout>
+                <OffersPage />
+              </Layout>
+            } />
+            <Route path="/app/admin" element={
+              <Layout>
+                <AdminPanel />
               </Layout>
             } />
           </Routes>

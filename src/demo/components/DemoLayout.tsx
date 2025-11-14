@@ -23,12 +23,12 @@ export function DemoLayout({ children }: DemoLayoutProps) {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const navigation = [
-    { name: 'Главная', href: '/demo', icon: Zap },
-    { name: 'Инфлюенсеры', href: '/demo/profiles', icon: Users },
-    { name: 'Кампании', href: '/demo/campaigns', icon: Target },
-    { name: 'Карточки', href: '/demo/influencer-cards', icon: Grid },
-    { name: 'Предложения', href: '/demo/offers', icon: HandCoins },
-    { name: 'Чат', href: '/demo/chat', icon: MessageCircle },
+    { name: 'Главная', href: '/', icon: Zap },
+    { name: 'Инфлюенсеры', href: '/profiles', icon: Users },
+    { name: 'Кампании', href: '/campaigns', icon: Target },
+    { name: 'Карточки', href: '/influencer-cards', icon: Grid },
+    { name: 'Предложения', href: '/offers', icon: HandCoins },
+    { name: 'Чат', href: '/chat', icon: MessageCircle },
   ];
 
   const handleSignIn = () => {
@@ -49,7 +49,7 @@ export function DemoLayout({ children }: DemoLayoutProps) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/demo" className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
@@ -61,8 +61,8 @@ export function DemoLayout({ children }: DemoLayoutProps) {
             <nav className="hidden md:flex space-x-8">
               {navigation.map((item) => {
                 const Icon = item.icon;
-                const isActive = item.href === '/demo'
-                  ? location.pathname === '/demo'
+                const isActive = item.href === '/'
+                  ? location.pathname === '/'
                   : location.pathname.startsWith(item.href);
                 return (
                   <Link
