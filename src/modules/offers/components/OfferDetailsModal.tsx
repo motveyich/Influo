@@ -177,18 +177,12 @@ export function OfferDetailsModal({
       }
     }
 
-    // Accepted status - can report
+    // Accepted and In progress actions (both roles)
     if (offer.status === 'accepted' || offer.status === 'in_progress') {
       actions.push(
-        { label: 'Пожаловаться на сотрудничество', action: 'report', style: 'warning', icon: AlertTriangle }
-      );
-    }
-
-    // In progress actions (both roles)
-    if (offer.status === 'in_progress') {
-      actions.push(
         { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy },
-        { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
+        { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban },
+        { label: 'Пожаловаться на сотрудничество', action: 'report', style: 'warning', icon: AlertTriangle }
       );
     }
 

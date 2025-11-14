@@ -14,11 +14,9 @@ interface ReportModalProps {
 }
 
 const REPORT_TYPES: Array<{ value: ReportType; label: string; description: string }> = [
-  { value: 'spam', label: 'Спам', description: 'Нежелательная реклама или повторяющиеся сообщения' },
-  { value: 'inappropriate', label: 'Неподходящий контент', description: 'Контент не соответствует правилам платформы' },
-  { value: 'fake', label: 'Поддельная информация', description: 'Ложные данные или мошенничество' },
+  { value: 'spam', label: 'Скам', description: 'Мошенничество или обман' },
+  { value: 'fake', label: 'Введение в заблуждение, неверная информация', description: 'Ложные данные или искажение фактов' },
   { value: 'harassment', label: 'Домогательства', description: 'Угрозы, оскорбления или преследование' },
-  { value: 'copyright', label: 'Нарушение авторских прав', description: 'Использование чужого контента без разрешения' },
   { value: 'other', label: 'Другое', description: 'Другие нарушения правил' }
 ];
 
