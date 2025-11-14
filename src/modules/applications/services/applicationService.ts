@@ -89,6 +89,7 @@ export class ApplicationService {
           influencerId: influencerId!,
           advertiserId: advertiserId!,
           applicationId: transformedApplication.id,
+          applicantId: applicationData.applicantId!, // Заявитель - инициатор предложения
           title: applicationData.applicationData?.message?.substring(0, 50) + '...' || 'Предложение о сотрудничестве',
           description: applicationData.applicationData?.message || 'Предложение создано из заявки',
           proposedRate: applicationData.applicationData?.proposedRate || 1000,

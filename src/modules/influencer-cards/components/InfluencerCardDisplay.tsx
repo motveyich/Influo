@@ -421,15 +421,21 @@ export function InfluencerCardDisplay({
                 <MessageCircle className="w-4 h-4" />
                 <span>{t('influencerCards.sendMessage')}</span>
               </button>
-              
+
               <button
-                onClick={() => onViewAnalytics?.(card.id)}
+                onClick={() => {
+                  if (onViewAnalytics) {
+                    onViewAnalytics(card.id);
+                  } else {
+                    window.location.href = `/cards/${card.id}`;
+                  }
+                }}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span>{t('influencerCards.moreDetails')}</span>
               </button>
-              
+
               <button
                 onClick={() => setShowReportModal(true)}
                 className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
@@ -488,7 +494,13 @@ export function InfluencerCardDisplay({
 
             <div className="flex space-x-2">
               <button
-                onClick={() => onViewAnalytics?.(card.id)}
+                onClick={() => {
+                  if (onViewAnalytics) {
+                    onViewAnalytics(card.id);
+                  } else {
+                    window.location.href = `/cards/${card.id}`;
+                  }
+                }}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />

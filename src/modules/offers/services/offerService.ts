@@ -65,6 +65,7 @@ export class OfferService {
     influencerId: string;
     advertiserId: string;
     applicationId: string;
+    applicantId: string;
     title: string;
     description: string;
     proposedRate: number;
@@ -78,7 +79,7 @@ export class OfferService {
       const newOffer = {
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
-        initiated_by: offerData.influencerId, // Инфлюенсер инициирует через заявку
+        initiated_by: offerData.applicantId, // Заявитель является инициатором
         details: {
           title: offerData.title,
           description: offerData.description,
