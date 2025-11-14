@@ -31,6 +31,7 @@ export function OffersPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [offers, setOffers] = useState<CollaborationOffer[]>([]);
+  const [allOffers, setAllOffers] = useState<CollaborationOffer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OfferStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -50,31 +51,36 @@ export function OffersPage() {
   const loadOffers = async () => {
     try {
       setIsLoading(true);
-      
+
       // Загружаем все предложения, где пользователь является участником
-      const allOffers = await offerService.getOffersByParticipant(currentUserId);
-      
+      const loadedOffers = await offerService.getOffersByParticipant(currentUserId);
+      setAllOffers(loadedOffers);
+
       // Фильтруем по вкладке
-      const filteredByTab = allOffers.filter(offer => {
+      const filteredByTab = loadedOffers.filter(offer => {
         if (activeTab === 'active') {
           return ['pending', 'accepted', 'in_progress'].includes(offer.status);
         } else {
           return ['completed', 'declined', 'cancelled', 'terminated'].includes(offer.status);
         }
       });
-      
+
       setOffers(filteredByTab);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error('Не удалось загрузить предложения');
       setOffers([]);
+      setAllOffers([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
-    setOffers(prev => prev.map(offer => 
+    setOffers(prev => prev.map(offer =>
+      offer.id === updatedOffer.id ? updatedOffer : offer
+    ));
+    setAllOffers(prev => prev.map(offer =>
       offer.id === updatedOffer.id ? updatedOffer : offer
     ));
     if (selectedOffer?.id === updatedOffer.id) {
@@ -120,16 +126,16 @@ export function OffersPage() {
   });
 
   const getOfferStats = () => {
-    const activeOffers = offers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
-    const completedOffers = offers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
-    
+    const activeOffers = allOffers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
+    const completedOffers = allOffers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
+
     return {
-      total: offers.length,
-      pending: offers.filter(o => o.status === 'pending').length,
-      accepted: offers.filter(o => o.status === 'accepted').length,
-      inProgress: offers.filter(o => o.status === 'in_progress').length,
-      completed: offers.filter(o => o.status === 'completed').length,
-      totalValue: offers
+      total: allOffers.length,
+      pending: allOffers.filter(o => o.status === 'pending').length,
+      accepted: allOffers.filter(o => o.status === 'accepted').length,
+      inProgress: allOffers.filter(o => o.status === 'in_progress').length,
+      completed: allOffers.filter(o => o.status === 'completed').length,
+      totalValue: allOffers
         .filter(o => ['accepted', 'in_progress', 'completed'].includes(o.status))
         .reduce((sum, o) => sum + (o.acceptedRate || o.proposedRate), 0),
       activeCount: activeOffers.length,

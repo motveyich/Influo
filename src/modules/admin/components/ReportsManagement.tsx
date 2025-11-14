@@ -28,12 +28,58 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<ContentReport | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [offerDetails, setOfferDetails] = useState<any>(null);
+  const [loadingOfferDetails, setLoadingOfferDetails] = useState(false);
 
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
     loadReports();
   }, [statusFilter, typeFilter]);
+
+  useEffect(() => {
+    if (selectedReport && selectedReport.targetType === 'offer') {
+      loadOfferDetails(selectedReport.targetId);
+    } else {
+      setOfferDetails(null);
+    }
+  }, [selectedReport]);
+
+  const loadOfferDetails = async (offerId: string) => {
+    try {
+      setLoadingOfferDetails(true);
+      const { offerService } = await import('../../offers/services/offerService');
+      const { paymentRequestService } = await import('../../offers/services/paymentRequestService');
+      const { chatService } = await import('../../chat/services/chatService');
+
+      const offer = await offerService.getOfferById(offerId);
+      const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
+
+      // Получить ID чата из offer или создать его
+      let chatId = (offer as any).chatId;
+      if (!chatId) {
+        // Попробовать найти чат между участниками
+        const chats = await chatService.getUserChats(offer.influencerId);
+        const existingChat = chats.find(c =>
+          (c.participant1Id === offer.influencerId && c.participant2Id === offer.advertiserId) ||
+          (c.participant1Id === offer.advertiserId && c.participant2Id === offer.influencerId)
+        );
+        chatId = existingChat?.id;
+      }
+
+      let messages = [];
+      if (chatId) {
+        messages = await chatService.getChatMessages(chatId);
+      }
+
+      setOfferDetails({ offer, payments, messages });
+    } catch (error) {
+      console.error('Failed to load offer details:', error);
+      setOfferDetails(null);
+    } finally {
+      setLoadingOfferDetails(false);
+    }
+  };
 
   const loadReports = async () => {
     try {
@@ -252,7 +298,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
               <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-2">Детали жалобы</h4>
@@ -263,7 +309,61 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                     <div><strong>Описание:</strong> {selectedReport.description}</div>
                   </div>
                 </div>
-                
+
+                {/* Детали сотрудничества */}
+                {selectedReport.targetType === 'offer' && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-3">Информация о сотрудничестве</h4>
+                    {loadingOfferDetails ? (
+                      <div className="text-sm text-gray-600">Загрузка...</div>
+                    ) : offerDetails ? (
+                      <div className="space-y-4">
+                        {/* Детали предложения */}
+                        <div className="bg-white p-3 rounded">
+                          <h5 className="font-medium text-sm mb-2">Предложение</h5>
+                          <div className="space-y-1 text-xs text-gray-600">
+                            <div><strong>Ставка:</strong> ${offerDetails.offer.proposedRate}</div>
+                            <div><strong>Статус:</strong> {offerDetails.offer.status}</div>
+                            <div><strong>Этап:</strong> {offerDetails.offer.currentStage}</div>
+                          </div>
+                        </div>
+
+                        {/* Окна оплаты */}
+                        {offerDetails.payments && offerDetails.payments.length > 0 && (
+                          <div className="bg-white p-3 rounded">
+                            <h5 className="font-medium text-sm mb-2">Окна оплаты ({offerDetails.payments.length})</h5>
+                            <div className="space-y-2">
+                              {offerDetails.payments.map((payment: any, idx: number) => (
+                                <div key={idx} className="text-xs text-gray-600 border-l-2 border-blue-300 pl-2">
+                                  <div><strong>Сумма:</strong> ${payment.amount}</div>
+                                  <div><strong>Статус:</strong> {payment.status}</div>
+                                  <div><strong>Метод:</strong> {payment.paymentMethod}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Сообщения чата */}
+                        {offerDetails.messages && offerDetails.messages.length > 0 && (
+                          <div className="bg-white p-3 rounded">
+                            <h5 className="font-medium text-sm mb-2">Диалог ({offerDetails.messages.length} сообщений)</h5>
+                            <div className="max-h-40 overflow-y-auto space-y-1">
+                              {offerDetails.messages.slice(-5).map((msg: any, idx: number) => (
+                                <div key={idx} className="text-xs text-gray-600">
+                                  <strong>{msg.senderName}:</strong> {msg.content?.substring(0, 100)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600">Не удалось загрузить детали</div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Заметки о решении
