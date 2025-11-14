@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag } from 'lucide-react';
@@ -8,6 +7,7 @@ import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import { supabase } from '../../../core/supabase';
 import { ReportModal } from '../../../components/ReportModal';
+import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -30,10 +30,10 @@ export function InfluencerCardDisplay({
   onViewAnalytics
 }: InfluencerCardDisplayProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
+  const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
@@ -425,13 +425,7 @@ export function InfluencerCardDisplay({
               </button>
 
               <button
-                onClick={() => {
-                  if (onViewAnalytics) {
-                    onViewAnalytics(card.id);
-                  } else {
-                    navigate(`/app/influencer-cards/${card.id}`);
-                  }
-                }}
+                onClick={() => setShowDetailsModal(true)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
@@ -496,13 +490,7 @@ export function InfluencerCardDisplay({
 
             <div className="flex space-x-2">
               <button
-                onClick={() => {
-                  if (onViewAnalytics) {
-                    onViewAnalytics(card.id);
-                  } else {
-                    navigate(`/app/influencer-cards/${card.id}`);
-                  }
-                }}
+                onClick={() => setShowDetailsModal(true)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
@@ -530,6 +518,14 @@ export function InfluencerCardDisplay({
         targetId={card.id}
         targetTitle={`Карточка инфлюенсера на ${card.platform}`}
       />
+
+      {/* Details Modal */}
+      {showDetailsModal && (
+        <InfluencerCardDetailsModal
+          card={card}
+          onClose={() => setShowDetailsModal(false)}
+        />
+      )}
     </div>
   );
 }
