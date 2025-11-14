@@ -34,6 +34,8 @@ export function OfferDetailsModal({
   const [showReportModal, setShowReportModal] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
+  const [initiatorProfile, setInitiatorProfile] = useState<any>(null);
+  const [initiatorReviews, setInitiatorReviews] = useState<CollaborationReview[]>([]);
 
   const isInfluencer = currentUserId === offer.influencerId;
   const isAdvertiser = currentUserId === offer.advertiserId;
@@ -51,7 +53,7 @@ export function OfferDetailsModal({
   const loadOfferDetails = async () => {
     try {
       setIsLoading(true);
-      
+
       const [paymentData, reviewData, historyData, reviewPermission] = await Promise.all([
         paymentRequestService.getOfferPaymentRequests(offer.id),
         reviewService.getOfferReviews(offer.id),
@@ -63,11 +65,37 @@ export function OfferDetailsModal({
       setReviews(reviewData);
       setOfferHistory(historyData);
       setCanReview(reviewPermission);
+
+      // Загрузить профиль инициатора (отправителя)
+      await loadInitiatorProfile();
     } catch (error) {
       console.error('Failed to load offer details:', error);
       toast.error('Не удалось загрузить детали предложения');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadInitiatorProfile = async () => {
+    try {
+      const { supabase } = await import('../../../core/supabase');
+
+      // Получить профиль инициатора
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', offer.initiatedBy)
+        .single();
+
+      if (profileError) throw profileError;
+
+      setInitiatorProfile(profile);
+
+      // Получить отзывы об инициаторе
+      const initiatorReviewsData = await reviewService.getUserReviews(offer.initiatedBy);
+      setInitiatorReviews(initiatorReviewsData);
+    } catch (error) {
+      console.error('Failed to load initiator profile:', error);
     }
   };
 
@@ -86,6 +114,7 @@ export function OfferDetailsModal({
     }
 
     try {
+      setIsLoading(true);
       const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
       onOfferUpdated(updatedOffer);
       await loadOfferDetails();
@@ -114,10 +143,13 @@ export function OfferDetailsModal({
     } catch (error: any) {
       console.error('Failed to update offer status:', error);
       toast.error(error.message || 'Не удалось обновить статус');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePaymentStatusUpdate = async (paymentId: string, newStatus: string) => {
+    setIsLoading(true);
     try {
       await paymentRequestService.updatePaymentStatus(paymentId, newStatus as any, currentUserId);
       await loadOfferDetails(); // Reload payment requests
@@ -133,6 +165,8 @@ export function OfferDetailsModal({
     } catch (error: any) {
       console.error('Failed to update payment status:', error);
       toast.error(error.message || 'Не удалось обновить статус оплаты');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -314,7 +348,16 @@ export function OfferDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative">
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+            <div className="flex flex-col items-center space-y-3">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <p className="text-sm text-gray-600 font-medium">Обработка...</p>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -387,6 +430,69 @@ export function OfferDetailsModal({
                   </div>
                 </div>
               </div>
+
+              {/* Sender Profile Info */}
+              {initiatorProfile && isReceiver && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Информация об отправителе</h3>
+                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start space-x-4">
+                      {initiatorProfile.avatar_url ? (
+                        <img src={initiatorProfile.avatar_url} alt="" className="w-16 h-16 rounded-full border-2 border-blue-200" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-blue-200 flex items-center justify-center border-2 border-blue-300">
+                          <User className="w-8 h-8 text-blue-600" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{initiatorProfile.full_name || 'Пользователь'}</h4>
+                        {initiatorProfile.company_name && (
+                          <p className="text-sm text-gray-600">{initiatorProfile.company_name}</p>
+                        )}
+                        <div className="flex items-center space-x-4 mt-2">
+                          {initiatorReviews.length > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                              <span className="text-sm font-medium text-gray-900">
+                                {(initiatorReviews.reduce((sum, r) => sum + r.rating, 0) / initiatorReviews.length).toFixed(1)}
+                              </span>
+                              <span className="text-xs text-gray-500">({initiatorReviews.length} отзывов)</span>
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-600">
+                            {initiatorProfile.role === 'advertiser' ? 'Рекламодатель' : 'Инфлюенсер'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {initiatorProfile.bio && (
+                      <p className="text-sm text-gray-700 border-t border-blue-100 pt-3">{initiatorProfile.bio}</p>
+                    )}
+
+                    {initiatorReviews.length > 0 && (
+                      <div className="border-t border-blue-100 pt-3">
+                        <h5 className="text-sm font-medium text-gray-900 mb-2">Последние отзывы</h5>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {initiatorReviews.slice(0, 3).map((review, idx) => (
+                            <div key={idx} className="bg-white p-2 rounded text-xs border border-blue-50">
+                              <div className="flex items-center space-x-1 mb-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-3 h-3 ${i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`}
+                                  />
+                                ))}
+                              </div>
+                              <p className="text-gray-700 line-clamp-2">{review.comment}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Deliverables */}
               <div>
@@ -615,7 +721,8 @@ export function OfferDetailsModal({
                         <button
                           key={action.action}
                           onClick={() => handleStatusUpdate(action.action as OfferStatus)}
-                          className={`w-full px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                          disabled={isLoading}
+                          className={`w-full px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                             action.style === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
                             action.style === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' :
                             action.style === 'warning' ? 'bg-orange-600 hover:bg-orange-700 text-white' :
