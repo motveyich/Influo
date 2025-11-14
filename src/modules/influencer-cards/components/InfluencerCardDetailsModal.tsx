@@ -123,20 +123,18 @@ export function InfluencerCardDetailsModal({ card, onClose }: InfluencerCardDeta
                 </div>
               </div>
 
-              {card.audienceDemographics.topCountries.length > 0 && (
+              {Object.keys(card.audienceDemographics.topCountries).length > 0 && (
                 <div>
                   <h5 className="font-medium text-gray-300 mb-2 flex items-center space-x-2">
                     <MapPin className="w-4 h-4" />
-                    <span>{t('influencerCards.topCountries') || 'Топ страны'}</span>
+                    <span>{t('influencerCards.demographics') || 'Демография'}</span>
                   </h5>
-                  <div className="flex flex-wrap gap-2">
-                    {card.audienceDemographics.topCountries.map((country, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-900/40 text-blue-300 border border-blue-700 rounded-full text-sm"
-                      >
-                        {country}
-                      </span>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {Object.entries(card.audienceDemographics.topCountries).map(([country, percentage]) => (
+                      <div key={country} className="bg-gray-700 rounded px-3 py-2 border border-gray-600">
+                        <span className="text-sm font-medium text-white">{country}:</span>
+                        <span className="text-sm text-gray-300 ml-1">{percentage}%</span>
+                      </div>
                     ))}
                   </div>
                 </div>

@@ -133,12 +133,23 @@ export function InfluencerCardModal({
 
   useEffect(() => {
     if (currentCard) {
-      // Convert old format to new format
+      // Convert topCountries format
       const oldTopCountries = currentCard.audienceDemographics.topCountries || [];
-      const convertedCountries = oldTopCountries.slice(0, 3).map((country, index) => ({
-        country,
-        percentage: index === 0 ? 50 : index === 1 ? 30 : 20
-      }));
+      let convertedCountries: Array<{country: string; percentage: number}>;
+
+      if (Array.isArray(oldTopCountries)) {
+        // Old format: array of strings
+        convertedCountries = oldTopCountries.slice(0, 3).map((country, index) => ({
+          country,
+          percentage: index === 0 ? 50 : index === 1 ? 30 : 20
+        }));
+      } else {
+        // New format: Record<string, number>
+        convertedCountries = Object.entries(oldTopCountries).map(([country, percentage]) => ({
+          country,
+          percentage
+        }));
+      }
 
       // Convert old pricing format to new dynamic format
       const oldPricing = currentCard.serviceDetails.pricing || {};
@@ -266,7 +277,12 @@ export function InfluencerCardModal({
         audienceDemographics: {
           ageGroups: formData.audienceDemographics.ageGroups,
           genderSplit: formData.audienceDemographics.genderSplit,
-          topCountries: formData.audienceDemographics.topCountries.map(item => item.country),
+          topCountries: formData.audienceDemographics.topCountries.reduce((acc, item) => {
+            if (item.percentage > 0) {
+              acc[item.country] = item.percentage;
+            }
+            return acc;
+          }, {} as Record<string, number>),
           interests: formData.audienceDemographics.interests
         },
         serviceDetails: {
@@ -557,23 +573,8 @@ export function InfluencerCardModal({
             <div className="mb-6">
               <div className="flex justify-between items-center mb-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  Цены за услуги *
+                  Цены за услуги (₽) *
                 </label>
-                <select
-                  value={formData.serviceDetails.currency}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    serviceDetails: {
-                      ...prev.serviceDetails,
-                      currency: e.target.value
-                    }
-                  }))}
-                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="RUB">₽ Рубли</option>
-                  <option value="USD">$ Доллары</option>
-                  <option value="EUR">€ Евро</option>
-                </select>
               </div>
               
               {Object.keys(formData.serviceDetails.pricing).length === 0 ? (
@@ -615,12 +616,7 @@ export function InfluencerCardModal({
                   })}
                 </div>
               )}
-              
-              <div className="mt-2 text-sm text-gray-600">
-                Валюта: {formData.serviceDetails.currency === 'RUB' ? '₽ Рубли' : 
-                         formData.serviceDetails.currency === 'USD' ? '$ Доллары' : 
-                         '€ Евро'}
-              </div>
+
               {errors.pricing && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />

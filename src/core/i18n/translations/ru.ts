@@ -547,6 +547,7 @@ export const ru: TranslationKeys = {
     ageGroups: 'Возрастные группы',
     genderSplit: 'Распределение по полу',
     topCountries: 'Топ страны',
+    demographics: 'Демография',
     interests: 'Интересы аудитории',
     services: 'Услуги и цены',
     blacklisted: 'Не работаю с категориями',

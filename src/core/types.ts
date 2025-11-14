@@ -102,7 +102,7 @@ export interface InfluencerCard {
   audienceDemographics: {
     ageGroups: Record<string, number>;
     genderSplit: Record<string, number>;
-    topCountries: string[];
+    topCountries: Record<string, number> | string[];
     interests: string[];
   };
   serviceDetails: {
