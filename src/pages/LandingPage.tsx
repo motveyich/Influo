@@ -177,26 +177,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-cyan-600 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-white">
-            <div>
-              <div className="text-5xl font-bold mb-2">1,234</div>
-              <div className="text-xl text-blue-100">Инфлюенсеров</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold mb-2">500+</div>
-              <div className="text-xl text-blue-100">Брендов</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold mb-2">2,500+</div>
-              <div className="text-xl text-blue-100">Успешных сделок</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-12 text-center text-white">
