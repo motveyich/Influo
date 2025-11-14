@@ -133,7 +133,7 @@ export function CampaignsManagement({ onStatsUpdate }: CampaignsManagementProps)
             placeholder="Поиск кампаний..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         
@@ -141,7 +141,7 @@ export function CampaignsManagement({ onStatsUpdate }: CampaignsManagementProps)
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Все статусы</option>
             <option value="active">Активные</option>
@@ -154,7 +154,7 @@ export function CampaignsManagement({ onStatsUpdate }: CampaignsManagementProps)
           <select
             value={moderationFilter}
             onChange={(e) => setModerationFilter(e.target.value as ModerationStatus | 'all')}
-            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Все модерации</option>
             <option value="pending">На проверке</option>
@@ -168,7 +168,7 @@ export function CampaignsManagement({ onStatsUpdate }: CampaignsManagementProps)
               type="checkbox"
               checked={showDeleted}
               onChange={(e) => setShowDeleted(e.target.checked)}
-              className="text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">Удаленные</span>
           </label>
@@ -179,7 +179,7 @@ export function CampaignsManagement({ onStatsUpdate }: CampaignsManagementProps)
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка кампаний...</p>
           </div>
         ) : (

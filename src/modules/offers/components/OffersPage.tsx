@@ -221,7 +221,7 @@ export function OffersPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
-              <Target className="w-5 h-5 text-purple-600" />
+              <Target className="w-5 h-5 text-blue-600" />
               <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.total')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.total}</p>
@@ -280,7 +280,7 @@ export function OffersPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                     activeTab === tab
-                      ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                      ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                       : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -289,7 +289,7 @@ export function OffersPage() {
                     {((tab === 'active' && stats.activeCount > 0) || (tab === 'completed' && stats.completedCount > 0)) && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activeTab === tab
-                          ? 'bg-purple-600 text-white dark:bg-purple-500'
+                          ? 'bg-blue-600 text-white dark:bg-blue-500'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {tab === 'active' ? stats.activeCount : stats.completedCount}
@@ -311,7 +311,7 @@ export function OffersPage() {
                   placeholder={t('offers.searchOffers')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               
@@ -320,7 +320,7 @@ export function OffersPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as OfferStatus | 'all')}
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {getStatusFiltersForTab().map(filter => (
                     <option key={filter.value} value={filter.value}>

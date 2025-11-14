@@ -70,7 +70,7 @@ export function ModerationQueue({ onStatsUpdate }: ModerationQueueProps) {
       case 'user_profile':
         return <User className="w-4 h-4 text-blue-600" />;
       case 'influencer_card':
-        return <Grid className="w-4 h-4 text-purple-600" />;
+        return <Grid className="w-4 h-4 text-blue-600" />;
       case 'campaign':
         return <Target className="w-4 h-4 text-green-600" />;
       case 'chat_message':
@@ -132,7 +132,7 @@ export function ModerationQueue({ onStatsUpdate }: ModerationQueueProps) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as ModerationStatus | 'all')}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все статусы</option>
           <option value="pending">На проверке</option>
@@ -144,7 +144,7 @@ export function ModerationQueue({ onStatsUpdate }: ModerationQueueProps) {
         <select
           value={contentTypeFilter}
           onChange={(e) => setContentTypeFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все типы</option>
           <option value="user_profile">Профили</option>
@@ -158,7 +158,7 @@ export function ModerationQueue({ onStatsUpdate }: ModerationQueueProps) {
       <div className="space-y-4">
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка очереди модерации...</p>
           </div>
         ) : queueItems.length === 0 ? (
@@ -269,7 +269,7 @@ export function ModerationQueue({ onStatsUpdate }: ModerationQueueProps) {
                     value={reviewNotes}
                     onChange={(e) => setReviewNotes(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Добавьте заметки о решении..."
                   />
                 </div>

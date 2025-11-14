@@ -160,7 +160,7 @@ export function SupportSettings() {
       <div className="bg-gray-50 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <MessageCircle className="w-5 h-5 text-purple-600" />
+            <MessageCircle className="w-5 h-5 text-blue-600" />
             <div>
               <h3 className="text-md font-medium text-gray-900">{t('settings.myTickets')}</h3>
               <p className="text-sm text-gray-600">
@@ -170,7 +170,7 @@ export function SupportSettings() {
           </div>
           <button
             onClick={() => loadSupportTickets()}
-            className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
           >
             {t('settings.refresh')}
           </button>
@@ -178,7 +178,7 @@ export function SupportSettings() {
 
         {isLoadingTickets ? (
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка обращений...</p>
           </div>
         ) : supportTickets.length === 0 ? (
@@ -188,7 +188,7 @@ export function SupportSettings() {
             <p className="text-gray-600 mb-4">{t('settings.noTicketsDescription')}</p>
             <button
               onClick={() => setShowContactForm(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
               {t('settings.createFirstTicket')}
             </button>
@@ -227,7 +227,7 @@ export function SupportSettings() {
                       // Navigate to support chat - will be implemented with support system
                       toast.info('Чат поддержки будет доступен в следующем обновлении');
                     }}
-                    className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   >
                     {t('settings.openChat')}
                   </button>
@@ -275,7 +275,7 @@ export function SupportSettings() {
             href="#"
             className="flex items-center space-x-3 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <FileText className="w-5 h-5 text-purple-600" />
+            <FileText className="w-5 h-5 text-blue-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">Руководство пользователя</p>
               <p className="text-xs text-gray-600">Полное руководство по использованию платформы</p>

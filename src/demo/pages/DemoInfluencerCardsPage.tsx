@@ -22,7 +22,7 @@ export function DemoInfluencerCardsPage() {
         </div>
         <button
           onClick={() => showToast('Создание карточки доступно после регистрации. Карточка — это визитка инфлюенсера с основной информацией.')}
-          className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>Создать карточку</span>
@@ -109,7 +109,7 @@ export function DemoInfluencerCardsPage() {
                   e.stopPropagation();
                   showToast(demoToastMessages.viewDetails);
                 }}
-                className="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 <Eye className="w-4 h-4" />
                 <span>Посмотреть карточку</span>
@@ -132,7 +132,7 @@ export function DemoInfluencerCardsPage() {
         </p>
         <button
           onClick={() => showToast('Создание карточки станет доступно после регистрации и заполнения профиля.')}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
         >
           Создать сейчас
         </button>

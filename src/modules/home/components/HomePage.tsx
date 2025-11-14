@@ -130,7 +130,7 @@ export function HomePage() {
       case 'improvement':
         return <TrendingUp className="w-4 h-4 text-green-600" />;
       case 'announcement':
-        return <Bell className="w-4 h-4 text-purple-600" />;
+        return <Bell className="w-4 h-4 text-blue-600" />;
       default:
         return <Bell className="w-4 h-4 text-gray-600" />;
     }
@@ -139,7 +139,7 @@ export function HomePage() {
   const getEventTypeIcon = (type: string) => {
     switch (type) {
       case 'campaign_launch':
-        return <Target className="w-4 h-4 text-purple-600" />;
+        return <Target className="w-4 h-4 text-blue-600" />;
       case 'achievement':
         return <Trophy className="w-4 h-4 text-yellow-600" />;
       case 'contest':
@@ -219,7 +219,7 @@ export function HomePage() {
 
       {/* Campaign Statistics */}
       {campaignStats && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-6 border border-blue-200">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">{t('home.yourStats')}</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -419,7 +419,7 @@ export function HomePage() {
                           {formatDistanceToNow(parseISO(event.publishedAt), { addSuffix: true })}
                         </span>
                         {event.participantCount && (
-                          <span className="text-xs text-purple-600 font-medium">
+                          <span className="text-xs text-blue-600 font-medium">
                             {event.participantCount} {t('home.participants')}
                           </span>
                         )}

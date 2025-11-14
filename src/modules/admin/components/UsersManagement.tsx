@@ -197,7 +197,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
             placeholder="Поиск по имени или email..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         
@@ -205,7 +205,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
-            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Все роли</option>
             <option value="user">Пользователи</option>
@@ -218,7 +218,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
               type="checkbox"
               checked={showDeleted}
               onChange={(e) => setShowDeleted(e.target.checked)}
-              className="text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">Удаленные</span>
           </label>
@@ -229,7 +229,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка пользователей...</p>
           </div>
         ) : (
@@ -259,7 +259,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                   <tr key={user.userId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
                           {user.avatar ? (
                             <img 
                               src={user.avatar} 
@@ -388,7 +388,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
                     disabled={selectedUser.userId === currentUser?.id && role !== userRole}
                     className={`w-full p-3 border-2 rounded-lg transition-colors text-left ${
                       (selectedUser as any).role === role
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-300 hover:border-gray-400'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >

@@ -145,7 +145,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
 
   const getItemIcon = (item: any) => {
     if (activeTab === 'updates') {
-      return <Bell className="w-4 h-4 text-purple-600" />;
+      return <Bell className="w-4 h-4 text-blue-600" />;
     } else {
       return <Calendar className="w-4 h-4 text-green-600" />;
     }
@@ -164,7 +164,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
         
         <button
           onClick={handleCreate}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
           <span>Создать {getTabLabel(activeTab).toLowerCase()}</span>
@@ -180,7 +180,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
               onClick={() => setActiveTab(tab)}
               className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -200,14 +200,14 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
             placeholder={`Поиск ${getTabLabel(activeTab).toLowerCase()}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         
         <select
           value={publishedFilter}
           onChange={(e) => setPublishedFilter(e.target.value as any)}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все</option>
           <option value="published">Опубликованные</option>
@@ -219,7 +219,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка контента...</p>
           </div>
         ) : filteredData.length === 0 ? (
@@ -239,7 +239,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
             </p>
             <button
               onClick={handleCreate}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
             >
               Создать {getTabLabel(activeTab).toLowerCase()}
             </button>
@@ -264,7 +264,7 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
                       {activeTab === 'news' && (
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           (item as PlatformNews).category === 'industry' ? 'bg-blue-100 text-blue-700' :
-                          (item as PlatformNews).category === 'platform' ? 'bg-purple-100 text-purple-700' :
+                          (item as PlatformNews).category === 'platform' ? 'bg-blue-100 text-blue-700' :
                           'bg-green-100 text-green-700'
                         }`}>
                           {(item as PlatformNews).category === 'industry' ? 'Индустрия' :
@@ -503,7 +503,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Введите заголовок"
@@ -525,7 +525,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Описание обновления или события"
@@ -548,7 +548,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="feature">Новая функция</option>
                 <option value="improvement">Улучшение</option>
@@ -567,7 +567,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="campaign_launch">Запуск кампании</option>
                   <option value="achievement">Достижение</option>
@@ -586,7 +586,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
                   type="number"
                   value={formData.participantCount}
                   onChange={(e) => setFormData(prev => ({ ...prev, participantCount: parseInt(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
@@ -603,7 +603,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
               type="date"
               value={formData.publishedAt}
               onChange={(e) => setFormData(prev => ({ ...prev, publishedAt: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -616,7 +616,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
               value={formData.content}
               onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Полный текст статьи или подробное описание"
             />
           </div>
@@ -628,7 +628,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
                 type="checkbox"
                 checked={formData.isPublished}
                 onChange={(e) => setFormData(prev => ({ ...prev, isPublished: e.target.checked }))}
-                className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-700">Опубликовать на главной странице</span>
             </label>
@@ -639,7 +639,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
                   type="checkbox"
                   checked={formData.isImportant}
                   onChange={(e) => setFormData(prev => ({ ...prev, isImportant: e.target.checked }))}
-                  className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">Важное обновление</span>
               </label>
@@ -658,7 +658,7 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Сохранение...' : 'Сохранить'}</span>

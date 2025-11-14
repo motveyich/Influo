@@ -615,7 +615,7 @@ export function ChatPage() {
                 }}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === tab
-                    ? 'text-purple-600 border-purple-600 bg-purple-50'
+                    ? 'text-blue-600 border-blue-600 bg-blue-50'
                     : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -627,7 +627,7 @@ export function ChatPage() {
                   {tabCounts[tab] > 0 && (
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       activeTab === tab
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-600'
                     }`}>
                       {tabCounts[tab]}
@@ -648,7 +648,7 @@ export function ChatPage() {
               placeholder={t('chat.searchConversations')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
         </div>
@@ -691,11 +691,11 @@ export function ChatPage() {
                   key={conversation.id}
                   onClick={() => setSelectedConversation(conversation)}
                   className={`flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors relative ${
-                    selectedConversation?.id === conversation.id ? 'bg-purple-50 border-r-2 border-purple-500' : ''
+                    selectedConversation?.id === conversation.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                   }`}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
                       {conversation.participantAvatar ? (
                         <img 
                           src={conversation.participantAvatar} 
@@ -754,7 +754,7 @@ export function ChatPage() {
                   </div>
                   
                   {conversation.unreadCount > 0 && (
-                    <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
                       <span className="text-xs text-white font-medium">
                         {conversation.unreadCount}
                       </span>
@@ -775,7 +775,7 @@ export function ChatPage() {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold">
                       {selectedConversation.participantName.charAt(0).toUpperCase()}
                     </span>
@@ -810,7 +810,7 @@ export function ChatPage() {
                 {selectedConversation.chatType !== 'restricted' && (
                   <button
                     onClick={handleSendCollaborationRequest}
-                    className="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-gray-100"
+                    className="p-2 text-gray-400 hover:text-blue-600 rounded-md hover:bg-gray-100"
                     title="Отправить запрос на сотрудничество"
                   >
                     <Handshake className="w-5 h-5" />
@@ -906,12 +906,12 @@ export function ChatPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim()}
-                    className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="w-5 h-5" />
                   </button>

@@ -192,7 +192,7 @@ export function AdvertiserCardDisplay({
       case 'facebook':
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'twitch':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'rutube':
         return 'bg-red-100 text-red-700 border-red-200';
       case 'yandex_zen':
@@ -208,7 +208,7 @@ export function AdvertiserCardDisplay({
       case 'tiktok':
         return 'bg-gray-100 text-gray-700 border-gray-200';
       default:
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
     }
   };
 
@@ -459,7 +459,7 @@ export function AdvertiserCardDisplay({
               disabled={!card.isActive || isLoading}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
                 card.isActive && !isLoading
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >

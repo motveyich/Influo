@@ -305,7 +305,7 @@ export function AutomaticCampaignModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -330,14 +330,14 @@ export function AutomaticCampaignModal({
               <React.Fragment key={step}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step <= currentStep 
-                    ? 'bg-purple-600 text-white' 
+                    ? 'bg-blue-600 text-white' 
                     : 'bg-gray-200 text-gray-600'
                 }`}>
                   {step}
                 </div>
                 {step < 4 && (
                   <div className={`flex-1 h-1 rounded ${
-                    step < currentStep ? 'bg-purple-600' : 'bg-gray-200'
+                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
                   }`} />
                 )}
               </React.Fragment>
@@ -357,7 +357,7 @@ export function AutomaticCampaignModal({
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <Target className="w-12 h-12 text-purple-600 mx-auto mb-3" />
+                <Target className="w-12 h-12 text-blue-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Основная информация</h3>
                 <p className="text-sm text-gray-600">Расскажите о вашей кампании</p>
               </div>
@@ -371,7 +371,7 @@ export function AutomaticCampaignModal({
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.title ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Летняя коллекция 2024"
@@ -392,7 +392,7 @@ export function AutomaticCampaignModal({
                     type="text"
                     value={formData.brand}
                     onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.brand ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="EcoStyle"
@@ -414,7 +414,7 @@ export function AutomaticCampaignModal({
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={4}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.description ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Опишите цели кампании, продукт и ожидания от сотрудничества..."
@@ -455,7 +455,7 @@ export function AutomaticCampaignModal({
                           ...prev,
                           budget: { ...prev.budget, min: parseInt(e.target.value) || 0 }
                         }))}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                           errors.minBudget ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="1000"
@@ -482,7 +482,7 @@ export function AutomaticCampaignModal({
                           ...prev,
                           budget: { ...prev.budget, max: parseInt(e.target.value) || 0 }
                         }))}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                           errors.maxBudget ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="5000"
@@ -506,7 +506,7 @@ export function AutomaticCampaignModal({
                         ...prev,
                         budget: { ...prev.budget, currency: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
@@ -542,7 +542,7 @@ export function AutomaticCampaignModal({
                       )}
                       className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
                         formData.preferences.platforms.includes(platform)
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -578,7 +578,7 @@ export function AutomaticCampaignModal({
                       )}
                       className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
                         formData.preferences.contentTypes.includes(type)
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -619,7 +619,7 @@ export function AutomaticCampaignModal({
                         ...prev,
                         timeline: { ...prev.timeline, startDate: e.target.value }
                       }))}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         errors.startDate ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -645,7 +645,7 @@ export function AutomaticCampaignModal({
                         ...prev,
                         timeline: { ...prev.timeline, endDate: e.target.value }
                       }))}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         errors.endDate ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
@@ -686,7 +686,7 @@ export function AutomaticCampaignModal({
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="10000"
                     />
                   </div>
@@ -707,7 +707,7 @@ export function AutomaticCampaignModal({
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="1000000"
                     />
                   </div>
@@ -743,7 +743,7 @@ export function AutomaticCampaignModal({
                         targetInfluencerCount: parseInt(e.target.value) || 0 
                       }
                     }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.targetCount ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="10"
@@ -772,7 +772,7 @@ export function AutomaticCampaignModal({
                         overbookingPercentage: parseInt(e.target.value) || 0 
                       }
                     }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.overbooking ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="25"
@@ -809,7 +809,7 @@ export function AutomaticCampaignModal({
                           batchSize: parseInt(e.target.value) || 20 
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="20"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -833,7 +833,7 @@ export function AutomaticCampaignModal({
                           batchDelay: parseInt(e.target.value) || 30 
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="30"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -968,7 +968,7 @@ export function AutomaticCampaignModal({
                           autoReplacement: e.target.checked 
                         }
                       }))}
-                      className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700">
                       Автоматически заменять ушедших инфлюенсеров
@@ -992,7 +992,7 @@ export function AutomaticCampaignModal({
                             maxReplacements: parseInt(e.target.value) || 3 
                           }
                         }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="3"
                       />
                     </div>
@@ -1027,7 +1027,7 @@ export function AutomaticCampaignModal({
             {currentStep < 4 ? (
               <button
                 onClick={handleNext}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
               >
                 Далее
               </button>
@@ -1035,7 +1035,7 @@ export function AutomaticCampaignModal({
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-md transition-all flex items-center space-x-2 disabled:opacity-50 shadow-lg"
+                className="bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white px-6 py-2 rounded-md transition-all flex items-center space-x-2 disabled:opacity-50 shadow-lg"
               >
                 <Save className="w-4 h-4" />
                 <span>{isLoading ? 'Создание...' : 'Создать автоматическую кампанию'}</span>

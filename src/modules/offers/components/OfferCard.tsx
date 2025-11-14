@@ -71,7 +71,7 @@ export function OfferCard({
       case 'accepted':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in_progress':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'terminated':
@@ -368,7 +368,7 @@ export function OfferCard({
           <div className="mt-3 space-y-2">
             {paymentWindowsLoading ? (
               <div className="flex items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 <span className="ml-2 text-sm text-gray-600">Загрузка окон оплаты...</span>
               </div>
             ) : paymentRequests.length === 0 ? (
@@ -441,7 +441,7 @@ export function OfferCard({
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <button
           onClick={() => onViewDetails(offer)}
-          className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors flex items-center space-x-1"
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors flex items-center space-x-1"
         >
           <Eye className="w-4 h-4" />
           <span>Подробнее</span>

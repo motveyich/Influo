@@ -161,7 +161,7 @@ export function InfluencerCardDetailPage() {
       case 'facebook':
         return <Zap className="w-5 h-5 text-blue-600" />;
       case 'twitch':
-        return <Zap className="w-5 h-5 text-purple-600" />;
+        return <Zap className="w-5 h-5 text-blue-600" />;
       case 'rutube':
         return <Zap className="w-5 h-5 text-red-600" />;
       case 'yandex_zen':
@@ -177,7 +177,7 @@ export function InfluencerCardDetailPage() {
       case 'tiktok':
         return <Zap className="w-5 h-5 text-gray-800" />;
       default:
-        return <Globe className="w-5 h-5 text-purple-600" />;
+        return <Globe className="w-5 h-5 text-blue-600" />;
     }
   };
 
@@ -192,7 +192,7 @@ export function InfluencerCardDetailPage() {
       case 'facebook':
         return 'from-blue-600 to-blue-700';
       case 'twitch':
-        return 'from-purple-500 to-purple-600';
+        return 'from-blue-500 to-blue-600';
       case 'rutube':
         return 'from-red-500 to-red-600';
       case 'yandex_zen':
@@ -200,7 +200,7 @@ export function InfluencerCardDetailPage() {
       case 'likee':
         return 'from-pink-500 to-pink-600';
       case 'instagram':
-        return 'from-pink-500 to-purple-600';
+        return 'from-pink-500 to-blue-600';
       case 'youtube':
         return 'from-red-500 to-red-600';
       case 'twitter':
@@ -208,7 +208,7 @@ export function InfluencerCardDetailPage() {
       case 'tiktok':
         return 'from-gray-800 to-black';
       default:
-        return 'from-purple-500 to-blue-600';
+        return 'from-blue-500 to-blue-600';
     }
   };
 
@@ -222,7 +222,7 @@ export function InfluencerCardDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Загрузка информации о карточке...</p>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function InfluencerCardDetailPage() {
           <p className="text-gray-600 mb-4">Возможно, карточка была удалена или недоступна</p>
           <button
             onClick={() => navigate('/influencer-cards')}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
           >
             Вернуться к карточкам
           </button>
@@ -388,7 +388,7 @@ export function InfluencerCardDetailPage() {
                   {card.serviceDetails.contentTypes.map((type, index) => (
                     <span
                       key={index}
-                      className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium"
+                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium"
                     >
                       {type}
                     </span>
@@ -427,7 +427,7 @@ export function InfluencerCardDetailPage() {
                         <div className="flex items-center space-x-2">
                           <div className="w-24 bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                               style={{ width: `${percentage}%` }}
                             ></div>
                           </div>
@@ -452,7 +452,7 @@ export function InfluencerCardDetailPage() {
                             <div 
                               className={`h-2 rounded-full transition-all duration-300 ${
                                 gender === 'male' ? 'bg-blue-600' : 
-                                gender === 'female' ? 'bg-pink-600' : 'bg-purple-600'
+                                gender === 'female' ? 'bg-pink-600' : 'bg-blue-600'
                               }`}
                               style={{ width: `${percentage}%` }}
                             ></div>
@@ -505,7 +505,7 @@ export function InfluencerCardDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-purple-600" />
+                    <Users className="w-5 h-5 text-blue-600" />
                     <span className="text-sm font-medium text-gray-600">Подписчики</span>
                   </div>
                   <span className="text-lg font-semibold text-gray-900">
@@ -575,7 +575,7 @@ export function InfluencerCardDetailPage() {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Target className="w-5 h-5 text-purple-600" />
+                      <Target className="w-5 h-5 text-blue-600" />
                       <span className="text-sm font-medium text-gray-600">Заявки</span>
                     </div>
                     <span className="text-lg font-semibold text-gray-900">
@@ -622,7 +622,7 @@ export function InfluencerCardDetailPage() {
                         href={cardOwner.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-purple-600 hover:text-purple-700"
+                        className="text-sm text-blue-600 hover:text-blue-700"
                       >
                         {cardOwner.website}
                       </a>
@@ -657,7 +657,7 @@ export function InfluencerCardDetailPage() {
                       </span>
                       <div className="flex items-center space-x-4 text-sm">
                         <span className="text-gray-900">{stats.views || 0} просмотров</span>
-                        <span className="text-purple-600">{stats.applications || 0} заявок</span>
+                        <span className="text-blue-600">{stats.applications || 0} заявок</span>
                       </div>
                     </div>
                   ))}
@@ -673,10 +673,10 @@ export function InfluencerCardDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Быстрая статистика</h2>
               
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Общий охват</span>
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatNumber(card.reach.followers)}

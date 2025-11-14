@@ -260,7 +260,7 @@ export function CampaignsPage() {
 
           <button
             onClick={() => window.location.href = '/profiles'}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
           >
             {t('profile.goToProfileSettings')}
           </button>
@@ -287,7 +287,7 @@ export function CampaignsPage() {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 showMyCampaigns
                   ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
               }`}
             >
               <span>{showMyCampaigns ? t('campaigns.viewAll') : t('campaigns.myCampaigns')}</span>
@@ -296,7 +296,7 @@ export function CampaignsPage() {
             {showMyCampaigns && (
               <button 
                 onClick={handleCreateCampaign}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl dark:text-white"
+                className="bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl dark:text-white"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t('campaigns.createAutomaticCampaign')}</span>
@@ -351,7 +351,7 @@ export function CampaignsPage() {
               placeholder={t('campaigns.searchCampaigns')}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         
@@ -361,7 +361,7 @@ export function CampaignsPage() {
               <select
                 value={selectedFilter}
                 onChange={(e) => setSelectedFilter(e.target.value as any)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">{t('campaigns.allStatuses')}</option>
                 <option value="active">{t('campaigns.status.active')}</option>
@@ -373,7 +373,7 @@ export function CampaignsPage() {
             <select
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {platforms.map(platform => (
                 <option key={platform} value={platform}>

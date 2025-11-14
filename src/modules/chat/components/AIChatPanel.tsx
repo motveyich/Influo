@@ -173,12 +173,12 @@ export function AIChatPanel({
       <div className="w-12 bg-white border-l border-gray-300 flex flex-col items-center py-4">
         <button
           onClick={onToggleVisibility}
-          className="p-2 text-gray-400 hover:text-purple-600 transition-colors relative"
+          className="p-2 text-gray-400 hover:text-blue-600 transition-colors relative"
           title="Открыть AI-ассистента"
         >
           <Bot className="w-6 h-6" />
           {aiMessages.length > 0 && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full"></div>
           )}
         </button>
         {conversationMessages.length >= 2 && (
@@ -193,10 +193,10 @@ export function AIChatPanel({
   return (
     <div className="w-96 bg-white border-l border-gray-300 flex flex-col">
       {/* AI Panel Header */}
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-600 rounded-full flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -219,8 +219,8 @@ export function AIChatPanel({
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {isAnalyzing && (
-              <div className="flex items-center space-x-2 text-xs text-purple-600">
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-600"></div>
+              <div className="flex items-center space-x-2 text-xs text-blue-600">
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
                 <span>Анализирую диалог...</span>
               </div>
             )}
@@ -235,7 +235,7 @@ export function AIChatPanel({
           <button
             onClick={triggerConversationAnalysis}
             disabled={isAnalyzing || conversationMessages.length < 2}
-            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 flex items-center space-x-1"
+            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 flex items-center space-x-1"
           >
             <BarChart3 className="w-3 h-3" />
             <span>{isAnalyzing ? 'Анализ...' : 'Анализ'}</span>
@@ -247,7 +247,7 @@ export function AIChatPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {isLoading && aiMessages.length === 0 ? (
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-sm text-gray-600">Инициализация AI...</p>
           </div>
         ) : aiMessages.length === 0 ? (
@@ -258,7 +258,7 @@ export function AIChatPanel({
               <button
                 onClick={triggerConversationAnalysis}
                 disabled={isAnalyzing}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm transition-colors disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors disabled:opacity-50"
               >
                 {isAnalyzing ? 'Анализирую...' : 'Анализировать диалог'}
               </button>
@@ -317,13 +317,13 @@ export function AIChatPanel({
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendUserQuestion()}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             disabled={isLoading}
           />
           <button
             onClick={sendUserQuestion}
             disabled={!userQuestion.trim() || isLoading}
-            className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             title="Отправить вопрос"
           >
             <Send className="w-4 h-4" />

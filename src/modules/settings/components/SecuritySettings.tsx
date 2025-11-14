@@ -182,7 +182,7 @@ export function SecuritySettings({
       {/* Privacy Settings */}
       <div className="bg-gray-50 rounded-lg p-6">
         <div className="flex items-center space-x-3 mb-6">
-          <Eye className="w-5 h-5 text-purple-600" />
+          <Eye className="w-5 h-5 text-blue-600" />
           <div>
             <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.privacySettings')}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.privacyDescription')}</p>
@@ -202,7 +202,7 @@ export function SecuritySettings({
                 onChange={(e) => handlePrivacyUpdate('hideEmail', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
@@ -218,7 +218,7 @@ export function SecuritySettings({
                 onChange={(e) => handlePrivacyUpdate('hidePhone', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
@@ -234,7 +234,7 @@ export function SecuritySettings({
                 onChange={(e) => handlePrivacyUpdate('hideSocialMedia', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
@@ -396,7 +396,7 @@ function PasswordChangeModal({ isOpen, onClose, onPasswordChanged, changePasswor
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.currentPassword ? 'border-red-300' : 'border-gray-300'
               }`}
             />
@@ -413,7 +413,7 @@ function PasswordChangeModal({ isOpen, onClose, onPasswordChanged, changePasswor
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.newPassword ? 'border-red-300' : 'border-gray-300'
               }`}
             />
@@ -430,7 +430,7 @@ function PasswordChangeModal({ isOpen, onClose, onPasswordChanged, changePasswor
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
               }`}
             />
@@ -450,7 +450,7 @@ function PasswordChangeModal({ isOpen, onClose, onPasswordChanged, changePasswor
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors disabled:opacity-50"
           >
             {isLoading ? 'Изменение...' : 'Изменить пароль'}
           </button>
@@ -533,7 +533,7 @@ function TwoFactorModal({ isOpen, onClose, isEnabled, onToggle, enableTwoFactor,
         <div className="p-6">
           {step === 'confirm' && (
             <div className="text-center">
-              <Smartphone className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+              <Smartphone className="w-12 h-12 text-blue-600 mx-auto mb-4" />
               <p className="text-sm text-gray-600 mb-6">
                 {isEnabled 
                   ? 'Вы уверены, что хотите отключить двухфакторную аутентификацию?'
@@ -592,7 +592,7 @@ function TwoFactorModal({ isOpen, onClose, isEnabled, onToggle, enableTwoFactor,
                   type="text"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="123456"
                   maxLength={6}
                 />

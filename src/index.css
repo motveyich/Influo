@@ -39,7 +39,7 @@
 }
 
 /* Refined color palette for accent backgrounds - more subdued approach */
-.dark .bg-purple-50 {
+.dark .bg-blue-50 {
   background-color: #334155 !important;
   color: #e2e8f0 !important;
   border-color: #7c3aed !important;
@@ -82,7 +82,7 @@
 }
 
 /* Refined color palette for 100-level backgrounds */
-.dark .bg-purple-100 {
+.dark .bg-blue-100 {
   background-color: #475569 !important;
   color: #e2e8f0 !important;
   border-color: #7c3aed !important;
@@ -125,7 +125,7 @@
 }
 
 /* Refined text colors for better contrast and consistency */
-.dark .text-purple-600 {
+.dark .text-blue-600 {
   color: #a855f7 !important;
 }
 
@@ -154,7 +154,7 @@
 }
 
 /* Text colors for colored backgrounds - using light colors for contrast */
-.dark .text-purple-700 {
+.dark .text-blue-700 {
   color: #c084fc !important;
 }
 
@@ -182,7 +182,7 @@
   color: #fb923c !important;
 }
 
-.dark .text-purple-800 {
+.dark .text-blue-800 {
   color: #ddd6fe !important;
 }
 
@@ -210,7 +210,7 @@
   color: #fed7aa !important;
 }
 
-.dark .text-purple-900 {
+.dark .text-blue-900 {
   color: #e9d5ff !important;
 }
 
@@ -276,7 +276,7 @@
   border-color: #64748b !important;
 }
 
-.dark .border-purple-200 {
+.dark .border-blue-200 {
   border-color: #6b21a8 !important;
 }
 
@@ -304,7 +304,7 @@
   border-color: #c2410c !important;
 }
 
-.dark .border-purple-300 {
+.dark .border-blue-300 {
   border-color: #a855f7 !important;
 }
 
@@ -353,7 +353,7 @@
   color: inherit;
 }
 
-.dark .bg-purple-600 {
+.dark .bg-blue-600 {
   background-color: #7c3aed !important;
   color: #ffffff !important;
 }
@@ -389,7 +389,7 @@
 }
 
 /* Refined hover states for buttons */
-.dark .bg-purple-600:hover {
+.dark .bg-blue-600:hover {
   background-color: #6d28d9 !important;
 }
 
@@ -494,7 +494,7 @@
   background-color: #475569 !important;
 }
 
-.dark .hover\:bg-purple-50:hover {
+.dark .hover\:bg-blue-50:hover {
   background-color: #475569 !important;
   border-color: #7c3aed !important;
 }
@@ -542,7 +542,7 @@
 }
 
 /* Consistent focus states */
-.dark .focus\:ring-purple-500:focus {
+.dark .focus\:ring-blue-500:focus {
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3) !important;
 }
 
@@ -653,13 +653,13 @@
 }
 
 /* Gradient backgrounds with refined colors */
-.dark .bg-gradient-to-r.from-purple-50.to-blue-50 {
+.dark .bg-gradient-to-r.from-blue-50.to-blue-50 {
   background: linear-gradient(to right, #334155, #334155) !important;
   border: 1px solid #7c3aed !important;
   color: #ffffff !important;
 }
 
-.dark .bg-gradient-to-r.from-blue-50.to-purple-50 {
+.dark .bg-gradient-to-r.from-blue-50.to-blue-50 {
   background: linear-gradient(to right, #334155, #334155) !important;
   border: 1px solid #3b82f6 !important;
   color: #ffffff !important;
@@ -698,7 +698,7 @@
 }
 
 /* Toggle switches */
-.dark .peer:checked ~ .peer-checked\:bg-purple-600 {
+.dark .peer:checked ~ .peer-checked\:bg-blue-600 {
   background-color: #7c3aed !important;
 }
 
@@ -707,7 +707,7 @@
 }
 
 /* Progress bars */
-.dark .bg-purple-600.h-2 {
+.dark .bg-blue-600.h-2 {
   background-color: #7c3aed !important;
 }
 

@@ -83,7 +83,7 @@ export function Layout({ children }: LayoutProps) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function Layout({ children }: LayoutProps) {
               {/* Logo */}
               <div className="flex items-center">
                 <Link to="/app" className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg flex items-center justify-center">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-xl font-bold text-gray-900">Influo</span>
@@ -158,7 +158,7 @@ export function Layout({ children }: LayoutProps) {
                       to={item.href}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-purple-100 text-purple-700'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
@@ -208,7 +208,7 @@ export function Layout({ children }: LayoutProps) {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
                         isActive
-                          ? 'bg-purple-100 text-purple-700'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >

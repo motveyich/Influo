@@ -200,7 +200,7 @@ export function AnalyticsPage() {
           {userPermissions.canViewAnalytics && (
             <button
               onClick={handleRefresh}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
             >
               Попробовать снова
             </button>
@@ -282,7 +282,7 @@ export function AnalyticsPage() {
               <select
                 value={timeRange}
                 onChange={(e) => handleTimeRangeChange(e.target.value as any)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="7d">{t('analytics.timeRange.last7Days')}</option>
                 <option value="30d">{t('analytics.timeRange.last30Days')}</option>
@@ -298,7 +298,7 @@ export function AnalyticsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
-                <Eye className="w-8 h-8 text-purple-600" />
+                <Eye className="w-8 h-8 text-blue-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">{t('analytics.metrics.totalReach')}</p>
                   <p className="text-2xl font-bold text-gray-900">{formatNumber(analyticsData.accountStats.reach)}</p>
@@ -352,7 +352,7 @@ export function AnalyticsPage() {
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
                   <span className="ml-2 text-sm font-medium text-gray-600">{t('analytics.metrics.engagement')}</span>
                 </div>
                 <TrendingUp className="w-4 h-4 text-green-500" />

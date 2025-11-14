@@ -161,14 +161,14 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
                 placeholder="Поиск инфлюенсеров..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="followers">Сортировать по подписчикам</option>
               <option value="engagement">Сортировать по вовлеченности</option>
@@ -177,13 +177,13 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
           </div>
 
           {selectedInfluencers.length > 0 && (
-            <div className="mt-4 flex items-center justify-between bg-purple-50 p-3 rounded-md">
-              <span className="text-sm text-purple-700">
+            <div className="mt-4 flex items-center justify-between bg-blue-50 p-3 rounded-md">
+              <span className="text-sm text-blue-700">
                 Выбрано {selectedInfluencers.length} инфлюенсер(ов)
               </span>
               <button
                 onClick={handleSendOffers}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
               >
                 <Send className="w-4 h-4" />
                 <span>Отправить предложения</span>
@@ -196,7 +196,7 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Поиск подходящих инфлюенсеров...</p>
             </div>
           ) : filteredAndSortedInfluencers.length === 0 ? (
@@ -231,7 +231,7 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
                   key={influencer.id}
                   className={`bg-white rounded-lg border-2 transition-all duration-200 p-4 cursor-pointer ${
                     selectedInfluencers.includes(influencer.id)
-                      ? 'border-purple-500 bg-purple-50'
+                      ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                   onClick={() => handleInfluencerToggle(influencer.id)}
@@ -239,7 +239,7 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center space-x-2">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 capitalize">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 capitalize">
                         {influencer.platform}
                       </span>
                       {influencer.rating > 0 && (
@@ -255,7 +255,7 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
                       type="checkbox"
                       checked={selectedInfluencers.includes(influencer.id)}
                       onChange={() => handleInfluencerToggle(influencer.id)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </div>
 
@@ -263,7 +263,7 @@ export function InfluencerMatchingModal({ isOpen, onClose, campaign }: Influence
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     <div className="text-center">
                       <div className="flex items-center justify-center space-x-1 mb-1">
-                        <Users className="w-3 h-3 text-purple-600" />
+                        <Users className="w-3 h-3 text-blue-600" />
                         <span className="text-sm font-semibold text-gray-900">
                           {formatNumber(influencer.reach.followers)}
                         </span>

@@ -489,7 +489,7 @@ export function InfluencerCardsPage() {
           <div className="mt-4 sm:mt-0">
             <button
               onClick={handleCreateCard}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 shadow-sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 shadow-sm"
             >
               <Plus className="w-5 h-5" />
               <span>Создать карточку</span>
@@ -504,7 +504,7 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('influencers')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'influencers'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                  ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -518,7 +518,7 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('advertisers')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'advertisers'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                  ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -532,7 +532,7 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('my_cards')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'my_cards'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                  ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -542,7 +542,7 @@ export function InfluencerCardsPage() {
                 {(myInfluencerCards.length + myAdvertiserCards.length) > 0 && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     activeTab === 'my_cards'
-                      ? 'bg-purple-600 text-white dark:bg-purple-500'
+                      ? 'bg-blue-600 text-white dark:bg-blue-500'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {myInfluencerCards.length + myAdvertiserCards.length}
@@ -555,7 +555,7 @@ export function InfluencerCardsPage() {
               onClick={() => handleTabChange('favorites')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === 'favorites'
-                  ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                  ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                   : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -565,7 +565,7 @@ export function InfluencerCardsPage() {
                 {favoriteCards.length > 0 && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     activeTab === 'favorites'
-                      ? 'bg-purple-600 text-white dark:bg-purple-500'
+                      ? 'bg-blue-600 text-white dark:bg-blue-500'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {favoriteCards.length}
@@ -582,7 +582,7 @@ export function InfluencerCardsPage() {
                 <div className="grid grid-cols-3 gap-6">
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center">
-                      <Grid className="w-5 h-5 text-purple-600" />
+                      <Grid className="w-5 h-5 text-blue-600" />
                       <span className="ml-2 text-sm font-medium text-gray-600">{t('influencerCards.totalCards')}</span>
                     </div>
                     <p className="mt-1 text-2xl font-semibold text-gray-900">{influencerStats.total}</p>
@@ -638,12 +638,12 @@ export function InfluencerCardsPage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && loadData()}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <button
                     onClick={loadData}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2"
                   >
                     <Search className="w-4 h-4" />
                     <span>Поиск</span>
@@ -655,7 +655,7 @@ export function InfluencerCardsPage() {
                     onClick={() => setShowFilters(!showFilters)}
                     className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                       showFilters
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -685,7 +685,7 @@ export function InfluencerCardsPage() {
                     <select
                       value={platformFilter}
                       onChange={(e) => setPlatformFilter(e.target.value)}
-                      className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {getPlatformOptions().map(platform => (
                         <option key={platform} value={platform}>
@@ -707,14 +707,14 @@ export function InfluencerCardsPage() {
                             placeholder={t('influencerCards.minimum')}
                             value={minFollowersFilter}
                             onChange={(e) => setMinFollowersFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                           <input
                             type="number"
                             placeholder={t('influencerCards.maximum')}
                             value={maxFollowersFilter}
                             onChange={(e) => setMaxFollowersFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                       </div>
@@ -729,7 +729,7 @@ export function InfluencerCardsPage() {
                               onClick={() => handleInfluencerCountryToggle(country)}
                               className={`px-3 py-1 text-sm rounded-md border transition-colors ${
                                 selectedCountries.includes(country)
-                                  ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                                  ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
@@ -753,14 +753,14 @@ export function InfluencerCardsPage() {
                             placeholder={t('influencerCards.minimum')}
                             value={minBudgetFilter}
                             onChange={(e) => setMinBudgetFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                           <input
                             type="number"
                             placeholder={t('influencerCards.maximum')}
                             value={maxBudgetFilter}
                             onChange={(e) => setMaxBudgetFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                       </div>
@@ -817,7 +817,7 @@ export function InfluencerCardsPage() {
                   <span className="text-sm text-gray-600">{t('influencerCards.activeFilters')}:</span>
                   
                   {platformFilter !== 'all' && (
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
                       {t('influencerCards.platform')}: {platformFilter}
                     </span>
                   )}
@@ -883,7 +883,7 @@ export function InfluencerCardsPage() {
                 <div className="flex space-x-2">
                   <button
                     onClick={handleBulkApplications}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
                   >
                     <Send className="w-4 h-4" />
                     <span>{t('influencerCards.sendApplicationsToAll', { count: favoriteCards.length })}</span>
@@ -937,7 +937,7 @@ export function InfluencerCardsPage() {
                 {activeTab === 'my_cards' && (
                   <button
                     onClick={handleCreateCard}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
                   >
                     {t('influencerCards.createFirstCard')}
                   </button>

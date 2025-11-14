@@ -147,7 +147,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
       {/* Theme Settings */}
       <div className="bg-gray-50 rounded-lg p-6">
         <div className="flex items-center space-x-3 mb-6">
-          <Palette className="w-5 h-5 text-purple-600" />
+          <Palette className="w-5 h-5 text-blue-600" />
           <div>
             <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.themeDesign')}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.chooseTheme')}</p>
@@ -161,7 +161,7 @@ export function InterfaceSettings({ settings, onUpdateSettings }: InterfaceSetti
               onClick={() => handleThemeUpdate(theme)}
               className={`p-4 border-2 rounded-lg transition-all duration-200 ${
                 settings.interface.theme === theme
-                  ? 'border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-900 dark:border-purple-400 dark:text-purple-100'
+                  ? 'border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-100'
                   : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 dark:text-gray-100'
               }`}
             >

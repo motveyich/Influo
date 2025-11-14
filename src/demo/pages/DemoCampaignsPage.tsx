@@ -23,7 +23,7 @@ export function DemoCampaignsPage() {
         </div>
         <button
           onClick={() => showToast(demoToastMessages.createCampaign)}
-          className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>Создать кампанию</span>
@@ -36,7 +36,7 @@ export function DemoCampaignsPage() {
           onClick={() => setActiveTab('browse')}
           className={`pb-3 px-4 font-medium transition-colors ${
             activeTab === 'browse'
-              ? 'border-b-2 border-purple-600 text-purple-600 dark:text-purple-400'
+              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
@@ -46,7 +46,7 @@ export function DemoCampaignsPage() {
           onClick={() => setActiveTab('my')}
           className={`pb-3 px-4 font-medium transition-colors ${
             activeTab === 'my'
-              ? 'border-b-2 border-purple-600 text-purple-600 dark:text-purple-400'
+              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
@@ -103,7 +103,7 @@ export function DemoCampaignsPage() {
                 <div className="flex lg:flex-col gap-2">
                   <button
                     onClick={() => showToast(demoToastMessages.applyToCampaign)}
-                    className="flex-1 lg:flex-none bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 lg:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
                   >
                     <Send className="w-4 h-4" />
                     <span>Откликнуться</span>
@@ -161,7 +161,7 @@ export function DemoCampaignsPage() {
                 <div className="flex lg:flex-col gap-2">
                   <button
                     onClick={() => showToast(demoToastMessages.editCampaign)}
-                    className="flex-1 lg:flex-none bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+                    className="flex-1 lg:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
                   >
                     Редактировать
                   </button>
@@ -187,7 +187,7 @@ export function DemoCampaignsPage() {
               </p>
               <button
                 onClick={() => showToast(demoToastMessages.createCampaign)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
               >
                 Создать кампанию
               </button>

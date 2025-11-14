@@ -57,16 +57,16 @@ export function CardTypeSelectionModal({ isOpen, onClose, onSelectType, profile 
             disabled={!canCreateInfluencerCard}
             className={`w-full p-4 border-2 rounded-lg transition-all duration-200 ${
               canCreateInfluencerCard
-                ? 'border-purple-300 hover:border-purple-500 hover:bg-purple-50 cursor-pointer'
+                ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
                 : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
             }`}
           >
             <div className="flex items-center space-x-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                canCreateInfluencerCard ? 'bg-purple-100' : 'bg-gray-100'
+                canCreateInfluencerCard ? 'bg-blue-100' : 'bg-gray-100'
               }`}>
                 <Instagram className={`w-6 h-6 ${
-                  canCreateInfluencerCard ? 'text-purple-600' : 'text-gray-400'
+                  canCreateInfluencerCard ? 'text-blue-600' : 'text-gray-400'
                 }`} />
               </div>
               <div className="flex-1 text-left">
@@ -89,7 +89,7 @@ export function CardTypeSelectionModal({ isOpen, onClose, onSelectType, profile 
                 )}
               </div>
               {canCreateInfluencerCard && (
-                <div className="text-purple-600">
+                <div className="text-blue-600">
                   <Users className="w-5 h-5" />
                 </div>
               )}

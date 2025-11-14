@@ -223,7 +223,7 @@ export function OfferDetailsModal({
       case 'accepted':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in_progress':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'terminated':
@@ -529,7 +529,7 @@ export function OfferDetailsModal({
                   <div className="space-y-2">
                     {offerHistory.map((historyItem) => (
                       <div key={historyItem.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-                        <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                         <div className="flex-1">
                           <p className="text-sm text-gray-900">
                             Статус изменен с "{historyItem.previous_status || 'создано'}" на "{historyItem.new_status}"

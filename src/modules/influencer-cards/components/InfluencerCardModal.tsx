@@ -426,7 +426,7 @@ export function InfluencerCardModal({
                     onClick={() => setFormData(prev => ({ ...prev, platform: platform.value as any }))}
                     className={`p-3 border rounded-lg flex items-center justify-center transition-colors ${
                       formData.platform === platform.value
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -452,7 +452,7 @@ export function InfluencerCardModal({
                     ...prev,
                     reach: { ...prev.reach, followers: parseInt(e.target.value) || 0 }
                   }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.followers ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="10000"
@@ -479,7 +479,7 @@ export function InfluencerCardModal({
                     ...prev,
                     reach: { ...prev.reach, engagementRate: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }
                   }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.engagementRate ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="3.5"
@@ -512,7 +512,7 @@ export function InfluencerCardModal({
                     onClick={() => handleContentTypeToggle(type)}
                     className={`px-3 py-2 text-sm rounded-md border transition-colors ${
                       formData.serviceDetails.contentTypes.includes(type)
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
+                        ? 'bg-blue-100 border-blue-300 text-blue-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -540,7 +540,7 @@ export function InfluencerCardModal({
                   serviceDetails: { ...prev.serviceDetails, description: e.target.value }
                 }))}
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.description ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Опишите ваши услуги, стиль и что делает вас уникальным..."
@@ -568,7 +568,7 @@ export function InfluencerCardModal({
                       currency: e.target.value
                     }
                   }))}
-                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
                   <option value="RUB">₽ Рубли</option>
                   <option value="USD">$ Доллары</option>
@@ -607,7 +607,7 @@ export function InfluencerCardModal({
                               }
                             }
                           }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="0"
                         />
                       </div>
@@ -697,7 +697,7 @@ export function InfluencerCardModal({
                   type="button"
                   onClick={handleCountryAdd}
                   disabled={formData.audienceDemographics.topCountries.length >= 3}
-                  className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                  className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Добавить страну</span>
@@ -710,7 +710,7 @@ export function InfluencerCardModal({
                     <select
                       value={item.country}
                       onChange={(e) => handleCountryChange(index, 'country', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {COUNTRIES.map((country) => (
                         <option key={country} value={country}>{country}</option>
@@ -722,7 +722,7 @@ export function InfluencerCardModal({
                       max="100"
                       value={item.percentage}
                       onChange={(e) => handleCountryChange(index, 'percentage', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0"
                     />
                     <span className="text-sm text-gray-600">%</span>
@@ -765,7 +765,7 @@ export function InfluencerCardModal({
                     onClick={() => handleInterestToggle(interest)}
                     className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
                       formData.audienceDemographics.interests.includes(interest)
-                        ? 'bg-purple-100 border-purple-300 text-purple-700'
+                        ? 'bg-blue-100 border-blue-300 text-blue-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -794,7 +794,7 @@ export function InfluencerCardModal({
                         max="100"
                         value={formData.audienceDemographics.ageGroups[ageGroup] || 0}
                         onChange={(e) => handleAgeGroupChange(ageGroup, parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0"
                       />
                     </div>
@@ -845,7 +845,7 @@ export function InfluencerCardModal({
                           }
                         }));
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   
@@ -872,7 +872,7 @@ export function InfluencerCardModal({
                           }
                         }));
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   
@@ -899,7 +899,7 @@ export function InfluencerCardModal({
                           }
                         }));
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -923,7 +923,7 @@ export function InfluencerCardModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Сохранение...' : 'Сохранить карточку'}</span>

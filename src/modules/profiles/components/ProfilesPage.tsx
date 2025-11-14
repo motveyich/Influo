@@ -109,7 +109,7 @@ export function ProfilesPage() {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <Loader2 className="animate-spin h-8 w-8 text-purple-600 mx-auto mb-4" />
+            <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
               {activeTab === 'security' ? t('profile.loadingSecuritySettings') :
                activeTab === 'notifications' ? t('profile.loadingNotificationSettings') :
@@ -150,7 +150,7 @@ export function ProfilesPage() {
                     setShowProfileModal(true);
                   }}
                   disabled={isUpdating}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -225,7 +225,7 @@ export function ProfilesPage() {
                       setShowProfileModal(true);
                     }}
                     disabled={isUpdating}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('profile.createProfile')}
                   </button>
@@ -263,7 +263,7 @@ export function ProfilesPage() {
                     setShowProfileModal(true);
                   }}
                   disabled={isUpdating}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -317,7 +317,7 @@ export function ProfilesPage() {
                         {currentUserProfile.influencerData.contentCategories.map((category, index) => (
                           <span
                             key={index}
-                            className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
                           >
                             {category}
                           </span>
@@ -345,7 +345,7 @@ export function ProfilesPage() {
                       setShowProfileModal(true);
                     }}
                     disabled={isUpdating}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('profile.setupProfile')}
                   </button>
@@ -383,7 +383,7 @@ export function ProfilesPage() {
                     setShowProfileModal(true);
                   }}
                   disabled={isUpdating}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -427,7 +427,7 @@ export function ProfilesPage() {
                             href={(currentUserProfile.advertiserData as any).organizationWebsite}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           >
                             {(currentUserProfile.advertiserData as any).organizationWebsite}
                           </a>
@@ -517,7 +517,7 @@ export function ProfilesPage() {
                       setShowProfileModal(true);
                     }}
                     disabled={isUpdating}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('profile.setupProfile')}
                   </button>
@@ -543,7 +543,7 @@ export function ProfilesPage() {
         ) : (
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <Loader2 className="animate-spin h-8 w-8 text-blue-600 mr-3" />
               <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingSecuritySettings')}</p>
             </div>
           </div>
@@ -558,7 +558,7 @@ export function ProfilesPage() {
         ) : (
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <Loader2 className="animate-spin h-8 w-8 text-blue-600 mr-3" />
               <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingNotificationSettings')}</p>
             </div>
           </div>
@@ -573,7 +573,7 @@ export function ProfilesPage() {
         ) : (
           <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="animate-spin h-8 w-8 text-purple-600 mr-3" />
+              <Loader2 className="animate-spin h-8 w-8 text-blue-600 mr-3" />
               <p className="text-gray-600 dark:text-gray-400">{t('profile.loadingInterfaceSettings')}</p>
             </div>
           </div>
@@ -606,7 +606,7 @@ export function ProfilesPage() {
                   disabled={isUpdating}
                   className={`w-full flex items-center px-4 py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left ${
                     activeTab === item.id
-                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'
                   }`}
                 >

@@ -199,14 +199,14 @@ export function CollaborationRequestModal({
               </label>
               {isLoadingCampaigns ? (
                 <div className="flex items-center justify-center p-4 border border-gray-300 rounded-md">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   <span className="ml-2 text-gray-600">Загрузка кампаний...</span>
                 </div>
               ) : availableCampaigns.length > 0 ? (
                 <select
                   value={selectedCampaignId}
                   onChange={(e) => handleCampaignSelect(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.selectedCampaign ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
@@ -242,7 +242,7 @@ export function CollaborationRequestModal({
               type="text"
               value={formData.campaignTitle}
               onChange={(e) => setFormData(prev => ({ ...prev, campaignTitle: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.campaignTitle ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Введите название кампании"
@@ -265,7 +265,7 @@ export function CollaborationRequestModal({
               value={formData.message}
               onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.message ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Опишите ваше предложение о сотрудничестве, соответствие бренду и почему вы заинтересованы..."
@@ -294,7 +294,7 @@ export function CollaborationRequestModal({
                 type="number"
                 value={formData.proposedRate}
                 onChange={(e) => setFormData(prev => ({ ...prev, proposedRate: parseInt(e.target.value) || 0 }))}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.proposedRate ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="1000"
@@ -321,13 +321,13 @@ export function CollaborationRequestModal({
                 value={newDeliverable}
                 onChange={(e) => setNewDeliverable(e.target.value)}
                 placeholder="например, 1 пост в Instagram, 3 слайда в Stories"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && addDeliverable()}
               />
               <button
                 type="button"
                 onClick={addDeliverable}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Добавить
               </button>
@@ -338,7 +338,7 @@ export function CollaborationRequestModal({
               {formData.deliverables.map((deliverable, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                   <div className="flex items-center space-x-2">
-                    <Package className="w-4 h-4 text-purple-600" />
+                    <Package className="w-4 h-4 text-blue-600" />
                     <span className="text-sm text-gray-900">{deliverable}</span>
                   </div>
                   <button
@@ -370,7 +370,7 @@ export function CollaborationRequestModal({
                 type="text"
                 value={formData.timeline}
                 onChange={(e) => setFormData(prev => ({ ...prev, timeline: e.target.value }))}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.timeline ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="например, 2 недели с момента принятия, до 15 марта"
@@ -393,7 +393,7 @@ export function CollaborationRequestModal({
               value={formData.additionalNotes}
               onChange={(e) => setFormData(prev => ({ ...prev, additionalNotes: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Любая дополнительная информация, требования или вопросы..."
             />
           </div>
@@ -410,7 +410,7 @@ export function CollaborationRequestModal({
           <button
             onClick={handleSendRequest}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
             <span>{isLoading ? 'Отправка...' : 'Отправить запрос'}</span>

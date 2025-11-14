@@ -9,7 +9,7 @@ export function DemoHomePage() {
   const stats = [
     { label: 'Активных кампаний', value: '12', icon: Target, color: 'blue' },
     { label: 'Предложений', value: '8', icon: MessageCircle, color: 'green' },
-    { label: 'Инфлюенсеров', value: '1,234', icon: Users, color: 'purple' },
+    { label: 'Инфлюенсеров', value: '1,234', icon: Users, color: 'cyan' },
     { label: 'Средний ER', value: '4.8%', icon: TrendingUp, color: 'orange' },
   ];
 
@@ -39,12 +39,12 @@ export function DemoHomePage() {
       <ToastContainer />
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Добро пожаловать в Influo!</h1>
         <p className="text-lg text-white mb-2">
           Платформа для инфлюенсер-маркетинга нового поколения
         </p>
-        <p className="text-purple-100">
+        <p className="text-blue-100">
           Это демонстрационная версия. Зарегистрируйтесь, чтобы получить полный доступ ко всем возможностям.
         </p>
       </div>
@@ -56,7 +56,7 @@ export function DemoHomePage() {
           const colorClasses = {
             blue: 'from-blue-600 to-blue-700',
             green: 'from-green-600 to-green-700',
-            purple: 'from-purple-600 to-purple-700',
+            cyan: 'from-cyan-600 to-cyan-700',
             orange: 'from-orange-600 to-orange-700',
           }[stat.color];
 
@@ -118,7 +118,7 @@ export function DemoHomePage() {
           className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
           onClick={() => showToast(demoToastMessages.createCampaign)}
         >
-          <Target className="w-8 h-8 text-purple-600 mb-3" />
+          <Target className="w-8 h-8 text-blue-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Создать кампанию
           </h3>
@@ -131,7 +131,7 @@ export function DemoHomePage() {
           className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
           onClick={() => showToast('В полной версии вы можете просматривать всех инфлюенсеров и отправлять им предложения.')}
         >
-          <Users className="w-8 h-8 text-purple-600 mb-3" />
+          <Users className="w-8 h-8 text-blue-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Найти инфлюенсеров
           </h3>

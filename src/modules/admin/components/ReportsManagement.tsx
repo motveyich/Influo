@@ -75,7 +75,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       case 'harassment':
         return <Flag className="w-4 h-4 text-red-600" />;
       case 'copyright':
-        return <Eye className="w-4 h-4 text-purple-600" />;
+        return <Eye className="w-4 h-4 text-blue-600" />;
       default:
         return <Flag className="w-4 h-4 text-gray-600" />;
     }
@@ -103,7 +103,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       case 'user_profile':
         return <User className="w-4 h-4 text-blue-600" />;
       case 'influencer_card':
-        return <Grid className="w-4 h-4 text-purple-600" />;
+        return <Grid className="w-4 h-4 text-blue-600" />;
       case 'campaign':
         return <Target className="w-4 h-4 text-green-600" />;
       case 'chat_message':
@@ -134,7 +134,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все статусы</option>
           <option value="pending">Ожидают</option>
@@ -146,7 +146,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as ReportType | 'all')}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все типы</option>
           <option value="spam">Спам</option>
@@ -162,7 +162,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       <div className="space-y-4">
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка жалоб...</p>
           </div>
         ) : reports.length === 0 ? (
@@ -271,7 +271,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                     value={resolutionNotes}
                     onChange={(e) => setResolutionNotes(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Опишите принятое решение..."
                   />
                 </div>

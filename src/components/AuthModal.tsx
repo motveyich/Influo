@@ -152,7 +152,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder={t('profile.placeholders.email')}
@@ -176,7 +176,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.password ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Введите ваш пароль"
@@ -201,7 +201,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Подтвердите ваш пароль"
@@ -219,7 +219,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? t('common.loading') : mode === 'signin' ? t('auth.signIn') : t('auth.createAccount')}
           </button>
@@ -231,7 +231,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
             {mode === 'signin' ? t('auth.noAccount') : t('auth.alreadyHaveAccount')}
             <button
               onClick={switchMode}
-              className="ml-1 text-purple-600 hover:text-purple-700 font-medium"
+              className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
             >
               {mode === 'signin' ? t('auth.signUpLink') : t('auth.signInLink')}
             </button>

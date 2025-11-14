@@ -138,7 +138,7 @@ export function DemoChatPage() {
               />
               <button
                 onClick={handleSendMessage}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
               >
                 <Send className="w-4 h-4" />
                 <span className="hidden sm:inline">Отправить</span>
@@ -150,7 +150,7 @@ export function DemoChatPage() {
         {/* AI Analysis Panel */}
         <div className="hidden xl:block w-80 border-l border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center space-x-2 mb-4">
-            <Bot className="w-5 h-5 text-purple-600" />
+            <Bot className="w-5 h-5 text-blue-600" />
             <h3 className="font-semibold text-gray-900 dark:text-white">
               Анализ диалога
             </h3>
@@ -170,10 +170,10 @@ export function DemoChatPage() {
               <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 mb-1">
                 Что это?
               </p>
-              <p className="text-xs text-blue-800 dark:text-purple-400">
+              <p className="text-xs text-blue-800 dark:text-blue-400">
                 AI анализирует ваши переписки и помогает:
               </p>
-              <ul className="text-xs text-blue-800 dark:text-purple-400 mt-2 space-y-1 ml-3">
+              <ul className="text-xs text-blue-800 dark:text-blue-400 mt-2 space-y-1 ml-3">
                 <li>• Определять тон разговора</li>
                 <li>• Выделять ключевые моменты</li>
                 <li>• Предлагать ответы</li>

@@ -97,7 +97,7 @@ export function CampaignCard({
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
             {isAutomaticCampaign && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-md">
+              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-blue-100 text-blue-700 rounded-md">
                 <Zap className="w-3 h-3" />
                 <span className="text-xs font-medium">Автоматическая</span>
               </div>
@@ -119,7 +119,7 @@ export function CampaignCard({
               </div>
             </span>
           </div>
-          <p className="text-sm font-medium text-purple-600 mb-2">{campaign.brand}</p>
+          <p className="text-sm font-medium text-blue-600 mb-2">{campaign.brand}</p>
           <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
         </div>
         
@@ -200,7 +200,7 @@ export function CampaignCard({
 
         {/* Audience Size */}
         <div className="flex items-center space-x-2">
-          <Users className="w-4 h-4 text-purple-600" />
+          <Users className="w-4 h-4 text-blue-600" />
           <span className="text-sm text-gray-600">
             Аудитория: {formatAudienceSize(
               campaign.preferences.audienceSize.min,
@@ -247,12 +247,12 @@ export function CampaignCard({
 
       {/* Automatic Campaign Info */}
       {isAutomaticCampaign && automaticSettings && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-3 mb-4">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
           <div className="flex items-center space-x-2 mb-2">
-            <Zap className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-800">Автоматические настройки</span>
+            <Zap className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">Автоматические настройки</span>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs text-purple-700">
+          <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
             <span>Цель: {automaticSettings.targetInfluencerCount} инфлюенсеров</span>
             <span>Овербукинг: {automaticSettings.overbookingPercentage}%</span>
             <span>Размер пакета: {automaticSettings.batchSize}</span>
@@ -275,7 +275,7 @@ export function CampaignCard({
             disabled={campaign.status !== 'active'}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
               campaign.status === 'active'
-                ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
@@ -298,7 +298,7 @@ export function CampaignCard({
             disabled={!isAutomaticCampaign}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
               isAutomaticCampaign
-                ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >

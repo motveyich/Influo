@@ -214,7 +214,7 @@ export function CreateOfferModal({
                     placeholder="Поиск рекламодателей..."
                     value={advertiserSearch}
                     onChange={(e) => setAdvertiserSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 
@@ -229,7 +229,7 @@ export function CreateOfferModal({
                         key={advertiser.user_id}
                         onClick={() => handleAdvertiserSelect(advertiser.user_id)}
                         className={`w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
-                          formData.advertiserId === advertiser.user_id ? 'bg-purple-50' : ''
+                          formData.advertiserId === advertiser.user_id ? 'bg-blue-50' : ''
                         }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -280,7 +280,7 @@ export function CreateOfferModal({
               <select
                 value={formData.campaignId}
                 onChange={(e) => setFormData(prev => ({ ...prev, campaignId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Выберите кампанию...</option>
                 {availableCampaigns.map((campaign) => (
@@ -301,7 +301,7 @@ export function CreateOfferModal({
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Сотрудничество с брендом XYZ"
@@ -323,7 +323,7 @@ export function CreateOfferModal({
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Опишите ваше предложение, опыт и почему вы подходите для этого сотрудничества..."
@@ -351,7 +351,7 @@ export function CreateOfferModal({
                 type="number"
                 value={formData.proposedRate}
                 onChange={(e) => setFormData(prev => ({ ...prev, proposedRate: parseInt(e.target.value) || 0 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.proposedRate ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="1000"
@@ -371,7 +371,7 @@ export function CreateOfferModal({
               <select
                 value={formData.currency}
                 onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
@@ -389,7 +389,7 @@ export function CreateOfferModal({
               type="text"
               value={formData.timeline}
               onChange={(e) => setFormData(prev => ({ ...prev, timeline: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.timeline ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="например, 2 недели с момента принятия, до 15 марта"
@@ -414,13 +414,13 @@ export function CreateOfferModal({
                 value={newDeliverable}
                 onChange={(e) => setNewDeliverable(e.target.value)}
                 placeholder="например, 1 пост в Instagram, 3 Stories"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && addDeliverable()}
               />
               <button
                 type="button"
                 onClick={addDeliverable}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -460,7 +460,7 @@ export function CreateOfferModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Отправка...' : 'Отправить предложение'}</span>
