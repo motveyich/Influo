@@ -22,7 +22,7 @@ export function DemoProfilesPage() {
         </div>
         <button
           onClick={() => showToast('Фильтры и поиск доступны после регистрации. В полной версии вы сможете искать по нише, подписчикам, ER и другим параметрам.')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
         >
           Фильтры
         </button>
@@ -82,7 +82,7 @@ export function DemoProfilesPage() {
               <div className="flex space-x-2">
                 <button
                   onClick={() => showToast(demoToastMessages.viewDetails)}
-                  className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   <span>Подробнее</span>

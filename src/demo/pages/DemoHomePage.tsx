@@ -39,9 +39,9 @@ export function DemoHomePage() {
       <ToastContainer />
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-8 text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Добро пожаловать, Демо-пользователь!</h1>
-        <p className="text-blue-100">
+        <p className="text-purple-100">
           Это демонстрационная версия платформы. Все данные вымышленные.
         </p>
       </div>
@@ -115,7 +115,7 @@ export function DemoHomePage() {
           className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
           onClick={() => showToast(demoToastMessages.createCampaign)}
         >
-          <Target className="w-8 h-8 text-blue-600 mb-3" />
+          <Target className="w-8 h-8 text-purple-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Создать кампанию
           </h3>
