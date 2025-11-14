@@ -98,7 +98,8 @@ export class ApplicationService {
           timeline: applicationData.applicationData?.timeline || 'По договоренности',
           metadata: {
             createdFromApplication: true,
-            originalApplicationId: transformedApplication.id
+            originalApplicationId: transformedApplication.id,
+            integrationDetails: applicationData.applicationData?.integrationDetails || null
           }
         });
       } catch (offerError) {

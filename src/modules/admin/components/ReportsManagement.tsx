@@ -3,6 +3,7 @@ import { ContentReport, ReportType } from '../../../core/types';
 import { moderationService } from '../../../services/moderationService';
 import { useAuth } from '../../../hooks/useAuth';
 import { CompactChatModal } from './CompactChatModal';
+import { OfferViewModal } from './OfferViewModal';
 import {
   Flag,
   Eye,
@@ -668,13 +669,21 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
 
       {/* Compact Chat Modal */}
       {offerDetails && (
-        <CompactChatModal
-          isOpen={showChatModal}
-          onClose={() => setShowChatModal(false)}
-          messages={offerDetails.messages || []}
-          influencer={offerDetails.influencer}
-          advertiser={offerDetails.advertiser}
-        />
+        <>
+          <CompactChatModal
+            isOpen={showChatModal}
+            onClose={() => setShowChatModal(false)}
+            messages={offerDetails.messages || []}
+            influencer={offerDetails.influencer}
+            advertiser={offerDetails.advertiser}
+          />
+
+          <OfferViewModal
+            isOpen={showOfferModal}
+            onClose={() => setShowOfferModal(false)}
+            offer={offerDetails.offer}
+          />
+        </>
       )}
     </div>
   );
