@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ContentReport, ReportType } from '../../../core/types';
 import { moderationService } from '../../../services/moderationService';
 import { useAuth } from '../../../hooks/useAuth';
+import { CompactChatModal } from './CompactChatModal';
 import {
   Flag,
   Eye,
@@ -33,6 +34,9 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
   const [typeFilter, setTypeFilter] = useState<ReportType | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<ContentReport | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [offerDetails, setOfferDetails] = useState<any>(null);
   const [loadingOfferDetails, setLoadingOfferDetails] = useState(false);
@@ -380,6 +384,37 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                       <div className="bg-blue-50 p-4 rounded-lg text-sm text-gray-600">Загрузка деталей сотрудничества...</div>
                     ) : offerDetails ? (
                       <>
+                        {/* Navigation Buttons */}
+                        <div className="flex flex-wrap gap-2 pb-3 border-b border-gray-200">
+                          <button
+                            onClick={() => setShowOfferModal(true)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span>Показать предложение</span>
+                          </button>
+
+                          {offerDetails.messages && offerDetails.messages.length > 0 && (
+                            <button
+                              onClick={() => setShowChatModal(true)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              <span>Показать чат ({offerDetails.messages.length})</span>
+                            </button>
+                          )}
+
+                          {offerDetails.payments && offerDetails.payments.length > 0 && (
+                            <button
+                              onClick={() => setShowPaymentsModal(true)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                              <span>Показать оплаты ({offerDetails.payments.length})</span>
+                            </button>
+                          )}
+                        </div>
+
                         {/* Участники */}
                         <div className="bg-white border border-gray-200 rounded-lg">
                           <button
@@ -629,6 +664,17 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Compact Chat Modal */}
+      {offerDetails && (
+        <CompactChatModal
+          isOpen={showChatModal}
+          onClose={() => setShowChatModal(false)}
+          messages={offerDetails.messages || []}
+          influencer={offerDetails.influencer}
+          advertiser={offerDetails.advertiser}
+        />
       )}
     </div>
   );

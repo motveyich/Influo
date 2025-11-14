@@ -105,7 +105,6 @@ export function InfluencerCardDisplay({
           integrationDetails: {
             niche: integrationDetails.niche,
             productDescription: integrationDetails.productDescription,
-            integrationFormat: integrationDetails.integrationFormat,
             integrationParameters: integrationDetails.integrationParameters
           }
         }

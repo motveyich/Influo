@@ -506,14 +506,49 @@ export function OfferDetailsModal({
                 </div>
               )}
 
+              {/* Integration Details */}
+              {offer.metadata?.integrationDetails && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Параметры интеграции</h3>
+                  <div className="bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900 border border-purple-100 dark:border-gray-700 rounded-lg p-4 space-y-4">
+                    {offer.metadata.integrationDetails.niche && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Ниша</h4>
+                        <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-3 py-2 rounded border border-purple-100 dark:border-gray-700">
+                          {offer.metadata.integrationDetails.niche}
+                        </p>
+                      </div>
+                    )}
+
+                    {offer.metadata.integrationDetails.productDescription && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Описание продукта</h4>
+                        <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-3 py-2 rounded border border-purple-100 dark:border-gray-700 whitespace-pre-wrap">
+                          {offer.metadata.integrationDetails.productDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {offer.metadata.integrationDetails.integrationParameters && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Дополнительные параметры</h4>
+                        <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-3 py-2 rounded border border-purple-100 dark:border-gray-700 whitespace-pre-wrap">
+                          {offer.metadata.integrationDetails.integrationParameters}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Deliverables */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Результаты</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Результаты</h3>
                 <div className="space-y-2">
                   {offer.deliverables.map((deliverable, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-3 bg-blue-50 rounded-md">
-                      <CheckCircle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-900">{deliverable}</span>
+                    <div key={index} className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-gray-800 rounded-md border border-blue-100 dark:border-gray-700">
+                      <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-gray-900 dark:text-white">{deliverable}</span>
                     </div>
                   ))}
                 </div>

@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 interface IntegrationDetails {
   niche: string;
   productDescription: string;
-  integrationFormat: string;
   integrationParameters: string;
 }
 
@@ -47,7 +46,6 @@ export function IntegrationDetailsModal({
   const [formData, setFormData] = useState<IntegrationDetails>({
     niche: '',
     productDescription: '',
-    integrationFormat: '',
     integrationParameters: ''
   });
 
@@ -67,11 +65,6 @@ export function IntegrationDetailsModal({
 
     if (!formData.productDescription || formData.productDescription.length < 10) {
       toast.error('Описание продукта должно содержать минимум 10 символов');
-      return;
-    }
-
-    if (!formData.integrationFormat || formData.integrationFormat.length < 10) {
-      toast.error('Описание формата интеграции должно содержать минимум 10 символов');
       return;
     }
 
@@ -148,25 +141,6 @@ export function IntegrationDetailsModal({
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Минимум 10 символов. Укажите ключевые особенности и преимущества продукта.
-            </p>
-          </div>
-
-          {/* Integration Format */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Формат интеграции <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={formData.integrationFormat}
-              onChange={(e) => setFormData({ ...formData, integrationFormat: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Например: Пост в ленте, Stories, видеообзор, интеграция в ролик..."
-              required
-              minLength={10}
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Минимум 10 символов. Опишите желаемый формат размещения рекламы.
             </p>
           </div>
 
