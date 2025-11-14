@@ -13,7 +13,13 @@ import {
   MessageCircle,
   Grid,
   Clock,
-  X
+  X,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  Calendar,
+  Ban,
+  ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,6 +36,12 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [offerDetails, setOfferDetails] = useState<any>(null);
   const [loadingOfferDetails, setLoadingOfferDetails] = useState(false);
+  const [showChatDialog, setShowChatDialog] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    offer: true,
+    payments: true,
+    chat: false
+  });
 
   const { user: currentUser } = useAuth();
 
@@ -51,14 +63,27 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       const { offerService } = await import('../../offers/services/offerService');
       const { paymentRequestService } = await import('../../offers/services/paymentRequestService');
       const { chatService } = await import('../../chat/services/chatService');
+      const { supabase } = await import('../../../core/supabase');
 
       const offer = await offerService.getOfferById(offerId);
       const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
 
-      // Получить ID чата из offer или создать его
+      // Получить информацию об участниках
+      const { data: influencerProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name, avatar_url, role')
+        .eq('user_id', offer.influencerId)
+        .single();
+
+      const { data: advertiserProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name, avatar_url, role')
+        .eq('user_id', offer.advertiserId)
+        .single();
+
+      // Получить ID чата из offer или найти его
       let chatId = (offer as any).chatId;
       if (!chatId) {
-        // Попробовать найти чат между участниками
         const chats = await chatService.getUserChats(offer.influencerId);
         const existingChat = chats.find(c =>
           (c.participant1Id === offer.influencerId && c.participant2Id === offer.advertiserId) ||
@@ -72,13 +97,40 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
         messages = await chatService.getChatMessages(chatId);
       }
 
-      setOfferDetails({ offer, payments, messages });
+      setOfferDetails({
+        offer,
+        payments,
+        messages,
+        chatId,
+        influencer: { id: offer.influencerId, profile: influencerProfile },
+        advertiser: { id: offer.advertiserId, profile: advertiserProfile }
+      });
     } catch (error) {
       console.error('Failed to load offer details:', error);
       setOfferDetails(null);
     } finally {
       setLoadingOfferDetails(false);
     }
+  };
+
+  const handleBlockUser = async (userId: string, userName: string) => {
+    if (!confirm(`Вы уверены, что хотите заблокировать пользователя ${userName}?`)) {
+      return;
+    }
+
+    try {
+      const { adminService } = await import('../../../services/adminService');
+      await adminService.blockUser(userId, 'Заблокирован администратором через рассмотрение жалобы');
+      toast.success(`Пользователь ${userName} заблокирован`);
+      await loadOfferDetails(selectedReport!.targetId);
+    } catch (error: any) {
+      console.error('Failed to block user:', error);
+      toast.error(error.message || 'Не удалось заблокировать пользователя');
+    }
+  };
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   const loadReports = async () => {
@@ -312,54 +364,210 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
 
                 {/* Детали сотрудничества */}
                 {selectedReport.targetType === 'offer' && (
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-3">Информация о сотрудничестве</h4>
+                  <div className="space-y-3">
                     {loadingOfferDetails ? (
-                      <div className="text-sm text-gray-600">Загрузка...</div>
+                      <div className="bg-blue-50 p-4 rounded-lg text-sm text-gray-600">Загрузка деталей сотрудничества...</div>
                     ) : offerDetails ? (
-                      <div className="space-y-4">
-                        {/* Детали предложения */}
-                        <div className="bg-white p-3 rounded">
-                          <h5 className="font-medium text-sm mb-2">Предложение</h5>
-                          <div className="space-y-1 text-xs text-gray-600">
-                            <div><strong>Ставка:</strong> ${offerDetails.offer.proposedRate}</div>
-                            <div><strong>Статус:</strong> {offerDetails.offer.status}</div>
-                            <div><strong>Этап:</strong> {offerDetails.offer.currentStage}</div>
-                          </div>
+                      <>
+                        {/* Участники */}
+                        <div className="bg-white border border-gray-200 rounded-lg">
+                          <button
+                            onClick={() => toggleSection('offer')}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <User className="w-5 h-5 text-blue-600" />
+                              <h5 className="font-medium text-gray-900">Участники и детали предложения</h5>
+                            </div>
+                            {expandedSections.offer ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                          </button>
+
+                          {expandedSections.offer && (
+                            <div className="px-4 pb-4 space-y-3">
+                              {/* Инфлюенсер */}
+                              <div className="flex items-center justify-between p-3 bg-blue-50 rounded">
+                                <div className="flex items-center space-x-3">
+                                  {offerDetails.influencer.profile?.avatar_url ? (
+                                    <img src={offerDetails.influencer.profile.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
+                                      <User className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-gray-900">{offerDetails.influencer.profile?.full_name || 'Инфлюенсер'}</div>
+                                    <div className="text-xs text-gray-500">Инфлюенсер</div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleBlockUser(offerDetails.influencer.id, offerDetails.influencer.profile?.full_name || 'Инфлюенсер')}
+                                  className="flex items-center space-x-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                  <span>Заблокировать</span>
+                                </button>
+                              </div>
+
+                              {/* Рекламодатель */}
+                              <div className="flex items-center justify-between p-3 bg-green-50 rounded">
+                                <div className="flex items-center space-x-3">
+                                  {offerDetails.advertiser.profile?.avatar_url ? (
+                                    <img src={offerDetails.advertiser.profile.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center">
+                                      <Target className="w-5 h-5 text-green-600" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-gray-900">{offerDetails.advertiser.profile?.full_name || 'Рекламодатель'}</div>
+                                    <div className="text-xs text-gray-500">Рекламодатель</div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleBlockUser(offerDetails.advertiser.id, offerDetails.advertiser.profile?.full_name || 'Рекламодатель')}
+                                  className="flex items-center space-x-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                  <span>Заблокировать</span>
+                                </button>
+                              </div>
+
+                              {/* Детали предложения */}
+                              <div className="grid grid-cols-2 gap-3 mt-3">
+                                <div className="p-3 bg-gray-50 rounded">
+                                  <div className="text-xs text-gray-500 mb-1">Предложенная ставка</div>
+                                  <div className="text-lg font-semibold text-gray-900">${offerDetails.offer.proposedRate}</div>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded">
+                                  <div className="text-xs text-gray-500 mb-1">Статус</div>
+                                  <div className="text-sm font-medium text-gray-900">{offerDetails.offer.status}</div>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded">
+                                  <div className="text-xs text-gray-500 mb-1">Текущий этап</div>
+                                  <div className="text-sm font-medium text-gray-900">{offerDetails.offer.currentStage}</div>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded">
+                                  <div className="text-xs text-gray-500 mb-1">Создано</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {new Date(offerDetails.offer.createdAt).toLocaleDateString('ru-RU')}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {offerDetails.offer.title && (
+                                <div className="mt-3">
+                                  <div className="text-xs text-gray-500 mb-1">Название</div>
+                                  <div className="text-sm text-gray-900">{offerDetails.offer.title}</div>
+                                </div>
+                              )}
+
+                              {offerDetails.offer.description && (
+                                <div className="mt-2">
+                                  <div className="text-xs text-gray-500 mb-1">Описание</div>
+                                  <div className="text-sm text-gray-700">{offerDetails.offer.description}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Окна оплаты */}
                         {offerDetails.payments && offerDetails.payments.length > 0 && (
-                          <div className="bg-white p-3 rounded">
-                            <h5 className="font-medium text-sm mb-2">Окна оплаты ({offerDetails.payments.length})</h5>
-                            <div className="space-y-2">
-                              {offerDetails.payments.map((payment: any, idx: number) => (
-                                <div key={idx} className="text-xs text-gray-600 border-l-2 border-blue-300 pl-2">
-                                  <div><strong>Сумма:</strong> ${payment.amount}</div>
-                                  <div><strong>Статус:</strong> {payment.status}</div>
-                                  <div><strong>Метод:</strong> {payment.paymentMethod}</div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="bg-white border border-gray-200 rounded-lg">
+                            <button
+                              onClick={() => toggleSection('payments')}
+                              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <DollarSign className="w-5 h-5 text-green-600" />
+                                <h5 className="font-medium text-gray-900">Окна оплаты ({offerDetails.payments.length})</h5>
+                              </div>
+                              {expandedSections.payments ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </button>
+
+                            {expandedSections.payments && (
+                              <div className="px-4 pb-4 space-y-2">
+                                {offerDetails.payments.map((payment: any, idx: number) => (
+                                  <div key={idx} className="p-3 bg-gray-50 rounded border-l-4 border-green-400">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div>
+                                        <span className="text-gray-500">Сумма:</span>
+                                        <span className="ml-2 font-semibold text-gray-900">${payment.amount}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Статус:</span>
+                                        <span className={`ml-2 font-medium ${
+                                          payment.status === 'paid' ? 'text-green-600' :
+                                          payment.status === 'pending' ? 'text-yellow-600' :
+                                          'text-gray-600'
+                                        }`}>{payment.status}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Метод:</span>
+                                        <span className="ml-2 text-gray-900">{payment.paymentMethod}</span>
+                                      </div>
+                                      {payment.dueDate && (
+                                        <div>
+                                          <span className="text-gray-500">Срок:</span>
+                                          <span className="ml-2 text-gray-900">
+                                            {new Date(payment.dueDate).toLocaleDateString('ru-RU')}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {payment.description && (
+                                      <div className="mt-2 text-xs text-gray-600">{payment.description}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {/* Сообщения чата */}
+                        {/* Диалог */}
                         {offerDetails.messages && offerDetails.messages.length > 0 && (
-                          <div className="bg-white p-3 rounded">
-                            <h5 className="font-medium text-sm mb-2">Диалог ({offerDetails.messages.length} сообщений)</h5>
-                            <div className="max-h-40 overflow-y-auto space-y-1">
-                              {offerDetails.messages.slice(-5).map((msg: any, idx: number) => (
-                                <div key={idx} className="text-xs text-gray-600">
-                                  <strong>{msg.senderName}:</strong> {msg.content?.substring(0, 100)}
+                          <div className="bg-white border border-gray-200 rounded-lg">
+                            <button
+                              onClick={() => toggleSection('chat')}
+                              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <MessageCircle className="w-5 h-5 text-purple-600" />
+                                <h5 className="font-medium text-gray-900">Диалог ({offerDetails.messages.length} сообщений)</h5>
+                              </div>
+                              {expandedSections.chat ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </button>
+
+                            {expandedSections.chat && (
+                              <div className="px-4 pb-4">
+                                <div className="max-h-96 overflow-y-auto space-y-2 bg-gray-50 p-3 rounded">
+                                  {offerDetails.messages.map((msg: any, idx: number) => (
+                                    <div key={idx} className={`p-2 rounded text-sm ${
+                                      msg.senderId === offerDetails.influencer.id ? 'bg-blue-100' : 'bg-green-100'
+                                    }`}>
+                                      <div className="font-medium text-xs text-gray-600 mb-1">
+                                        {msg.senderName || (msg.senderId === offerDetails.influencer.id ? 'Инфлюенсер' : 'Рекламодатель')}
+                                        <span className="ml-2 text-gray-400">
+                                          {new Date(msg.createdAt).toLocaleString('ru-RU')}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-900">{msg.content}</div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
+                                <div className="mt-2 text-xs text-gray-500 italic">
+                                  Режим только для чтения - вы не можете отправлять сообщения
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
-                      </div>
+                      </>
                     ) : (
-                      <div className="text-sm text-gray-600">Не удалось загрузить детали</div>
+                      <div className="bg-red-50 p-4 rounded-lg text-sm text-red-600">
+                        Не удалось загрузить детали сотрудничества
+                      </div>
                     )}
                   </div>
                 )}
