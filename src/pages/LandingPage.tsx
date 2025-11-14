@@ -233,12 +233,11 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {showAuthModal && (
-        <AuthModal
-          mode={authMode}
-          onClose={() => setShowAuthModal(false)}
-        />
-      )}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultMode={authMode}
+      />
     </div>
   );
 }
