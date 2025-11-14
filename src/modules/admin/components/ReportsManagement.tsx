@@ -368,13 +368,67 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
             
             <div className="p-6 max-h-[70vh] overflow-y-auto">
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Детали жалобы</h4>
-                  <div className="space-y-2 text-sm">
-                    <div><strong>Тип:</strong> {getReportTypeLabel(selectedReport.reportType)}</div>
-                    <div><strong>Цель:</strong> {selectedReport.targetType}</div>
-                    <div><strong>Приоритет:</strong> {selectedReport.priority}</div>
-                    <div><strong>Описание:</strong> {selectedReport.description}</div>
+                <div className="bg-gradient-to-br from-red-50 to-white dark:from-red-900/20 dark:to-gray-800 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <Flag className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <span>Детали жалобы</span>
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    {offerDetails && (
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded border border-red-100 dark:border-red-900">
+                        <p className="text-gray-900 dark:text-white leading-relaxed">
+                          Пользователь{' '}
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {selectedReport.reporterId === offerDetails.influencer.id
+                              ? offerDetails.influencer.profile?.full_name || 'Инфлюенсер'
+                              : offerDetails.advertiser.profile?.full_name || 'Рекламодатель'}
+                          </span>
+                          {' '}(
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {selectedReport.reporterId === offerDetails.influencer.id
+                              ? offerDetails.influencer.profile?.email || 'email не указан'
+                              : offerDetails.advertiser.profile?.email || 'email не указан'}
+                          </span>
+                          ) жалуется на пользователя{' '}
+                          <span className="font-semibold text-orange-600 dark:text-orange-400">
+                            {selectedReport.reporterId === offerDetails.influencer.id
+                              ? offerDetails.advertiser.profile?.full_name || 'Рекламодатель'
+                              : offerDetails.influencer.profile?.full_name || 'Инфлюенсер'}
+                          </span>
+                          {' '}(
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {selectedReport.reporterId === offerDetails.influencer.id
+                              ? offerDetails.advertiser.profile?.email || 'email не указан'
+                              : offerDetails.influencer.profile?.email || 'email не указан'}
+                          </span>
+                          )
+                        </p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white dark:bg-gray-800 p-2 rounded border border-red-100 dark:border-red-900">
+                        <span className="text-gray-600 dark:text-gray-400">Тип:</span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {getReportTypeLabel(selectedReport.reportType)}
+                        </span>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 p-2 rounded border border-red-100 dark:border-red-900">
+                        <span className="text-gray-600 dark:text-gray-400">Приоритет:</span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {selectedReport.priority}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-3 rounded border border-red-100 dark:border-red-900">
+                      <div className="text-gray-600 dark:text-gray-400 mb-1">Причина жалобы:</div>
+                      <p className="text-gray-900 dark:text-white">{selectedReport.description}</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded border border-red-100 dark:border-red-900 text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">Дата и время:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">
+                        {new Date(selectedReport.createdAt).toLocaleString('ru-RU')}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -612,8 +666,75 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                         )}
                       </>
                     ) : (
-                      <div className="bg-red-50 p-4 rounded-lg text-sm text-red-600">
-                        Не удалось загрузить детали сотрудничества
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-6 rounded-lg">
+                        <div className="flex items-start space-x-3 mb-4">
+                          <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                              Детали сотрудничества недоступны
+                            </h4>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              Используйте кнопки ниже для просмотра доступной информации
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const { offerService } = await import('../../offers/services/offerService');
+                                const offer = await offerService.getOfferById(selectedReport.targetId);
+                                if (offer) {
+                                  setOfferDetails({
+                                    offer,
+                                    influencer: { id: offer.influencerId, profile: {} },
+                                    advertiser: { id: offer.advertiserId, profile: {} },
+                                    messages: [],
+                                    payments: []
+                                  });
+                                  setShowOfferModal(true);
+                                }
+                              } catch (error) {
+                                console.error('Failed to load offer:', error);
+                              }
+                            }}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span>Посмотреть предложение</span>
+                          </button>
+
+                          <button
+                            onClick={async () => {
+                              try {
+                                const { chatService } = await import('../../chat/services/chatService');
+                                const { offerService } = await import('../../offers/services/offerService');
+                                const offer = await offerService.getOfferById(selectedReport.targetId);
+                                if (offer) {
+                                  const messages = await chatService.getMessagesBetweenUsers(
+                                    offer.influencerId,
+                                    offer.advertiserId
+                                  );
+                                  setOfferDetails({
+                                    offer,
+                                    influencer: { id: offer.influencerId, profile: {} },
+                                    advertiser: { id: offer.advertiserId, profile: {} },
+                                    messages: messages || [],
+                                    payments: []
+                                  });
+                                  setShowChatModal(true);
+                                }
+                              } catch (error) {
+                                console.error('Failed to load chat:', error);
+                              }
+                            }}
+                            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Посмотреть чат</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

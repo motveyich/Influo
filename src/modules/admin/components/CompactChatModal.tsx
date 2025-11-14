@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Send } from 'lucide-react';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO, format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface Message {
   id: string;
@@ -97,7 +98,7 @@ export function CompactChatModal({
                         {name}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDistanceToNow(parseISO(message.createdAt), { addSuffix: true })}
+                        {format(parseISO(message.createdAt), 'dd.MM.yyyy HH:mm', { locale: ru })}
                       </span>
                     </div>
                     <div className={`inline-block px-4 py-2 rounded-lg ${
