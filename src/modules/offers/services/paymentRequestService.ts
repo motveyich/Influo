@@ -27,9 +27,10 @@ export class PaymentRequestService {
         .from(TABLES.PAYMENT_REQUESTS)
         .insert([newRequest])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Failed to create payment request');
 
       const transformedRequest = this.transformFromDatabase(data);
 
@@ -91,9 +92,10 @@ export class PaymentRequestService {
         .update(updateData)
         .eq('id', requestId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Payment request not found');
 
       const updatedRequest = this.transformFromDatabase(data);
 
@@ -226,7 +228,7 @@ export class PaymentRequestService {
         .from(TABLES.COLLABORATION_OFFERS)
         .select('influencer_id, advertiser_id, title')
         .eq('id', request.offerId)
-        .single();
+        .maybeSingle();
 
       if (!offer) return;
 
@@ -258,7 +260,7 @@ export class PaymentRequestService {
         .from(TABLES.COLLABORATION_OFFERS)
         .select('influencer_id, advertiser_id, title')
         .eq('id', request.offerId)
-        .single();
+        .maybeSingle();
 
       if (!offer) return;
 
