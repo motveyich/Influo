@@ -469,7 +469,9 @@ export function PaymentRequestModal({
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Сохранение...' : 'Создать окно оплаты'}</span>
+            <span>
+              {isLoading ? 'Сохранение...' : (existingRequest ? 'Сохранить изменения' : 'Создать окно оплаты')}
+            </span>
           </button>
         </div>
       </div>

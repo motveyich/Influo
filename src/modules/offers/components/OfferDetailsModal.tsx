@@ -184,10 +184,10 @@ export function OfferDetailsModal({
   };
 
   const canEditPaymentRequest = (payment: PaymentRequest) => {
-    return isInfluencer && 
-           payment.createdBy === currentUserId && 
-           !payment.isFrozen && 
-           ['draft', 'pending'].includes(payment.status);
+    return isInfluencer &&
+           payment.createdBy === currentUserId &&
+           !payment.isFrozen &&
+           ['draft', 'failed'].includes(payment.status);
   };
 
   const getPaymentActions = (payment: PaymentRequest) => {
@@ -263,6 +263,8 @@ export function OfferDetailsModal({
       case 'failed':
         return 'bg-red-100 text-red-700 border-red-200';
       case 'pending':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'draft':
         return 'bg-gray-100 text-gray-700 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
