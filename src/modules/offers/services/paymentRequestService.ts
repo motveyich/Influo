@@ -268,6 +268,9 @@ export class PaymentRequestService {
 
       let messageContent = '';
       switch (newStatus) {
+        case 'pending':
+          messageContent = `💳 Инфлюенсер создал окно оплаты на сумму ${request.amount} ${request.currency} для "${offer.title}". Ожидает вашей оплаты.`;
+          break;
         case 'paying':
           messageContent = `💰 Рекламодатель начал процесс оплаты для "${offer.title}"`;
           break;

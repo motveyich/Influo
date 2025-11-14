@@ -110,7 +110,18 @@ export function OfferDetailsModal({
   };
 
   const handlePaymentRequestCreated = (paymentRequest: PaymentRequest) => {
-    setPaymentRequests(prev => [paymentRequest, ...prev]);
+    setPaymentRequests(prev => {
+      // Проверяем, это обновление существующего окна или создание нового
+      const existingIndex = prev.findIndex(p => p.id === paymentRequest.id);
+      if (existingIndex !== -1) {
+        // Обновляем существующее
+        const updated = [...prev];
+        updated[existingIndex] = paymentRequest;
+        return updated;
+      }
+      // Добавляем новое
+      return [paymentRequest, ...prev];
+    });
     setShowPaymentModal(false);
     setEditingPayment(null);
   };
@@ -182,24 +193,28 @@ export function OfferDetailsModal({
   const getPaymentActions = (payment: PaymentRequest) => {
     const actions = [];
 
-    if (isAdvertiser) {
+    if (isInfluencer) {
+      // Influencer actions
+      if (payment.status === 'draft') {
+        actions.push(
+          { label: 'Отправить рекламодателю', action: 'pending', style: 'success' }
+        );
+      } else if (payment.status === 'paid') {
+        actions.push(
+          { label: 'Подтвердить получение', action: 'confirmed', style: 'success' }
+        );
+      }
+    } else if (isAdvertiser) {
       // Advertiser actions
       if (payment.status === 'pending') {
         actions.push(
-          { label: 'Оплачиваю', action: 'paying', style: 'warning' },
-          { label: 'Не могу оплатить', action: 'failed', style: 'danger' }
+          { label: 'Приступил к оплате', action: 'paying', style: 'warning' },
+          { label: 'Отклонить', action: 'failed', style: 'danger' }
         );
       } else if (payment.status === 'paying') {
         actions.push(
           { label: 'Оплатил', action: 'paid', style: 'success' },
           { label: 'Не получилось', action: 'failed', style: 'danger' }
-        );
-      }
-    } else if (isInfluencer) {
-      // Influencer actions
-      if (payment.status === 'paid') {
-        actions.push(
-          { label: 'Подтвердить получение', action: 'confirmed', style: 'success' }
         );
       }
     }
@@ -388,7 +403,8 @@ export function OfferDetailsModal({
                                  payment.status === 'paid' ? 'Оплачено' :
                                  payment.status === 'paying' ? 'Оплачивается' :
                                  payment.status === 'failed' ? 'Ошибка оплаты' :
-                                 payment.status === 'pending' ? 'Ожидает оплаты' : payment.status}
+                                 payment.status === 'pending' ? 'Ожидает оплаты' :
+                                 payment.status === 'draft' ? 'Черновик' : payment.status}
                               </span>
                               {payment.isFrozen && (
                                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700 border border-orange-200">
