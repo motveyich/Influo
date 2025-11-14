@@ -3,6 +3,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { AdminRoute } from '../../../components/AdminRoute';
 import { UsersManagement } from './UsersManagement';
 import { CampaignsManagement } from './CampaignsManagement';
+import { InfluencerCardsManagement } from './InfluencerCardsManagement';
 import { ModerationQueue } from './ModerationQueue';
 import { ReportsManagement } from './ReportsManagement';
 import { AdminLogs } from './AdminLogs';
@@ -20,12 +21,13 @@ import {
   CheckCircle,
   Clock,
   Eye,
-  MessageCircle
+  MessageCircle,
+  Grid
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
-type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'support' | 'logs' | 'content' | 'settings';
+type AdminTab = 'users' | 'campaigns' | 'cards' | 'moderation' | 'reports' | 'support' | 'logs' | 'content' | 'settings';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -80,6 +82,7 @@ export function AdminPanel() {
   const tabs = [
     { id: 'users', label: 'Пользователи', icon: Users, count: stats.totalUsers },
     { id: 'campaigns', label: 'Кампании', icon: Target, count: stats.totalCampaigns },
+    { id: 'cards', label: 'Карточки', icon: Grid, count: 0 },
     { id: 'moderation', label: 'Модерация', icon: Shield, count: stats.moderationQueue },
     { id: 'reports', label: 'Жалобы', icon: Flag, count: stats.pendingReports },
     { id: 'support', label: 'Поддержка', icon: MessageCircle, count: 0 },
@@ -197,6 +200,7 @@ export function AdminPanel() {
             <div className="p-6">
               {activeTab === 'users' && <UsersManagement onStatsUpdate={loadStats} />}
               {activeTab === 'campaigns' && <CampaignsManagement onStatsUpdate={loadStats} />}
+              {activeTab === 'cards' && <InfluencerCardsManagement onStatsUpdate={loadStats} />}
               {activeTab === 'moderation' && <ModerationQueue onStatsUpdate={loadStats} />}
               {activeTab === 'reports' && <ReportsManagement onStatsUpdate={loadStats} />}
               {activeTab === 'support' && <SupportManagement />}
