@@ -221,7 +221,7 @@ export function InfluencerCardDisplay({
 
   return (
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 p-6 border ${
-      !card.isActive ? 'opacity-60 border-gray-300' : 'border-gray-200'
+      !card.isActive || (card as any).isDeleted ? 'opacity-60 border-gray-300' : 'border-gray-200'
     }`}>
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
@@ -229,14 +229,19 @@ export function InfluencerCardDisplay({
           <span className={`px-3 py-1 text-sm font-medium rounded-full border capitalize ${getPlatformColor(card.platform)}`}>
             {card.platform}
           </span>
-          {!card.isActive && (
+          {(card as any).isDeleted && (
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 border border-red-200">
+              Удалена администратором
+            </span>
+          )}
+          {!card.isActive && !(card as any).isDeleted && (
             <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
               {t('common.inactive')}
             </span>
           )}
         </div>
         
-        {showActions && (
+        {showActions && !(card as any).isDeleted && (
           <div className="flex items-center space-x-2">
             <button
               onClick={() => onToggleStatus?.(card.id, !card.isActive)}
@@ -377,7 +382,7 @@ export function InfluencerCardDisplay({
         </div>
 
         {/* Action Button */}
-        {!showActions && currentUserId && !isOwnCard && (
+        {!showActions && currentUserId && !isOwnCard && !(card as any).isDeleted && (
           <div className="mt-4 space-y-2">
             {/* Primary Actions */}
             <div className="flex space-x-2">

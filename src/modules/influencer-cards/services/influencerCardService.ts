@@ -285,8 +285,11 @@ export class InfluencerCardService {
       isActive: dbData.is_active,
       lastUpdated: dbData.last_updated,
       createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
-    };
+      updatedAt: dbData.updated_at,
+      isDeleted: dbData.is_deleted || false,
+      deletedAt: dbData.deleted_at,
+      deletedBy: dbData.deleted_by
+    } as any;
   }
 
   private transformToDatabase(cardData: Partial<InfluencerCard>): any {
