@@ -434,32 +434,35 @@ export function OfferDetailsModal({
               {/* Sender Profile Info */}
               {initiatorProfile && isReceiver && (
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Информация об отправителе</h3>
-                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-lg p-4 space-y-3">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Информация об отправителе</h3>
+                  <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 border border-blue-100 dark:border-gray-700 rounded-lg p-4 space-y-3">
                     <div className="flex items-start space-x-4">
                       {initiatorProfile.avatar_url ? (
-                        <img src={initiatorProfile.avatar_url} alt="" className="w-16 h-16 rounded-full border-2 border-blue-200" />
+                        <img src={initiatorProfile.avatar_url} alt="" className="w-16 h-16 rounded-full border-2 border-blue-200 dark:border-blue-500" />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-blue-200 flex items-center justify-center border-2 border-blue-300">
-                          <User className="w-8 h-8 text-blue-600" />
+                        <div className="w-16 h-16 rounded-full bg-blue-200 dark:bg-blue-900 flex items-center justify-center border-2 border-blue-300 dark:border-blue-700">
+                          <User className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                         </div>
                       )}
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{initiatorProfile.full_name || 'Пользователь'}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{initiatorProfile.full_name || 'Пользователь'}</h4>
                         {initiatorProfile.company_name && (
-                          <p className="text-sm text-gray-600">{initiatorProfile.company_name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{initiatorProfile.company_name}</p>
+                        )}
+                        {initiatorProfile.industry && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{initiatorProfile.industry}</p>
                         )}
                         <div className="flex items-center space-x-4 mt-2">
                           {initiatorReviews.length > 0 && (
                             <div className="flex items-center space-x-1">
                               <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
                                 {(initiatorReviews.reduce((sum, r) => sum + r.rating, 0) / initiatorReviews.length).toFixed(1)}
                               </span>
-                              <span className="text-xs text-gray-500">({initiatorReviews.length} отзывов)</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({initiatorReviews.length} отзывов)</span>
                             </div>
                           )}
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 dark:text-gray-300">
                             {initiatorProfile.role === 'advertiser' ? 'Рекламодатель' : 'Инфлюенсер'}
                           </span>
                         </div>
@@ -467,24 +470,33 @@ export function OfferDetailsModal({
                     </div>
 
                     {initiatorProfile.bio && (
-                      <p className="text-sm text-gray-700 border-t border-blue-100 pt-3">{initiatorProfile.bio}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 border-t border-blue-100 dark:border-gray-700 pt-3">{initiatorProfile.bio}</p>
+                    )}
+
+                    {initiatorProfile.website && (
+                      <div className="text-sm border-t border-blue-100 dark:border-gray-700 pt-3">
+                        <span className="text-gray-600 dark:text-gray-400">Сайт: </span>
+                        <a href={initiatorProfile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                          {initiatorProfile.website}
+                        </a>
+                      </div>
                     )}
 
                     {initiatorReviews.length > 0 && (
-                      <div className="border-t border-blue-100 pt-3">
-                        <h5 className="text-sm font-medium text-gray-900 mb-2">Последние отзывы</h5>
+                      <div className="border-t border-blue-100 dark:border-gray-700 pt-3">
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Последние отзывы</h5>
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {initiatorReviews.slice(0, 3).map((review, idx) => (
-                            <div key={idx} className="bg-white p-2 rounded text-xs border border-blue-50">
+                            <div key={idx} className="bg-white dark:bg-gray-800 p-2 rounded text-xs border border-blue-50 dark:border-gray-700">
                               <div className="flex items-center space-x-1 mb-1">
                                 {[...Array(5)].map((_, i) => (
                                   <Star
                                     key={i}
-                                    className={`w-3 h-3 ${i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`}
+                                    className={`w-3 h-3 ${i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300 dark:text-gray-600'}`}
                                   />
                                 ))}
                               </div>
-                              <p className="text-gray-700 line-clamp-2">{review.comment}</p>
+                              <p className="text-gray-700 dark:text-gray-300 line-clamp-2">{review.comment}</p>
                             </div>
                           ))}
                         </div>

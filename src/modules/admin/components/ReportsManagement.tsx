@@ -66,35 +66,46 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       const { supabase } = await import('../../../core/supabase');
 
       const offer = await offerService.getOfferById(offerId);
-      const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
+
+      if (!offer) {
+        throw new Error('Предложение не найдено');
+      }
+
+      const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId).catch(() => []);
 
       // Получить информацию об участниках
       const { data: influencerProfile } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role')
+        .select('full_name, avatar_url, role, company_name, bio, website, industry')
         .eq('user_id', offer.influencerId)
-        .single();
+        .maybeSingle();
 
       const { data: advertiserProfile } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role')
+        .select('full_name, avatar_url, role, company_name, bio, website, industry')
         .eq('user_id', offer.advertiserId)
-        .single();
+        .maybeSingle();
 
       // Получить ID чата из offer или найти его
       let chatId = (offer as any).chatId;
-      if (!chatId) {
-        const chats = await chatService.getUserChats(offer.influencerId);
-        const existingChat = chats.find(c =>
-          (c.participant1Id === offer.influencerId && c.participant2Id === offer.advertiserId) ||
-          (c.participant1Id === offer.advertiserId && c.participant2Id === offer.influencerId)
-        );
-        chatId = existingChat?.id;
-      }
-
       let messages = [];
-      if (chatId) {
-        messages = await chatService.getChatMessages(chatId);
+
+      try {
+        if (!chatId) {
+          const chats = await chatService.getUserChats(offer.influencerId);
+          const existingChat = chats.find(c =>
+            (c.participant1Id === offer.influencerId && c.participant2Id === offer.advertiserId) ||
+            (c.participant1Id === offer.advertiserId && c.participant2Id === offer.influencerId)
+          );
+          chatId = existingChat?.id;
+        }
+
+        if (chatId) {
+          messages = await chatService.getChatMessages(chatId);
+        }
+      } catch (chatError) {
+        console.error('Failed to load chat messages:', chatError);
+        // Продолжаем даже если не удалось загрузить сообщения
       }
 
       setOfferDetails({

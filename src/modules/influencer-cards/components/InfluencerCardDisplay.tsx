@@ -8,6 +8,7 @@ import { cardAnalyticsService } from '../../card-analytics/services/cardAnalytic
 import { supabase } from '../../../core/supabase';
 import { ReportModal } from '../../../components/ReportModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
+import { IntegrationDetailsModal } from './IntegrationDetailsModal';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -34,6 +35,7 @@ export function InfluencerCardDisplay({
   const [isLoading, setIsLoading] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
+  const [showIntegrationModal, setShowIntegrationModal] = React.useState(false);
   
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
@@ -63,13 +65,16 @@ export function InfluencerCardDisplay({
   };
 
   const handleApply = async () => {
+    if (!currentUserId) {
+      toast.error('Необходимо войти в систему');
+      return;
+    }
+    setShowIntegrationModal(true);
+  };
+
+  const handleIntegrationSubmit = async (integrationDetails: any) => {
     setIsLoading(true);
     try {
-      if (!currentUserId) {
-        toast.error('Необходимо войти в систему');
-        setIsLoading(false);
-        return;
-      }
 
       // Check for existing application to this user
       const { data: existingApplication } = await supabase
@@ -96,7 +101,13 @@ export function InfluencerCardDisplay({
           message: `Заинтересован в сотрудничестве с вашей карточкой на платформе ${card.platform}`,
           proposedRate: card.serviceDetails.pricing.post || 1000,
           timeline: '2 недели',
-          deliverables: ['Пост в Instagram']
+          deliverables: ['Пост в Instagram'],
+          integrationDetails: {
+            niche: integrationDetails.niche,
+            productDescription: integrationDetails.productDescription,
+            integrationFormat: integrationDetails.integrationFormat,
+            integrationParameters: integrationDetails.integrationParameters
+          }
         }
       });
 
@@ -533,6 +544,13 @@ export function InfluencerCardDisplay({
           onClose={() => setShowDetailsModal(false)}
         />
       )}
+
+      {/* Integration Details Modal */}
+      <IntegrationDetailsModal
+        isOpen={showIntegrationModal}
+        onClose={() => setShowIntegrationModal(false)}
+        onSubmit={handleIntegrationSubmit}
+      />
     </div>
   );
 }
