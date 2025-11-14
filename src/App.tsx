@@ -18,6 +18,7 @@ import { DemoCampaignsPage } from './demo/pages/DemoCampaignsPage';
 import { DemoInfluencerCardsPage } from './demo/pages/DemoInfluencerCardsPage';
 import { DemoOffersPage } from './demo/pages/DemoOffersPage';
 import { DemoChatPage } from './demo/pages/DemoChatPage';
+import { LandingPage } from './pages/LandingPage';
 
 function App() {
   return (
@@ -25,8 +26,11 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <Routes>
-            {/* Demo Routes - Default */}
-            <Route path="/" element={
+            {/* Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Demo Routes */}
+            <Route path="/demo" element={
               <DemoLayout>
                 <DemoHomePage />
               </DemoLayout>
