@@ -152,7 +152,7 @@ export class OfferService {
       const { data: currentData } = await supabase
         .from(TABLES.COLLABORATION_OFFERS)
         .select('details')
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .single();
 
       const currentDetails = currentData?.details || {};
