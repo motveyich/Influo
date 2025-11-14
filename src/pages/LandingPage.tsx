@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, Target, Users, MessageCircle, TrendingUp, Shield, Globe, Rocket, Grid, HandCoins } from 'lucide-react';
+import { Zap, Target, Users, MessageCircle, TrendingUp, Shield, Rocket, Grid, HandCoins, Bot, DollarSign } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 
 export function LandingPage() {
@@ -25,19 +25,24 @@ export function LandingPage() {
 
   const features = [
     {
-      icon: Target,
-      title: 'Умный поиск',
-      description: 'Находите идеальных инфлюенсеров для вашего бренда с помощью AI'
-    },
-    {
-      icon: Users,
-      title: 'Прямые контакты',
-      description: 'Общайтесь напрямую без посредников'
+      icon: Zap,
+      title: 'Быстрое взаимодействие',
+      description: 'Находите партнёров и начинайте сотрудничество без задержек'
     },
     {
       icon: MessageCircle,
-      title: 'Безопасные сделки',
-      description: 'Встроенная система платежей и контроль качества'
+      title: 'Простое общение',
+      description: 'Общайтесь напрямую без посредников'
+    },
+    {
+      icon: Bot,
+      title: 'Помощь искусственного интеллекта',
+      description: 'AI-ассистент помогает находить идеальные совпадения'
+    },
+    {
+      icon: DollarSign,
+      title: 'Эффективная реклама',
+      description: 'Максимизируйте отдачу от рекламных кампаний'
     },
     {
       icon: TrendingUp,
@@ -48,11 +53,6 @@ export function LandingPage() {
       icon: Shield,
       title: 'Защита данных',
       description: 'Ваши данные под надежной защитой'
-    },
-    {
-      icon: Globe,
-      title: 'Глобальный охват',
-      description: 'Работайте с инфлюенсерами по всему миру'
     }
   ];
 
