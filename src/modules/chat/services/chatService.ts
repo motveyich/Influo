@@ -2,6 +2,7 @@ import { supabase, TABLES } from '../../../core/supabase';
 import { ChatMessage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
+import { emailNotificationService } from '../../../services/emailNotificationService';
 
 export class ChatService {
   private messageQueue: ChatMessage[] = [];
@@ -56,6 +57,28 @@ export class ChatService {
 
         // Track analytics
         analytics.trackChatMessage(messageData.senderId!, messageData.receiverId!);
+
+        // Send email notification
+        try {
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', messageData.senderId!)
+            .maybeSingle();
+
+          const senderName = senderProfile?.full_name || 'Пользователь';
+          const messagePreview = messageData.messageContent!.length > 100
+            ? messageData.messageContent!.substring(0, 100) + '...'
+            : messageData.messageContent!;
+
+          await emailNotificationService.sendNewMessageNotification(
+            messageData.receiverId!,
+            senderName,
+            messagePreview
+          );
+        } catch (error) {
+          console.error('Failed to send message notification email:', error);
+        }
 
         return transformedMessage;
       } catch (realtimeError) {

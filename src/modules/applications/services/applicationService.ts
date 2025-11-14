@@ -4,6 +4,7 @@ import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../../chat/services/chatService';
+import { emailNotificationService } from '../../../services/emailNotificationService';
 
 export class ApplicationService {
   async createApplication(applicationData: Partial<Application>): Promise<Application> {
@@ -278,7 +279,7 @@ export class ApplicationService {
 
       const applicantName = applicantProfile?.full_name || 'пользователя';
       const messageContent = `Новая заявка на сотрудничество от ${applicantName}`;
-      
+
       await chatService.sendMessage({
         senderId: application.applicantId,
         receiverId: application.targetId,
@@ -290,6 +291,27 @@ export class ApplicationService {
           targetReferenceId: application.targetReferenceId
         }
       });
+
+      // Send email notification
+      try {
+        let campaignName = 'вашей карточке';
+        if (application.targetType === 'campaign') {
+          const { data: campaign } = await supabase
+            .from('campaigns')
+            .select('title')
+            .eq('id', application.targetReferenceId)
+            .maybeSingle();
+          campaignName = campaign?.title || 'кампании';
+        }
+
+        await emailNotificationService.sendNewApplicationNotification(
+          application.targetId,
+          campaignName,
+          `Новая заявка от ${applicantName}`
+        );
+      } catch (error) {
+        console.error('Failed to send application notification email:', error);
+      }
     } catch (error) {
       console.error('Failed to send application notification:', error);
       throw error;

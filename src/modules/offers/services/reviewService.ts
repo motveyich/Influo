@@ -1,6 +1,7 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { CollaborationReview } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
+import { emailNotificationService } from '../../../services/emailNotificationService';
 
 export class ReviewService {
   async createReview(reviewData: Partial<CollaborationReview>): Promise<CollaborationReview> {
@@ -40,6 +41,17 @@ export class ReviewService {
         rating: reviewData.rating,
         reviewer_id: reviewData.reviewerId
       });
+
+      // Send email notification to reviewee
+      try {
+        await emailNotificationService.sendNewReviewNotification(
+          reviewData.revieweeId!,
+          reviewData.rating!,
+          reviewData.comment!
+        );
+      } catch (error) {
+        console.error('Failed to send review notification email:', error);
+      }
 
       return transformedReview;
     } catch (error) {
