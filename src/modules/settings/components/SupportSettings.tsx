@@ -22,6 +22,9 @@ export function SupportSettings() {
   const [showContactForm, setShowContactForm] = useState(false);
   const [supportTickets, setSupportTickets] = useState<TicketWithMessages[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithMessages | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [contactForm, setContactForm] = useState({
     subject: '',
     category: 'general',
@@ -36,6 +39,12 @@ export function SupportSettings() {
     }
   }, [user?.id]);
 
+  React.useEffect(() => {
+    if (selectedTicket) {
+      loadTicketDetails(selectedTicket.id);
+    }
+  }, [selectedTicket?.id]);
+
   const loadSupportTickets = async () => {
     if (!user?.id) return;
 
@@ -48,6 +57,47 @@ export function SupportSettings() {
       toast.error('Не удалось загрузить обращения');
     } finally {
       setIsLoadingTickets(false);
+    }
+  };
+
+  const loadTicketDetails = async (ticketId: string) => {
+    try {
+      const ticketDetails = await supportService.getTicketById(ticketId);
+      if (ticketDetails) {
+        setSelectedTicket(ticketDetails);
+      }
+    } catch (error) {
+      console.error('Failed to load ticket details:', error);
+      toast.error('Не удалось загрузить детали обращения');
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !selectedTicket || !user?.id) return;
+
+    setIsSendingReply(true);
+    try {
+      await supportService.addMessage(selectedTicket.id, user.id, replyMessage, false);
+      setReplyMessage('');
+      await loadTicketDetails(selectedTicket.id);
+      toast.success('Сообщение отправлено');
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+      toast.error('Не удалось отправить сообщение');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const handleCloseTicket = async (ticketId: string) => {
+    try {
+      await supportService.closeTicket(ticketId);
+      toast.success('Обращение закрыто');
+      setSelectedTicket(null);
+      await loadSupportTickets();
+    } catch (error) {
+      console.error('Failed to close ticket:', error);
+      toast.error('Не удалось закрыть обращение');
     }
   };
   const handleSubmitSupport = async () => {
@@ -202,10 +252,7 @@ export function SupportSettings() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      // Navigate to support chat - will be implemented with support system
-                      toast.info('Чат поддержки будет доступен в следующем обновлении');
-                    }}
+                    onClick={() => setSelectedTicket(ticket)}
                     className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   >
                     {t('settings.openChat')}
@@ -410,6 +457,104 @@ export function SupportSettings() {
                 <span>{isSubmitting ? 'Отправка...' : 'Отправить обращение'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ticket Chat Modal */}
+      {selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedTicket.subject}</h3>
+                <div className="flex items-center space-x-3 mt-2">
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(selectedTicket.status)}`}>
+                    {getStatusLabel(selectedTicket.status)}
+                  </span>
+                  <span className={`text-sm font-medium ${getPriorityColor(selectedTicket.priority)}`}>
+                    {selectedTicket.priority === 'urgent' ? 'Срочно' :
+                     selectedTicket.priority === 'high' ? 'Высокий' :
+                     selectedTicket.priority === 'normal' ? 'Обычный' : 'Низкий'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {selectedTicket.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`p-4 rounded-lg ${
+                    message.is_staff_response
+                      ? 'bg-blue-50 border border-blue-200 ml-8'
+                      : 'bg-gray-100 border border-gray-200 mr-8'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <User className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {message.is_staff_response ? 'Служба поддержки' : 'Вы'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(message.created_at).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{message.message}</p>
+                </div>
+              ))}
+            </div>
+
+            {selectedTicket.status !== 'closed' && (
+              <div className="border-t border-gray-200 p-6">
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  placeholder="Введите ваше сообщение..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => handleCloseTicket(selectedTicket.id)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                  >
+                    Закрыть обращение
+                  </button>
+                  <button
+                    onClick={handleSendReply}
+                    disabled={!replyMessage.trim() || isSendingReply}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{isSendingReply ? 'Отправка...' : 'Отправить'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedTicket.status === 'closed' && (
+              <div className="border-t border-gray-200 p-6">
+                <div className="bg-gray-100 rounded-lg p-4 text-center">
+                  <CheckCircle className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-700 font-medium">Это обращение закрыто</p>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Если у вас есть новые вопросы, создайте новое обращение
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
