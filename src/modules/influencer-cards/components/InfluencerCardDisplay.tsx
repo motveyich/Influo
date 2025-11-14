@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag } from 'lucide-react';
@@ -19,16 +20,17 @@ interface InfluencerCardDisplayProps {
   onViewAnalytics?: (cardId: string) => void;
 }
 
-export function InfluencerCardDisplay({ 
-  card, 
-  showActions = false, 
+export function InfluencerCardDisplay({
+  card,
+  showActions = false,
   currentUserId,
-  onEdit, 
-  onDelete, 
+  onEdit,
+  onDelete,
   onToggleStatus,
   onViewAnalytics
 }: InfluencerCardDisplayProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
@@ -427,7 +429,7 @@ export function InfluencerCardDisplay({
                   if (onViewAnalytics) {
                     onViewAnalytics(card.id);
                   } else {
-                    window.location.href = `/cards/${card.id}`;
+                    navigate(`/app/influencer-cards/${card.id}`);
                   }
                 }}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
@@ -498,7 +500,7 @@ export function InfluencerCardDisplay({
                   if (onViewAnalytics) {
                     onViewAnalytics(card.id);
                   } else {
-                    window.location.href = `/cards/${card.id}`;
+                    navigate(`/app/influencer-cards/${card.id}`);
                   }
                 }}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
