@@ -7,23 +7,25 @@ import { ModerationQueue } from './ModerationQueue';
 import { ReportsManagement } from './ReportsManagement';
 import { AdminLogs } from './AdminLogs';
 import { ContentManagement } from './ContentManagement';
-import { 
-  Users, 
-  Target, 
-  Flag, 
-  Shield, 
-  BarChart3, 
+import { SupportManagement } from './SupportManagement';
+import {
+  Users,
+  Target,
+  Flag,
+  Shield,
+  BarChart3,
   Settings,
   Bell,
   AlertTriangle,
   CheckCircle,
   Clock,
-  Eye
+  Eye,
+  MessageCircle
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
-type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'content' | 'settings';
+type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'support' | 'logs' | 'content' | 'settings';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -80,6 +82,7 @@ export function AdminPanel() {
     { id: 'campaigns', label: 'Кампании', icon: Target, count: stats.totalCampaigns },
     { id: 'moderation', label: 'Модерация', icon: Shield, count: stats.moderationQueue },
     { id: 'reports', label: 'Жалобы', icon: Flag, count: stats.pendingReports },
+    { id: 'support', label: 'Поддержка', icon: MessageCircle, count: 0 },
     { id: 'logs', label: 'Логи', icon: BarChart3, count: stats.todayActions },
     { id: 'content', label: 'Контент', icon: Bell, count: 0 },
     { id: 'settings', label: 'Настройки', icon: Settings, count: 0 }
@@ -196,6 +199,7 @@ export function AdminPanel() {
               {activeTab === 'campaigns' && <CampaignsManagement onStatsUpdate={loadStats} />}
               {activeTab === 'moderation' && <ModerationQueue onStatsUpdate={loadStats} />}
               {activeTab === 'reports' && <ReportsManagement onStatsUpdate={loadStats} />}
+              {activeTab === 'support' && <SupportManagement />}
               {activeTab === 'logs' && <AdminLogs />}
               {activeTab === 'content' && <ContentManagement onStatsUpdate={loadStats} />}
               {activeTab === 'settings' && (

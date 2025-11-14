@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { 
-  HelpCircle, 
-  Mail, 
-  MessageCircle, 
-  FileText, 
+import { useTranslation } from '../../../hooks/useTranslation';
+import { supportService, SupportTicket, TicketWithMessages } from '../../../services/supportService';
+import {
+  HelpCircle,
+  Mail,
+  MessageCircle,
+  FileText,
   ExternalLink,
   Send,
   CheckCircle,
   Clock,
-  User
+  User,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function SupportSettings() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showContactForm, setShowContactForm] = useState(false);
-  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [supportTickets, setSupportTickets] = useState<TicketWithMessages[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [contactForm, setContactForm] = useState({
     subject: '',
@@ -33,34 +37,15 @@ export function SupportSettings() {
   }, [user?.id]);
 
   const loadSupportTickets = async () => {
+    if (!user?.id) return;
+
     try {
       setIsLoadingTickets(true);
-      // Mock support tickets for now - will be replaced with actual API
-      const mockTickets = [
-        {
-          id: '1',
-          subject: 'Проблема с загрузкой профиля',
-          category: 'technical',
-          status: 'open',
-          priority: 'normal',
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 3
-        },
-        {
-          id: '2',
-          subject: 'Вопрос по оплате',
-          category: 'billing',
-          status: 'resolved',
-          priority: 'high',
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 5
-        }
-      ];
-      setSupportTickets(mockTickets);
+      const tickets = await supportService.getUserTickets(user.id);
+      setSupportTickets(tickets);
     } catch (error) {
       console.error('Failed to load support tickets:', error);
+      toast.error('Не удалось загрузить обращения');
     } finally {
       setIsLoadingTickets(false);
     }
@@ -71,24 +56,15 @@ export function SupportSettings() {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('Необходима авторизация');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Simulate support ticket submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Add new ticket to the list
-      const newTicket = {
-        id: Date.now().toString(),
-        subject: contactForm.subject,
-        category: contactForm.category,
-        status: 'open',
-        priority: contactForm.priority,
-        createdAt: new Date().toISOString(),
-        lastResponse: new Date().toISOString(),
-        responseCount: 1
-      };
-      setSupportTickets(prev => [newTicket, ...prev]);
-      
+      await supportService.createTicket(user.id, contactForm);
+
       toast.success('Обращение отправлено! Мы ответим в течение 24 часов.');
       setContactForm({
         subject: '',
@@ -97,7 +73,10 @@ export function SupportSettings() {
         priority: 'normal'
       });
       setShowContactForm(false);
+
+      await loadSupportTickets();
     } catch (error) {
+      console.error('Failed to submit support ticket:', error);
       toast.error('Не удалось отправить обращение');
     } finally {
       setIsSubmitting(false);
@@ -213,13 +192,13 @@ export function SupportSettings() {
                     <div className="flex items-center space-x-4 text-xs text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{t('settings.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>{t('settings.created')}: {new Date(ticket.created_at).toLocaleDateString('ru-RU')}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} {t('settings.messages')}</span>
+                        <span>{ticket.message_count} {t('settings.messages')}</span>
                       </div>
-                      <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                      <span>{t('settings.lastResponse')}: {new Date(ticket.updated_at).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                   <button
