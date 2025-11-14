@@ -10,35 +10,67 @@ import { InfluencerCardDetailPage } from './modules/influencer-cards/components/
 import { HomePage } from './modules/home/components/HomePage';
 import { AdminPanel } from './modules/admin/components/AdminPanel';
 import { OffersPage } from './modules/offers/components/OffersPage';
+import { DemoProvider } from './demo/DemoContext';
+import { DemoWelcomePage } from './demo/pages/DemoWelcomePage';
+import { DemoLayout } from './demo/components/DemoLayout';
+import { DemoHomePage } from './demo/pages/DemoHomePage';
+import { DemoProfilesPage } from './demo/pages/DemoProfilesPage';
+import { DemoCampaignsPage } from './demo/pages/DemoCampaignsPage';
+import { DemoInfluencerCardsPage } from './demo/pages/DemoInfluencerCardsPage';
+import { DemoOffersPage } from './demo/pages/DemoOffersPage';
+import { DemoChatPage } from './demo/pages/DemoChatPage';
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Layout>
+    <DemoProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/profiles" element={<ProfilesPage />} />
-            <Route path="/campaigns" element={<CampaignsPage />} />
-            <Route path="/influencer-cards" element={<InfluencerCardsPage />} />
-            <Route path="/influencer-cards/:cardId" element={<InfluencerCardDetailPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/offers" element={<OffersPage />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            {/* Demo Routes */}
+            <Route path="/demo" element={<DemoWelcomePage />} />
+            <Route path="/demo/*" element={
+              <DemoLayout>
+                <Routes>
+                  <Route index element={<DemoHomePage />} />
+                  <Route path="profiles" element={<DemoProfilesPage />} />
+                  <Route path="campaigns" element={<DemoCampaignsPage />} />
+                  <Route path="influencer-cards" element={<DemoInfluencerCardsPage />} />
+                  <Route path="offers" element={<DemoOffersPage />} />
+                  <Route path="chat" element={<DemoChatPage />} />
+                </Routes>
+              </DemoLayout>
+            } />
+
+            {/* Real App Routes */}
+            <Route path="/" element={<Navigate to="/demo" replace />} />
+            <Route path="/app/*" element={
+              <Layout>
+                <Routes>
+                  <Route index element={<HomePage />} />
+                  <Route path="profiles" element={<ProfilesPage />} />
+                  <Route path="campaigns" element={<CampaignsPage />} />
+                  <Route path="influencer-cards" element={<InfluencerCardsPage />} />
+                  <Route path="influencer-cards/:cardId" element={<InfluencerCardDetailPage />} />
+                  <Route path="chat" element={<ChatPage />} />
+                  <Route path="offers" element={<OffersPage />} />
+                  <Route path="admin" element={<AdminPanel />} />
+                </Routes>
+              </Layout>
+            } />
           </Routes>
-        </Layout>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-      </div>
-    </Router>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </div>
+      </Router>
+    </DemoProvider>
   );
 }
 

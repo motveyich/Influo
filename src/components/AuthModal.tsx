@@ -8,10 +8,11 @@ import toast from 'react-hot-toast';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultMode?: 'signin' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModalProps) {
+  const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
