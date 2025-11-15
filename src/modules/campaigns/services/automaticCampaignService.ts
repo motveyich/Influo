@@ -141,6 +141,21 @@ export class AutomaticCampaignService {
     }
   }
 
+  async restartAutomaticMatching(campaignId: string): Promise<void> {
+    const { data, error } = await supabase
+      .from(TABLES.CAMPAIGNS)
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .single();
+
+    if (error || !data) {
+      throw new Error('Campaign not found');
+    }
+
+    const campaign = this.transformFromDatabase(data);
+    await this.startAutomaticMatching(campaign);
+  }
+
   private async startAutomaticMatching(campaign: Campaign): Promise<void> {
     try {
       const automaticSettings = (campaign as any).metadata?.automaticSettings as AutomaticSettings;
