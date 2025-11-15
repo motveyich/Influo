@@ -198,10 +198,13 @@ export class AutomaticCampaignService {
         maxFollowers: campaign.preferences.audienceSize.max || undefined
       });
 
-      // Filter by platform
-      const platformFiltered = influencerCards.filter(card =>
-        campaign.preferences.platforms.includes(card.platform) || card.platform === 'multi'
-      );
+      // Filter by platform (case-insensitive comparison)
+      const platformFiltered = influencerCards.filter(card => {
+        const cardPlatform = card.platform.toLowerCase();
+        return campaign.preferences.platforms.some(p =>
+          p.toLowerCase() === cardPlatform
+        ) || cardPlatform === 'multi';
+      });
 
       // Score each influencer
       const scoredInfluencers: InfluencerScore[] = [];
@@ -242,19 +245,23 @@ export class AutomaticCampaignService {
     // Relevance score based on content types and audience demographics
     let relevanceScore = 0;
     
-    // Check content type overlap
-    const contentOverlap = campaign.preferences.contentTypes.filter(type =>
-      card.serviceDetails.contentTypes.some(cardType => 
-        cardType.toLowerCase().includes(type.toLowerCase())
-      )
-    ).length;
+    // Check content type overlap (exact match or substring match)
+    const contentOverlap = campaign.preferences.contentTypes.filter(type => {
+      const typeLower = type.toLowerCase();
+      return card.serviceDetails.contentTypes.some(cardType => {
+        const cardTypeLower = cardType.toLowerCase();
+        return cardTypeLower === typeLower ||
+               cardTypeLower.includes(typeLower) ||
+               typeLower.includes(cardTypeLower);
+      });
+    }).length;
     relevanceScore += (contentOverlap / campaign.preferences.contentTypes.length) * 50;
     
     // Check country overlap
-    const countryOverlap = campaign.preferences.demographics.countries.filter(country =>
-      card.audienceDemographics.topCountries.includes(country)
-    ).length;
-    if (campaign.preferences.demographics.countries.length > 0) {
+    const countryOverlap = campaign.preferences.demographics?.countries?.filter(country =>
+      card.audienceDemographics?.topCountries?.includes(country)
+    ).length || 0;
+    if (campaign.preferences.demographics?.countries?.length > 0) {
       relevanceScore += (countryOverlap / campaign.preferences.demographics.countries.length) * 50;
     } else {
       relevanceScore += 50; // No country restriction

@@ -12,8 +12,8 @@ interface AutomaticCampaignModalProps {
   onCampaignSaved: (campaign: Campaign) => void;
 }
 
-const PLATFORMS = ['instagram', 'youtube', 'twitter', 'tiktok'];
-const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
+const PLATFORMS = ['Instagram', 'YouTube', 'Twitter', 'TikTok'];
+const CONTENT_TYPES = ['Пост', 'Story', 'Reels', 'Видео', 'Live', 'IGTV', 'Shorts'];
 const COUNTRIES = ['US', 'UK', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BR', 'MX', 'IN'];
 const GENDERS = ['male', 'female', 'non-binary'];
 
@@ -36,7 +36,7 @@ export function AutomaticCampaignModal({
     budget: {
       min: 0,
       max: 0,
-      currency: 'USD'
+      currency: 'RUB'
     },
     preferences: {
       platforms: [] as string[],
@@ -109,7 +109,7 @@ export function AutomaticCampaignModal({
         title: '',
         description: '',
         brand: '',
-        budget: { min: 0, max: 0, currency: 'USD' },
+        budget: { min: 0, max: 0, currency: 'RUB' },
         preferences: {
           platforms: [],
           contentTypes: [],
@@ -507,10 +507,9 @@ export function AutomaticCampaignModal({
                         budget: { ...prev.budget, currency: e.target.value }
                       }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
                     >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
+                      <option value="RUB">RUB</option>
                     </select>
                   </div>
                 </div>
