@@ -120,7 +120,7 @@ export class HomeService {
       // 2. Предложения о сотрудничестве, ожидающие ответа пользователя
       const { data: pendingOffers } = await supabase
         .from(TABLES.COLLABORATION_OFFERS)
-        .select('id')
+        .select('offer_id')
         .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .eq('status', 'pending');
       const pendingApplications = pendingOffers?.length || 0;

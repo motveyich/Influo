@@ -334,14 +334,20 @@ export function OfferCard({
       <div className="mb-4">
         <p className="text-sm font-medium text-gray-700 mb-2">Результаты:</p>
         <div className="flex flex-wrap gap-1">
-          {offer.deliverables.slice(0, 3).map((deliverable, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
-            >
-              {deliverable}
-            </span>
-          ))}
+          {offer.deliverables.slice(0, 3).map((deliverable, index) => {
+            const displayText = typeof deliverable === 'string'
+              ? deliverable
+              : (deliverable as any).type || (deliverable as any).description || 'Результат';
+
+            return (
+              <span
+                key={index}
+                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
+              >
+                {displayText}
+              </span>
+            );
+          })}
           {offer.deliverables.length > 3 && (
             <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
               +{offer.deliverables.length - 3} еще

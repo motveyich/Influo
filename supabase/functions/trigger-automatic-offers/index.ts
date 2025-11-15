@@ -6,18 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-interface AutomaticOfferConfig {
-  campaignId: string;
-  advertiserId: string;
-  campaignTitle: string;
-  campaignDescription: string;
-  filters: any;
-  weights: any;
-  targetCount: number;
-  budget: any;
-  timeline: any;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -163,6 +151,8 @@ Deno.serve(async (req: Request) => {
           ? Math.floor(totalPrice / count)
           : Math.floor((campaign.budget.min + campaign.budget.max) / 2);
 
+        const timelineText = `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`;
+
         const { error: offerError } = await supabase
           .from('offers')
           .insert([{
@@ -174,6 +164,9 @@ Deno.serve(async (req: Request) => {
               title: campaign.title,
               description: campaign.description,
               contentTypes: contentTypes,
+              proposed_rate: suggestedBudget,
+              currency: campaign.budget.currency || 'RUB',
+              timeline: timelineText,
               suggestedBudget,
               deliverables: contentTypes.map((type: string) => ({
                 type,
