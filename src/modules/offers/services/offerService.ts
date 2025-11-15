@@ -252,6 +252,10 @@ export class OfferService {
     }
   }
 
+  async getOfferById(offerId: string): Promise<CollaborationOffer | null> {
+    return this.getOffer(offerId);
+  }
+
   async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
     try {
       const { data, error } = await supabase

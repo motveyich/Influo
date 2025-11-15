@@ -326,6 +326,10 @@ export class PaymentRequestService {
       updatedAt: dbData.updated_at
     };
   }
+
+  async getPaymentRequestsForOffer(offerId: string): Promise<PaymentRequest[]> {
+    return this.getOfferPaymentRequests(offerId);
+  }
 }
 
 export const paymentRequestService = new PaymentRequestService();

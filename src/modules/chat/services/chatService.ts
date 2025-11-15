@@ -323,6 +323,31 @@ export class ChatService {
   private transformFromDatabase(dbData: any): ChatMessage {
     return this.transformMessageFromDatabase(dbData);
   }
+
+  async getUserChats(userId: string): Promise<any[]> {
+    return this.getUserConversations(userId);
+  }
+
+  async getChatMessages(chatId: string): Promise<ChatMessage[]> {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(message => this.transformFromDatabase(message));
+    } catch (error) {
+      console.error('Failed to get chat messages:', error);
+      return [];
+    }
+  }
+
+  async getMessagesBetweenUsers(userId1: string, userId2: string): Promise<ChatMessage[]> {
+    return this.getConversation(userId1, userId2);
+  }
 }
 
 export const chatService = new ChatService();
