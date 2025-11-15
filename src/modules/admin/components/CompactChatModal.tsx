@@ -6,8 +6,8 @@ import { ru } from 'date-fns/locale';
 interface Message {
   id: string;
   senderId: string;
-  content: string;
-  createdAt: string;
+  messageContent: string;
+  timestamp: string;
 }
 
 interface Participant {
@@ -98,7 +98,7 @@ export function CompactChatModal({
                         {name}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {format(parseISO(message.createdAt), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                        {format(parseISO(message.timestamp), 'dd.MM.yyyy HH:mm', { locale: ru })}
                       </span>
                     </div>
                     <div className={`inline-block px-4 py-2 rounded-lg ${
@@ -106,7 +106,7 @@ export function CompactChatModal({
                         ? 'bg-blue-100 dark:bg-blue-900 text-gray-900 dark:text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">{message.messageContent}</p>
                     </div>
                   </div>
                 </div>

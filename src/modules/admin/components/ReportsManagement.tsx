@@ -91,23 +91,17 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
         .eq('user_id', offer.advertiserId)
         .maybeSingle();
 
-      // Получить ID чата из offer или найти его
+      // Получить сообщения между пользователями
       let chatId = (offer as any).chatId;
       let messages = [];
 
       try {
-        if (!chatId) {
-          const chats = await chatService.getUserChats(offer.influencerId);
-          const existingChat = chats.find(c =>
-            (c.participant1Id === offer.influencerId && c.participant2Id === offer.advertiserId) ||
-            (c.participant1Id === offer.advertiserId && c.participant2Id === offer.influencerId)
-          );
-          chatId = existingChat?.id;
-        }
-
-        if (chatId) {
-          messages = await chatService.getChatMessages(chatId);
-        }
+        // Используем прямой метод получения сообщений между пользователями
+        messages = await chatService.getMessagesBetweenUsers(
+          offer.influencerId,
+          offer.advertiserId
+        );
+        console.log('Loaded messages:', messages.length);
       } catch (chatError) {
         console.error('Failed to load chat messages:', chatError);
         // Продолжаем даже если не удалось загрузить сообщения
