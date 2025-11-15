@@ -48,7 +48,7 @@ export function CompactChatModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -117,9 +117,14 @@ export function CompactChatModal({
 
         {/* Footer */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-            Всего сообщений: {messages.length}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Всего сообщений: {messages.length}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 italic">
+              Режим только для чтения
+            </p>
+          </div>
         </div>
       </div>
     </div>
