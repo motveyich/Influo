@@ -40,13 +40,19 @@ export class AutomaticOfferService {
     let offersCreated = 0;
 
     try {
+      console.log('Starting offer distribution for campaign:', config.campaignId);
+      console.log('Filters:', JSON.stringify(config.filters, null, 2));
+
       const matchedInfluencers = await this.findMatchedInfluencers(
         config.filters,
         config.weights,
         config.targetCount
       );
 
+      console.log('Matched influencers count:', matchedInfluencers.length);
+
       if (matchedInfluencers.length === 0) {
+        console.error('No matching influencers found');
         return {
           success: false,
           offersCreated: 0,
@@ -61,15 +67,20 @@ export class AutomaticOfferService {
 
       const topInfluencers = scoredInfluencers.slice(0, config.targetCount);
 
+      console.log(`Creating offers for top ${topInfluencers.length} influencers`);
+
       for (const influencer of topInfluencers) {
         try {
           await this.createAutomaticOffer(config, influencer);
           offersCreated++;
-        } catch (error) {
-          console.error(`Failed to create offer for influencer ${influencer.user_id}:`, error);
-          errors.push(`Ошибка создания предложения для инфлюенсера ${influencer.user_id}`);
+          console.log(`✓ Offer created for influencer ${influencer.user_id} (score: ${influencer.score})`);
+        } catch (error: any) {
+          console.error(`✗ Failed to create offer for influencer ${influencer.user_id}:`, error);
+          errors.push(`Ошибка создания предложения для инфлюенсера ${influencer.user_id}: ${error.message}`);
         }
       }
+
+      console.log(`Offer distribution completed. Created: ${offersCreated}, Errors: ${errors.length}`);
 
       return {
         success: offersCreated > 0,
@@ -105,10 +116,33 @@ export class AutomaticOfferService {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      if (!data) return [];
+      if (error) {
+        console.error('Database query error:', error);
+        throw error;
+      }
 
-      return data.filter(card => this.matchesFilters(card, filters));
+      if (!data) {
+        console.log('No data returned from database');
+        return [];
+      }
+
+      console.log(`Found ${data.length} cards in database before filtering`);
+
+      const filtered = data.filter(card => {
+        const matches = this.matchesFilters(card, filters);
+        if (!matches) {
+          console.log(`Card ${card.id} filtered out:`, {
+            platform: card.platform,
+            followers: card.reach?.followers,
+            contentTypes: card.service_details?.contentTypes
+          });
+        }
+        return matches;
+      });
+
+      console.log(`${filtered.length} cards passed filtering`);
+
+      return filtered;
     } catch (error) {
       console.error('Failed to find matched influencers:', error);
       return [];
@@ -136,9 +170,32 @@ export class AutomaticOfferService {
 
     if (filters.contentTypes.length > 0) {
       const cardContentTypes = serviceDetails.contentTypes || [];
-      const hasMatchingContentType = filters.contentTypes.some((type: string) =>
-        cardContentTypes.includes(type)
+
+      const normalizeContentType = (type: string) => {
+        const normalized = type.toLowerCase().trim();
+        const mapping: Record<string, string[]> = {
+          'пост': ['пост', 'post'],
+          'story': ['story', 'stories', 'сторис'],
+          'reels': ['reels', 'рилс', 'reels', 'рилс'],
+          'видео': ['видео', 'video'],
+          'live': ['live', 'лайв'],
+          'igtv': ['igtv', 'айтиви'],
+          'shorts': ['shorts', 'шортс']
+        };
+
+        for (const [key, values] of Object.entries(mapping)) {
+          if (values.includes(normalized)) return key;
+        }
+        return normalized;
+      };
+
+      const normalizedCardTypes = cardContentTypes.map((t: string) => normalizeContentType(t));
+      const normalizedFilterTypes = filters.contentTypes.map((t: string) => normalizeContentType(t));
+
+      const hasMatchingContentType = normalizedFilterTypes.some((filterType: string) =>
+        normalizedCardTypes.includes(filterType)
       );
+
       if (!hasMatchingContentType) {
         return false;
       }
