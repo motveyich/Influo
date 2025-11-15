@@ -81,13 +81,13 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       // Получить информацию об участниках с email
       const { data: influencerProfile } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role, company_name, bio, website, industry, user_id, email')
+        .select('full_name, avatar, role, bio, website, user_id, email')
         .eq('user_id', offer.influencerId)
         .maybeSingle();
 
       const { data: advertiserProfile } = await supabase
         .from('user_profiles')
-        .select('full_name, avatar_url, role, company_name, bio, website, industry, user_id, email')
+        .select('full_name, avatar, role, bio, website, user_id, email')
         .eq('user_id', offer.advertiserId)
         .maybeSingle();
 
@@ -449,15 +449,13 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                             <span>Показать предложение</span>
                           </button>
 
-                          {offerDetails.messages && offerDetails.messages.length > 0 && (
-                            <button
-                              onClick={() => setShowChatModal(true)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              <span>Показать чат ({offerDetails.messages.length})</span>
-                            </button>
-                          )}
+                          <button
+                            onClick={() => setShowChatModal(true)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Показать чат {offerDetails.messages && offerDetails.messages.length > 0 ? `(${offerDetails.messages.length})` : ''}</span>
+                          </button>
 
                           {offerDetails.payments && offerDetails.payments.length > 0 && (
                             <button
@@ -488,8 +486,8 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                               {/* Инфлюенсер */}
                               <div className="flex items-center justify-between p-3 bg-blue-50 rounded">
                                 <div className="flex items-center space-x-3">
-                                  {offerDetails.influencer.profile?.avatar_url ? (
-                                    <img src={offerDetails.influencer.profile.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                                  {offerDetails.influencer.profile?.avatar ? (
+                                    <img src={offerDetails.influencer.profile.avatar} alt="" className="w-10 h-10 rounded-full" />
                                   ) : (
                                     <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
                                       <User className="w-5 h-5 text-blue-600" />
@@ -512,8 +510,8 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
                               {/* Рекламодатель */}
                               <div className="flex items-center justify-between p-3 bg-green-50 rounded">
                                 <div className="flex items-center space-x-3">
-                                  {offerDetails.advertiser.profile?.avatar_url ? (
-                                    <img src={offerDetails.advertiser.profile.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                                  {offerDetails.advertiser.profile?.avatar ? (
+                                    <img src={offerDetails.advertiser.profile.avatar} alt="" className="w-10 h-10 rounded-full" />
                                   ) : (
                                     <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center">
                                       <Target className="w-5 h-5 text-green-600" />

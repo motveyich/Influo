@@ -14,7 +14,7 @@ interface Participant {
   id: string;
   profile: {
     full_name: string;
-    avatar_url?: string;
+    avatar?: string;
   };
 }
 
@@ -42,8 +42,8 @@ export function CompactChatModal({
   };
 
   const getParticipantAvatar = (senderId: string) => {
-    if (senderId === influencer.id) return influencer.profile.avatar_url;
-    if (senderId === advertiser.id) return advertiser.profile.avatar_url;
+    if (senderId === influencer.id) return influencer.profile.avatar;
+    if (senderId === advertiser.id) return advertiser.profile.avatar;
     return null;
   };
 
