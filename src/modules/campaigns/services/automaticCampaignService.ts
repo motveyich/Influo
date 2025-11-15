@@ -2,6 +2,7 @@ import { supabase, TABLES } from '../../../core/supabase';
 import { Campaign, InfluencerCard, Offer } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { influencerCardService } from '../../influencer-cards/services/influencerCardService';
+import { automaticOfferService } from './automaticOfferService';
 
 interface InfluencerScore {
   influencerId: string;
@@ -147,38 +148,38 @@ export class AutomaticCampaignService {
         throw new Error('Automatic settings not found');
       }
 
-      // Find and score influencers
-      const scoredInfluencers = await this.findAndScoreInfluencers(campaign, automaticSettings);
-      
-      if (scoredInfluencers.length === 0) {
-        throw new Error('No matching influencers found');
+      const result = await automaticOfferService.distributeOffersToInfluencers({
+        campaignId: campaign.campaignId,
+        advertiserId: campaign.advertiserId,
+        campaignTitle: campaign.title,
+        campaignDescription: campaign.description,
+        filters: {
+          platforms: campaign.preferences.platforms,
+          contentTypes: campaign.preferences.contentTypes,
+          audienceSize: campaign.preferences.audienceSize,
+          demographics: campaign.preferences.demographics
+        },
+        weights: automaticSettings.scoringWeights,
+        targetCount: automaticSettings.targetInfluencerCount,
+        budget: campaign.budget,
+        timeline: campaign.timeline
+      });
+
+      if (!result.success) {
+        throw new Error(`Failed to distribute offers: ${result.errors.join(', ')}`);
       }
 
-      // Calculate how many offers to send
-      const targetCount = automaticSettings.targetInfluencerCount;
-      const overbookingCount = Math.ceil(targetCount * (automaticSettings.overbookingPercentage / 100));
-      const totalToSend = targetCount + overbookingCount;
-
-      // Send offers in batches
-      await this.sendOffersInBatches(
-        campaign,
-        scoredInfluencers.slice(0, totalToSend),
-        automaticSettings
-      );
-
-      // Track matching completion
       analytics.track('automatic_matching_completed', {
         campaign_id: campaign.campaignId,
-        influencers_found: scoredInfluencers.length,
-        offers_to_send: totalToSend
+        offers_created: result.offersCreated,
+        errors_count: result.errors.length
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start automatic matching:', error);
-      
-      // Update campaign status to indicate error
+
       await supabase
         .from(TABLES.CAMPAIGNS)
-        .update({ 
+        .update({
           status: 'paused',
           metadata: {
             ...(campaign as any).metadata,

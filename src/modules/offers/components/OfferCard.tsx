@@ -2,12 +2,12 @@ import React from 'react';
 import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
-import { 
-  Clock, 
-  DollarSign, 
-  Calendar, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Clock,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Users,
   Eye,
@@ -19,7 +19,8 @@ import {
   FileText,
   User,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Zap
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -261,6 +262,14 @@ export function OfferCard({
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {offer.title}
             </h3>
+            {(offer as any).metadata?.isAutomatic && (
+              <span className="px-3 py-1 text-sm font-medium rounded-full border bg-orange-100 text-orange-800 border-orange-200">
+                <div className="flex items-center space-x-1">
+                  <Zap className="w-3 h-3" />
+                  <span>Автоматическая кампания</span>
+                </div>
+              </span>
+            )}
             <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
               <div className="flex items-center space-x-1">
                 {getStatusIcon(offer.status)}

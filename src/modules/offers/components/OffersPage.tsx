@@ -8,6 +8,7 @@ import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion'
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
+import { AutomaticCampaignDetailsModal } from './AutomaticCampaignDetailsModal';
 import { 
   Search, 
   Filter,
@@ -37,6 +38,7 @@ export function OffersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showAutomaticDetailsModal, setShowAutomaticDetailsModal] = useState(false);
 
   const { user, loading } = useAuth();
   const currentUserId = user?.id || '';
@@ -99,7 +101,11 @@ export function OffersPage() {
 
   const handleViewDetails = (offer: CollaborationOffer) => {
     setSelectedOffer(offer);
-    setShowDetailsModal(true);
+    if ((offer as any).metadata?.isAutomatic) {
+      setShowAutomaticDetailsModal(true);
+    } else {
+      setShowDetailsModal(true);
+    }
   };
 
   const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
@@ -400,6 +406,17 @@ export function OffersPage() {
             offer={selectedOffer}
             currentUserId={currentUserId}
             onOfferUpdated={handleOfferUpdated}
+          />
+        )}
+
+        {selectedOffer && (
+          <AutomaticCampaignDetailsModal
+            isOpen={showAutomaticDetailsModal}
+            onClose={() => {
+              setShowAutomaticDetailsModal(false);
+              setSelectedOffer(null);
+            }}
+            offerId={selectedOffer.id}
           />
         )}
       </div>
