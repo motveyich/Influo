@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../../core/types';
 import { automaticCampaignService } from '../services/automaticCampaignService';
+import { campaignValidationService } from '../services/campaignValidationService';
 import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Target, Users, Zap, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -12,21 +13,23 @@ interface AutomaticCampaignModalProps {
   onCampaignSaved: (campaign: Campaign) => void;
 }
 
-const PLATFORMS = ['Instagram', 'YouTube', 'Twitter', 'TikTok'];
 const CONTENT_TYPES = ['Пост', 'Story', 'Reels', 'Видео', 'Live', 'IGTV', 'Shorts'];
-const COUNTRIES = ['US', 'UK', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BR', 'MX', 'IN'];
-const GENDERS = ['male', 'female', 'non-binary'];
+const COUNTRIES = ['Россия', 'США', 'Великобритания', 'Германия', 'Франция', 'Италия', 'Испания', 'Казахстан', 'Беларусь', 'Украина'];
+const GENDERS = ['male', 'female', 'other'];
+const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
 
-export function AutomaticCampaignModal({ 
-  isOpen, 
-  onClose, 
-  currentCampaign, 
-  advertiserId, 
-  onCampaignSaved 
+export function AutomaticCampaignModal({
+  isOpen,
+  onClose,
+  currentCampaign,
+  advertiserId,
+  onCampaignSaved
 }: AutomaticCampaignModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(1);
+  const [platforms, setPlatforms] = useState<Array<{ name: string; displayName: string; icon: string }>>([]);
+  const [interests, setInterests] = useState<Array<{ name: string; category: string }>>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,7 +51,18 @@ export function AutomaticCampaignModal({
       demographics: {
         ageRange: [18, 65] as [number, number],
         genders: [] as string[],
-        countries: [] as string[]
+        countries: [] as string[],
+        interests: [] as string[],
+        genderDistribution: {
+          male: { min: 0, max: 100 },
+          female: { min: 0, max: 100 },
+          other: { min: 0, max: 100 }
+        },
+        ageDistribution: {} as Record<string, { min: number; max: number }>,
+        interestMatch: {
+          required: [] as string[],
+          optional: [] as string[]
+        }
       }
     },
     timeline: {
@@ -67,10 +81,10 @@ export function AutomaticCampaignModal({
       batchSize: 20,
       batchDelay: 30, // minutes
       scoringWeights: {
-        followers: 30,
-        engagement: 40,
-        relevance: 20,
-        responseTime: 10
+        followers: 40,
+        engagement: 30,
+        rating: 20,
+        completedCampaigns: 10
       },
       autoReplacement: true,
       maxReplacements: 3
@@ -93,10 +107,10 @@ export function AutomaticCampaignModal({
           batchSize: 20,
           batchDelay: 30,
           scoringWeights: {
-            followers: 30,
-            engagement: 40,
-            relevance: 20,
-            responseTime: 10
+            followers: 40,
+            engagement: 30,
+            rating: 20,
+            completedCampaigns: 10
           },
           autoReplacement: true,
           maxReplacements: 3
@@ -131,10 +145,10 @@ export function AutomaticCampaignModal({
           batchSize: 20,
           batchDelay: 30,
           scoringWeights: {
-            followers: 30,
-            engagement: 40,
-            relevance: 20,
-            responseTime: 10
+            followers: 40,
+            engagement: 30,
+            rating: 20,
+            completedCampaigns: 10
           },
           autoReplacement: true,
           maxReplacements: 3
@@ -145,6 +159,21 @@ export function AutomaticCampaignModal({
     setErrors({});
     setCurrentStep(1);
   }, [currentCampaign, isOpen]);
+
+  useEffect(() => {
+    const loadPlatformsAndInterests = async () => {
+      const [loadedPlatforms, loadedInterests] = await Promise.all([
+        campaignValidationService.getAvailablePlatforms(),
+        campaignValidationService.getAvailableInterests()
+      ]);
+      setPlatforms(loadedPlatforms);
+      setInterests(loadedInterests);
+    };
+
+    if (isOpen) {
+      loadPlatformsAndInterests();
+    }
+  }, [isOpen]);
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -231,6 +260,29 @@ export function AutomaticCampaignModal({
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateInfluencerAvailability = async (): Promise<boolean> => {
+    const result = await campaignValidationService.validateCampaignInfluencerAvailability(
+      {
+        platforms: formData.preferences.platforms,
+        contentTypes: formData.preferences.contentTypes,
+        audienceSize: formData.preferences.audienceSize,
+        demographics: formData.preferences.demographics
+      },
+      formData.automaticSettings.scoringWeights,
+      formData.automaticSettings.targetInfluencerCount,
+      formData.automaticSettings.overbookingPercentage
+    );
+
+    if (!result.isValid) {
+      setErrors(prev => ({ ...prev, availability: result.error || 'Недостаточно инфлюенсеров' }));
+      toast.error(result.error || 'Недостаточно инфлюенсеров для создания кампании');
+      return false;
+    }
+
+    toast.success(`Найдено ${result.matchedInfluencersCount} подходящих инфлюенсеров`);
+    return true;
+  };
+
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
@@ -248,6 +300,13 @@ export function AutomaticCampaignModal({
     }
 
     setIsLoading(true);
+
+    const isAvailable = await validateInfluencerAvailability();
+    if (!isAvailable) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const campaignData: Partial<Campaign> = {
         advertiserId,
@@ -527,25 +586,25 @@ export function AutomaticCampaignModal({
                   Платформы *
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {PLATFORMS.map((platform) => (
+                  {platforms.map((platform) => (
                     <button
-                      key={platform}
+                      key={platform.name}
                       type="button"
                       onClick={() => handleArrayToggle(
                         formData.preferences.platforms,
-                        platform,
+                        platform.name,
                         (newPlatforms) => setFormData(prev => ({
                           ...prev,
                           preferences: { ...prev.preferences, platforms: newPlatforms }
                         }))
                       )}
                       className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
-                        formData.preferences.platforms.includes(platform)
+                        formData.preferences.platforms.includes(platform.name)
                           ? 'bg-blue-100 border-blue-300 text-blue-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      {platform}
+                      {platform.displayName}
                     </button>
                   ))}
                 </div>
@@ -894,20 +953,20 @@ export function AutomaticCampaignModal({
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Релевантность ({formData.automaticSettings.scoringWeights.relevance}%)
+                      Рейтинг ({formData.automaticSettings.scoringWeights.rating}%)
                     </label>
                     <input
                       type="range"
                       min="0"
                       max="100"
-                      value={formData.automaticSettings.scoringWeights.relevance}
+                      value={formData.automaticSettings.scoringWeights.rating}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         automaticSettings: {
                           ...prev.automaticSettings,
                           scoringWeights: {
                             ...prev.automaticSettings.scoringWeights,
-                            relevance: parseInt(e.target.value)
+                            rating: parseInt(e.target.value)
                           }
                         }
                       }))}
@@ -917,20 +976,20 @@ export function AutomaticCampaignModal({
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Время ответа ({formData.automaticSettings.scoringWeights.responseTime}%)
+                      Завершенных кампаний ({formData.automaticSettings.scoringWeights.completedCampaigns}%)
                     </label>
                     <input
                       type="range"
                       min="0"
                       max="100"
-                      value={formData.automaticSettings.scoringWeights.responseTime}
+                      value={formData.automaticSettings.scoringWeights.completedCampaigns}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         automaticSettings: {
                           ...prev.automaticSettings,
                           scoringWeights: {
                             ...prev.automaticSettings.scoringWeights,
-                            responseTime: parseInt(e.target.value)
+                            completedCampaigns: parseInt(e.target.value)
                           }
                         }
                       }))}
