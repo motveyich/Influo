@@ -461,7 +461,7 @@ export class OfferService {
   async confirmOfferTerms(offerId: string): Promise<void> {
     try {
       const { data: currentData } = await supabase
-        .from(TABLES.OFFERS)
+        .from(TABLES.COLLABORATION_OFFERS)
         .select('details')
         .eq('offer_id', offerId)
         .single();
@@ -469,7 +469,7 @@ export class OfferService {
       const currentDetails = currentData?.details || {};
 
       const { error } = await supabase
-        .from(TABLES.OFFERS)
+        .from(TABLES.COLLABORATION_OFFERS)
         .update({
           details: {
             ...currentDetails,

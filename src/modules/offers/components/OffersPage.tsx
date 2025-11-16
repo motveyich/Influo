@@ -417,6 +417,8 @@ export function OffersPage() {
               setSelectedOffer(null);
             }}
             offerId={selectedOffer.id}
+            currentUserId={currentUserId}
+            onOfferUpdated={loadOffers}
           />
         )}
       </div>
