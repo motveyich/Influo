@@ -15,24 +15,45 @@ import {
   CreditCard,
   PlayCircle,
   Package,
-  Clock
+  Clock,
+  Building,
+  Globe,
+  Mail,
+  XCircle,
+  Ban,
+  Flag,
+  Check
 } from 'lucide-react';
 import { automaticOfferService } from '../../campaigns/services/automaticOfferService';
+import { offerService } from '../services/offerService';
+import { PaymentRequestModal } from './PaymentRequestModal';
+import { ReportModal } from '../../../components/ReportModal';
+import toast from 'react-hot-toast';
 
 interface AutomaticCampaignDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   offerId: string;
+  currentUserId: string;
+  onOfferUpdated?: () => void;
 }
 
 export function AutomaticCampaignDetailsModal({
   isOpen,
   onClose,
-  offerId
+  offerId,
+  currentUserId,
+  onOfferUpdated
 }: AutomaticCampaignDetailsModalProps) {
   const [loading, setLoading] = useState(true);
   const [details, setDetails] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const isInfluencer = details?.influencer_id === currentUserId;
+  const isAdvertiser = details?.advertiser_id === currentUserId;
 
   useEffect(() => {
     if (isOpen && offerId) {
@@ -54,7 +75,78 @@ export function AutomaticCampaignDetailsModal({
     }
   };
 
+  const handleCancelOffer = async () => {
+    if (!confirm('Вы уверены, что хотите расторгнуть сотрудничество?')) return;
+
+    try {
+      setActionLoading(true);
+      await offerService.updateOfferStatus(offerId, 'cancelled', currentUserId);
+      toast.success('Сотрудничество расторгнуто');
+      onOfferUpdated?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to cancel offer:', error);
+      toast.error('Не удалось расторгнуть сотрудничество');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectOffer = async () => {
+    if (!confirm('Вы уверены, что хотите отказаться от предложения?')) return;
+
+    try {
+      setActionLoading(true);
+      await offerService.updateOfferStatus(offerId, 'rejected', currentUserId);
+      toast.success('Предложение отклонено');
+      onOfferUpdated?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to reject offer:', error);
+      toast.error('Не удалось отклонить предложение');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCompleteOffer = async () => {
+    if (!confirm('Вы уверены, что хотите завершить сотрудничество? Все условия должны быть выполнены.')) return;
+
+    try {
+      setActionLoading(true);
+      await offerService.updateOfferStatus(offerId, 'completed', currentUserId);
+      toast.success('Сотрудничество завершено');
+      onOfferUpdated?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to complete offer:', error);
+      toast.error('Не удалось завершить сотрудничество');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmTerms = async () => {
+    if (!confirm('Подтвердите, что все условия сотрудничества выполнены.')) return;
+
+    try {
+      setActionLoading(true);
+      await offerService.confirmOfferTerms(offerId);
+      toast.success('Условия подтверждены');
+      loadDetails();
+    } catch (error) {
+      console.error('Failed to confirm terms:', error);
+      toast.error('Не удалось подтвердить условия');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const advertiserData = details?.advertiserProfile?.advertiser_data || {};
+  const companyName = advertiserData.companyName || details?.advertiserProfile?.full_name || 'Не указано';
+  const website = advertiserData.organizationWebsite || details?.advertiserProfile?.website;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -110,6 +202,54 @@ export function AutomaticCampaignDetailsModal({
                   </div>
                 </div>
               </div>
+
+              {details.advertiserProfile && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <Building className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
+                    О рекламодателе
+                  </h3>
+                  <div className="bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5">
+                    <div className="flex items-start space-x-4">
+                      {details.advertiserProfile.avatar ? (
+                        <img
+                          src={details.advertiserProfile.avatar}
+                          alt={companyName}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center">
+                          <Building className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{companyName}</h4>
+                        {details.advertiserProfile.bio && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{details.advertiserProfile.bio}</p>
+                        )}
+                        <div className="flex flex-wrap gap-3 mt-3">
+                          {website && (
+                            <a
+                              href={website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              <Globe className="w-4 h-4" />
+                              <span>Веб-сайт</span>
+                            </a>
+                          )}
+                          {advertiserData.industry && (
+                            <span className="px-3 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                              {advertiserData.industry}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
@@ -341,21 +481,6 @@ export function AutomaticCampaignDetailsModal({
                   </ul>
                 </div>
               </div>
-
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-800 rounded-xl p-5">
-                <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3 text-lg flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Готовы начать?
-                </h3>
-                <p className="text-sm text-green-800 dark:text-green-400 mb-3 leading-relaxed">
-                  Если условия вам подходят, примите предложение и начните работу над кампанией.
-                  Если есть сомнения или предложение не соответствует вашим возможностям - можете его отклонить.
-                </p>
-                <div className="flex items-center space-x-2 text-xs text-green-700 dark:text-green-400">
-                  <Clock className="w-4 h-4" />
-                  <span>Предложение действительно до момента принятия другим инфлюенсером</span>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64">
@@ -366,15 +491,106 @@ export function AutomaticCampaignDetailsModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            Закрыть
-          </button>
+        <div className="flex flex-col space-y-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          {details && (
+            <div className="flex flex-wrap gap-2">
+              {details.status === 'accepted' && isInfluencer && (
+                <>
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    disabled={actionLoading}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Выставить окно оплаты</span>
+                  </button>
+
+                  <button
+                    onClick={handleConfirmTerms}
+                    disabled={actionLoading}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Подтвердить выполнение</span>
+                  </button>
+
+                  <button
+                    onClick={handleCancelOffer}
+                    disabled={actionLoading}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>Расторгнуть</span>
+                  </button>
+                </>
+              )}
+
+              {details.status === 'pending' && isInfluencer && (
+                <button
+                  onClick={handleRejectOffer}
+                  disabled={actionLoading}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Отказаться</span>
+                </button>
+              )}
+
+              {details.status === 'accepted' && isAdvertiser && (
+                <button
+                  onClick={handleCompleteOffer}
+                  disabled={actionLoading}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Завершить сотрудничество</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowReportModal(true)}
+                disabled={actionLoading}
+                className="flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Flag className="w-4 h-4" />
+                <span>Пожаловаться</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end">
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Закрыть
+            </button>
+          </div>
         </div>
       </div>
+
+      {showPaymentModal && (
+        <PaymentRequestModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          offerId={offerId}
+          currentUserId={currentUserId}
+          onPaymentCreated={() => {
+            setShowPaymentModal(false);
+            loadDetails();
+          }}
+        />
+      )}
+
+      {showReportModal && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          entityType="offer"
+          entityId={offerId}
+          reportedUserId={isInfluencer ? details.advertiser_id : details.influencer_id}
+        />
+      )}
     </div>
   );
 }

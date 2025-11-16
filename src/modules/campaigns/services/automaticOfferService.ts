@@ -346,9 +346,20 @@ export class AutomaticOfferService {
         console.error('Failed to fetch campaign:', campaignError);
       }
 
+      const { data: advertiserProfile, error: profileError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('user_id, full_name, avatar, website, advertiser_data, bio')
+        .eq('user_id', offer.advertiser_id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Failed to fetch advertiser profile:', profileError);
+      }
+
       return {
         ...offer,
-        campaignDetails: campaign || {}
+        campaignDetails: campaign || {},
+        advertiserProfile: advertiserProfile || null
       };
     } catch (error) {
       console.error('Failed to get automatic offer details:', error);

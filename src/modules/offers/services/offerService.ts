@@ -457,6 +457,34 @@ export class OfferService {
       updatedAt: dbData.updated_at
     };
   }
+
+  async confirmOfferTerms(offerId: string): Promise<void> {
+    try {
+      const { data: currentData } = await supabase
+        .from(TABLES.OFFERS)
+        .select('details')
+        .eq('offer_id', offerId)
+        .single();
+
+      const currentDetails = currentData?.details || {};
+
+      const { error } = await supabase
+        .from(TABLES.OFFERS)
+        .update({
+          details: {
+            ...currentDetails,
+            terms_confirmed_at: new Date().toISOString()
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('offer_id', offerId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to confirm offer terms:', error);
+      throw error;
+    }
+  }
 }
 
 export const offerService = new OfferService();
