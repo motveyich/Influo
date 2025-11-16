@@ -329,32 +329,30 @@ export class AutomaticOfferService {
     try {
       const { data: offer, error: offerError } = await supabase
         .from(TABLES.OFFERS)
-        .select(`
-          *,
-          campaigns!inner(
-            campaign_id,
-            title,
-            description,
-            brand,
-            budget,
-            preferences,
-            timeline,
-            metadata
-          )
-        `)
+        .select('*')
         .eq('offer_id', offerId)
         .maybeSingle();
 
       if (offerError) throw offerError;
       if (!offer) return null;
 
+      const { data: campaign, error: campaignError } = await supabase
+        .from(TABLES.CAMPAIGNS)
+        .select('*')
+        .eq('campaign_id', offer.campaign_id)
+        .maybeSingle();
+
+      if (campaignError) {
+        console.error('Failed to fetch campaign:', campaignError);
+      }
+
       return {
         ...offer,
-        campaignDetails: offer.campaigns
+        campaignDetails: campaign || {}
       };
     } catch (error) {
       console.error('Failed to get automatic offer details:', error);
-      return null;
+      throw error;
     }
   }
 }
