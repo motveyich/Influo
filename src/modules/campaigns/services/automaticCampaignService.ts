@@ -87,7 +87,7 @@ export class AutomaticCampaignService {
         return {
           min: Math.round(avgBudgetPerInfluencer * 0.7),
           max: Math.round(avgBudgetPerInfluencer * 1.3),
-          currency: 'USD'
+          currency: 'RUB'
         };
       }
 
@@ -126,7 +126,7 @@ export class AutomaticCampaignService {
         return {
           min: Math.round(avgBudgetPerInfluencer * 0.7),
           max: Math.round(avgBudgetPerInfluencer * 1.3),
-          currency: 'USD'
+          currency: 'RUB'
         };
       }
 
@@ -142,7 +142,7 @@ export class AutomaticCampaignService {
       return {
         min: Math.round(recommendedBudgetPerInfluencer * 0.8),
         max: Math.round(recommendedBudgetPerInfluencer * 1.2),
-        currency: 'USD'
+        currency: 'RUB'
       };
     } catch (error) {
       console.error('Failed to calculate market budget recommendation:', error);
@@ -155,7 +155,7 @@ export class AutomaticCampaignService {
       return {
         min: Math.round(avgBudgetPerInfluencer * 0.7),
         max: Math.round(avgBudgetPerInfluencer * 1.3),
-        currency: 'USD'
+        currency: 'RUB'
       };
     }
   }
