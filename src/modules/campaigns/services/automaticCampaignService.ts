@@ -341,6 +341,8 @@ export class AutomaticCampaignService {
           }
         })
         .eq('campaign_id', campaign.campaignId);
+
+      throw error;
     }
   }
 

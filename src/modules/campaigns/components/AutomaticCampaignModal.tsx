@@ -36,6 +36,7 @@ export function AutomaticCampaignModal({
     title: '',
     description: '',
     brand: '',
+    productCategory: '',
     budget: {
       min: 0,
       max: 0,
@@ -98,6 +99,7 @@ export function AutomaticCampaignModal({
         title: currentCampaign.title,
         description: currentCampaign.description,
         brand: currentCampaign.brand,
+        productCategory: (currentCampaign as any).productCategory || '',
         budget: currentCampaign.budget,
         preferences: currentCampaign.preferences,
         timeline: currentCampaign.timeline,
@@ -123,6 +125,7 @@ export function AutomaticCampaignModal({
         title: '',
         description: '',
         brand: '',
+        productCategory: '',
         budget: { min: 0, max: 0, currency: 'RUB' },
         preferences: {
           platforms: [],
@@ -193,6 +196,10 @@ export function AutomaticCampaignModal({
         newErrors.description = 'Описание обязательно';
       } else if (formData.description.trim().length < 10) {
         newErrors.description = 'Описание должно содержать минимум 10 символов';
+      }
+
+      if (!formData.productCategory) {
+        newErrors.productCategory = 'Выберите категорию товара';
       }
     }
 
@@ -485,6 +492,45 @@ export function AutomaticCampaignModal({
                   </p>
                 )}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Категория рекламируемого товара *
+                </label>
+                <select
+                  value={formData.productCategory}
+                  onChange={(e) => setFormData(prev => ({ ...prev, productCategory: e.target.value }))}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.productCategory ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Выберите категорию</option>
+                  <option value="fashion">Мода и стиль</option>
+                  <option value="beauty">Красота и косметика</option>
+                  <option value="health">Здоровье и фитнес</option>
+                  <option value="travel">Путешествия</option>
+                  <option value="food">Еда и кулинария</option>
+                  <option value="tech">Технологии</option>
+                  <option value="gaming">Игры</option>
+                  <option value="entertainment">Развлечения</option>
+                  <option value="sport">Спорт</option>
+                  <option value="education">Образование</option>
+                  <option value="business">Бизнес</option>
+                  <option value="automotive">Автомобили</option>
+                  <option value="realestate">Недвижимость</option>
+                  <option value="family">Семья и дети</option>
+                  <option value="pets">Животные</option>
+                  <option value="art">Искусство</option>
+                  <option value="finance">Финансы</option>
+                  <option value="other">Другое</option>
+                </select>
+                {errors.productCategory && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.productCategory}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -494,12 +540,97 @@ export function AutomaticCampaignModal({
               <div className="text-center mb-6">
                 <Users className="w-12 h-12 text-blue-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Критерии подбора</h3>
-                <p className="text-sm text-gray-600">Настройте параметры для автоматического поиска</p>
+                <p className="text-sm text-gray-600">Сначала платформа, объем аудитории, потом бюджет</p>
+              </div>
+
+              {/* Platforms */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-3">
+                  Платформы *
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {platforms.map((platform) => (
+                    <button
+                      key={platform.name}
+                      type="button"
+                      onClick={() => handleArrayToggle(
+                        formData.preferences.platforms,
+                        platform.name,
+                        (newPlatforms) => setFormData(prev => ({
+                          ...prev,
+                          preferences: { ...prev.preferences, platforms: newPlatforms }
+                        }))
+                      )}
+                      className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
+                        formData.preferences.platforms.includes(platform.name)
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {platform.displayName}
+                    </button>
+                  ))}
+                </div>
+                {errors.platforms && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.platforms}
+                  </p>
+                )}
+              </div>
+
+              {/* Audience Size */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-3">Размер аудитории инфлюенсеров *</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Минимум подписчиков
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.preferences.audienceSize.min}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        preferences: {
+                          ...prev.preferences,
+                          audienceSize: {
+                            ...prev.preferences.audienceSize,
+                            min: parseInt(e.target.value) || 0
+                          }
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Максимум подписчиков
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.preferences.audienceSize.max}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        preferences: {
+                          ...prev.preferences,
+                          audienceSize: {
+                            ...prev.preferences.audienceSize,
+                            max: parseInt(e.target.value) || 0
+                          }
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="1000000"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Budget */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Бюджет</h4>
+                <h4 className="text-md font-medium text-gray-900 mb-3">Бюджет *</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -580,47 +711,44 @@ export function AutomaticCampaignModal({
                 )}
               </div>
 
-              {/* Platforms */}
+              {/* Audience Interests */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Платформы *
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {platforms.map((platform) => (
+                <h4 className="text-md font-medium text-gray-900 mb-3">Интересы аудитории (по желанию)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {interests.slice(0, 12).map((interest) => (
                     <button
-                      key={platform.name}
+                      key={interest.name}
                       type="button"
                       onClick={() => handleArrayToggle(
-                        formData.preferences.platforms,
-                        platform.name,
-                        (newPlatforms) => setFormData(prev => ({
+                        formData.preferences.demographics.interests || [],
+                        interest.name,
+                        (newInterests) => setFormData(prev => ({
                           ...prev,
-                          preferences: { ...prev.preferences, platforms: newPlatforms }
+                          preferences: {
+                            ...prev.preferences,
+                            demographics: {
+                              ...prev.preferences.demographics,
+                              interests: newInterests
+                            }
+                          }
                         }))
                       )}
-                      className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
-                        formData.preferences.platforms.includes(platform.name)
-                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      className={`px-3 py-2 text-xs rounded-md border transition-colors ${
+                        (formData.preferences.demographics.interests || []).includes(interest.name)
+                          ? 'bg-green-100 border-green-300 text-green-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      {platform.displayName}
+                      {interest.name}
                     </button>
                   ))}
                 </div>
-                {errors.platforms && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.platforms}
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-2">Выбранные интересы помогут найти более релевантных инфлюенсеров</p>
               </div>
 
               {/* Content Types */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Типы контента *
-                </label>
+                <h4 className="text-md font-medium text-gray-900 mb-3">Типы контента *</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {CONTENT_TYPES.map((type) => (
                     <button
@@ -722,55 +850,6 @@ export function AutomaticCampaignModal({
                   {errors.timeline}
                 </p>
               )}
-
-              {/* Audience Size */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Размер аудитории инфлюенсеров</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Минимум подписчиков
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.preferences.audienceSize.min}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        preferences: {
-                          ...prev.preferences,
-                          audienceSize: {
-                            ...prev.preferences.audienceSize,
-                            min: parseInt(e.target.value) || 0
-                          }
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="10000"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Максимум подписчиков
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.preferences.audienceSize.max}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        preferences: {
-                          ...prev.preferences,
-                          audienceSize: {
-                            ...prev.preferences.audienceSize,
-                            max: parseInt(e.target.value) || 0
-                          }
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="1000000"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 

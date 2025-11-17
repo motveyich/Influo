@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
         const timelineText = `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`;
 
         const { error: offerError } = await supabase
-          .from('offers')
+          .from('collaboration_offers')
           .insert([{
             influencer_id: influencer.user_id,
             campaign_id: campaignId,
