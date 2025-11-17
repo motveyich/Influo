@@ -75,7 +75,12 @@ export class CampaignValidationService {
     filters: CampaignFilters,
     weights: ScoringWeights
   ): CampaignFilters {
-    const expanded = { ...filters };
+    // Делаем ГЛУБОКУЮ копию чтобы не изменять оригинальные значения
+    const expanded: CampaignFilters = {
+      ...filters,
+      audienceSize: { ...filters.audienceSize },
+      demographics: filters.demographics ? { ...filters.demographics } : undefined
+    };
 
     const followerWeight = weights.followers / 100;
     if (expanded.audienceSize.min > 0) {

@@ -275,11 +275,15 @@ export class AutomaticCampaignService {
         .update(updateData)
         .eq('campaign_id', campaignId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Database error updating campaign:', error);
         throw new Error(`Failed to update campaign: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Campaign not found or no changes made');
       }
 
       const updatedCampaign = this.transformFromDatabase(data);
