@@ -18,6 +18,27 @@ const COUNTRIES = ['Россия', 'США', 'Великобритания', 'Г
 const GENDERS = ['male', 'female', 'other'];
 const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
 
+const PRODUCT_CATEGORIES = [
+  { value: 'fashion', label: 'Мода и стиль' },
+  { value: 'beauty', label: 'Красота и косметика' },
+  { value: 'health', label: 'Здоровье и фитнес' },
+  { value: 'travel', label: 'Путешествия' },
+  { value: 'food', label: 'Еда и кулинария' },
+  { value: 'tech', label: 'Технологии' },
+  { value: 'gaming', label: 'Игры' },
+  { value: 'entertainment', label: 'Развлечения' },
+  { value: 'sport', label: 'Спорт' },
+  { value: 'education', label: 'Образование' },
+  { value: 'business', label: 'Бизнес' },
+  { value: 'automotive', label: 'Автомобили' },
+  { value: 'realestate', label: 'Недвижимость' },
+  { value: 'family', label: 'Семья и дети' },
+  { value: 'pets', label: 'Животные' },
+  { value: 'art', label: 'Искусство' },
+  { value: 'finance', label: 'Финансы' },
+  { value: 'other', label: 'Другое' }
+];
+
 export function AutomaticCampaignModal({
   isOpen,
   onClose,
@@ -30,13 +51,16 @@ export function AutomaticCampaignModal({
   const [currentStep, setCurrentStep] = useState(1);
   const [platforms, setPlatforms] = useState<Array<{ name: string; displayName: string; icon: string }>>([]);
   const [interests, setInterests] = useState<Array<{ name: string; category: string }>>([]);
+  const [marketBudget, setMarketBudget] = useState<{ min: number; max: number; currency: string } | null>(null);
+  const [isCalculatingBudget, setIsCalculatingBudget] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     brand: '',
-    productCategory: '',
+    productCategories: [] as string[],
+    targetCountries: [] as string[],
     budget: {
       min: 0,
       max: 0,
@@ -99,7 +123,8 @@ export function AutomaticCampaignModal({
         title: currentCampaign.title,
         description: currentCampaign.description,
         brand: currentCampaign.brand,
-        productCategory: (currentCampaign as any).productCategory || '',
+        productCategories: (currentCampaign as any).productCategories || [],
+        targetCountries: (currentCampaign as any).targetCountries || [],
         budget: currentCampaign.budget,
         preferences: currentCampaign.preferences,
         timeline: currentCampaign.timeline,
@@ -125,7 +150,8 @@ export function AutomaticCampaignModal({
         title: '',
         description: '',
         brand: '',
-        productCategory: '',
+        productCategories: [],
+        targetCountries: [],
         budget: { min: 0, max: 0, currency: 'RUB' },
         preferences: {
           platforms: [],
@@ -198,12 +224,24 @@ export function AutomaticCampaignModal({
         newErrors.description = 'Описание должно содержать минимум 10 символов';
       }
 
-      if (!formData.productCategory) {
-        newErrors.productCategory = 'Выберите категорию товара';
+      if (formData.productCategories.length === 0) {
+        newErrors.productCategories = 'Выберите хотя бы одну категорию товара';
+      }
+
+      if (formData.targetCountries.length === 0) {
+        newErrors.targetCountries = 'Выберите хотя бы одну страну';
       }
     }
 
     if (step === 2) {
+      if (formData.preferences.platforms.length === 0) {
+        newErrors.platforms = 'Выберите хотя бы одну платформу';
+      }
+
+      if (formData.preferences.audienceSize.min <= 0) {
+        newErrors.audienceMin = 'Минимальный размер аудитории должен быть больше 0';
+      }
+
       if (formData.budget.min <= 0) {
         newErrors.minBudget = 'Минимальный бюджет должен быть больше 0';
       }
@@ -214,10 +252,6 @@ export function AutomaticCampaignModal({
 
       if (formData.budget.min > formData.budget.max) {
         newErrors.budget = 'Минимальный бюджет не может быть больше максимального';
-      }
-
-      if (formData.preferences.platforms.length === 0) {
-        newErrors.platforms = 'Выберите хотя бы одну платформу';
       }
 
       if (formData.preferences.contentTypes.length === 0) {
@@ -290,9 +324,36 @@ export function AutomaticCampaignModal({
     return true;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (validateStep(currentStep)) {
+      if (currentStep === 2) {
+        await calculateMarketBudget();
+      }
       setCurrentStep(prev => Math.min(prev + 1, 4));
+    }
+  };
+
+  const calculateMarketBudget = async () => {
+    if (formData.preferences.platforms.length === 0 ||
+        formData.preferences.audienceSize.min === 0 ||
+        formData.preferences.contentTypes.length === 0) {
+      return;
+    }
+
+    setIsCalculatingBudget(true);
+    try {
+      const budget = await automaticCampaignService.calculateMarketBudgetRecommendation(
+        formData.preferences.audienceSize.min,
+        formData.preferences.audienceSize.max || formData.preferences.audienceSize.min * 10,
+        formData.automaticSettings.targetInfluencerCount,
+        formData.preferences.platforms,
+        formData.preferences.contentTypes
+      );
+      setMarketBudget(budget);
+    } catch (error) {
+      console.error('Failed to calculate market budget:', error);
+    } finally {
+      setIsCalculatingBudget(false);
     }
   };
 
@@ -495,39 +556,64 @@ export function AutomaticCampaignModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Категория рекламируемого товара *
+                  Категории рекламируемого товара * (можно выбрать несколько)
                 </label>
-                <select
-                  value={formData.productCategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, productCategory: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.productCategory ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Выберите категорию</option>
-                  <option value="fashion">Мода и стиль</option>
-                  <option value="beauty">Красота и косметика</option>
-                  <option value="health">Здоровье и фитнес</option>
-                  <option value="travel">Путешествия</option>
-                  <option value="food">Еда и кулинария</option>
-                  <option value="tech">Технологии</option>
-                  <option value="gaming">Игры</option>
-                  <option value="entertainment">Развлечения</option>
-                  <option value="sport">Спорт</option>
-                  <option value="education">Образование</option>
-                  <option value="business">Бизнес</option>
-                  <option value="automotive">Автомобили</option>
-                  <option value="realestate">Недвижимость</option>
-                  <option value="family">Семья и дети</option>
-                  <option value="pets">Животные</option>
-                  <option value="art">Искусство</option>
-                  <option value="finance">Финансы</option>
-                  <option value="other">Другое</option>
-                </select>
-                {errors.productCategory && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {PRODUCT_CATEGORIES.map((category) => (
+                    <button
+                      key={category.value}
+                      type="button"
+                      onClick={() => handleArrayToggle(
+                        formData.productCategories,
+                        category.value,
+                        (newCategories) => setFormData(prev => ({ ...prev, productCategories: newCategories }))
+                      )}
+                      className={`px-3 py-2 text-xs rounded-md border transition-colors text-left ${
+                        formData.productCategories.includes(category.value)
+                          ? 'bg-purple-100 border-purple-300 text-purple-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {category.label}
+                    </button>
+                  ))}
+                </div>
+                {errors.productCategories && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.productCategory}
+                    {errors.productCategories}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Целевые страны * (можно выбрать несколько)
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {COUNTRIES.map((country) => (
+                    <button
+                      key={country}
+                      type="button"
+                      onClick={() => handleArrayToggle(
+                        formData.targetCountries,
+                        country,
+                        (newCountries) => setFormData(prev => ({ ...prev, targetCountries: newCountries }))
+                      )}
+                      className={`px-3 py-2 text-xs rounded-md border transition-colors text-left ${
+                        formData.targetCountries.includes(country)
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+                {errors.targetCountries && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.targetCountries}
                   </p>
                 )}
               </div>
@@ -708,6 +794,19 @@ export function AutomaticCampaignModal({
                     <AlertCircle className="w-4 h-4 mr-1" />
                     {errors.budget}
                   </p>
+                )}
+                {marketBudget && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Рекомендованный рыночный бюджет:
+                    </p>
+                    <p className="text-lg font-semibold text-blue-700">
+                      {marketBudget.min.toLocaleString()} - {marketBudget.max.toLocaleString()} {marketBudget.currency}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      На основе анализа рыночных данных инфлюенсеров с выбранными параметрами
+                    </p>
+                  </div>
                 )}
               </div>
 

@@ -174,7 +174,13 @@ export class AutomaticCampaignService {
         description: campaignData.description,
         brand: campaignData.brand,
         budget: campaignData.budget,
-        preferences: campaignData.preferences,
+        preferences: {
+          ...campaignData.preferences,
+          demographics: {
+            ...campaignData.preferences?.demographics,
+            countries: (campaignData as any).targetCountries || []
+          }
+        },
         status: 'active',
         timeline: campaignData.timeline,
         metrics: {
@@ -186,6 +192,8 @@ export class AutomaticCampaignService {
         metadata: {
           ...campaignData.metadata,
           isAutomatic: true,
+          productCategories: (campaignData as any).productCategories || [],
+          targetCountries: (campaignData as any).targetCountries || [],
           automaticSettings: {
             ...campaignData.metadata?.automaticSettings,
             unitAudienceCost
@@ -201,7 +209,10 @@ export class AutomaticCampaignService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error creating campaign:', error);
+        throw new Error(`Failed to save campaign: ${error.message}`);
+      }
 
       const campaign = this.transformFromDatabase(data);
 
@@ -213,15 +224,17 @@ export class AutomaticCampaignService {
         replacementCount: new Map()
       });
 
-      // Запуск автоматического подбора
-      await this.startAutomaticMatching(campaign);
+      // Запуск автоматического подбора в фоновом режиме
+      this.startAutomaticMatching(campaign).catch(error => {
+        console.error('Background matching failed:', error);
+      });
 
       analytics.trackCampaignCreated(campaign.campaignId, campaignData.advertiserId!);
 
       return campaign;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create automatic campaign:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to create campaign');
     }
   }
 
@@ -229,16 +242,33 @@ export class AutomaticCampaignService {
     try {
       this.validateCampaignData(updates, false);
 
-      const updateData = {
+      const updateData: any = {
         title: updates.title,
         description: updates.description,
         brand: updates.brand,
         budget: updates.budget,
-        preferences: updates.preferences,
+        preferences: updates.preferences ? {
+          ...updates.preferences,
+          demographics: {
+            ...updates.preferences.demographics,
+            countries: (updates as any).targetCountries || updates.preferences.demographics?.countries || []
+          }
+        } : undefined,
         timeline: updates.timeline,
-        metadata: updates.metadata,
+        metadata: updates.metadata ? {
+          ...updates.metadata,
+          productCategories: (updates as any).productCategories || updates.metadata.productCategories,
+          targetCountries: (updates as any).targetCountries || updates.metadata.targetCountries
+        } : undefined,
         updated_at: new Date().toISOString()
       };
+
+      // Remove undefined fields
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
 
       const { data, error } = await supabase
         .from(TABLES.CAMPAIGNS)
@@ -247,7 +277,10 @@ export class AutomaticCampaignService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error updating campaign:', error);
+        throw new Error(`Failed to update campaign: ${error.message}`);
+      }
 
       const updatedCampaign = this.transformFromDatabase(data);
 
@@ -262,9 +295,9 @@ export class AutomaticCampaignService {
       });
 
       return updatedCampaign;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update automatic campaign:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to update campaign');
     }
   }
 
@@ -367,9 +400,22 @@ export class AutomaticCampaignService {
         ) || cardPlatform === 'multi';
       });
 
+      // Фильтруем по географии
+      const targetCountries = campaign.preferences.demographics?.countries || [];
+      const geoFiltered = targetCountries.length > 0
+        ? platformFiltered.filter(card => {
+            const cardCountries = card.audienceDemographics?.topCountries || [];
+            return cardCountries.some(country =>
+              targetCountries.some(target =>
+                target.toLowerCase() === country.toLowerCase()
+              )
+            );
+          })
+        : platformFiltered;
+
       // ДЕДУПЛИКАЦИЯ: Группируем карточки по userId
       const cardsByUser = new Map<string, InfluencerCard[]>();
-      for (const card of platformFiltered) {
+      for (const card of geoFiltered) {
         if (!cardsByUser.has(card.userId)) {
           cardsByUser.set(card.userId, []);
         }

@@ -79,6 +79,7 @@ Deno.serve(async (req: Request) => {
     const filtered = cards.filter(card => {
       const reach = card.reach || {};
       const serviceDetails = card.service_details || {};
+      const audienceDemographics = card.audience_demographics || {};
       const followers = reach.followers || 0;
 
       if (campaign.preferences.audienceSize?.min > 0 && followers < campaign.preferences.audienceSize.min) {
@@ -95,6 +96,18 @@ Deno.serve(async (req: Request) => {
           cardContentTypes.some((ct: string) => normalizeType(ct).includes(normalizeType(ft)) || normalizeType(ft).includes(normalizeType(ct)))
         );
         if (!hasMatch) return false;
+      }
+
+      // Geography filtering
+      const targetCountries = campaign.preferences.demographics?.countries || [];
+      if (targetCountries.length > 0) {
+        const cardCountries = audienceDemographics.topCountries || [];
+        const hasCountryMatch = cardCountries.some((country: string) =>
+          targetCountries.some((target: string) =>
+            target.toLowerCase() === country.toLowerCase()
+          )
+        );
+        if (!hasCountryMatch) return false;
       }
 
       return true;
