@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../../core/types';
 import { automaticCampaignService } from '../services/automaticCampaignService';
 import { campaignValidationService } from '../services/campaignValidationService';
@@ -209,8 +209,22 @@ export function AutomaticCampaignModal({
     if (formData.preferences.platforms.length > 0 &&
         formData.preferences.audienceSize.min > 0 &&
         formData.preferences.audienceSize.max > 0) {
-      const timer = setTimeout(() => {
-        calculateMarketBudget();
+      const timer = setTimeout(async () => {
+        setIsCalculatingBudget(true);
+        try {
+          const budget = await automaticCampaignService.calculateMarketBudgetRecommendation(
+            formData.preferences.audienceSize.min,
+            formData.preferences.audienceSize.max || formData.preferences.audienceSize.min * 10,
+            formData.automaticSettings.targetInfluencerCount,
+            formData.preferences.platforms,
+            formData.preferences.contentTypes.length > 0 ? formData.preferences.contentTypes : ['post', 'story', 'video', 'reel']
+          );
+          setMarketBudget(budget);
+        } catch (error) {
+          console.error('Failed to calculate market budget:', error);
+        } finally {
+          setIsCalculatingBudget(false);
+        }
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -218,7 +232,8 @@ export function AutomaticCampaignModal({
     formData.preferences.platforms,
     formData.preferences.audienceSize.min,
     formData.preferences.audienceSize.max,
-    calculateMarketBudget
+    formData.automaticSettings.targetInfluencerCount,
+    formData.preferences.contentTypes
   ]);
 
   const validateStep = (step: number): boolean => {
@@ -347,7 +362,7 @@ export function AutomaticCampaignModal({
     }
   };
 
-  const calculateMarketBudget = useCallback(async () => {
+  const calculateMarketBudget = async () => {
     if (formData.preferences.platforms.length === 0 ||
         formData.preferences.audienceSize.min === 0) {
       return;
@@ -368,7 +383,7 @@ export function AutomaticCampaignModal({
     } finally {
       setIsCalculatingBudget(false);
     }
-  }, [formData.preferences.platforms, formData.preferences.audienceSize.min, formData.preferences.audienceSize.max, formData.automaticSettings.targetInfluencerCount, formData.preferences.contentTypes]);
+  };
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
