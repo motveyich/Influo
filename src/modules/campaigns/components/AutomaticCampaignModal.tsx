@@ -456,30 +456,30 @@ export function AutomaticCampaignModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {currentCampaign ? 'Редактировать автоматическую кампанию' : 'Создать автоматическую кампанию'}
               </h2>
-              <p className="text-sm text-gray-600">Шаг {currentStep} из 4</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Шаг {currentStep} из 4</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="px-6 py-3 bg-gray-50">
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700">
           <div className="flex items-center space-x-2">
             {[1, 2, 3, 4].map((step) => (
               <React.Fragment key={step}>
@@ -514,7 +514,7 @@ export function AutomaticCampaignModal({
               <div className="text-center mb-6">
                 <Target className="w-12 h-12 text-blue-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Основная информация</h3>
-                <p className="text-sm text-gray-600">Расскажите о вашей кампании</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Расскажите о вашей кампании</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -654,7 +654,7 @@ export function AutomaticCampaignModal({
               <div className="text-center mb-6">
                 <Users className="w-12 h-12 text-blue-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Критерии подбора</h3>
-                <p className="text-sm text-gray-600">Сначала платформа, объем аудитории, потом бюджет</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Сначала платформа, объем аудитории, потом бюджет</p>
               </div>
 
               {/* Platforms */}
@@ -714,7 +714,7 @@ export function AutomaticCampaignModal({
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="10000"
                     />
                   </div>
@@ -735,7 +735,7 @@ export function AutomaticCampaignModal({
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="1000000"
                     />
                   </div>
@@ -915,7 +915,7 @@ export function AutomaticCampaignModal({
               <div className="text-center mb-6">
                 <Calendar className="w-12 h-12 text-green-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Временные рамки</h3>
-                <p className="text-sm text-gray-600">Установите сроки проведения кампании</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Установите сроки проведения кампании</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -986,7 +986,7 @@ export function AutomaticCampaignModal({
               <div className="text-center mb-6">
                 <Zap className="w-12 h-12 text-orange-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Настройки автоматики</h3>
-                <p className="text-sm text-gray-600">Настройте алгоритм подбора инфлюенсеров</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Настройте алгоритм подбора инфлюенсеров</p>
               </div>
 
               {/* Target Count and Overbooking */}
@@ -1073,7 +1073,7 @@ export function AutomaticCampaignModal({
                           batchSize: parseInt(e.target.value) || 20 
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="20"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1097,7 +1097,7 @@ export function AutomaticCampaignModal({
                           batchDelay: parseInt(e.target.value) || 30 
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="30"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1234,7 +1234,7 @@ export function AutomaticCampaignModal({
                       }))}
                       className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
                       Автоматически заменять ушедших инфлюенсеров
                     </span>
                   </label>
@@ -1256,7 +1256,7 @@ export function AutomaticCampaignModal({
                             maxReplacements: parseInt(e.target.value) || 3 
                           }
                         }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         placeholder="3"
                       />
                     </div>
@@ -1268,7 +1268,7 @@ export function AutomaticCampaignModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-600">
           <div className="flex space-x-3">
             {currentStep > 1 && (
               <button
