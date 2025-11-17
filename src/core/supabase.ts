@@ -88,6 +88,6 @@ export const TABLES = {
   COLLABORATION_REVIEWS: 'collaboration_reviews',
   OFFER_STATUS_HISTORY: 'offer_status_history',
   PAYMENT_STATUS_HISTORY: 'payment_status_history',
-  COLLABORATION_OFFERS: 'offers',
+  COLLABORATION_OFFERS: 'collaboration_offers',
   USER_SETTINGS: 'user_settings',
 } as const;

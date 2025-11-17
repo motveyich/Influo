@@ -1,13 +1,14 @@
 import { supabase, TABLES } from '../../../core/supabase';
-import { Campaign, InfluencerCard, Offer } from '../../../core/types';
+import { Campaign, InfluencerCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { influencerCardService } from '../../influencer-cards/services/influencerCardService';
-import { automaticOfferService } from './automaticOfferService';
 
 interface InfluencerScore {
   influencerId: string;
   cardId: string;
   score: number;
+  pricePerAudience: number;
+  deviationFromIdeal: number;
   metrics: {
     followers: number;
     engagement: number;
@@ -20,7 +21,7 @@ interface AutomaticSettings {
   targetInfluencerCount: number;
   overbookingPercentage: number;
   batchSize: number;
-  batchDelay: number; // minutes
+  batchDelay: number;
   scoringWeights: {
     followers: number;
     engagement: number;
@@ -29,6 +30,7 @@ interface AutomaticSettings {
   };
   autoReplacement: boolean;
   maxReplacements: number;
+  unitAudienceCost?: number;
 }
 
 export class AutomaticCampaignService {
@@ -39,10 +41,132 @@ export class AutomaticCampaignService {
     replacementCount: Map<string, number>;
   }>();
 
+  /**
+   * Рассчитывает идеальную стоимость единицы аудитории для кампании
+   * unitAudienceCost = avgBudget / avgAudience
+   */
+  calculateUnitAudienceCost(campaign: Campaign): number {
+    const avgBudget = (campaign.budget.min + campaign.budget.max) / 2;
+    const avgAudience = (campaign.preferences.audienceSize.min + campaign.preferences.audienceSize.max) / 2;
+
+    if (avgAudience === 0) return 0;
+
+    return avgBudget / avgAudience;
+  }
+
+  /**
+   * Рассчитывает рекомендованный бюджет на основе рыночных данных
+   */
+  async calculateMarketBudgetRecommendation(
+    minAudience: number,
+    maxAudience: number,
+    targetCount: number,
+    platforms: string[],
+    contentTypes: string[]
+  ): Promise<{ min: number; max: number; currency: string }> {
+    try {
+      // Получаем карточки инфлюенсеров, соответствующие критериям
+      const cards = await influencerCardService.getAllCards({
+        isActive: true,
+        minFollowers: minAudience,
+        maxFollowers: maxAudience || undefined
+      });
+
+      // Фильтруем по платформе
+      const filteredCards = cards.filter(card => {
+        const cardPlatform = card.platform.toLowerCase();
+        return platforms.some(p => p.toLowerCase() === cardPlatform) || cardPlatform === 'multi';
+      });
+
+      if (filteredCards.length === 0) {
+        // Используем средние рыночные значения по умолчанию
+        const avgAudience = (minAudience + maxAudience) / 2;
+        const marketRate = 0.05; // $0.05 за подписчика - средний рыночный показатель
+        const avgBudgetPerInfluencer = avgAudience * marketRate;
+
+        return {
+          min: Math.round(avgBudgetPerInfluencer * 0.7),
+          max: Math.round(avgBudgetPerInfluencer * 1.3),
+          currency: 'USD'
+        };
+      }
+
+      // Рассчитываем среднюю стоимость за подписчика на рынке
+      const pricesPerAudience: number[] = [];
+
+      for (const card of filteredCards) {
+        const pricing = card.serviceDetails.pricing;
+        const followers = card.reach.followers;
+
+        // Берём среднюю цену за требуемые типы контента
+        let totalPrice = 0;
+        let priceCount = 0;
+
+        for (const type of contentTypes) {
+          const typeKey = type.toLowerCase();
+          if (pricing[typeKey] && pricing[typeKey] > 0) {
+            totalPrice += pricing[typeKey];
+            priceCount++;
+          }
+        }
+
+        if (priceCount > 0 && followers > 0) {
+          const avgPrice = totalPrice / priceCount;
+          const pricePerFollower = avgPrice / followers;
+          pricesPerAudience.push(pricePerFollower);
+        }
+      }
+
+      if (pricesPerAudience.length === 0) {
+        // Fallback к средним рыночным значениям
+        const avgAudience = (minAudience + maxAudience) / 2;
+        const marketRate = 0.05;
+        const avgBudgetPerInfluencer = avgAudience * marketRate;
+
+        return {
+          min: Math.round(avgBudgetPerInfluencer * 0.7),
+          max: Math.round(avgBudgetPerInfluencer * 1.3),
+          currency: 'USD'
+        };
+      }
+
+      // Сортируем и берём медианную стоимость
+      pricesPerAudience.sort((a, b) => a - b);
+      const medianIndex = Math.floor(pricesPerAudience.length / 2);
+      const medianPricePerFollower = pricesPerAudience[medianIndex];
+
+      // Рассчитываем рекомендованный бюджет
+      const avgAudience = (minAudience + maxAudience) / 2;
+      const recommendedBudgetPerInfluencer = avgAudience * medianPricePerFollower;
+
+      return {
+        min: Math.round(recommendedBudgetPerInfluencer * 0.8),
+        max: Math.round(recommendedBudgetPerInfluencer * 1.2),
+        currency: 'USD'
+      };
+    } catch (error) {
+      console.error('Failed to calculate market budget recommendation:', error);
+
+      // Fallback
+      const avgAudience = (minAudience + maxAudience) / 2;
+      const marketRate = 0.05;
+      const avgBudgetPerInfluencer = avgAudience * marketRate;
+
+      return {
+        min: Math.round(avgBudgetPerInfluencer * 0.7),
+        max: Math.round(avgBudgetPerInfluencer * 1.3),
+        currency: 'USD'
+      };
+    }
+  }
+
   async createCampaign(campaignData: Partial<Campaign>): Promise<Campaign> {
     try {
-      // Validate required fields
       this.validateCampaignData(campaignData);
+
+      // Рассчитываем unitAudienceCost
+      const tempCampaign = campaignData as Campaign;
+      const unitAudienceCost = this.calculateUnitAudienceCost(tempCampaign);
 
       const newCampaign = {
         advertiser_id: campaignData.advertiserId,
@@ -51,7 +175,7 @@ export class AutomaticCampaignService {
         brand: campaignData.brand,
         budget: campaignData.budget,
         preferences: campaignData.preferences,
-        status: 'active', // Automatic campaigns start active
+        status: 'active',
         timeline: campaignData.timeline,
         metrics: {
           applicants: 0,
@@ -59,7 +183,14 @@ export class AutomaticCampaignService {
           impressions: 0,
           engagement: 0
         },
-        metadata: campaignData.metadata || {},
+        metadata: {
+          ...campaignData.metadata,
+          isAutomatic: true,
+          automaticSettings: {
+            ...campaignData.metadata?.automaticSettings,
+            unitAudienceCost
+          }
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -74,7 +205,7 @@ export class AutomaticCampaignService {
 
       const campaign = this.transformFromDatabase(data);
 
-      // Initialize campaign tracking
+      // Инициализация отслеживания кампании
       this.activeCampaigns.set(campaign.campaignId, {
         campaign,
         acceptedCount: 0,
@@ -82,10 +213,9 @@ export class AutomaticCampaignService {
         replacementCount: new Map()
       });
 
-      // Start automatic influencer matching
-      this.startAutomaticMatching(campaign);
+      // Запуск автоматического подбора
+      await this.startAutomaticMatching(campaign);
 
-      // Track campaign creation
       analytics.trackCampaignCreated(campaign.campaignId, campaignData.advertiserId!);
 
       return campaign;
@@ -97,7 +227,6 @@ export class AutomaticCampaignService {
 
   async updateCampaign(campaignId: string, updates: Partial<Campaign>): Promise<Campaign> {
     try {
-      // Validate updates
       this.validateCampaignData(updates, false);
 
       const updateData = {
@@ -122,13 +251,11 @@ export class AutomaticCampaignService {
 
       const updatedCampaign = this.transformFromDatabase(data);
 
-      // Update tracking if campaign is active
       if (this.activeCampaigns.has(campaignId)) {
         const tracking = this.activeCampaigns.get(campaignId)!;
         tracking.campaign = updatedCampaign;
       }
 
-      // Track campaign update
       analytics.track('automatic_campaign_updated', {
         campaign_id: campaignId,
         updated_fields: Object.keys(updates)
@@ -156,6 +283,13 @@ export class AutomaticCampaignService {
     await this.startAutomaticMatching(campaign);
   }
 
+  /**
+   * Проверка, является ли пользователь создателем кампании
+   */
+  checkCampaignOwnership(userId: string, campaign: Campaign): boolean {
+    return userId === campaign.advertiserId;
+  }
+
   private async startAutomaticMatching(campaign: Campaign): Promise<void> {
     try {
       const automaticSettings = (campaign as any).metadata?.automaticSettings as AutomaticSettings;
@@ -163,31 +297,36 @@ export class AutomaticCampaignService {
         throw new Error('Automatic settings not found');
       }
 
-      const result = await automaticOfferService.distributeOffersToInfluencers({
-        campaignId: campaign.campaignId,
-        advertiserId: campaign.advertiserId,
-        campaignTitle: campaign.title,
-        campaignDescription: campaign.description,
-        filters: {
-          platforms: campaign.preferences.platforms,
-          contentTypes: campaign.preferences.contentTypes,
-          audienceSize: campaign.preferences.audienceSize,
-          demographics: campaign.preferences.demographics
-        },
-        weights: automaticSettings.scoringWeights,
-        targetCount: automaticSettings.targetInfluencerCount,
-        budget: campaign.budget,
-        timeline: campaign.timeline
-      });
+      // Находим и оцениваем инфлюенсеров
+      const scoredInfluencers = await this.findAndScoreInfluencers(campaign, automaticSettings);
 
-      if (!result.success) {
-        throw new Error(`Failed to distribute offers: ${result.errors.join(', ')}`);
+      if (scoredInfluencers.length === 0) {
+        throw new Error('No matching influencers found');
+      }
+
+      // Рассчитываем максимальное количество предложений с учётом овербукинга
+      const maxOffersToSend = Math.ceil(
+        automaticSettings.targetInfluencerCount * (1 + automaticSettings.overbookingPercentage / 100)
+      );
+
+      // Берём топ-инфлюенсеров
+      const topInfluencers = scoredInfluencers.slice(0, maxOffersToSend);
+
+      // Отправляем предложения
+      let sentCount = 0;
+      for (const influencer of topInfluencers) {
+        try {
+          await this.createOffer(campaign, influencer, automaticSettings);
+          sentCount++;
+        } catch (error) {
+          console.error(`Failed to create offer for influencer ${influencer.influencerId}:`, error);
+        }
       }
 
       analytics.track('automatic_matching_completed', {
         campaign_id: campaign.campaignId,
-        offers_created: result.offersCreated,
-        errors_count: result.errors.length
+        offers_sent: sentCount,
+        target_count: automaticSettings.targetInfluencerCount
       });
     } catch (error: any) {
       console.error('Failed to start automatic matching:', error);
@@ -205,16 +344,19 @@ export class AutomaticCampaignService {
     }
   }
 
+  /**
+   * Находит и оценивает инфлюенсеров по новому алгоритму с unitAudienceCost
+   */
   private async findAndScoreInfluencers(campaign: Campaign, settings: AutomaticSettings): Promise<InfluencerScore[]> {
     try {
-      // Get all active influencer cards that match basic criteria
+      // Получаем все активные карточки инфлюенсеров
       const influencerCards = await influencerCardService.getAllCards({
         isActive: true,
         minFollowers: campaign.preferences.audienceSize.min,
         maxFollowers: campaign.preferences.audienceSize.max || undefined
       });
 
-      // Filter by platform (case-insensitive comparison)
+      // Фильтруем по платформе
       const platformFiltered = influencerCards.filter(card => {
         const cardPlatform = card.platform.toLowerCase();
         return campaign.preferences.platforms.some(p =>
@@ -222,76 +364,117 @@ export class AutomaticCampaignService {
         ) || cardPlatform === 'multi';
       });
 
-      // Score each influencer
+      // Рассчитываем идеальное соотношение цена/аудитория
+      const idealUnitCost = settings.unitAudienceCost || this.calculateUnitAudienceCost(campaign);
+
+      // Оцениваем каждого инфлюенсера
       const scoredInfluencers: InfluencerScore[] = [];
 
       for (const card of platformFiltered) {
-        const score = this.calculateInfluencerScore(card, campaign, settings);
-        
+        // Рассчитываем pricePerAudience для инфлюенсера
+        const influencerPrice = this.calculateInfluencerAveragePrice(card, campaign);
+        const influencerAudience = card.reach.followers;
+
+        if (influencerAudience === 0 || influencerPrice === 0) continue;
+
+        const pricePerAudience = influencerPrice / influencerAudience;
+
+        // Рассчитываем отклонение от идеального соотношения
+        const deviationFromIdeal = Math.abs(pricePerAudience - idealUnitCost);
+
+        // Общий скор (чем меньше отклонение, тем выше score)
+        const score = this.calculateInfluencerScore(card, campaign, settings, deviationFromIdeal);
+
         if (score.score > 0) {
           scoredInfluencers.push({
             influencerId: card.userId,
             cardId: card.id,
+            pricePerAudience,
+            deviationFromIdeal,
             ...score
           });
         }
       }
 
-      // Sort by score (highest first)
-      return scoredInfluencers.sort((a, b) => b.score - a.score);
+      // Сортируем по отклонению от идеального соотношения (меньше = лучше)
+      return scoredInfluencers.sort((a, b) => a.deviationFromIdeal - b.deviationFromIdeal);
     } catch (error) {
       console.error('Failed to find and score influencers:', error);
       throw error;
     }
   }
 
+  /**
+   * Рассчитывает среднюю цену инфлюенсера за требуемые типы контента
+   */
+  private calculateInfluencerAveragePrice(card: InfluencerCard, campaign: Campaign): number {
+    const pricing = card.serviceDetails.pricing;
+    const contentTypes = campaign.preferences.contentTypes;
+
+    let totalPrice = 0;
+    let priceCount = 0;
+
+    for (const type of contentTypes) {
+      const typeKey = type.toLowerCase();
+      if (pricing[typeKey] && pricing[typeKey] > 0) {
+        totalPrice += pricing[typeKey];
+        priceCount++;
+      }
+    }
+
+    return priceCount > 0 ? totalPrice / priceCount : 0;
+  }
+
   private calculateInfluencerScore(
-    card: InfluencerCard, 
-    campaign: Campaign, 
-    settings: AutomaticSettings
+    card: InfluencerCard,
+    campaign: Campaign,
+    settings: AutomaticSettings,
+    deviationFromIdeal: number
   ): { score: number; metrics: any } {
     const weights = settings.scoringWeights;
-    
+
     // Followers score (0-100)
     const followersScore = Math.min(100, (card.reach.followers / 1000000) * 100);
-    
+
     // Engagement score (0-100)
     const engagementScore = Math.min(100, card.reach.engagementRate * 10);
-    
-    // Relevance score based on content types and audience demographics
+
+    // Relevance score
     let relevanceScore = 0;
-    
-    // Check content type overlap (exact match or substring match)
+
     const contentOverlap = campaign.preferences.contentTypes.filter(type => {
       const typeLower = type.toLowerCase();
       return card.serviceDetails.contentTypes.some(cardType => {
         const cardTypeLower = cardType.toLowerCase();
         return cardTypeLower === typeLower ||
-               cardTypeLower.includes(typeLower) ||
-               typeLower.includes(cardTypeLower);
+          cardTypeLower.includes(typeLower) ||
+          typeLower.includes(cardTypeLower);
       });
     }).length;
     relevanceScore += (contentOverlap / campaign.preferences.contentTypes.length) * 50;
-    
-    // Check country overlap
+
     const countryOverlap = campaign.preferences.demographics?.countries?.filter(country =>
       card.audienceDemographics?.topCountries?.includes(country)
     ).length || 0;
     if (campaign.preferences.demographics?.countries?.length > 0) {
       relevanceScore += (countryOverlap / campaign.preferences.demographics.countries.length) * 50;
     } else {
-      relevanceScore += 50; // No country restriction
+      relevanceScore += 50;
     }
-    
-    // Response time score (removed field, use default value)
-    const responseTimeScore = 80; // Default value since response time field is removed
-    
-    // Calculate weighted score
+
+    const responseTimeScore = 80;
+
+    // Учитываем отклонение от идеального соотношения (бонус за близость)
+    const deviationPenalty = Math.min(100, deviationFromIdeal * 1000);
+    const proximityBonus = 100 - deviationPenalty;
+
+    // Итоговый скор с учётом близости к идеальному соотношению
     const totalScore = (
       (followersScore * weights.followers / 100) +
       (engagementScore * weights.engagement / 100) +
       (relevanceScore * weights.relevance / 100) +
-      (responseTimeScore * weights.responseTime / 100)
+      (responseTimeScore * weights.responseTime / 100) +
+      proximityBonus * 0.2
     );
 
     return {
@@ -305,182 +488,313 @@ export class AutomaticCampaignService {
     };
   }
 
-  private async sendOffersInBatches(
+  /**
+   * Создаёт предложение для инфлюенсера
+   */
+  private async createOffer(
     campaign: Campaign,
-    scoredInfluencers: InfluencerScore[],
+    influencer: InfluencerScore,
     settings: AutomaticSettings
   ): Promise<void> {
-    const batches = this.createBatches(scoredInfluencers, settings.batchSize);
-    
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i];
-      
-      // Check if we still need more influencers
-      const tracking = this.activeCampaigns.get(campaign.campaignId);
-      if (tracking && tracking.acceptedCount >= settings.targetInfluencerCount) {
-        console.log(`Campaign ${campaign.campaignId} target reached, stopping batch sending`);
-        break;
-      }
-
-      // Send offers for this batch
-      await this.sendBatchOffers(campaign, batch);
-      
-      // Wait before sending next batch (except for last batch)
-      if (i < batches.length - 1) {
-        await this.delay(settings.batchDelay * 60 * 1000); // Convert minutes to milliseconds
-      }
-    }
-  }
-
-  private createBatches<T>(items: T[], batchSize: number): T[][] {
-    const batches: T[][] = [];
-    for (let i = 0; i < items.length; i += batchSize) {
-      batches.push(items.slice(i, i + batchSize));
-    }
-    return batches;
-  }
-
-  private async sendBatchOffers(campaign: Campaign, influencers: InfluencerScore[]): Promise<void> {
-    // Automatic offer sending is disabled - offers functionality removed
-    console.log('Automatic offer sending disabled - offers functionality removed');
-  }
-
-  private calculateOfferRate(budget: Campaign['budget'], score: number): number {
-    // Calculate rate based on score and budget range
-    const scoreRatio = score / 100;
-    const budgetRange = budget.max - budget.min;
-    return Math.round(budget.min + (budgetRange * scoreRatio));
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async handleOfferResponse(offerId: string, response: 'accepted' | 'declined'): Promise<void> {
     try {
-      // Find which campaign this offer belongs to
-      const { data: offer } = await supabase
-        .from(TABLES.OFFERS)
-        .select('campaign_id, influencer_id')
-        .eq('offer_id', offerId)
+      // Получаем карточку инфлюенсера
+      const { data: card } = await supabase
+        .from(TABLES.INFLUENCER_CARDS)
+        .select('*')
+        .eq('id', influencer.cardId)
         .single();
 
-      if (!offer) return;
+      if (!card) throw new Error('Influencer card not found');
 
-      const tracking = this.activeCampaigns.get(offer.campaign_id);
-      if (!tracking) return;
+      const pricing = card.service_details?.pricing || {};
+      const contentTypes = campaign.preferences.contentTypes;
 
-      const settings = tracking.campaign.metadata?.automaticSettings as AutomaticSettings;
-      if (!settings) return;
+      // Рассчитываем бюджет предложения
+      let totalPrice = 0;
+      let priceCount = 0;
 
-      if (response === 'accepted') {
-        tracking.acceptedCount++;
-        
-        // Check if target is reached
-        if (tracking.acceptedCount >= settings.targetInfluencerCount) {
-          await this.stopCampaignOffers(offer.campaign_id);
+      for (const type of contentTypes) {
+        const typeKey = type.toLowerCase();
+        if (pricing[typeKey] && pricing[typeKey] > 0) {
+          totalPrice += pricing[typeKey];
+          priceCount++;
         }
       }
 
-      // Track response
-      analytics.track('automatic_campaign_offer_response', {
-        campaign_id: offer.campaign_id,
-        offer_id: offerId,
-        response: response,
-        accepted_count: tracking.acceptedCount,
-        target_count: settings.targetInfluencerCount
-      });
+      const suggestedBudget = priceCount > 0
+        ? Math.round(totalPrice / priceCount)
+        : Math.round((campaign.budget.min + campaign.budget.max) / 2);
+
+      // Создаём предложение
+      const offerData = {
+        campaign_id: campaign.campaignId,
+        influencer_id: influencer.influencerId,
+        advertiser_id: campaign.advertiserId,
+        influencer_card_id: influencer.cardId,
+        details: {
+          title: campaign.title,
+          description: campaign.description,
+          contentTypes: contentTypes,
+          suggestedBudget,
+          deliverables: contentTypes.map((type: string) => ({
+            type,
+            quantity: 1,
+            description: `Создание ${type.toLowerCase()}`
+          }))
+        },
+        status: 'pending',
+        timeline: campaign.timeline,
+        metadata: {
+          isAutomatic: true,
+          campaignId: campaign.campaignId,
+          score: influencer.score,
+          pricePerAudience: influencer.pricePerAudience,
+          deviationFromIdeal: influencer.deviationFromIdeal,
+          unitAudienceCost: settings.unitAudienceCost,
+          sentAt: new Date().toISOString()
+        },
+        current_stage: 'offer_sent',
+        initiated_by: campaign.advertiserId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .insert([offerData]);
+
+      if (error) throw error;
     } catch (error) {
-      console.error('Failed to handle offer response:', error);
+      console.error('Failed to create offer:', error);
+      throw error;
     }
   }
 
-  private async stopCampaignOffers(campaignId: string): Promise<void> {
+  /**
+   * Обрабатывает принятие/отклонение предложения
+   */
+  async handleOfferResponse(offerId: string, response: 'accepted' | 'rejected', userId: string): Promise<void> {
     try {
-      // Mark all pending offers as invalid
+      // Проверяем предложение
+      const { data: offer, error: offerError } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .select('*, campaigns!inner(*)')
+        .eq('id', offerId)
+        .single();
+
+      if (offerError || !offer) {
+        throw new Error('Offer not found');
+      }
+
+      // Проверяем, что это инфлюенсер
+      if (offer.influencer_id !== userId) {
+        throw new Error('Unauthorized');
+      }
+
+      // Получаем кампанию
+      const campaign = offer.campaigns;
+
+      // Проверка на "позднее принятие"
+      if (response === 'accepted' && campaign.status !== 'active') {
+        // Автоматический отказ
+        await supabase
+          .from(TABLES.COLLABORATION_OFFERS)
+          .update({
+            status: 'rejected',
+            metadata: {
+              ...offer.metadata,
+              autoRejected: true,
+              rejectionReason: 'Набор завершён, все места заняты',
+              rejectedAt: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', offerId);
+
+        // TODO: Отправить уведомление инфлюенсеру
+        return;
+      }
+
+      // Обновляем статус предложения
       await supabase
-        .from(TABLES.OFFERS)
-        .update({ 
-          status: 'withdrawn',
-          metadata: {
-            reason: 'campaign_target_reached'
+        .from(TABLES.COLLABORATION_OFFERS)
+        .update({
+          status: response,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', offerId);
+
+      // Если принято - обновляем счётчик
+      if (response === 'accepted') {
+        const tracking = this.activeCampaigns.get(offer.campaign_id);
+        const settings = campaign.metadata?.automaticSettings as AutomaticSettings;
+
+        if (tracking) {
+          tracking.acceptedCount++;
+
+          // Проверяем достижение цели
+          if (tracking.acceptedCount >= settings.targetInfluencerCount) {
+            await this.completeRecruitment(offer.campaign_id);
           }
+        } else {
+          // Подсчитываем acceptedCount из базы
+          const { count } = await supabase
+            .from(TABLES.COLLABORATION_OFFERS)
+            .select('*', { count: 'exact', head: true })
+            .eq('campaign_id', offer.campaign_id)
+            .eq('status', 'accepted');
+
+          if (count && count >= settings.targetInfluencerCount) {
+            await this.completeRecruitment(offer.campaign_id);
+          }
+        }
+      }
+
+      analytics.track('automatic_campaign_offer_response', {
+        campaign_id: offer.campaign_id,
+        offer_id: offerId,
+        response: response
+      });
+    } catch (error) {
+      console.error('Failed to handle offer response:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Завершает набор: переводит кампанию в "В работе", expired для остальных предложений
+   */
+  private async completeRecruitment(campaignId: string): Promise<void> {
+    try {
+      // Обновляем статус кампании
+      await supabase
+        .from(TABLES.CAMPAIGNS)
+        .update({
+          status: 'in_progress',
+          metadata: supabase.raw(`
+            jsonb_set(
+              metadata,
+              '{recruitmentCompletedAt}',
+              to_jsonb(NOW())
+            )
+          `),
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId);
+
+      // Переносим pending предложения в expired
+      await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .update({
+          status: 'expired',
+          metadata: supabase.raw(`
+            jsonb_set(
+              COALESCE(metadata, '{}'::jsonb),
+              '{expirationReason}',
+              '"recruitment_completed"'::jsonb
+            )
+          `),
+          updated_at: new Date().toISOString()
         })
         .eq('campaign_id', campaignId)
         .eq('status', 'pending');
 
-      // Update campaign status
-      await supabase
-        .from(TABLES.CAMPAIGNS)
-        .update({ 
-          status: 'paused',
-          metadata: {
-            reason: 'target_reached',
-            pausedAt: new Date().toISOString()
-          }
-        })
-        .eq('campaign_id', campaignId);
+      // TODO: Отправить уведомления
 
-      // Track campaign completion
-      analytics.track('automatic_campaign_target_reached', {
+      analytics.track('automatic_campaign_recruitment_completed', {
         campaign_id: campaignId
       });
     } catch (error) {
-      console.error('Failed to stop campaign offers:', error);
+      console.error('Failed to complete recruitment:', error);
+      throw error;
     }
   }
 
+  /**
+   * Обрабатывает выбывание инфлюенсера и запускает добор
+   */
   async handleInfluencerDropout(campaignId: string, influencerId: string): Promise<void> {
     try {
-      const tracking = this.activeCampaigns.get(campaignId);
-      if (!tracking) return;
+      const { data: campaign } = await supabase
+        .from(TABLES.CAMPAIGNS)
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .single();
 
-      const settings = tracking.campaign.metadata?.automaticSettings as AutomaticSettings;
+      if (!campaign) throw new Error('Campaign not found');
+
+      const settings = campaign.metadata?.automaticSettings as AutomaticSettings;
       if (!settings || !settings.autoReplacement) return;
 
-      // Check replacement limit
-      const currentReplacements = tracking.replacementCount.get(influencerId) || 0;
-      if (currentReplacements >= settings.maxReplacements) {
-        console.log(`Max replacements reached for influencer ${influencerId}`);
+      // Проверяем лимит замен
+      const tracking = this.activeCampaigns.get(campaignId);
+      if (tracking) {
+        const currentReplacements = tracking.replacementCount.get(influencerId) || 0;
+        if (currentReplacements >= settings.maxReplacements) {
+          console.log(`Max replacements reached for influencer ${influencerId}`);
+          return;
+        }
+        tracking.replacementCount.set(influencerId, currentReplacements + 1);
+      }
+
+      // Приоритет 1: Реактивировать expired предложения
+      const { data: expiredOffers } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .eq('status', 'expired')
+        .eq('metadata->>expirationReason', 'recruitment_completed')
+        .order('metadata->>score', { ascending: false })
+        .limit(1);
+
+      if (expiredOffers && expiredOffers.length > 0) {
+        // Реактивируем лучшее предложение
+        await supabase
+          .from(TABLES.COLLABORATION_OFFERS)
+          .update({
+            status: 'pending',
+            metadata: {
+              ...expiredOffers[0].metadata,
+              reactivated: true,
+              reactivatedAt: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', expiredOffers[0].id);
+
+        analytics.track('automatic_campaign_offer_reactivated', {
+          campaign_id: campaignId,
+          offer_id: expiredOffers[0].id
+        });
+
         return;
       }
 
-      // Find replacement
-      const replacement = await this.findReplacement(tracking.campaign, tracking.sentOffers);
-      
-      if (replacement) {
-        // Replacement offer sending is disabled - offers functionality removed
-        console.log('Replacement offer sending disabled - offers functionality removed');
+      // Приоритет 2: Найти нового инфлюенсера
+      const transformedCampaign = this.transformFromDatabase(campaign);
+      const scoredInfluencers = await this.findAndScoreInfluencers(transformedCampaign, settings);
 
-        // Update replacement count
-        tracking.replacementCount.set(influencerId, currentReplacements + 1);
+      // Исключаем уже получивших предложение
+      const { data: existingOffers } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .select('influencer_id')
+        .eq('campaign_id', campaignId);
 
-        // Track replacement
-        analytics.track('automatic_campaign_replacement_sent', {
+      const existingInfluencerIds = existingOffers?.map(o => o.influencer_id) || [];
+      const availableInfluencers = scoredInfluencers.filter(
+        inf => !existingInfluencerIds.includes(inf.influencerId)
+      );
+
+      if (availableInfluencers.length > 0) {
+        await this.createOffer(transformedCampaign, availableInfluencers[0], settings);
+
+        analytics.track('automatic_campaign_new_offer_sent', {
           campaign_id: campaignId,
-          original_influencer: influencerId,
-          replacement_influencer: replacement.influencerId,
-          replacement_count: currentReplacements + 1
+          influencer_id: availableInfluencers[0].influencerId
         });
       }
     } catch (error) {
       console.error('Failed to handle influencer dropout:', error);
-    }
-  }
-
-  private async findReplacement(campaign: Campaign, excludeInfluencers: string[]): Promise<InfluencerScore | null> {
-    try {
-      const settings = (campaign as any).metadata?.automaticSettings as AutomaticSettings;
-      if (!settings) return null;
-
-      // Find new influencers not in exclude list
-      const allScored = await this.findAndScoreInfluencers(campaign, settings);
-      const available = allScored.filter(inf => !excludeInfluencers.includes(inf.influencerId));
-      
-      return available.length > 0 ? available[0] : null;
-    } catch (error) {
-      console.error('Failed to find replacement:', error);
-      return null;
     }
   }
 
