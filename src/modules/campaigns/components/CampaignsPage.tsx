@@ -166,7 +166,13 @@ export function CampaignsPage() {
 
   const handleEditCampaign = (campaign: Campaign) => {
     setEditingCampaign(campaign);
-    setShowCampaignModal(true);
+    // Check if this is an automatic campaign
+    const isAutomaticCampaign = (campaign as any).metadata?.isAutomatic;
+    if (isAutomaticCampaign) {
+      setShowAutomaticModal(true);
+    } else {
+      setShowCampaignModal(true);
+    }
   };
 
   const handleDeleteCampaign = async (campaignId: string) => {

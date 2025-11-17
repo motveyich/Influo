@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Campaign } from '../../../core/types';
 import { automaticCampaignService } from '../services/automaticCampaignService';
 import { campaignValidationService } from '../services/campaignValidationService';
@@ -204,6 +204,23 @@ export function AutomaticCampaignModal({
     }
   }, [isOpen]);
 
+  // Real-time budget calculation - triggers after platforms and audience size are filled
+  useEffect(() => {
+    if (formData.preferences.platforms.length > 0 &&
+        formData.preferences.audienceSize.min > 0 &&
+        formData.preferences.audienceSize.max > 0) {
+      const timer = setTimeout(() => {
+        calculateMarketBudget();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    formData.preferences.platforms,
+    formData.preferences.audienceSize.min,
+    formData.preferences.audienceSize.max,
+    calculateMarketBudget
+  ]);
+
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -326,17 +343,13 @@ export function AutomaticCampaignModal({
 
   const handleNext = async () => {
     if (validateStep(currentStep)) {
-      if (currentStep === 2) {
-        await calculateMarketBudget();
-      }
       setCurrentStep(prev => Math.min(prev + 1, 4));
     }
   };
 
-  const calculateMarketBudget = async () => {
+  const calculateMarketBudget = useCallback(async () => {
     if (formData.preferences.platforms.length === 0 ||
-        formData.preferences.audienceSize.min === 0 ||
-        formData.preferences.contentTypes.length === 0) {
+        formData.preferences.audienceSize.min === 0) {
       return;
     }
 
@@ -347,7 +360,7 @@ export function AutomaticCampaignModal({
         formData.preferences.audienceSize.max || formData.preferences.audienceSize.min * 10,
         formData.automaticSettings.targetInfluencerCount,
         formData.preferences.platforms,
-        formData.preferences.contentTypes
+        formData.preferences.contentTypes.length > 0 ? formData.preferences.contentTypes : ['post', 'story', 'video', 'reel']
       );
       setMarketBudget(budget);
     } catch (error) {
@@ -355,7 +368,7 @@ export function AutomaticCampaignModal({
     } finally {
       setIsCalculatingBudget(false);
     }
-  };
+  }, [formData.preferences.platforms, formData.preferences.audienceSize.min, formData.preferences.audienceSize.max, formData.automaticSettings.targetInfluencerCount, formData.preferences.contentTypes]);
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));

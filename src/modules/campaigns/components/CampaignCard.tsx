@@ -91,18 +91,18 @@ export function CampaignCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
             {isAutomaticCampaign && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-blue-100 text-blue-700 rounded-md">
+              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md">
                 <Zap className="w-3 h-3" />
                 <span className="text-xs font-medium">Автоматическая</span>
               </div>
             )}
-            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
               {campaign.title}
             </h3>
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status)}`}>
@@ -119,8 +119,8 @@ export function CampaignCard({
               </div>
             </span>
           </div>
-          <p className="text-sm font-medium text-blue-600 mb-2">{campaign.brand}</p>
-          <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
+          <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">{campaign.brand}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{campaign.description}</p>
         </div>
         
         {showActions && (
@@ -201,7 +201,7 @@ export function CampaignCard({
         {/* Audience Size */}
         <div className="flex items-center space-x-2">
           <Users className="w-4 h-4 text-blue-600" />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             Аудитория: {formatAudienceSize(
               campaign.preferences.audienceSize.min,
               campaign.preferences.audienceSize.max
@@ -213,7 +213,7 @@ export function CampaignCard({
         {campaign.preferences.demographics.countries.length > 0 && (
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4 text-red-600" />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               {campaign.preferences.demographics.countries.slice(0, 3).join(', ')}
               {campaign.preferences.demographics.countries.length > 3 && 
                 ` +${campaign.preferences.demographics.countries.length - 3} more`
