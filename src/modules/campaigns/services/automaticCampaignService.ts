@@ -346,6 +346,7 @@ export class AutomaticCampaignService {
 
   /**
    * Находит и оценивает инфлюенсеров по новому алгоритму с unitAudienceCost
+   * ВАЖНО: Один инфлюенсер участвует только один раз (выбирается карточка с минимальной ценой)
    */
   private async findAndScoreInfluencers(campaign: Campaign, settings: AutomaticSettings): Promise<InfluencerScore[]> {
     try {
@@ -364,13 +365,36 @@ export class AutomaticCampaignService {
         ) || cardPlatform === 'multi';
       });
 
+      // ДЕДУПЛИКАЦИЯ: Группируем карточки по userId
+      const cardsByUser = new Map<string, InfluencerCard[]>();
+      for (const card of platformFiltered) {
+        if (!cardsByUser.has(card.userId)) {
+          cardsByUser.set(card.userId, []);
+        }
+        cardsByUser.get(card.userId)!.push(card);
+      }
+
+      // Для каждого инфлюенсера выбираем карточку с минимальной ценой
+      const deduplicatedCards: InfluencerCard[] = [];
+      for (const [userId, cards] of cardsByUser) {
+        // Рассчитываем среднюю цену для каждой карточки
+        const cardsWithPrice = cards.map(card => ({
+          card,
+          avgPrice: this.calculateInfluencerAveragePrice(card, campaign)
+        }));
+
+        // Сортируем по возрастанию цены и берём самую дешёвую
+        cardsWithPrice.sort((a, b) => a.avgPrice - b.avgPrice);
+        deduplicatedCards.push(cardsWithPrice[0].card);
+      }
+
       // Рассчитываем идеальное соотношение цена/аудитория
       const idealUnitCost = settings.unitAudienceCost || this.calculateUnitAudienceCost(campaign);
 
       // Оцениваем каждого инфлюенсера
       const scoredInfluencers: InfluencerScore[] = [];
 
-      for (const card of platformFiltered) {
+      for (const card of deduplicatedCards) {
         // Рассчитываем pricePerAudience для инфлюенсера
         const influencerPrice = this.calculateInfluencerAveragePrice(card, campaign);
         const influencerAudience = card.reach.followers;
