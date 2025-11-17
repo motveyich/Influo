@@ -98,14 +98,14 @@ export class AutomaticCampaignService {
         const pricing = card.serviceDetails.pricing;
         const followers = card.reach.followers;
 
-        // Берём среднюю цену за требуемые типы контента
+        // Берём среднюю цену за все типы контента (не учитываем фильтр по contentTypes)
         let totalPrice = 0;
         let priceCount = 0;
 
-        for (const type of contentTypes) {
-          const typeKey = type.toLowerCase();
-          if (pricing[typeKey] && pricing[typeKey] > 0) {
-            totalPrice += pricing[typeKey];
+        // Проходим по всем ценам в pricing
+        for (const [key, value] of Object.entries(pricing)) {
+          if (typeof value === 'number' && value > 0) {
+            totalPrice += value;
             priceCount++;
           }
         }
