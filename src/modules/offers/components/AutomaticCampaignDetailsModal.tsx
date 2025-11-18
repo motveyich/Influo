@@ -574,8 +574,8 @@ export function AutomaticCampaignDetailsModal({
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           offerId={offerId}
-          currentUserId={currentUserId}
-          onPaymentCreated={() => {
+          createdBy={currentUserId}
+          onPaymentRequestCreated={() => {
             setShowPaymentModal(false);
             loadDetails();
           }}
