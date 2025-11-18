@@ -41,6 +41,48 @@ export class AutomaticCampaignService {
     replacementCount: Map<string, number>;
   }>();
 
+  private monitoringInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    // Запускаем мониторинг активных кампаний каждые 5 минут
+    this.startCampaignMonitoring();
+  }
+
+  /**
+   * Запускает периодический мониторинг активных кампаний
+   */
+  private startCampaignMonitoring(): void {
+    if (this.monitoringInterval) return;
+
+    this.monitoringInterval = setInterval(async () => {
+      console.log('🔍 [Campaign Monitor] Checking active campaigns...');
+      await this.checkAllActiveCampaigns();
+    }, 5 * 60 * 1000); // каждые 5 минут
+  }
+
+  /**
+   * Проверяет все активные автоматические кампании
+   */
+  private async checkAllActiveCampaigns(): Promise<void> {
+    try {
+      const { data: campaigns } = await supabase
+        .from(TABLES.CAMPAIGNS)
+        .select('*')
+        .eq('status', 'active')
+        .not('metadata->>isAutomatic', 'is', null);
+
+      if (!campaigns || campaigns.length === 0) return;
+
+      console.log(`📋 [Campaign Monitor] Found ${campaigns.length} active automatic campaigns`);
+
+      for (const campaignData of campaigns) {
+        await this.checkAndRefillIfNeeded(campaignData.campaign_id);
+      }
+    } catch (error) {
+      console.error('❌ [Campaign Monitor] Error checking campaigns:', error);
+    }
+  }
+
   /**
    * Рассчитывает идеальную стоимость единицы аудитории для кампании
    * unitAudienceCost = avgBudget / avgAudience
@@ -632,14 +674,24 @@ export class AutomaticCampaignService {
     settings: AutomaticSettings
   ): Promise<void> {
     try {
+      console.log(`💼 [Create Offer] Creating offer for influencer ${influencer.influencerId}, card ${influencer.cardId}`);
+
       // Получаем карточку инфлюенсера
-      const { data: card } = await supabase
+      const { data: card, error: cardError } = await supabase
         .from(TABLES.INFLUENCER_CARDS)
         .select('*')
         .eq('id', influencer.cardId)
-        .single();
+        .maybeSingle();
 
-      if (!card) throw new Error('Influencer card not found');
+      if (cardError) {
+        console.error('❌ [Create Offer] Error fetching card:', cardError);
+        throw cardError;
+      }
+
+      if (!card) {
+        console.error('❌ [Create Offer] Card not found:', influencer.cardId);
+        throw new Error('Influencer card not found');
+      }
 
       const pricing = card.service_details?.pricing || {};
       const contentTypes = campaign.preferences.contentTypes;
@@ -694,13 +746,28 @@ export class AutomaticCampaignService {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
-        .insert([offerData]);
+      console.log(`💾 [Create Offer] Inserting offer into DB:`, {
+        campaign_id: offerData.campaign_id,
+        influencer_id: offerData.influencer_id,
+        suggestedBudget: offerData.details.suggestedBudget,
+        contentTypes: offerData.details.contentTypes
+      });
 
-      if (error) throw error;
+      const { data: insertedOffer, error } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .insert([offerData])
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ [Create Offer] DB insert error:', error);
+        throw error;
+      }
+
+      console.log(`✅ [Create Offer] Offer created successfully! ID: ${insertedOffer?.id}`);
+
     } catch (error) {
-      console.error('Failed to create offer:', error);
+      console.error('❌ [Create Offer] Failed to create offer:', error);
       throw error;
     }
   }
@@ -785,6 +852,12 @@ export class AutomaticCampaignService {
         }
       }
 
+      // Если предложение отклонено, проверяем нужен ли добор
+      if (response === 'rejected' && campaign.status === 'active') {
+        console.log('🔄 [Offer Response] Offer rejected, checking if need more influencers');
+        await this.checkAndRefillIfNeeded(offer.campaign_id);
+      }
+
       analytics.track('automatic_campaign_offer_response', {
         campaign_id: offer.campaign_id,
         offer_id: offerId,
@@ -793,6 +866,111 @@ export class AutomaticCampaignService {
     } catch (error) {
       console.error('Failed to handle offer response:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Проверяет нужен ли добор инфлюенсеров и запускает новый раунд при необходимости
+   */
+  private async checkAndRefillIfNeeded(campaignId: string): Promise<void> {
+    try {
+      console.log('🔍 [Check Refill] Checking if refill needed for campaign:', campaignId);
+
+      // Получаем кампанию
+      const { data: campaignData, error: campaignError } = await supabase
+        .from(TABLES.CAMPAIGNS)
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .maybeSingle();
+
+      if (campaignError || !campaignData) {
+        console.error('❌ [Check Refill] Campaign not found');
+        return;
+      }
+
+      const campaign = this.transformFromDatabase(campaignData);
+      const settings = (campaign as any).metadata?.automaticSettings as AutomaticSettings;
+
+      if (!settings) {
+        console.error('❌ [Check Refill] No automatic settings found');
+        return;
+      }
+
+      // Подсчитываем текущее состояние
+      const { data: offers } = await supabase
+        .from(TABLES.COLLABORATION_OFFERS)
+        .select('status, influencer_id')
+        .eq('campaign_id', campaignId);
+
+      if (!offers) return;
+
+      const acceptedCount = offers.filter(o => o.status === 'accepted').length;
+      const pendingCount = offers.filter(o => o.status === 'pending').length;
+      const totalActiveCount = acceptedCount + pendingCount;
+
+      console.log('📊 [Check Refill] Current state:', {
+        accepted: acceptedCount,
+        pending: pendingCount,
+        totalActive: totalActiveCount,
+        target: settings.targetInfluencerCount,
+        overbooking: settings.overbookingPercentage
+      });
+
+      // Рассчитываем сколько нужно с учетом овербукинга
+      const requiredWithOverbooking = Math.ceil(
+        settings.targetInfluencerCount * (1 + settings.overbookingPercentage / 100)
+      );
+
+      // Если текущее количество (принятые + ожидающие) меньше требуемого с овербукингом
+      if (totalActiveCount < requiredWithOverbooking) {
+        const needToSend = requiredWithOverbooking - totalActiveCount;
+        console.log(`🚀 [Check Refill] Need to send ${needToSend} more offers!`);
+
+        // Получаем список инфлюенсеров которым уже отправлены офферы (чтобы не дублировать)
+        const sentInfluencerIds = offers.map(o => o.influencer_id).filter(Boolean);
+
+        // Находим новых инфлюенсеров
+        const scoredInfluencers = await this.findAndScoreInfluencers(campaign, settings);
+        const availableInfluencers = scoredInfluencers.filter(
+          inf => !sentInfluencerIds.includes(inf.influencerId)
+        );
+
+        console.log(`✅ [Check Refill] Found ${availableInfluencers.length} new influencers available`);
+
+        if (availableInfluencers.length === 0) {
+          console.log('⚠️ [Check Refill] No more influencers available, pausing campaign');
+          await supabase
+            .from(TABLES.CAMPAIGNS)
+            .update({
+              status: 'paused',
+              metadata: {
+                ...(campaign as any).metadata,
+                pauseReason: 'No more matching influencers available'
+              }
+            })
+            .eq('campaign_id', campaignId);
+          return;
+        }
+
+        // Отправляем новые офферы
+        const toSend = Math.min(needToSend, availableInfluencers.length);
+        let sentCount = 0;
+
+        for (let i = 0; i < toSend; i++) {
+          try {
+            await this.createOffer(campaign, availableInfluencers[i], settings);
+            sentCount++;
+          } catch (error) {
+            console.error(`❌ [Check Refill] Failed to create offer:`, error);
+          }
+        }
+
+        console.log(`🎉 [Check Refill] Sent ${sentCount} additional offers!`);
+      } else {
+        console.log('✅ [Check Refill] No refill needed, have enough pending offers');
+      }
+    } catch (error) {
+      console.error('❌ [Check Refill] Failed to check/refill:', error);
     }
   }
 
