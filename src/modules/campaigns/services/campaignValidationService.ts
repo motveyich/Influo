@@ -46,9 +46,8 @@ export class CampaignValidationService {
     try {
       const requiredCount = Math.ceil(targetCount * (1 + overbookingPercentage / 100));
 
-      const expandedFilters = this.applyWeightsToFilters(filters, weights);
-
-      const matchedInfluencers = await this.findMatchingInfluencers(expandedFilters);
+      // НЕ модифицируем пользовательские значения - используем их как есть
+      const matchedInfluencers = await this.findMatchingInfluencers(filters);
 
       const isValid = matchedInfluencers.length >= requiredCount;
 
@@ -69,32 +68,6 @@ export class CampaignValidationService {
         error: 'Ошибка при проверке доступности инфлюенсеров'
       };
     }
-  }
-
-  private applyWeightsToFilters(
-    filters: CampaignFilters,
-    weights: ScoringWeights
-  ): CampaignFilters {
-    // Делаем ГЛУБОКУЮ копию чтобы не изменять оригинальные значения
-    const expanded: CampaignFilters = {
-      ...filters,
-      audienceSize: { ...filters.audienceSize },
-      demographics: filters.demographics ? { ...filters.demographics } : undefined
-    };
-
-    const followerWeight = weights.followers / 100;
-    if (expanded.audienceSize.min > 0) {
-      expanded.audienceSize.min = Math.floor(
-        expanded.audienceSize.min * (1 - followerWeight * 0.5)
-      );
-    }
-    if (expanded.audienceSize.max > 0) {
-      expanded.audienceSize.max = Math.ceil(
-        expanded.audienceSize.max * (1 + followerWeight * 0.5)
-      );
-    }
-
-    return expanded;
   }
 
   private async findMatchingInfluencers(

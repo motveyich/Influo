@@ -61,8 +61,7 @@ export class AutomaticCampaignService {
     minAudience: number,
     maxAudience: number,
     targetCount: number,
-    platforms: string[],
-    contentTypes: string[]
+    platforms: string[]
   ): Promise<{ min: number; max: number; currency: string }> {
     try {
       // Получаем карточки инфлюенсеров, соответствующие критериям
@@ -334,8 +333,25 @@ export class AutomaticCampaignService {
         throw new Error('Automatic settings not found');
       }
 
+      console.log('🚀 [Automatic Campaign] Starting matching for campaign:', campaign.campaignId);
+      console.log('📊 [Automatic Campaign] Target count:', automaticSettings.targetInfluencerCount);
+      console.log('📊 [Automatic Campaign] Overbooking:', automaticSettings.overbookingPercentage + '%');
+
       // Находим и оцениваем инфлюенсеров
       const scoredInfluencers = await this.findAndScoreInfluencers(campaign, automaticSettings);
+      console.log('✅ [Automatic Campaign] Found influencers:', scoredInfluencers.length);
+
+      if (scoredInfluencers.length > 0) {
+        console.log('👥 [Automatic Campaign] Top 5 influencers:',
+          scoredInfluencers.slice(0, 5).map(inf => ({
+            id: inf.influencerId,
+            cardId: inf.cardId,
+            score: inf.score,
+            pricePerAudience: inf.pricePerAudience.toFixed(4),
+            deviation: inf.deviationFromIdeal.toFixed(4)
+          }))
+        );
+      }
 
       if (scoredInfluencers.length === 0) {
         throw new Error('No matching influencers found');
@@ -345,29 +361,42 @@ export class AutomaticCampaignService {
       const maxOffersToSend = Math.ceil(
         automaticSettings.targetInfluencerCount * (1 + automaticSettings.overbookingPercentage / 100)
       );
+      console.log('📤 [Automatic Campaign] Will send up to', maxOffersToSend, 'offers');
 
       // Берём топ-инфлюенсеров
       const topInfluencers = scoredInfluencers.slice(0, maxOffersToSend);
 
       // Отправляем предложения
       let sentCount = 0;
+      const sentInfluencerIds: string[] = [];
+
       for (const influencer of topInfluencers) {
         try {
           await this.createOffer(campaign, influencer, automaticSettings);
           sentCount++;
+          sentInfluencerIds.push(influencer.influencerId);
+          console.log(`✉️ [Automatic Campaign] Offer sent to influencer: ${influencer.influencerId}`);
         } catch (error) {
-          console.error(`Failed to create offer for influencer ${influencer.influencerId}:`, error);
+          console.error(`❌ [Automatic Campaign] Failed to create offer for influencer ${influencer.influencerId}:`, error);
         }
       }
+
+      console.log('🎉 [Automatic Campaign] Matching completed! Sent', sentCount, 'offers out of', maxOffersToSend, 'planned');
+      console.log('📋 [Automatic Campaign] Sent to influencers:', sentInfluencerIds);
 
       analytics.track('automatic_matching_completed', {
         campaign_id: campaign.campaignId,
         offers_sent: sentCount,
         target_count: automaticSettings.targetInfluencerCount
       });
-    } catch (error: any) {
-      console.error('Failed to start automatic matching:', error);
 
+      // Кампания остается active - НЕ переводим в paused после успешной отправки
+      console.log('✅ [Automatic Campaign] Campaign remains active, waiting for influencer responses');
+
+    } catch (error: any) {
+      console.error('❌ [Automatic Campaign] Failed to start automatic matching:', error);
+
+      // Только при ОШИБКЕ переводим в paused
       await supabase
         .from(TABLES.CAMPAIGNS)
         .update({
@@ -389,12 +418,21 @@ export class AutomaticCampaignService {
    */
   private async findAndScoreInfluencers(campaign: Campaign, settings: AutomaticSettings): Promise<InfluencerScore[]> {
     try {
+      console.log('🔍 [Find Influencers] Starting search with criteria:', {
+        audienceMin: campaign.preferences.audienceSize.min,
+        audienceMax: campaign.preferences.audienceSize.max,
+        platforms: campaign.preferences.platforms,
+        contentTypes: campaign.preferences.contentTypes,
+        countries: campaign.preferences.demographics?.countries || []
+      });
+
       // Получаем все активные карточки инфлюенсеров
       const influencerCards = await influencerCardService.getAllCards({
         isActive: true,
         minFollowers: campaign.preferences.audienceSize.min,
         maxFollowers: campaign.preferences.audienceSize.max || undefined
       });
+      console.log('📦 [Find Influencers] Total cards from DB:', influencerCards.length);
 
       // Фильтруем по платформе
       const platformFiltered = influencerCards.filter(card => {
@@ -403,6 +441,7 @@ export class AutomaticCampaignService {
           p.toLowerCase() === cardPlatform
         ) || cardPlatform === 'multi';
       });
+      console.log('🎯 [Find Influencers] After platform filter:', platformFiltered.length);
 
       // Фильтруем по географии
       const targetCountries = campaign.preferences.demographics?.countries || [];
@@ -416,15 +455,30 @@ export class AutomaticCampaignService {
             );
           })
         : platformFiltered;
+      console.log('🌍 [Find Influencers] After geo filter:', geoFiltered.length);
+
+      // Фильтруем по типам контента (ИЛИ - хотя бы один тип должен совпадать)
+      const contentTypesFiltered = campaign.preferences.contentTypes.length > 0
+        ? geoFiltered.filter(card => {
+            const pricing = card.serviceDetails?.pricing || {};
+            // Проверяем что хотя бы один из требуемых типов контента есть в карточке
+            return campaign.preferences.contentTypes.some(type => {
+              const typeKey = type.toLowerCase();
+              return pricing[typeKey] && pricing[typeKey] > 0;
+            });
+          })
+        : geoFiltered;
+      console.log('📝 [Find Influencers] After content types filter (OR logic):', contentTypesFiltered.length);
 
       // ДЕДУПЛИКАЦИЯ: Группируем карточки по userId
       const cardsByUser = new Map<string, InfluencerCard[]>();
-      for (const card of geoFiltered) {
+      for (const card of contentTypesFiltered) {
         if (!cardsByUser.has(card.userId)) {
           cardsByUser.set(card.userId, []);
         }
         cardsByUser.get(card.userId)!.push(card);
       }
+      console.log('👤 [Find Influencers] Unique influencers before deduplication:', cardsByUser.size);
 
       // Для каждого инфлюенсера выбираем карточку с минимальной ценой
       const deduplicatedCards: InfluencerCard[] = [];
@@ -438,7 +492,12 @@ export class AutomaticCampaignService {
         // Сортируем по возрастанию цены и берём самую дешёвую
         cardsWithPrice.sort((a, b) => a.avgPrice - b.avgPrice);
         deduplicatedCards.push(cardsWithPrice[0].card);
+
+        if (cards.length > 1) {
+          console.log(`🔄 [Find Influencers] User ${userId} has ${cards.length} cards, selected cheapest: ${cardsWithPrice[0].avgPrice.toFixed(0)} RUB`);
+        }
       }
+      console.log('✅ [Find Influencers] After deduplication:', deduplicatedCards.length, 'unique influencers');
 
       // Рассчитываем идеальное соотношение цена/аудитория
       const idealUnitCost = settings.unitAudienceCost || this.calculateUnitAudienceCost(campaign);

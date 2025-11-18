@@ -224,7 +224,7 @@ export function CampaignCard({
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200">
+      <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-900">
             {isAutomaticCampaign ? 'Авто' : campaign.metrics.applicants}
@@ -292,7 +292,7 @@ export function CampaignCard({
       )}
 
       {showActions && (
-        <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-200">
+        <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={() => onFindInfluencers?.(campaign)}
             disabled={!isAutomaticCampaign}

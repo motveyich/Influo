@@ -214,10 +214,9 @@ export function AutomaticCampaignModal({
         try {
           const budget = await automaticCampaignService.calculateMarketBudgetRecommendation(
             formData.preferences.audienceSize.min,
-            formData.preferences.audienceSize.max || formData.preferences.audienceSize.min * 10,
+            formData.preferences.audienceSize.max,
             formData.automaticSettings.targetInfluencerCount,
-            formData.preferences.platforms,
-            formData.preferences.contentTypes.length > 0 ? formData.preferences.contentTypes : ['post', 'story', 'video', 'reel']
+            formData.preferences.platforms
           );
           setMarketBudget(budget);
         } catch (error) {
@@ -372,10 +371,9 @@ export function AutomaticCampaignModal({
     try {
       const budget = await automaticCampaignService.calculateMarketBudgetRecommendation(
         formData.preferences.audienceSize.min,
-        formData.preferences.audienceSize.max || formData.preferences.audienceSize.min * 10,
+        formData.preferences.audienceSize.max,
         formData.automaticSettings.targetInfluencerCount,
-        formData.preferences.platforms,
-        formData.preferences.contentTypes.length > 0 ? formData.preferences.contentTypes : ['post', 'story', 'video', 'reel']
+        formData.preferences.platforms
       );
       setMarketBudget(budget);
     } catch (error) {
@@ -513,7 +511,7 @@ export function AutomaticCampaignModal({
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <Target className="w-12 h-12 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Основная информация</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Основная информация</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Расскажите о вашей кампании</p>
               </div>
 
@@ -653,13 +651,13 @@ export function AutomaticCampaignModal({
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <Users className="w-12 h-12 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Критерии подбора</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Критерии подбора</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Сначала платформа, объем аудитории, потом бюджет</p>
               </div>
 
               {/* Platforms */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-3">
+                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                   Платформы *
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -695,7 +693,7 @@ export function AutomaticCampaignModal({
 
               {/* Audience Size */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Размер аудитории инфлюенсеров *</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Размер аудитории инфлюенсеров *</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -744,7 +742,7 @@ export function AutomaticCampaignModal({
 
               {/* Budget */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Бюджет *</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Бюджет *</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -824,14 +822,14 @@ export function AutomaticCampaignModal({
                   </p>
                 )}
                 {marketBudget && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900 mb-1">
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">
                       Рекомендованный рыночный бюджет:
                     </p>
-                    <p className="text-lg font-semibold text-blue-700">
+                    <p className="text-lg font-semibold text-blue-700 dark:text-blue-400">
                       {marketBudget.min.toLocaleString()} - {marketBudget.max.toLocaleString()} {marketBudget.currency}
                     </p>
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       На основе анализа рыночных данных инфлюенсеров с выбранными параметрами
                     </p>
                   </div>
@@ -840,7 +838,7 @@ export function AutomaticCampaignModal({
 
               {/* Audience Interests */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Интересы аудитории (по желанию)</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Интересы аудитории (по желанию)</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {interests.slice(0, 12).map((interest) => (
                     <button
@@ -875,7 +873,25 @@ export function AutomaticCampaignModal({
 
               {/* Content Types */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Типы контента *</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">Типы контента *</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allSelected = formData.preferences.contentTypes.length === CONTENT_TYPES.length;
+                      setFormData(prev => ({
+                        ...prev,
+                        preferences: {
+                          ...prev.preferences,
+                          contentTypes: allSelected ? [] : [...CONTENT_TYPES]
+                        }
+                      }));
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                  >
+                    {formData.preferences.contentTypes.length === CONTENT_TYPES.length ? 'Снять все' : 'Выбрать все'}
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {CONTENT_TYPES.map((type) => (
                     <button
@@ -891,8 +907,8 @@ export function AutomaticCampaignModal({
                       )}
                       className={`px-3 py-2 text-sm rounded-md border transition-colors capitalize ${
                         formData.preferences.contentTypes.includes(type)
-                          ? 'bg-blue-100 border-blue-300 text-blue-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                       }`}
                     >
                       {type}
@@ -900,7 +916,7 @@ export function AutomaticCampaignModal({
                   ))}
                 </div>
                 {errors.contentTypes && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
                     {errors.contentTypes}
                   </p>
@@ -914,7 +930,7 @@ export function AutomaticCampaignModal({
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <Calendar className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Временные рамки</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Временные рамки</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Установите сроки проведения кампании</p>
               </div>
 
@@ -985,7 +1001,7 @@ export function AutomaticCampaignModal({
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <Zap className="w-12 h-12 text-orange-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Настройки автоматики</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Настройки автоматики</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Настройте алгоритм подбора инфлюенсеров</p>
               </div>
 
@@ -1055,7 +1071,7 @@ export function AutomaticCampaignModal({
 
               {/* Batch Settings */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Настройки рассылки</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Настройки рассылки</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1109,7 +1125,7 @@ export function AutomaticCampaignModal({
 
               {/* Scoring Weights */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Веса для оценки инфлюенсеров</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Веса для оценки инфлюенсеров</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
