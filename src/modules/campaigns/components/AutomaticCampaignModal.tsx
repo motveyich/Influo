@@ -13,7 +13,7 @@ interface AutomaticCampaignModalProps {
   onCampaignSaved: (campaign: Campaign) => void;
 }
 
-const CONTENT_TYPES = ['Пост', 'Story', 'Reels', 'Видео', 'Live', 'IGTV', 'Shorts'];
+const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
 const COUNTRIES = ['Россия', 'США', 'Великобритания', 'Германия', 'Франция', 'Италия', 'Испания', 'Казахстан', 'Беларусь', 'Украина'];
 const GENDERS = ['male', 'female', 'other'];
 const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];

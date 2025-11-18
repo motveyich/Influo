@@ -319,10 +319,10 @@ export function InfluencerCardModal({
       ...prev,
       serviceDetails: {
         ...prev.serviceDetails,
-        contentTypes: prev.serviceDetails.contentTypes.includes(contentType)
-          ? prev.serviceDetails.contentTypes.filter(type => type !== contentType)
-          : [...prev.serviceDetails.contentTypes, contentType],
-        pricing: prev.serviceDetails.contentTypes.includes(contentType)
+        contentTypes: prev.serviceDetails.contentTypes.includes(pricingKey)
+          ? prev.serviceDetails.contentTypes.filter(type => type !== pricingKey)
+          : [...prev.serviceDetails.contentTypes, pricingKey],
+        pricing: prev.serviceDetails.contentTypes.includes(pricingKey)
           ? (() => {
               const newPricing = { ...prev.serviceDetails.pricing };
               delete newPricing[pricingKey];

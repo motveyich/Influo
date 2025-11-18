@@ -48,6 +48,10 @@ export class AutomaticCampaignService {
     this.startCampaignMonitoring();
   }
 
+  private convertTopCountries(countries: string[] | Record<string, number>): string[] {
+      return Array.isArray(countries) ? countries : Object.keys(countries);
+  }
+
   /**
    * Запускает периодический мониторинг активных кампаний
    */
@@ -489,7 +493,7 @@ export class AutomaticCampaignService {
       const targetCountries = campaign.preferences.demographics?.countries || [];
       const geoFiltered = targetCountries.length > 0
         ? platformFiltered.filter(card => {
-            const cardCountries = card.audienceDemographics?.topCountries || [];
+            const cardCountries = this.convertTopCountries(card.audienceDemographics?.topCountries) || [];
             return cardCountries.some(country =>
               targetCountries.some(target =>
                 target.toLowerCase() === country.toLowerCase()
@@ -631,7 +635,7 @@ export class AutomaticCampaignService {
     relevanceScore += (contentOverlap / campaign.preferences.contentTypes.length) * 50;
 
     const countryOverlap = campaign.preferences.demographics?.countries?.filter(country =>
-      card.audienceDemographics?.topCountries?.includes(country)
+        this.convertTopCountries(card.audienceDemographics?.topCountries)?.includes(country)
     ).length || 0;
     if (campaign.preferences.demographics?.countries?.length > 0) {
       relevanceScore += (countryOverlap / campaign.preferences.demographics.countries.length) * 50;
@@ -649,8 +653,6 @@ export class AutomaticCampaignService {
     const totalScore = (
       (followersScore * weights.followers / 100) +
       (engagementScore * weights.engagement / 100) +
-      (relevanceScore * weights.relevance / 100) +
-      (responseTimeScore * weights.responseTime / 100) +
       proximityBonus * 0.2
     );
 
@@ -659,8 +661,6 @@ export class AutomaticCampaignService {
       metrics: {
         followers: followersScore,
         engagement: engagementScore,
-        relevance: relevanceScore,
-        responseTime: responseTimeScore
       }
     };
   }

@@ -41,7 +41,7 @@ const PRODUCT_CATEGORIES = [
   'Освещение', 'Текстиль', 'Постельное белье', 'Посуда', 'Кухонная утварь', 'Другое'
 ];
 
-const SERVICE_FORMATS = ['Пост', 'Видео', 'Рилс', 'Упоминание в видео'];
+const SERVICE_FORMATS = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
 
 const COUNTRIES = [
   'Россия', 'Беларусь', 'Казахстан', 'Украина', 'Узбекистан', 'Киргизия',

@@ -101,7 +101,7 @@ Deno.serve(async (req: Request) => {
       // Geography filtering
       const targetCountries = campaign.preferences.demographics?.countries || [];
       if (targetCountries.length > 0) {
-        const cardCountries = audienceDemographics.topCountries || [];
+        const cardCountries = Object.keys(audienceDemographics.topCountries) || [];
         const hasCountryMatch = cardCountries.some((country: string) =>
           targetCountries.some((target: string) =>
             target.toLowerCase() === country.toLowerCase()
