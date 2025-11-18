@@ -6,6 +6,12 @@ import { chatService } from '../../chat/services/chatService';
 export class PaymentRequestService {
   async createPaymentRequest(requestData: Partial<PaymentRequest>): Promise<PaymentRequest> {
     try {
+      console.log('💰 [Payment Request] Creating with data:', {
+        offerId: requestData.offerId,
+        createdBy: requestData.createdBy,
+        amount: requestData.amount
+      });
+
       this.validatePaymentRequestData(requestData);
 
       const newRequest = {

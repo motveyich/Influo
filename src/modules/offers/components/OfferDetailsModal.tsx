@@ -560,7 +560,13 @@ export function OfferDetailsModal({
                   <h3 className="text-lg font-medium text-gray-900">Окна оплаты</h3>
                   {canCreatePaymentRequest() && (
                     <button
-                      onClick={() => setShowPaymentModal(true)}
+                      onClick={() => {
+                        if (!currentUserId) {
+                          alert('Пожалуйста, войдите в систему');
+                          return;
+                        }
+                        setShowPaymentModal(true);
+                      }}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
                     >
                       <Plus className="w-4 h-4" />
@@ -790,7 +796,13 @@ export function OfferDetailsModal({
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Оплата</h3>
                   <button
-                    onClick={() => setShowPaymentModal(true)}
+                    onClick={() => {
+                      if (!currentUserId) {
+                        alert('Пожалуйста, войдите в систему');
+                        return;
+                      }
+                      setShowPaymentModal(true);
+                    }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
                   >
                     <CreditCard className="w-4 h-4" />
