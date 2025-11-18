@@ -119,7 +119,7 @@ export class HomeService {
 
       // 2. Предложения о сотрудничестве, ожидающие ответа пользователя
       const { data: pendingOffers } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('offer_id')
         .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .eq('status', 'pending');
@@ -139,7 +139,7 @@ export class HomeService {
         // Для рекламодателя - окна в статусе pending (нужно оплатить)
         // Для инфлюенсера - окна в статусе paid (нужно подтвердить получение)
         const { data: offers } = await supabase
-          .from(TABLES.COLLABORATION_OFFERS)
+          .from(TABLES.OFFERS)
           .select('offer_id, influencer_id, advertiser_id')
           .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
           .in('status', ['accepted', 'in_progress']);

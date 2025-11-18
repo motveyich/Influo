@@ -487,7 +487,8 @@ export type PaymentRequestStatus = 'draft' | 'pending' | 'paying' | 'paid' | 'co
 export type CollaborationStage = 'pre_payment' | 'work_in_progress' | 'post_payment' | 'completed';
 
 export interface CollaborationOffer {
-  id: string;
+  offer_id: string; // Primary key в таблице offers
+  id?: string; // Deprecated alias для обратной совместимости
   influencerId: string;
   advertiserId: string;
   campaignId?: string;

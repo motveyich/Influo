@@ -34,7 +34,7 @@ export class OfferService {
       };
 
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .insert([newOffer])
         .select()
         .single();
@@ -104,7 +104,7 @@ export class OfferService {
       };
 
       const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .insert([newOffer])
         .select()
         .single();
@@ -151,7 +151,7 @@ export class OfferService {
 
       // Get current details to merge with updates
       const { data: currentData } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('details')
         .eq('offer_id', offerId)
         .single();
@@ -429,10 +429,12 @@ export class OfferService {
   private transformFromDatabase(dbData: any): CollaborationOffer {
     const details = dbData.details || {};
     return {
-      id: dbData.offer_id,
+      offer_id: dbData.offer_id,
+      id: dbData.offer_id, // Deprecated alias для обратной совместимости
       influencerId: dbData.influencer_id,
       advertiserId: dbData.advertiser_id,
       campaignId: dbData.campaign_id,
+      influencerCardId: dbData.influencer_card_id,
       initiatedBy: dbData.initiated_by,
       title: details.title || '',
       description: details.description || '',
@@ -461,7 +463,7 @@ export class OfferService {
   async confirmOfferTerms(offerId: string): Promise<void> {
     try {
       const { data: currentData } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('details')
         .eq('offer_id', offerId)
         .single();
@@ -469,7 +471,7 @@ export class OfferService {
       const currentDetails = currentData?.details || {};
 
       const { error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .update({
           details: {
             ...currentDetails,

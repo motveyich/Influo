@@ -289,7 +289,7 @@ export class AutomaticOfferService {
     };
 
     const { error } = await supabase
-      .from(TABLES.COLLABORATION_OFFERS)
+      .from(TABLES.OFFERS)
       .insert([offerData]);
 
     if (error) throw error;
@@ -328,7 +328,7 @@ export class AutomaticOfferService {
   async getAutomaticOfferDetails(offerId: string): Promise<any> {
     try {
       const { data: offer, error: offerError } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('*')
         .eq('offer_id', offerId)
         .maybeSingle();

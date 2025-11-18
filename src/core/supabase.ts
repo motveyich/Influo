@@ -88,6 +88,7 @@ export const TABLES = {
   COLLABORATION_REVIEWS: 'collaboration_reviews',
   OFFER_STATUS_HISTORY: 'offer_status_history',
   PAYMENT_STATUS_HISTORY: 'payment_status_history',
-  COLLABORATION_OFFERS: 'collaboration_offers',
+  OFFERS: 'offers', // Унифицированная таблица предложений
+  COLLABORATION_OFFERS: 'collaboration_offers', // Deprecated - используйте OFFERS
   USER_SETTINGS: 'user_settings',
 } as const;

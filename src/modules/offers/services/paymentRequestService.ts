@@ -225,7 +225,7 @@ export class PaymentRequestService {
     try {
       // Get offer details to determine participants
       const { data: offer } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('influencer_id, advertiser_id, title')
         .eq('id', request.offerId)
         .maybeSingle();
@@ -257,7 +257,7 @@ export class PaymentRequestService {
     try {
       // Get offer details
       const { data: offer } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('influencer_id, advertiser_id, title')
         .eq('id', request.offerId)
         .maybeSingle();

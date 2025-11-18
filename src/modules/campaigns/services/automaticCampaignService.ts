@@ -754,7 +754,7 @@ export class AutomaticCampaignService {
       });
 
       const { data: insertedOffer, error } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .insert([offerData])
         .select()
         .maybeSingle();
@@ -764,7 +764,7 @@ export class AutomaticCampaignService {
         throw error;
       }
 
-      console.log(`✅ [Create Offer] Offer created successfully! ID: ${insertedOffer?.id}`);
+      console.log(`✅ [Create Offer] Offer created successfully! ID: ${insertedOffer?.offer_id}`);
 
     } catch (error) {
       console.error('❌ [Create Offer] Failed to create offer:', error);
@@ -779,7 +779,7 @@ export class AutomaticCampaignService {
     try {
       // Проверяем предложение
       const { data: offer, error: offerError } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('*, campaigns!inner(*)')
         .eq('id', offerId)
         .single();
@@ -800,7 +800,7 @@ export class AutomaticCampaignService {
       if (response === 'accepted' && campaign.status !== 'active') {
         // Автоматический отказ
         await supabase
-          .from(TABLES.COLLABORATION_OFFERS)
+          .from(TABLES.OFFERS)
           .update({
             status: 'rejected',
             metadata: {
@@ -819,7 +819,7 @@ export class AutomaticCampaignService {
 
       // Обновляем статус предложения
       await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .update({
           status: response,
           updated_at: new Date().toISOString()
@@ -841,7 +841,7 @@ export class AutomaticCampaignService {
         } else {
           // Подсчитываем acceptedCount из базы
           const { count } = await supabase
-            .from(TABLES.COLLABORATION_OFFERS)
+            .from(TABLES.OFFERS)
             .select('*', { count: 'exact', head: true })
             .eq('campaign_id', offer.campaign_id)
             .eq('status', 'accepted');
@@ -898,7 +898,7 @@ export class AutomaticCampaignService {
 
       // Подсчитываем текущее состояние
       const { data: offers } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('status, influencer_id')
         .eq('campaign_id', campaignId);
 
@@ -997,7 +997,7 @@ export class AutomaticCampaignService {
 
       // Переносим pending предложения в expired
       await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .update({
           status: 'expired',
           metadata: supabase.raw(`
@@ -1052,7 +1052,7 @@ export class AutomaticCampaignService {
 
       // Приоритет 1: Реактивировать expired предложения
       const { data: expiredOffers } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('*')
         .eq('campaign_id', campaignId)
         .eq('status', 'expired')
@@ -1063,7 +1063,7 @@ export class AutomaticCampaignService {
       if (expiredOffers && expiredOffers.length > 0) {
         // Реактивируем лучшее предложение
         await supabase
-          .from(TABLES.COLLABORATION_OFFERS)
+          .from(TABLES.OFFERS)
           .update({
             status: 'pending',
             metadata: {
@@ -1073,11 +1073,11 @@ export class AutomaticCampaignService {
             },
             updated_at: new Date().toISOString()
           })
-          .eq('id', expiredOffers[0].id);
+          .eq('offer_id', expiredOffers[0].offer_id);
 
         analytics.track('automatic_campaign_offer_reactivated', {
           campaign_id: campaignId,
-          offer_id: expiredOffers[0].id
+          offer_id: expiredOffers[0].offer_id
         });
 
         return;
@@ -1089,7 +1089,7 @@ export class AutomaticCampaignService {
 
       // Исключаем уже получивших предложение
       const { data: existingOffers } = await supabase
-        .from(TABLES.COLLABORATION_OFFERS)
+        .from(TABLES.OFFERS)
         .select('influencer_id')
         .eq('campaign_id', campaignId);
 
