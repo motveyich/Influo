@@ -233,12 +233,12 @@ export function AutomaticCampaignDetailsModal({
 
   const handleContactAdvertiser = () => {
     // Navigate to chat with advertiser
-    window.location.href = `/chat?userId=${details?.advertiser_id}`;
+    window.location.href = `/app/chat?userId=${details?.advertiser_id}`;
   };
 
   const handleContactInfluencer = () => {
     // Navigate to chat with influencer
-    window.location.href = `/chat?userId=${details?.influencer_id}`;
+    window.location.href = `/app/chat?userId=${details?.influencer_id}`;
   };
 
   if (!isOpen) return null;
