@@ -338,7 +338,7 @@ export class AutomaticOfferService {
 
       const { data: campaign, error: campaignError } = await supabase
         .from(TABLES.CAMPAIGNS)
-        .select('*')
+        .select('campaign_id, advertiser_id, title, description, brand, budget, preferences, status, enable_chat, timeline, metrics, metadata, created_at, updated_at')
         .eq('campaign_id', offer.campaign_id)
         .maybeSingle();
 

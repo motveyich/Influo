@@ -227,6 +227,7 @@ export class AutomaticCampaignService {
           }
         },
         status: 'active',
+        enable_chat: campaignData.enableChat || false,
         timeline: campaignData.timeline,
         metrics: {
           applicants: 0,
@@ -299,6 +300,7 @@ export class AutomaticCampaignService {
             countries: (updates as any).targetCountries || updates.preferences.demographics?.countries || []
           }
         } : undefined,
+        enable_chat: updates.enableChat !== undefined ? updates.enableChat : undefined,
         timeline: updates.timeline,
         metadata: updates.metadata ? {
           ...updates.metadata,
@@ -1152,6 +1154,7 @@ export class AutomaticCampaignService {
       budget: dbData.budget,
       preferences: dbData.preferences,
       status: dbData.status,
+      enableChat: dbData.enable_chat || false,
       timeline: dbData.timeline,
       metrics: dbData.metrics,
       metadata: dbData.metadata,
