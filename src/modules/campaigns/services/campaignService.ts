@@ -336,6 +336,69 @@ export class CampaignService {
 
     return dbData;
   }
+
+  async stopAutomaticCampaign(campaignId: string): Promise<void> {
+    try {
+      const { error: campaignError } = await supabase
+        .from(TABLES.CAMPAIGNS)
+        .update({ status: 'paused', updated_at: new Date().toISOString() })
+        .eq('campaign_id', campaignId);
+
+      if (campaignError) throw campaignError;
+
+      const { error: offersError } = await supabase
+        .from(TABLES.OFFERS)
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('campaign_id', campaignId)
+        .eq('offer_type', 'automatic')
+        .in('status', ['pending', 'sent']);
+
+      if (offersError) throw offersError;
+
+      analytics.track('campaign_stopped', { campaignId });
+    } catch (error) {
+      console.error('Error stopping automatic campaign:', error);
+      throw error;
+    }
+  }
+
+  async terminateAutomaticCollaborations(campaignId: string): Promise<void> {
+    try {
+      const { data: offers, error: fetchError } = await supabase
+        .from(TABLES.OFFERS)
+        .select('offer_id')
+        .eq('campaign_id', campaignId)
+        .eq('offer_type', 'automatic')
+        .eq('status', 'accepted');
+
+      if (fetchError) throw fetchError;
+
+      if (!offers || offers.length === 0) return;
+
+      for (const offer of offers) {
+        const { data: paymentRequests, error: paymentError } = await supabase
+          .from(TABLES.PAYMENT_REQUESTS)
+          .select('payment_request_id')
+          .eq('offer_id', offer.offer_id);
+
+        if (paymentError) throw paymentError;
+
+        if (!paymentRequests || paymentRequests.length === 0) {
+          const { error: updateError } = await supabase
+            .from(TABLES.OFFERS)
+            .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+            .eq('offer_id', offer.offer_id);
+
+          if (updateError) throw updateError;
+        }
+      }
+
+      analytics.track('automatic_collaborations_terminated', { campaignId });
+    } catch (error) {
+      console.error('Error terminating automatic collaborations:', error);
+      throw error;
+    }
+  }
 }
 
 export const campaignService = new CampaignService();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Campaign } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag } from 'lucide-react';
+import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag, StopCircle, XCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ReportModal } from '../../../components/ReportModal';
 
@@ -11,16 +11,20 @@ interface CampaignCardProps {
   showActions?: boolean;
   onEdit?: (campaign: Campaign) => void;
   onDelete?: (campaignId: string) => void;
+  onStop?: (campaignId: string) => void;
+  onTerminate?: (campaignId: string) => void;
   onFindInfluencers?: (campaign: Campaign) => void;
   currentUserId?: string;
 }
 
-export function CampaignCard({ 
-  campaign, 
-  onApply, 
+export function CampaignCard({
+  campaign,
+  onApply,
   showActions = false,
   onEdit,
   onDelete,
+  onStop,
+  onTerminate,
   onFindInfluencers,
   currentUserId
 }: CampaignCardProps) {
@@ -125,6 +129,24 @@ export function CampaignCard({
         
         {showActions && (
           <div className="flex items-center space-x-2 ml-4">
+            {isAutomaticCampaign && (campaign.status === 'active' || campaign.status === 'in_progress') && (
+              <button
+                onClick={() => onStop?.(campaign.campaignId)}
+                className="p-2 text-gray-400 hover:text-amber-600 transition-colors"
+                title="Остановить поиск инфлюенсеров"
+              >
+                <StopCircle className="w-4 h-4" />
+              </button>
+            )}
+            {isAutomaticCampaign && campaign.status === 'paused' && (
+              <button
+                onClick={() => onTerminate?.(campaign.campaignId)}
+                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                title="Расторгнуть сотрудничество"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => onFindInfluencers?.(campaign)}
               className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
@@ -139,13 +161,15 @@ export function CampaignCard({
             >
               <Edit className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => onDelete?.(campaign.campaignId)}
-              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-              title="Delete campaign"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {!(isAutomaticCampaign && (campaign.status === 'active' || campaign.status === 'in_progress')) && (
+              <button
+                onClick={() => onDelete?.(campaign.campaignId)}
+                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                title="Delete campaign"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -175,8 +175,45 @@ export function CampaignsPage() {
     }
   };
 
+  const handleStopCampaign = async (campaignId: string) => {
+    if (!confirm('Остановить поиск инфлюенсеров? Все текущие заявки станут недействительными.')) return;
+
+    try {
+      await campaignService.stopAutomaticCampaign(campaignId);
+      setCampaigns(prev => prev.map(c =>
+        c.campaignId === campaignId
+          ? { ...c, status: 'paused' as any }
+          : c
+      ));
+      toast.success('Поиск инфлюенсеров остановлен');
+    } catch (error) {
+      console.error('Failed to stop campaign:', error);
+      toast.error('Не удалось остановить кампанию');
+    }
+  };
+
+  const handleTerminateCollaboration = async (campaignId: string) => {
+    if (!confirm('Расторгнуть сотрудничество со всеми инфлюенсерами без окон оплаты? Инфлюенсеры с окнами оплаты требуют ручного расторжения через вкладку "Предложения".')) return;
+
+    try {
+      await campaignService.terminateAutomaticCollaborations(campaignId);
+      toast.success('Сотрудничество расторгнуто с инфлюенсерами без окон оплаты');
+    } catch (error) {
+      console.error('Failed to terminate collaborations:', error);
+      toast.error('Не удалось расторгнуть сотрудничество');
+    }
+  };
+
   const handleDeleteCampaign = async (campaignId: string) => {
-    if (!confirm('Are you sure you want to delete this campaign?')) return;
+    const campaign = campaigns.find(c => c.campaignId === campaignId);
+    const isAutomatic = (campaign as any)?.metadata?.isAutomatic;
+
+    if (isAutomatic && (campaign?.status === 'active' || campaign?.status === 'in_progress')) {
+      toast.error('Нельзя удалить активную автоматическую кампанию. Сначала остановите поиск инфлюенсеров.');
+      return;
+    }
+
+    if (!confirm('Вы уверены, что хотите удалить эту кампанию?')) return;
 
     try {
       await campaignService.deleteCampaign(campaignId);
@@ -419,6 +456,8 @@ export function CampaignsPage() {
                 showActions={showMyCampaigns}
                 onEdit={handleEditCampaign}
                 onDelete={handleDeleteCampaign}
+                onStop={handleStopCampaign}
+                onTerminate={handleTerminateCollaboration}
                 onFindInfluencers={handleFindInfluencers}
                 currentUserId={currentUserId}
               />
