@@ -3,6 +3,7 @@ import { Campaign } from '../../../core/types';
 import { campaignService } from '../services/campaignService';
 import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CONTENT_TYPES } from '../../../core/constants';
 
 interface CampaignModalProps {
   isOpen: boolean;
@@ -13,7 +14,6 @@ interface CampaignModalProps {
 }
 
 const PLATFORMS = ['instagram', 'youtube', 'twitter', 'tiktok'];
-const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
 const COUNTRIES = ['US', 'UK', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BR', 'MX', 'IN'];
 const GENDERS = ['male', 'female', 'non-binary'];
 

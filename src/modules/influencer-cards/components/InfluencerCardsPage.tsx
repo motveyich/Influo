@@ -17,6 +17,7 @@ import { analytics } from '../../../core/analytics';
 import { useTranslation } from '../../../hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
+import { CONTENT_TYPES } from '../../../core/constants';
 
 type TabType = 'influencers' | 'advertisers' | 'my_cards' | 'favorites';
 
@@ -41,7 +42,6 @@ const PRODUCT_CATEGORIES = [
   'Освещение', 'Текстиль', 'Постельное белье', 'Посуда', 'Кухонная утварь', 'Другое'
 ];
 
-const SERVICE_FORMATS = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
 
 const COUNTRIES = [
   'Россия', 'Беларусь', 'Казахстан', 'Украина', 'Узбекистан', 'Киргизия',
@@ -789,7 +789,7 @@ export function InfluencerCardsPage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">{t('influencerCards.serviceFormats')}</label>
                         <div className="flex flex-wrap gap-2">
-                          {SERVICE_FORMATS.map(format => (
+                          {CONTENT_TYPES.map(format => (
                             <button
                               key={format}
                               onClick={() => handleServiceFormatToggle(format)}

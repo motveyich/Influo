@@ -3,6 +3,7 @@ import { AdvertiserCard } from '../../../core/types';
 import { advertiserCardService } from '../services/advertiserCardService';
 import { X, Save, AlertCircle, Calendar, DollarSign, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CONTENT_TYPES } from '../../../core/constants';
 
 interface AdvertiserCardModalProps {
   isOpen: boolean;
@@ -25,13 +26,6 @@ const PLATFORMS = [
   { value: 'rutube', label: 'RuTube' },
   { value: 'yandex_zen', label: 'Яндекс.Дзен' },
   { value: 'likee', label: 'Likee' }
-];
-
-const SERVICE_FORMATS = [
-  'Пост',
-  'Видео', 
-  'Рилс',
-  'Упоминание в видео'
 ];
 
 const PRODUCT_CATEGORIES = [
@@ -458,7 +452,7 @@ export function AdvertiserCardModal({
               Формат услуги *
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {SERVICE_FORMATS.map((format) => (
+              {CONTENT_TYPES.map((format) => (
                 <button
                   key={format}
                   type="button"

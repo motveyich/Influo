@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { influencerCardService } from '../services/influencerCardService';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { PRODUCT_CATEGORIES } from '../../../core/constants';
+import { PRODUCT_CATEGORIES, CONTENT_TYPES } from '../../../core/constants';
 import { X, Save, AlertCircle, Plus, Trash2, Instagram, Youtube, Twitter, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,20 +22,6 @@ const PLATFORMS = [
   { value: 'multi', label: 'Мульти-платформа' }
 ];
 
-const CONTENT_TYPES = [
-  'Пост',
-  'Видео', 
-  'Рилс',
-  'Упоминание в видео'
-];
-
-// Mapping between display names and pricing keys
-const CONTENT_TYPE_PRICING_KEYS_MAP: Record<string, string> = {
-  'Пост': 'post',
-  'Видео': 'video',
-  'Рилс': 'reel',
-  'Упоминание в видео': 'mention'
-};
 
 const COUNTRIES = [
   'Россия',
@@ -313,22 +299,20 @@ export function InfluencerCardModal({
   };
 
   const handleContentTypeToggle = (contentType: string) => {
-    const pricingKey = CONTENT_TYPE_PRICING_KEYS_MAP[contentType];
-    
     setFormData(prev => ({
       ...prev,
       serviceDetails: {
         ...prev.serviceDetails,
-        contentTypes: prev.serviceDetails.contentTypes.includes(pricingKey)
-          ? prev.serviceDetails.contentTypes.filter(type => type !== pricingKey)
-          : [...prev.serviceDetails.contentTypes, pricingKey],
-        pricing: prev.serviceDetails.contentTypes.includes(pricingKey)
+        contentTypes: prev.serviceDetails.contentTypes.includes(contentType)
+          ? prev.serviceDetails.contentTypes.filter(type => type !== contentType)
+          : [...prev.serviceDetails.contentTypes, contentType],
+        pricing: prev.serviceDetails.contentTypes.includes(contentType)
           ? (() => {
               const newPricing = { ...prev.serviceDetails.pricing };
-              delete newPricing[pricingKey];
+              delete newPricing[contentType];
               return newPricing;
             })()
-          : { ...prev.serviceDetails.pricing, [pricingKey]: 0 }
+          : { ...prev.serviceDetails.pricing, [contentType]: 0 }
       }
     }));
   };
@@ -585,15 +569,11 @@ export function InfluencerCardModal({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(formData.serviceDetails.pricing).map(([pricingKey, price]) => {
-                    // Find the display name for this pricing key
-                    const displayName = Object.entries(CONTENT_TYPE_PRICING_KEYS_MAP)
-                      .find(([_, key]) => key === pricingKey)?.[0] || pricingKey;
-                    
+                  {Object.entries(formData.serviceDetails.pricing).map(([contentType, price]) => {
                     return (
-                      <div key={pricingKey}>
+                      <div key={contentType}>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {displayName}
+                          {contentType}
                         </label>
                         <input
                           type="number"
@@ -604,7 +584,7 @@ export function InfluencerCardModal({
                               ...prev.serviceDetails,
                               pricing: {
                                 ...prev.serviceDetails.pricing,
-                                [pricingKey]: parseInt(e.target.value) || 0
+                                [contentType]: parseInt(e.target.value) || 0
                               }
                             }
                           }))}

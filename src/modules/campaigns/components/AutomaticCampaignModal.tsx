@@ -4,6 +4,7 @@ import { automaticCampaignService } from '../services/automaticCampaignService';
 import { campaignValidationService } from '../services/campaignValidationService';
 import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Target, Users, Zap, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CONTENT_TYPES } from '../../../core/constants';
 
 interface AutomaticCampaignModalProps {
   isOpen: boolean;
@@ -12,8 +13,6 @@ interface AutomaticCampaignModalProps {
   advertiserId: string;
   onCampaignSaved: (campaign: Campaign) => void;
 }
-
-const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
 const COUNTRIES = ['Россия', 'США', 'Великобритания', 'Германия', 'Франция', 'Италия', 'Испания', 'Казахстан', 'Беларусь', 'Украина'];
 const GENDERS = ['male', 'female', 'other'];
 const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];

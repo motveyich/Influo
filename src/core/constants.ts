@@ -1,5 +1,7 @@
 // Shared constants across the application
 
+export const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'];
+
 export const PRODUCT_CATEGORIES = [
   'Косметика',
   'Химия для дома',
