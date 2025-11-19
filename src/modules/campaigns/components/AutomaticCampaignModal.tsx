@@ -114,6 +114,7 @@ export function AutomaticCampaignModal({
       autoReplacement: true,
       maxReplacements: 3
     },
+    enableChat: false,
     status: 'draft' as Campaign['status']
   });
 
@@ -142,6 +143,7 @@ export function AutomaticCampaignModal({
           autoReplacement: true,
           maxReplacements: 3
         },
+        enableChat: currentCampaign.enableChat || false,
         status: currentCampaign.status
       });
     } else {
@@ -1278,6 +1280,30 @@ export function AutomaticCampaignModal({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Chat Settings */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-3">Настройки коммуникации</h4>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.enableChat}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      enableChat: e.target.checked
+                    }))}
+                    className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
+                      Ведение диалога через чат
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Инфлюенсеры смогут связаться с вами напрямую через встроенный чат
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
           )}

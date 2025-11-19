@@ -184,7 +184,8 @@ export interface Campaign {
       countries: string[];
     };
   };
-  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled' | 'in_progress';
+  enableChat?: boolean;
   timeline: {
     startDate: string;
     endDate: string;

@@ -17,6 +17,7 @@ export class CampaignService {
         budget: campaignData.budget,
         preferences: campaignData.preferences,
         status: campaignData.status || 'draft',
+        enable_chat: campaignData.enableChat || false,
         timeline: campaignData.timeline,
         moderation_status: 'pending',
         is_deleted: false,
@@ -312,6 +313,7 @@ export class CampaignService {
       budget: dbData.budget,
       preferences: dbData.preferences,
       status: dbData.status,
+      enableChat: dbData.enable_chat || false,
       timeline: dbData.timeline,
       metrics: dbData.metrics,
       createdAt: dbData.created_at,
@@ -321,13 +323,14 @@ export class CampaignService {
 
   private transformToDatabase(campaignData: Partial<Campaign>): any {
     const dbData: any = {};
-    
+
     if (campaignData.title) dbData.title = campaignData.title;
     if (campaignData.description) dbData.description = campaignData.description;
     if (campaignData.brand) dbData.brand = campaignData.brand;
     if (campaignData.budget) dbData.budget = campaignData.budget;
     if (campaignData.preferences) dbData.preferences = campaignData.preferences;
     if (campaignData.status) dbData.status = campaignData.status;
+    if (campaignData.enableChat !== undefined) dbData.enable_chat = campaignData.enableChat;
     if (campaignData.timeline) dbData.timeline = campaignData.timeline;
     if (campaignData.metrics) dbData.metrics = campaignData.metrics;
 
