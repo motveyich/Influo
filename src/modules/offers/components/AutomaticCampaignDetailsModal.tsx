@@ -236,6 +236,11 @@ export function AutomaticCampaignDetailsModal({
     window.location.href = `/chat?userId=${details?.advertiser_id}`;
   };
 
+  const handleContactInfluencer = () => {
+    // Navigate to chat with influencer
+    window.location.href = `/chat?userId=${details?.influencer_id}`;
+  };
+
   if (!isOpen) return null;
 
   const advertiserData = details?.advertiserProfile?.advertiser_data || {};
@@ -552,17 +557,25 @@ export function AutomaticCampaignDetailsModal({
                 </h3>
                 <div className="bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-5">
                   <ul className="space-y-2 text-sm text-amber-900 dark:text-amber-300">
-                    <li className="flex items-start space-x-2">
-                      <span className="text-amber-600 dark:text-amber-400 font-bold mt-0.5">•</span>
-                      <span>В автоматических кампаниях нет прямого общения с рекламодателем</span>
-                    </li>
+                    {!details?.campaignDetails?.enable_chat && (
+                      <li className="flex items-start space-x-2">
+                        <span className="text-amber-600 dark:text-amber-400 font-bold mt-0.5">•</span>
+                        <span>В автоматических кампаниях нет прямого общения с рекламодателем</span>
+                      </li>
+                    )}
+                    {details?.campaignDetails?.enable_chat && (
+                      <li className="flex items-start space-x-2">
+                        <span className="text-purple-600 dark:text-purple-400 font-bold mt-0.5">•</span>
+                        <span>В этой кампании включен чат - вы можете напрямую общаться с {isInfluencer ? 'рекламодателем' : 'инфлюенсером'}</span>
+                      </li>
+                    )}
                     <li className="flex items-start space-x-2">
                       <span className="text-amber-600 dark:text-amber-400 font-bold mt-0.5">•</span>
                       <span>Все условия и требования указаны в этом предложении</span>
                     </li>
                     <li className="flex items-start space-x-2">
                       <span className="text-amber-600 dark:text-amber-400 font-bold mt-0.5">•</span>
-                      <span>Рекламодатель проверяет только результаты работы через окна оплаты</span>
+                      <span>Рекламодатель проверяет результаты работы через окна оплаты</span>
                     </li>
                     <li className="flex items-start space-x-2">
                       <span className="text-amber-600 dark:text-amber-400 font-bold mt-0.5">•</span>
@@ -770,7 +783,7 @@ export function AutomaticCampaignDetailsModal({
                 </button>
               )}
 
-              {isInfluencer && details?.campaign?.enable_chat && (
+              {isInfluencer && details?.campaignDetails?.enable_chat && (
                 <button
                   onClick={handleContactAdvertiser}
                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
@@ -788,6 +801,16 @@ export function AutomaticCampaignDetailsModal({
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Завершить сотрудничество</span>
+                </button>
+              )}
+
+              {isAdvertiser && details?.campaignDetails?.enable_chat && (
+                <button
+                  onClick={handleContactInfluencer}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Связаться с инфлюенсером</span>
                 </button>
               )}
 
