@@ -74,7 +74,7 @@ export function AutomaticCampaignDetailsModal({
       setDetails(data);
 
       // Load payment requests
-      const payments = await paymentRequestService.getPaymentRequestsByOffer(offerId);
+      const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
       setPaymentRequests(payments);
     } catch (error) {
       console.error('Failed to load automatic campaign details:', error);
@@ -180,7 +180,7 @@ export function AutomaticCampaignDetailsModal({
   const handlePaymentStatusChange = async (paymentId: string, newStatus: PaymentRequestStatus) => {
     try {
       await paymentRequestService.updatePaymentStatus(paymentId, newStatus, currentUserId);
-      const updatedPayments = await paymentRequestService.getPaymentRequestsByOffer(offerId);
+      const updatedPayments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
       setPaymentRequests(updatedPayments);
       toast.success('Статус оплаты обновлен');
     } catch (error: any) {
