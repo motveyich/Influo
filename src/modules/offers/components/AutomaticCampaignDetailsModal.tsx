@@ -434,10 +434,10 @@ export function AutomaticCampaignDetailsModal({
                     <div className="flex-1">
                       <p className="text-xs text-purple-700 dark:text-purple-300 uppercase tracking-wide font-medium">Предлагаемое вознаграждение</p>
                       <p className="text-2xl font-bold text-purple-900 dark:text-purple-200 mt-1">
-                        {details.details?.suggestedBudget || details.details?.proposed_rate || 0} {details.details?.currency || details.campaignDetails?.budget?.currency || 'RUB'}
+                        {details.proposed_rate || details.details?.price || details.details?.proposed_rate || 0} ₽
                       </p>
                       <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                        Рассчитано на основе ваших тарифов и требований кампании
+                        {details.details?.integrationType ? `${details.details.integrationType} на ${details.details.platform}` : 'Рассчитано на основе ваших тарифов'}
                       </p>
                     </div>
                   </div>

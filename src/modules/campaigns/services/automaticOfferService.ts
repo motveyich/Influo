@@ -320,13 +320,16 @@ export class AutomaticOfferService {
       campaign_id: config.campaignId,
       advertiser_id: config.advertiserId,
       influencer_card_id: influencer.id,
+      proposed_rate: chosenIntegration.price,
+      currency: config.budget.currency || 'RUB',
       details: {
         title: config.campaignTitle,
         description: config.campaignDescription,
         platform: influencer.platform,
         integrationType: chosenIntegration.type,
         price: chosenIntegration.price,
-        suggestedBudget,
+        proposed_rate: chosenIntegration.price,
+        currency: config.budget.currency || 'RUB',
         contentTypes: [chosenIntegration.type],
         deliverables: [{
           type: chosenIntegration.type,
@@ -343,7 +346,8 @@ export class AutomaticOfferService {
         score: influencer.score || 0,
         sentAt: new Date().toISOString(),
         chosenIntegration: chosenIntegration.type,
-        integrationPrice: chosenIntegration.price
+        integrationPrice: chosenIntegration.price,
+        platform: influencer.platform
       },
       current_stage: 'offer_sent',
       initiated_by: config.advertiserId,
