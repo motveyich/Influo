@@ -279,19 +279,55 @@ export class AutomaticOfferService {
     const pricing = serviceDetails.pricing || {};
     const cardContentTypes = serviceDetails.contentTypes || [];
 
+    console.log('🔍 Finding matching integrations:', {
+      campaignTypes: config.filters.contentTypes,
+      cardTypes: cardContentTypes,
+      pricing
+    });
+
     // Find matching integration types between campaign and card
-    const matchingIntegrations: Array<{ type: string; price: number }> = [];
+    const matchingIntegrations: Array<{ type: string; price: number; originalType: string }> = [];
 
     for (const campaignType of config.filters.contentTypes) {
       const normalizedCampaignType = this.normalizeContentType(campaignType);
 
+      // Check card content types
       for (const cardType of cardContentTypes) {
         const normalizedCardType = this.normalizeContentType(cardType);
 
         if (normalizedCampaignType === normalizedCardType) {
-          const price = pricing[normalizedCardType] || pricing[cardType] || 0;
+          // Try to find price in pricing object with different key variations
+          let price = 0;
+
+          // Try exact match first
+          if (pricing[cardType] && pricing[cardType] > 0) {
+            price = pricing[cardType];
+          }
+          // Try normalized key
+          else if (pricing[normalizedCardType] && pricing[normalizedCardType] > 0) {
+            price = pricing[normalizedCardType];
+          }
+          // Try lowercase
+          else if (pricing[cardType.toLowerCase()] && pricing[cardType.toLowerCase()] > 0) {
+            price = pricing[cardType.toLowerCase()];
+          }
+          // Search through all pricing keys
+          else {
+            for (const [pricingKey, pricingValue] of Object.entries(pricing)) {
+              if (this.normalizeContentType(pricingKey) === normalizedCardType && pricingValue > 0) {
+                price = pricingValue as number;
+                break;
+              }
+            }
+          }
+
           if (price > 0) {
-            matchingIntegrations.push({ type: cardType, price });
+            matchingIntegrations.push({
+              type: normalizedCardType,  // Use normalized type for consistency
+              price,
+              originalType: cardType  // Keep original for display
+            });
+            console.log('✓ Found matching integration:', { type: normalizedCardType, price });
           }
         }
       }
@@ -299,6 +335,7 @@ export class AutomaticOfferService {
 
     // If no matching integrations found, skip this influencer
     if (matchingIntegrations.length === 0) {
+      console.log('✗ No matching integrations found, skipping influencer');
       throw new Error('No matching integrations with valid pricing');
     }
 
@@ -307,13 +344,7 @@ export class AutomaticOfferService {
       current.price < min.price ? current : min
     );
 
-    // Calculate budget respecting campaign limits
-    let suggestedBudget = chosenIntegration.price;
-    if (suggestedBudget < config.budget.min) {
-      suggestedBudget = config.budget.min;
-    } else if (suggestedBudget > config.budget.max) {
-      suggestedBudget = config.budget.max;
-    }
+    console.log('✓ Chosen integration:', chosenIntegration);
 
     const offerData = {
       influencer_id: influencer.user_id,
@@ -327,16 +358,19 @@ export class AutomaticOfferService {
         description: config.campaignDescription,
         platform: influencer.platform,
         integrationType: chosenIntegration.type,
-        price: chosenIntegration.price,
         proposed_rate: chosenIntegration.price,
         currency: config.budget.currency || 'RUB',
-        contentTypes: [chosenIntegration.type],
         deliverables: [{
           type: chosenIntegration.type,
           quantity: 1,
-          price: chosenIntegration.price,
-          description: `Создание ${chosenIntegration.type.toLowerCase()}`
-        }]
+          description: `Создание контента: ${chosenIntegration.type}`
+        }],
+        timeline: config.timeline,
+        integration_details: {
+          format: chosenIntegration.type,
+          platform: influencer.platform,
+          price: chosenIntegration.price
+        }
       },
       status: 'pending',
       timeline: config.timeline,
@@ -355,13 +389,20 @@ export class AutomaticOfferService {
       updated_at: new Date().toISOString()
     };
 
+    console.log('📤 Creating automatic offer:', {
+      influencerId: influencer.user_id,
+      platform: influencer.platform,
+      integrationType: chosenIntegration.type,
+      price: chosenIntegration.price
+    });
+
     const { error } = await supabase
       .from(TABLES.OFFERS)
       .insert([offerData]);
 
     if (error) throw error;
 
-    // Record rate limit interaction
+    // Record rate limit interaction (from advertiser to influencer)
     try {
       await rateLimitService.recordInteraction(
         influencer.user_id,
@@ -373,8 +414,8 @@ export class AutomaticOfferService {
       console.error('Failed to record rate limit:', rateLimitError);
     }
 
-    // Return the budget for this offer
-    return suggestedBudget;
+    // Return the actual price for budget calculation
+    return chosenIntegration.price;
   }
 
   private calculateSuggestedBudget(
