@@ -63,8 +63,11 @@ export function ChatPage() {
     }
     
     if (currentUserId && !loading) {
-      loadConversations();
-      loadBlockedUsers();
+      const initializeChat = async () => {
+        await loadBlockedUsers(); // Load blocked users first
+        await loadConversations(); // Then load conversations with correct blocked status
+      };
+      initializeChat();
     }
     
     // Subscribe to real-time chat messages
@@ -438,6 +441,11 @@ export function ChatPage() {
     try {
       // Add to blacklist via service
       const { blacklistService } = await import('../../../services/blacklistService');
+
+      if (!confirm('Вы уверены, что хотите заблокировать этого пользователя?')) {
+        return;
+      }
+
       const reason = prompt('Укажите причину блокировки (необязательно):');
       await blacklistService.addToBlacklist(userId, reason || undefined);
 
@@ -445,12 +453,12 @@ export function ChatPage() {
       newBlockedUsers.add(userId);
       setBlockedUsers(newBlockedUsers);
 
-      // Update conversation status
+      // Update conversation status - must set chatType to 'restricted'
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === userId) {
           return {
             ...conv,
-            chatType: 'restricted',
+            chatType: 'restricted' as 'restricted',
             canSendMessage: false,
             isBlocked: true
           };

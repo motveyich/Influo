@@ -33,6 +33,14 @@ class BlacklistService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Check if already blacklisted
+      const existing = await this.isInMyBlacklist(blockedUserId);
+      if (existing) {
+        // Already blacklisted - this is OK, not an error
+        console.log('User already in blacklist, skipping insert');
+        return;
+      }
+
       const { error } = await supabase
         .from('blacklist')
         .insert({
@@ -41,7 +49,15 @@ class BlacklistService {
           reason: reason || null
         });
 
-      if (error) throw error;
+      // Handle duplicate key error gracefully (409 conflict)
+      if (error) {
+        if (error.code === '23505') {
+          // Unique constraint violation - user already blocked
+          console.log('User already in blacklist (duplicate key), treating as success');
+          return;
+        }
+        throw error;
+      }
     } catch (error: any) {
       console.error('Error adding to blacklist:', error);
       throw new Error(error.message || 'Failed to add to blacklist');

@@ -21,14 +21,16 @@ export function useAuth() {
     if (authState.user) {
       loadUserRole();
       checkUserStatus();
-      subscribeToUserUpdates();
+      // Subscribe to real-time updates only once per user
+      const cleanup = subscribeToUserUpdates();
+      return cleanup;
     } else {
       setUserRole('user');
       setRoleLoading(false);
       setIsBlocked(false);
       setBlockCheckLoading(false);
     }
-  }, [authState.user]);
+  }, [authState.user?.id]); // Only re-run if user ID changes
 
   const subscribeToUserUpdates = () => {
     if (!authState.user) return;
@@ -78,7 +80,7 @@ export function useAuth() {
       }
       
       console.log('🔧 [useAuth] Checking user status for:', authState.user.id);
-      
+
       let profile, error;
       try {
         const result = await supabase
@@ -89,32 +91,26 @@ export function useAuth() {
         profile = result.data;
         error = result.error;
       } catch (fetchError) {
-        // Handle network/connection errors gracefully
-        if (fetchError instanceof TypeError && fetchError.message === 'Failed to fetch') {
-          console.warn('⚠️ [useAuth] Supabase connection failed (network error). User is assumed not blocked.');
-          setIsBlocked(false);
-          setError(null);
-          setBlockCheckLoading(false);
-          return;
-        }
-        console.warn('⚠️ [useAuth] Database fetch error:', fetchError);
+        // Handle network/connection errors gracefully - DO NOT LOGOUT
+        console.warn('⚠️ [useAuth] Database fetch error (network issue), assuming user is NOT blocked:', fetchError);
         setIsBlocked(false);
         setError(null);
         setBlockCheckLoading(false);
         return;
       }
-      
+
       if (error) {
-        console.error('❌ [useAuth] Failed to check user status:', error);
-        // Don't set blocked state if we can't check
+        // Database error - DO NOT LOGOUT, just log and assume not blocked
+        console.warn('⚠️ [useAuth] Database query error, assuming user is NOT blocked:', error);
         setIsBlocked(false);
         setError(null);
         setBlockCheckLoading(false);
         return;
       }
-      
+
       if (!profile) {
-        console.log('⚠️ [useAuth] No profile found for user, assuming not blocked');
+        // No profile found - this is OK for new users, DO NOT LOGOUT
+        console.log('⚠️ [useAuth] No profile found for user, assuming NOT blocked (new user?)');
         setIsBlocked(false);
         setError(null);
         setBlockCheckLoading(false);
@@ -130,9 +126,14 @@ export function useAuth() {
       
       // Проверяем точно на true, а не на truthy значение
       if (profile && profile.is_deleted === true) {
-        console.log('🚨 [useAuth] User is blocked, setting blocked state and forcing logout');
+        console.error('🚨 [useAuth] LOGOUT REASON: User is DELETED/BLOCKED', {
+          userId: authState.user.id,
+          isDeleted: profile.is_deleted,
+          deletedAt: profile.deleted_at,
+          timestamp: new Date().toISOString()
+        });
         setIsBlocked(true);
-        // Force logout for blocked users
+        // Force logout ONLY for truly blocked users
         await authService.signOut();
         alert('Ваш аккаунт был заблокирован администратором.');
       } else if (profile && profile.is_deleted === false) {
