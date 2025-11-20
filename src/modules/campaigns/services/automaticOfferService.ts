@@ -36,10 +36,12 @@ export class AutomaticOfferService {
   async distributeOffersToInfluencers(config: AutomaticOfferConfig): Promise<{
     success: boolean;
     offersCreated: number;
+    totalBudget?: number;
     errors: string[];
   }> {
     const errors: string[] = [];
     let offersCreated = 0;
+    let totalBudget = 0;
 
     try {
       console.log('Starting offer distribution for campaign:', config.campaignId);
@@ -58,6 +60,7 @@ export class AutomaticOfferService {
         return {
           success: false,
           offersCreated: 0,
+          totalBudget: 0,
           errors: ['Не найдено подходящих инфлюенсеров']
         };
       }
@@ -73,20 +76,22 @@ export class AutomaticOfferService {
 
       for (const influencer of topInfluencers) {
         try {
-          await this.createAutomaticOffer(config, influencer);
+          const offerBudget = await this.createAutomaticOffer(config, influencer);
           offersCreated++;
-          console.log(`✓ Offer created for influencer ${influencer.user_id} (score: ${influencer.score})`);
+          totalBudget += offerBudget;
+          console.log(`✓ Offer created for influencer ${influencer.user_id} (score: ${influencer.score}, budget: ${offerBudget})`);
         } catch (error: any) {
           console.error(`✗ Failed to create offer for influencer ${influencer.user_id}:`, error);
           errors.push(`Ошибка создания предложения для инфлюенсера ${influencer.user_id}: ${error.message}`);
         }
       }
 
-      console.log(`Offer distribution completed. Created: ${offersCreated}, Errors: ${errors.length}`);
+      console.log(`Offer distribution completed. Created: ${offersCreated}, Total budget: ${totalBudget}, Errors: ${errors.length}`);
 
       return {
         success: offersCreated > 0,
         offersCreated,
+        totalBudget,
         errors
       };
     } catch (error) {
@@ -94,6 +99,7 @@ export class AutomaticOfferService {
       return {
         success: false,
         offersCreated: 0,
+        totalBudget: 0,
         errors: ['Общая ошибка при распределении предложений']
       };
     }
@@ -173,26 +179,8 @@ export class AutomaticOfferService {
     if (filters.contentTypes.length > 0) {
       const cardContentTypes = serviceDetails.contentTypes || [];
 
-      const normalizeContentType = (type: string) => {
-        const normalized = type.toLowerCase().trim();
-        const mapping: Record<string, string[]> = {
-          'пост': ['пост', 'post'],
-          'story': ['story', 'stories', 'сторис'],
-          'reels': ['reels', 'рилс', 'reels', 'рилс'],
-          'видео': ['видео', 'video'],
-          'live': ['live', 'лайв'],
-          'igtv': ['igtv', 'айтиви'],
-          'shorts': ['shorts', 'шортс']
-        };
-
-        for (const [key, values] of Object.entries(mapping)) {
-          if (values.includes(normalized)) return key;
-        }
-        return normalized;
-      };
-
-      const normalizedCardTypes = cardContentTypes.map((t: string) => normalizeContentType(t));
-      const normalizedFilterTypes = filters.contentTypes.map((t: string) => normalizeContentType(t));
+      const normalizedCardTypes = cardContentTypes.map((t: string) => this.normalizeContentType(t));
+      const normalizedFilterTypes = filters.contentTypes.map((t: string) => this.normalizeContentType(t));
 
       const hasMatchingContentType = normalizedFilterTypes.some((filterType: string) =>
         normalizedCardTypes.includes(filterType)
@@ -247,10 +235,28 @@ export class AutomaticOfferService {
     return scored.sort((a, b) => b.score - a.score);
   }
 
+  private normalizeContentType(type: string): string {
+    const normalized = type.toLowerCase().trim();
+    const mapping: Record<string, string[]> = {
+      'пост': ['пост', 'post'],
+      'story': ['story', 'stories', 'сторис'],
+      'reels': ['reels', 'рилс'],
+      'видео': ['видео', 'video'],
+      'live': ['live', 'лайв'],
+      'igtv': ['igtv', 'айтиви'],
+      'shorts': ['shorts', 'шортс']
+    };
+
+    for (const [key, values] of Object.entries(mapping)) {
+      if (values.includes(normalized)) return key;
+    }
+    return normalized;
+  }
+
   private async createAutomaticOffer(
     config: AutomaticOfferConfig,
     influencer: any
-  ): Promise<void> {
+  ): Promise<number> {
     // Check blacklist
     const isBlacklisted = await blacklistService.isBlacklisted(
       config.advertiserId,
@@ -271,12 +277,43 @@ export class AutomaticOfferService {
 
     const serviceDetails = influencer.service_details || {};
     const pricing = serviceDetails.pricing || {};
+    const cardContentTypes = serviceDetails.contentTypes || [];
 
-    const suggestedBudget = this.calculateSuggestedBudget(
-      pricing,
-      config.budget,
-      config.filters.contentTypes
+    // Find matching integration types between campaign and card
+    const matchingIntegrations: Array<{ type: string; price: number }> = [];
+
+    for (const campaignType of config.filters.contentTypes) {
+      const normalizedCampaignType = this.normalizeContentType(campaignType);
+
+      for (const cardType of cardContentTypes) {
+        const normalizedCardType = this.normalizeContentType(cardType);
+
+        if (normalizedCampaignType === normalizedCardType) {
+          const price = pricing[normalizedCardType] || pricing[cardType] || 0;
+          if (price > 0) {
+            matchingIntegrations.push({ type: cardType, price });
+          }
+        }
+      }
+    }
+
+    // If no matching integrations found, skip this influencer
+    if (matchingIntegrations.length === 0) {
+      throw new Error('No matching integrations with valid pricing');
+    }
+
+    // Choose integration with minimum price
+    const chosenIntegration = matchingIntegrations.reduce((min, current) =>
+      current.price < min.price ? current : min
     );
+
+    // Calculate budget respecting campaign limits
+    let suggestedBudget = chosenIntegration.price;
+    if (suggestedBudget < config.budget.min) {
+      suggestedBudget = config.budget.min;
+    } else if (suggestedBudget > config.budget.max) {
+      suggestedBudget = config.budget.max;
+    }
 
     const offerData = {
       influencer_id: influencer.user_id,
@@ -286,13 +323,17 @@ export class AutomaticOfferService {
       details: {
         title: config.campaignTitle,
         description: config.campaignDescription,
-        contentTypes: config.filters.contentTypes,
+        platform: influencer.platform,
+        integrationType: chosenIntegration.type,
+        price: chosenIntegration.price,
         suggestedBudget,
-        deliverables: config.filters.contentTypes.map((type: string) => ({
-          type,
+        contentTypes: [chosenIntegration.type],
+        deliverables: [{
+          type: chosenIntegration.type,
           quantity: 1,
-          description: `Создание ${type.toLowerCase()}`
-        }))
+          price: chosenIntegration.price,
+          description: `Создание ${chosenIntegration.type.toLowerCase()}`
+        }]
       },
       status: 'pending',
       timeline: config.timeline,
@@ -300,7 +341,9 @@ export class AutomaticOfferService {
         isAutomatic: true,
         campaignId: config.campaignId,
         score: influencer.score || 0,
-        sentAt: new Date().toISOString()
+        sentAt: new Date().toISOString(),
+        chosenIntegration: chosenIntegration.type,
+        integrationPrice: chosenIntegration.price
       },
       current_stage: 'offer_sent',
       initiated_by: config.advertiserId,
@@ -325,6 +368,9 @@ export class AutomaticOfferService {
     } catch (rateLimitError) {
       console.error('Failed to record rate limit:', rateLimitError);
     }
+
+    // Return the budget for this offer
+    return suggestedBudget;
   }
 
   private calculateSuggestedBudget(
