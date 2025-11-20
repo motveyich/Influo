@@ -463,7 +463,7 @@ export class OfferService {
     const details = dbData.details || {};
     return {
       offer_id: dbData.offer_id,
-      id: dbData.offer_id, // Deprecated alias для обратной совместимости
+      id: dbData.offer_id,
       influencerId: dbData.influencer_id,
       advertiserId: dbData.advertiser_id,
       campaignId: dbData.campaign_id,
@@ -471,10 +471,14 @@ export class OfferService {
       initiatedBy: dbData.initiated_by,
       title: details.title || '',
       description: details.description || '',
-      proposedRate: parseFloat(details.proposed_rate || 0),
-      currency: details.currency || 'USD',
+      proposedRate: dbData.proposed_rate ? parseFloat(dbData.proposed_rate) : parseFloat(details.proposed_rate || 0),
+      currency: dbData.currency || details.currency || 'RUB',
       deliverables: details.deliverables || [],
-      timeline: details.timeline || '',
+      timeline: typeof dbData.timeline === 'object' && dbData.timeline
+        ? `${new Date(dbData.timeline.startDate || dbData.timeline.start_date).toLocaleDateString('ru-RU')} - ${new Date(dbData.timeline.endDate || dbData.timeline.end_date).toLocaleDateString('ru-RU')}`
+        : (details.timeline || ''),
+      platform: details.platform || dbData.metadata?.platform,
+      integrationType: details.integrationType || dbData.metadata?.chosenIntegration,
       status: dbData.status,
       currentStage: dbData.current_stage || 'negotiation',
       acceptedAt: details.accepted_at,

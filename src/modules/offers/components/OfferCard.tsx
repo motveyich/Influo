@@ -20,7 +20,8 @@ import {
   User,
   ChevronDown,
   ChevronUp,
-  Zap
+  Zap,
+  Globe
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -296,7 +297,7 @@ export function OfferCard({
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
         <div className="flex items-center space-x-2">
           <DollarSign className="w-4 h-4 text-green-600" />
           <div>
@@ -308,7 +309,7 @@ export function OfferCard({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-blue-600" />
           <div>
@@ -318,7 +319,19 @@ export function OfferCard({
             <p className="text-xs text-gray-600">Сроки</p>
           </div>
         </div>
-        
+
+        {offer.platform && (
+          <div className="flex items-center space-x-2">
+            <Globe className="w-4 h-4 text-purple-600" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {offer.platform}
+              </p>
+              <p className="text-xs text-gray-600">Платформа</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-gray-600" />
           <div>
@@ -334,25 +347,41 @@ export function OfferCard({
       <div className="mb-4">
         <p className="text-sm font-medium text-gray-700 mb-2">Результаты:</p>
         <div className="flex flex-wrap gap-1">
-          {offer.deliverables.slice(0, 3).map((deliverable, index) => {
-            const displayText = typeof deliverable === 'string'
-              ? deliverable
-              : (deliverable as any).type || (deliverable as any).description || 'Результат';
+          {(() => {
+            const isAutomatic = (offer as any).metadata?.isAutomatic;
+
+            if (isAutomatic && offer.integrationType) {
+              return (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                  {offer.integrationType}
+                </span>
+              );
+            }
 
             return (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
-              >
-                {displayText}
-              </span>
+              <>
+                {offer.deliverables.slice(0, 3).map((deliverable, index) => {
+                  const displayText = typeof deliverable === 'string'
+                    ? deliverable
+                    : (deliverable as any).type || (deliverable as any).description || 'Результат';
+
+                  return (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
+                    >
+                      {displayText}
+                    </span>
+                  );
+                })}
+                {offer.deliverables.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                    +{offer.deliverables.length - 3} еще
+                  </span>
+                )}
+              </>
             );
-          })}
-          {offer.deliverables.length > 3 && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-              +{offer.deliverables.length - 3} еще
-            </span>
-          )}
+          })()}
         </div>
       </div>
 

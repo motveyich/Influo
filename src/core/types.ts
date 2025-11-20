@@ -495,7 +495,7 @@ export interface CollaborationOffer {
   campaignId?: string;
   influencerCardId?: string;
   initiatedBy?: string;
-  
+
   // Offer details
   title: string;
   description: string;
@@ -503,32 +503,34 @@ export interface CollaborationOffer {
   currency: string;
   deliverables: string[];
   timeline: string;
-  
+  platform?: string;
+  integrationType?: string;
+
   // Status and stages
   status: OfferStatus;
   currentStage: 'negotiation' | 'payment' | 'work' | 'completion' | 'review';
-  
+
   // Response tracking
   influencerResponse: 'pending' | 'accepted' | 'declined' | 'counter';
   advertiserResponse: 'pending' | 'accepted' | 'declined' | 'counter';
-  
+
   // Acceptance details
   acceptedAt?: string;
   acceptedRate?: number;
   finalTerms?: Record<string, any>;
-  
+
   // Completion details
   completedAt?: string;
   terminatedAt?: string;
   terminationReason?: string;
-  
+
   // Reviews
   influencerReviewed: boolean;
   advertiserReviewed: boolean;
-  
+
   // Metadata
   metadata: Record<string, any>;
-  
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
