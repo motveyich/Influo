@@ -94,12 +94,11 @@ export function ChatPage() {
 
   const loadBlockedUsers = async () => {
     try {
-      // Load blocked users from user profile or separate table
-      // For now, using localStorage as a simple implementation
-      const blocked = localStorage.getItem(`blocked_users_${currentUserId}`);
-      if (blocked) {
-        setBlockedUsers(new Set(JSON.parse(blocked)));
-      }
+      // Load blocked users from blacklist service
+      const { blacklistService } = await import('../../../services/blacklistService');
+      const blacklist = await blacklistService.getMyBlacklist();
+      const blockedIds = new Set(blacklist.map(entry => entry.blockedId));
+      setBlockedUsers(blockedIds);
     } catch (error) {
       console.error('Failed to load blocked users:', error);
     }
@@ -437,13 +436,15 @@ export function ChatPage() {
 
   const handleBlockUser = async (userId: string) => {
     try {
+      // Add to blacklist via service
+      const { blacklistService } = await import('../../../services/blacklistService');
+      const reason = prompt('Укажите причину блокировки (необязательно):');
+      await blacklistService.addToBlacklist(userId, reason || undefined);
+
       const newBlockedUsers = new Set(blockedUsers);
       newBlockedUsers.add(userId);
       setBlockedUsers(newBlockedUsers);
-      
-      // Save to localStorage
-      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
-      
+
       // Update conversation status
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === userId) {
@@ -462,22 +463,23 @@ export function ChatPage() {
         setSelectedConversation(null);
       }
 
-      toast.success('Пользователь заблокирован');
-    } catch (error) {
+      toast.success('Пользователь заблокирован и перемещён в "Ограниченные"');
+    } catch (error: any) {
       console.error('Failed to block user:', error);
-      toast.error('Не удалось заблокировать пользователя');
+      toast.error(error.message || 'Не удалось заблокировать пользователя');
     }
   };
 
   const handleUnblockUser = async (userId: string) => {
     try {
+      // Remove from blacklist via service
+      const { blacklistService } = await import('../../../services/blacklistService');
+      await blacklistService.removeFromBlacklist(userId);
+
       const newBlockedUsers = new Set(blockedUsers);
       newBlockedUsers.delete(userId);
       setBlockedUsers(newBlockedUsers);
-      
-      // Save to localStorage
-      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
-      
+
       // Update conversation status
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === userId) {
@@ -491,10 +493,10 @@ export function ChatPage() {
         return conv;
       }));
 
-      toast.success('Пользователь разблокирован');
-    } catch (error) {
+      toast.success('Пользователь разблокирован и возвращён в обычный список');
+    } catch (error: any) {
       console.error('Failed to unblock user:', error);
-      toast.error('Не удалось разблокировать пользователя');
+      toast.error(error.message || 'Не удалось разблокировать пользователя');
     }
   };
 

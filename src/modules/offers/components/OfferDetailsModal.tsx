@@ -6,9 +6,10 @@ import { reviewService } from '../services/reviewService';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
 import { ReportModal } from '../../../components/ReportModal';
-import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History } from 'lucide-react';
+import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
+import { blacklistService } from '../../../services/blacklistService';
 
 interface OfferDetailsModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function OfferDetailsModal({
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [reviews, setReviews] = useState<CollaborationReview[]>([]);
   const [offerHistory, setOfferHistory] = useState<any[]>([]);
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -65,6 +67,13 @@ export function OfferDetailsModal({
       setReviews(reviewData);
       setOfferHistory(historyData);
       setCanReview(reviewPermission);
+
+      // Check blacklist status
+      const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+      if (targetUserId) {
+        const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
+        setIsBlacklisted(blacklisted);
+      }
 
       // Загрузить профиль инициатора (отправителя)
       await loadInitiatorProfile();
@@ -202,6 +211,31 @@ export function OfferDetailsModal({
     setReviews(prev => [review, ...prev]);
     setShowReviewModal(false);
     setCanReview(false);
+  };
+
+  const handleToggleBlacklist = async () => {
+    try {
+      const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+      if (!targetUserId) return;
+
+      setIsLoading(true);
+
+      if (isBlacklisted) {
+        await blacklistService.removeFromBlacklist(targetUserId);
+        toast.success('Пользователь удалён из чёрного списка');
+        setIsBlacklisted(false);
+      } else {
+        const reason = prompt('Укажите причину (необязательно):');
+        await blacklistService.addToBlacklist(targetUserId, reason || undefined);
+        toast.success('Пользователь добавлен в чёрный список');
+        setIsBlacklisted(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle blacklist:', error);
+      toast.error(error.message || 'Не удалось обновить чёрный список');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getAvailableActions = () => {
@@ -824,6 +858,25 @@ export function OfferDetailsModal({
                   </button>
                 </div>
               )}
+
+              {/* Blacklist Action */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Управление</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleToggleBlacklist}
+                    disabled={isLoading}
+                    className={`w-full px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 ${
+                      isBlacklisted
+                        ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                        : 'bg-red-600 hover:bg-red-700 text-white'
+                    }`}
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>{isBlacklisted ? 'Разблокировать пользователя' : 'Заблокировать пользователя'}</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Quick Info */}
               <div>

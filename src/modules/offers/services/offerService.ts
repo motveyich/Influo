@@ -2,11 +2,31 @@ import { supabase, TABLES } from '../../../core/supabase';
 import { CollaborationOffer, OfferStatus, CollaborationStage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { chatService } from '../../chat/services/chatService';
+import { blacklistService } from '../../../services/blacklistService';
+import { rateLimitService } from '../../../services/rateLimitService';
 
 export class OfferService {
   async createOffer(offerData: Partial<CollaborationOffer>): Promise<CollaborationOffer> {
     try {
       this.validateOfferData(offerData);
+
+      // Check blacklist
+      const isBlacklisted = await blacklistService.isBlacklisted(
+        offerData.initiatedBy || offerData.influencerId!,
+        offerData.initiatedBy === offerData.influencerId ? offerData.advertiserId! : offerData.influencerId!
+      );
+      if (isBlacklisted) {
+        throw new Error('Вы не можете взаимодействовать с этим пользователем');
+      }
+
+      // Check rate limit
+      const rateLimitCheck = await rateLimitService.canInteract(
+        offerData.initiatedBy || offerData.influencerId!,
+        offerData.initiatedBy === offerData.influencerId ? offerData.advertiserId! : offerData.influencerId!
+      );
+      if (!rateLimitCheck.allowed) {
+        throw new Error(`Предложение уже отправлено этому пользователю. Попробуйте через ${rateLimitCheck.remainingMinutes} мин.`);
+      }
 
       const newOffer = {
         influencer_id: offerData.influencerId,
@@ -53,6 +73,19 @@ export class OfferService {
         advertiser_id: offerData.advertiserId,
         proposed_rate: offerData.proposedRate
       });
+
+      // Record rate limit interaction
+      try {
+        const targetUserId = offerData.initiatedBy === offerData.influencerId ? offerData.advertiserId! : offerData.influencerId!;
+        await rateLimitService.recordInteraction(
+          targetUserId,
+          'manual_offer',
+          offerData.influencerCardId,
+          offerData.campaignId
+        );
+      } catch (rateLimitError) {
+        console.error('Failed to record rate limit:', rateLimitError);
+      }
 
       return transformedOffer;
     } catch (error) {
