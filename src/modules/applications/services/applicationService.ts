@@ -5,6 +5,8 @@ import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../../chat/services/chatService';
 import { emailNotificationService } from '../../../services/emailNotificationService';
+import { blacklistService } from '../../../services/blacklistService';
+import { rateLimitService } from '../../../services/rateLimitService';
 
 export class ApplicationService {
   async createApplication(applicationData: Partial<Application>): Promise<Application> {
@@ -17,7 +19,25 @@ export class ApplicationService {
       if (applicationData.applicantId === applicationData.targetId) {
         throw new Error('Cannot create application to yourself');
       }
-      
+
+      // Check blacklist
+      const isBlacklisted = await blacklistService.isBlacklisted(
+        applicationData.applicantId!,
+        applicationData.targetId!
+      );
+      if (isBlacklisted) {
+        throw new Error('Вы не можете взаимодействовать с этим пользователем');
+      }
+
+      // Check rate limit
+      const rateLimitCheck = await rateLimitService.canInteract(
+        applicationData.applicantId!,
+        applicationData.targetId!
+      );
+      if (!rateLimitCheck.allowed) {
+        throw new Error(rateLimitCheck.reason || 'Слишком частые действия. Попробуйте позже');
+      }
+
       // Check for existing application to prevent duplicates
       const { data: existingApplication } = await supabase
         .from('applications')
@@ -122,6 +142,17 @@ export class ApplicationService {
         target_type: applicationData.targetType,
         application_id: transformedApplication.id
       });
+
+      // Record rate limit interaction
+      try {
+        await rateLimitService.recordInteraction(
+          applicationData.targetId!,
+          'application',
+          applicationData.targetReferenceId
+        );
+      } catch (rateLimitError) {
+        console.error('Failed to record rate limit:', rateLimitError);
+      }
 
       return transformedApplication;
     } catch (error) {

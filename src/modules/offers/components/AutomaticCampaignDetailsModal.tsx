@@ -32,6 +32,7 @@ import { ReportModal } from '../../../components/ReportModal';
 import { PaymentRequest, PaymentRequestStatus } from '../../../core/types';
 import { MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { blacklistService } from '../../../services/blacklistService';
 
 interface AutomaticCampaignDetailsModalProps {
   isOpen: boolean;
@@ -56,6 +57,7 @@ export function AutomaticCampaignDetailsModal({
   const [actionLoading, setActionLoading] = useState(false);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
 
   const isInfluencer = details?.influencer_id === currentUserId;
   const isAdvertiser = details?.advertiser_id === currentUserId;
@@ -76,11 +78,43 @@ export function AutomaticCampaignDetailsModal({
       // Load payment requests
       const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId);
       setPaymentRequests(payments);
+
+      // Check blacklist status
+      const targetUserId = isInfluencer ? data.advertiser_id : data.influencer_id;
+      if (targetUserId) {
+        const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
+        setIsBlacklisted(blacklisted);
+      }
     } catch (error) {
       console.error('Failed to load automatic campaign details:', error);
       setError('Не удалось загрузить детали кампании');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleBlacklist = async () => {
+    try {
+      const targetUserId = isInfluencer ? details.advertiser_id : details.influencer_id;
+      if (!targetUserId) return;
+
+      setActionLoading(true);
+
+      if (isBlacklisted) {
+        await blacklistService.removeFromBlacklist(targetUserId);
+        toast.success('Пользователь удалён из чёрного списка');
+        setIsBlacklisted(false);
+      } else {
+        const reason = prompt('Укажите причину (необязательно):');
+        await blacklistService.addToBlacklist(targetUserId, reason || undefined);
+        toast.success('Пользователь добавлен в чёрный список');
+        setIsBlacklisted(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle blacklist:', error);
+      toast.error(error.message || 'Не удалось обновить чёрный список');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -821,6 +855,19 @@ export function AutomaticCampaignDetailsModal({
               >
                 <Flag className="w-4 h-4" />
                 <span>Пожаловаться</span>
+              </button>
+
+              <button
+                onClick={handleToggleBlacklist}
+                disabled={actionLoading}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
+                  isBlacklisted
+                    ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
+              >
+                <Ban className="w-4 h-4" />
+                <span>{isBlacklisted ? 'Убрать из чёрного списка' : 'В чёрный список'}</span>
               </button>
             </div>
           )}

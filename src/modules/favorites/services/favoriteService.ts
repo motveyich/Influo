@@ -1,10 +1,70 @@
 import { supabase, isSupabaseConfigured } from '../../../core/supabase';
 import { Favorite } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
+import { blacklistService } from '../../../services/blacklistService';
+import { rateLimitService } from '../../../services/rateLimitService';
 
 export class FavoriteService {
+  private async getCardOwnerId(targetType: string, targetId: string): Promise<string | null> {
+    try {
+      let ownerId: string | null = null;
+
+      if (targetType === 'influencer_card' || targetType === 'card') {
+        const { data } = await supabase
+          .from('influencer_cards')
+          .select('user_id')
+          .eq('card_id', targetId)
+          .maybeSingle();
+        ownerId = data?.user_id || null;
+      } else if (targetType === 'advertiser_card') {
+        const { data } = await supabase
+          .from('advertiser_cards')
+          .select('user_id')
+          .eq('card_id', targetId)
+          .maybeSingle();
+        ownerId = data?.user_id || null;
+      } else if (targetType === 'campaign') {
+        const { data } = await supabase
+          .from('campaigns')
+          .select('advertiser_id')
+          .eq('campaign_id', targetId)
+          .maybeSingle();
+        ownerId = data?.advertiser_id || null;
+      }
+
+      return ownerId;
+    } catch (error) {
+      console.error('Error getting card owner:', error);
+      return null;
+    }
+  }
+
   async addToFavorites(favoriteData: Partial<Favorite>): Promise<Favorite> {
     try {
+      // Get card owner
+      const targetUserId = await this.getCardOwnerId(favoriteData.targetType!, favoriteData.targetId!);
+      if (!targetUserId) {
+        throw new Error('Cannot find card owner');
+      }
+
+      // Check blacklist
+      const isBlacklisted = await blacklistService.isBlacklisted(
+        favoriteData.userId!,
+        targetUserId
+      );
+      if (isBlacklisted) {
+        throw new Error('Вы не можете взаимодействовать с этим пользователем');
+      }
+
+      // Check rate limit
+      const rateLimitCheck = await rateLimitService.canInteract(
+        favoriteData.userId!,
+        targetUserId
+      );
+      if (!rateLimitCheck.allowed) {
+        throw new Error(rateLimitCheck.reason || 'Слишком частые действия. Попробуйте позже');
+      }
+
       // Check if already in favorites
       const existing = await this.getFavorite(favoriteData.userId!, favoriteData.targetType!, favoriteData.targetId!);
       if (existing) {
@@ -36,6 +96,17 @@ export class FavoriteService {
         target_type: favoriteData.targetType,
         target_id: favoriteData.targetId
       });
+
+      // Record rate limit interaction
+      try {
+        await rateLimitService.recordInteraction(
+          targetUserId,
+          'favorite',
+          favoriteData.targetId
+        );
+      } catch (rateLimitError) {
+        console.error('Failed to record rate limit:', rateLimitError);
+      }
 
       return this.transformFromDatabase(data);
     } catch (error) {

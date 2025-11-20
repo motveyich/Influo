@@ -1,5 +1,7 @@
 import { supabase, TABLES } from '../../../core/supabase';
 import { campaignValidationService } from './campaignValidationService';
+import { blacklistService } from '../../../services/blacklistService';
+import { rateLimitService } from '../../../services/rateLimitService';
 
 export interface AutomaticOfferConfig {
   campaignId: string;
@@ -249,6 +251,24 @@ export class AutomaticOfferService {
     config: AutomaticOfferConfig,
     influencer: any
   ): Promise<void> {
+    // Check blacklist
+    const isBlacklisted = await blacklistService.isBlacklisted(
+      config.advertiserId,
+      influencer.user_id
+    );
+    if (isBlacklisted) {
+      throw new Error('Пользователь в чёрном списке');
+    }
+
+    // Check rate limit
+    const rateLimitCheck = await rateLimitService.canInteract(
+      config.advertiserId,
+      influencer.user_id
+    );
+    if (!rateLimitCheck.allowed) {
+      throw new Error(rateLimitCheck.reason || 'Rate limit exceeded');
+    }
+
     const serviceDetails = influencer.service_details || {};
     const pricing = serviceDetails.pricing || {};
 
@@ -293,6 +313,18 @@ export class AutomaticOfferService {
       .insert([offerData]);
 
     if (error) throw error;
+
+    // Record rate limit interaction
+    try {
+      await rateLimitService.recordInteraction(
+        influencer.user_id,
+        'automatic_offer',
+        influencer.id,
+        config.campaignId
+      );
+    } catch (rateLimitError) {
+      console.error('Failed to record rate limit:', rateLimitError);
+    }
   }
 
   private calculateSuggestedBudget(
