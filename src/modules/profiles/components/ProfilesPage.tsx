@@ -11,7 +11,7 @@ import { NotificationSettings } from '../../settings/components/NotificationSett
 import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
 import { SupportSettings } from '../../settings/components/SupportSettings';
 import { ReviewsTab } from './ReviewsTab';
-import { 
+import {
   User,
   Users,
   Briefcase,
@@ -25,7 +25,8 @@ import {
   Twitter,
   Globe,
   DollarSign,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
