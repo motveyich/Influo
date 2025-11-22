@@ -85,6 +85,9 @@ export interface UserProfile {
     joinedAt: string;
     lastActive: string;
     accountType: 'influencer' | 'advertiser' | 'both';
+    completedDeals?: number;
+    totalReviews?: number;
+    averageRating?: number;
   };
   createdAt: string;
   updatedAt: string;
