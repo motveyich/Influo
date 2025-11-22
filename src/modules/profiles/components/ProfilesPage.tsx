@@ -44,16 +44,13 @@ export function ProfilesPage() {
   const { profile: currentUserProfile, updateProfile, refresh: refreshProfile } = useProfileCompletion(currentUserId);
   
   // User settings hook
-  const { 
-    settings, 
-    updateSettings, 
-    changePassword, 
-    enableTwoFactor, 
-    disableTwoFactor, 
-    signOutAllDevices, 
-    deactivateAccount, 
+  const {
+    settings,
+    updateSettings,
+    changePassword,
+    deactivateAccount,
     deleteAccount,
-    isLoading: settingsLoading 
+    isLoading: settingsLoading
   } = useUserSettings(currentUserId);
 
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
@@ -536,9 +533,6 @@ export function ProfilesPage() {
             settings={settings}
             onUpdateSettings={handleSettingsUpdate}
             changePassword={changePassword}
-            enableTwoFactor={enableTwoFactor}
-            disableTwoFactor={disableTwoFactor}
-            signOutAllDevices={signOutAllDevices}
             deactivateAccount={deactivateAccount}
             deleteAccount={deleteAccount}
             userId={currentUserId}

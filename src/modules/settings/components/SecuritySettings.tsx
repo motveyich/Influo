@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { UserSettings } from '../../../core/types';
-import { 
-  Shield, 
-  Key, 
-  Smartphone, 
-  LogOut, 
-  Eye, 
-  EyeOff, 
-  Trash2, 
+import {
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  Trash2,
   UserX,
   AlertTriangle,
-  CheckCircle,
-  X,
-  Save
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -21,28 +17,21 @@ interface SecuritySettingsProps {
   settings: UserSettings;
   onUpdateSettings: (updates: Partial<UserSettings>) => Promise<UserSettings>;
   changePassword: (current: string, newPassword: string) => Promise<void>;
-  enableTwoFactor: () => Promise<{ qrCode: string; secret: string }>;
-  disableTwoFactor: (code: string) => Promise<void>;
-  signOutAllDevices: () => Promise<void>;
   deactivateAccount: (reason?: string) => Promise<void>;
   deleteAccount: (confirmationText: string) => Promise<void>;
   userId: string;
 }
 
-export function SecuritySettings({ 
-  settings, 
-  onUpdateSettings, 
+export function SecuritySettings({
+  settings,
+  onUpdateSettings,
   changePassword,
-  enableTwoFactor,
-  disableTwoFactor,
-  signOutAllDevices,
   deactivateAccount,
   deleteAccount,
-  userId 
+  userId
 }: SecuritySettingsProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const { t } = useTranslation();
@@ -65,20 +54,6 @@ export function SecuritySettings({
     }
   };
 
-  const handleSignOutAllDevices = async () => {
-    if (!confirm(t('profile.signOutAllDevicesConfirm'))) return;
-    if (isUpdating) return;
-    setIsUpdating(true);
-
-    try {
-      await signOutAllDevices();
-      toast.success(t('profile.signedOutAllDevices'));
-    } catch (error: any) {
-      toast.error(error.message || t('profile.failedToSignOutAllDevices'));
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -111,73 +86,6 @@ export function SecuritySettings({
         </div>
       </div>
 
-      {/* Two-Factor Authentication */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Smartphone className="w-5 h-5 text-green-600" />
-            <div>
-              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.twoFactorAuth')}</h3>
-              <p className="text-sm text-gray-600">
-                {settings.security.twoFactorEnabled 
-                  ? t('settings.twoFactorEnabled')
-                  : t('settings.twoFactorDisabled')
-                }
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShow2FAModal(true)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              settings.security.twoFactorEnabled
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            {settings.security.twoFactorEnabled ? t('settings.disable2FA') : t('settings.enable2FA')}
-          </button>
-        </div>
-      </div>
-
-      {/* Active Sessions */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <LogOut className="w-5 h-5 text-orange-600" />
-            <div>
-              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('settings.activeSessions')}</h3>
-              <p className="text-sm text-gray-600">
-                {t('settings.activeSessionsDescription')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleSignOutAllDevices}
-            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            {t('settings.signOutAllDevices')}
-          </button>
-        </div>
-
-        {/* Sessions List */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('settings.currentDevice')}</p>
-                <p className="text-xs text-gray-600">
-                  {navigator.userAgent.includes('Chrome') ? 'Chrome' : 
-                   navigator.userAgent.includes('Firefox') ? 'Firefox' : 
-                   navigator.userAgent.includes('Safari') ? 'Safari' : 'Браузер'} • 
-                  {t('settings.activeNow')}
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-green-600 font-medium">{t('settings.activeSession')}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Privacy Settings */}
       <div className="bg-gray-50 rounded-lg p-6">
@@ -290,19 +198,6 @@ export function SecuritySettings({
           toast.success('Пароль успешно изменен');
         }}
         changePassword={changePassword}
-      />
-
-      {/* 2FA Modal */}
-      <TwoFactorModal
-        isOpen={show2FAModal}
-        onClose={() => setShow2FAModal(false)}
-        isEnabled={settings.security.twoFactorEnabled}
-        onToggle={() => {
-          setShow2FAModal(false);
-          toast.success(settings.security.twoFactorEnabled ? '2FA отключена' : '2FA включена');
-        }}
-        enableTwoFactor={enableTwoFactor}
-        disableTwoFactor={disableTwoFactor}
       />
 
       {/* Delete Account Modal */}
@@ -460,165 +355,6 @@ function PasswordChangeModal({ isOpen, onClose, onPasswordChanged, changePasswor
   );
 }
 
-// Two-Factor Authentication Modal
-interface TwoFactorModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  isEnabled: boolean;
-  onToggle: () => void;
-  enableTwoFactor: () => Promise<{ qrCode: string; secret: string }>;
-  disableTwoFactor: (code: string) => Promise<void>;
-}
-
-function TwoFactorModal({ isOpen, onClose, isEnabled, onToggle, enableTwoFactor, disableTwoFactor }: TwoFactorModalProps) {
-  const [verificationCode, setVerificationCode] = useState('');
-  const [qrCode, setQrCode] = useState('');
-  const [secret, setSecret] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'confirm' | 'setup' | 'disable'>('confirm');
-
-  const handleEnable = async () => {
-    setIsLoading(true);
-    try {
-      const result = await enableTwoFactor();
-      setQrCode(result.qrCode);
-      setSecret(result.secret);
-      setStep('setup');
-    } catch (error: any) {
-      toast.error(error.message || 'Не удалось включить 2FA');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDisable = async () => {
-    if (!verificationCode) {
-      toast.error('Введите код подтверждения');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await disableTwoFactor(verificationCode);
-      onToggle();
-      setVerificationCode('');
-    } catch (error: any) {
-      toast.error(error.message || 'Не удалось отключить 2FA');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleComplete = () => {
-    onToggle();
-    setStep('confirm');
-    setQrCode('');
-    setSecret('');
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {isEnabled ? 'Отключить 2FA' : 'Включить 2FA'}
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="p-6">
-          {step === 'confirm' && (
-            <div className="text-center">
-              <Smartphone className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-              <p className="text-sm text-gray-600 mb-6">
-                {isEnabled 
-                  ? 'Вы уверены, что хотите отключить двухфакторную аутентификацию?'
-                  : 'Включить двухфакторную аутентификацию для дополнительной безопасности?'
-                }
-              </p>
-              <div className="flex space-x-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={isEnabled ? () => setStep('disable') : handleEnable}
-                  disabled={isLoading}
-                  className={`flex-1 px-4 py-2 rounded-md text-white transition-colors disabled:opacity-50 ${
-                    isEnabled 
-                      ? 'bg-red-600 hover:bg-red-700' 
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Обработка...' : isEnabled ? 'Отключить' : 'Включить'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'setup' && (
-            <div className="text-center">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Настройка 2FA</h4>
-              <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                <p className="text-sm text-gray-600 mb-2">QR-код для приложения аутентификации:</p>
-                <div className="w-32 h-32 bg-white border border-gray-300 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">QR-код</span>
-                </div>
-                <p className="text-xs text-gray-600">Секретный ключ: {secret}</p>
-              </div>
-              <button
-                onClick={handleComplete}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-colors"
-              >
-                Завершить настройку
-              </button>
-            </div>
-          )}
-
-          {step === 'disable' && (
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">Отключение 2FA</h4>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Код из приложения аутентификации
-                </label>
-                <input
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="123456"
-                  maxLength={6}
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setStep('confirm')}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Назад
-                </button>
-                <button
-                  onClick={handleDisable}
-                  disabled={isLoading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
-                >
-                  {isLoading ? 'Отключение...' : 'Отключить 2FA'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Delete Account Modal
 interface DeleteAccountModalProps {
