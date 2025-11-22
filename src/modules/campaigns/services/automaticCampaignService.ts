@@ -405,14 +405,22 @@ export class AutomaticCampaignService {
         throw new Error('No matching influencers found');
       }
 
-      // Рассчитываем максимальное количество предложений с учётом овербукинга
-      const maxOffersToSend = Math.ceil(
-        automaticSettings.targetInfluencerCount * (1 + automaticSettings.overbookingPercentage / 100)
-      );
-      console.log('📤 [Automatic Campaign] Will send up to', maxOffersToSend, 'offers');
+      // Рассчитываем количество предложений
+      const target = automaticSettings.targetInfluencerCount;
+      const overbookTarget = Math.ceil(target * (1 + automaticSettings.overbookingPercentage / 100));
+      const available = scoredInfluencers.length;
+      const invitesToSend = Math.min(overbookTarget, available);
+
+      console.log('📊 [Automatic Campaign] Invites calculation:', {
+        target,
+        overbookTarget,
+        available,
+        invitesToSend
+      });
+      console.log('📤 [Automatic Campaign] Will send', invitesToSend, 'offers');
 
       // Берём топ-инфлюенсеров
-      const topInfluencers = scoredInfluencers.slice(0, maxOffersToSend);
+      const topInfluencers = scoredInfluencers.slice(0, invitesToSend);
 
       // Отправляем предложения
       let sentCount = 0;
@@ -429,16 +437,48 @@ export class AutomaticCampaignService {
         }
       }
 
-      console.log('🎉 [Automatic Campaign] Matching completed! Sent', sentCount, 'offers out of', maxOffersToSend, 'planned');
+      console.log('🎉 [Automatic Campaign] Matching completed! Sent', sentCount, 'offers out of', invitesToSend, 'planned');
       console.log('📋 [Automatic Campaign] Sent to influencers:', sentInfluencerIds);
+
+      // Проверяем достаточность набора
+      const isRecruitmentComplete = sentCount < target;
+      const recruitmentStatus = {
+        requested: target,
+        invited: sentCount,
+        available: available,
+        isComplete: isRecruitmentComplete,
+        completedAt: isRecruitmentComplete ? new Date().toISOString() : null,
+        reason: isRecruitmentComplete ? 'insufficient_influencers' : null
+      };
+
+      console.log('📊 [Automatic Campaign] Recruitment status:', recruitmentStatus);
+
+      // Обновляем метаданные кампании
+      await supabase
+        .from(TABLES.CAMPAIGNS)
+        .update({
+          metadata: {
+            ...(campaign as any).metadata,
+            recruitmentStatus,
+            lastMatchingAt: new Date().toISOString()
+          }
+        })
+        .eq('campaign_id', campaign.campaignId);
 
       analytics.track('automatic_matching_completed', {
         campaign_id: campaign.campaignId,
         offers_sent: sentCount,
-        target_count: automaticSettings.targetInfluencerCount
+        target_count: target,
+        recruitment_complete: isRecruitmentComplete
       });
 
-      // Кампания остается active - НЕ переводим в paused после успешной отправки
+      // Если набрано меньше target - отправляем уведомление
+      if (isRecruitmentComplete) {
+        console.log('⚠️ [Automatic Campaign] Recruitment partially completed, sending notification');
+        await this.notifyPartialRecruitment(campaign, target, sentCount);
+      }
+
+      // Кампания остается active
       console.log('✅ [Automatic Campaign] Campaign remains active, waiting for influencer responses');
 
     } catch (error: any) {
@@ -1161,6 +1201,75 @@ export class AutomaticCampaignService {
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
+  }
+
+  /**
+   * Отправляет уведомление рекламодателю о частичном наборе инфлюенсеров
+   */
+  private async notifyPartialRecruitment(
+    campaign: Campaign,
+    requested: number,
+    recruited: number
+  ): Promise<void> {
+    try {
+      // Получаем email рекламодателя
+      const { data: advertiserProfile } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('user_id')
+        .eq('user_id', campaign.advertiserId)
+        .maybeSingle();
+
+      if (!advertiserProfile) {
+        console.error('❌ [Notification] Advertiser profile not found');
+        return;
+      }
+
+      // Получаем email из auth.users
+      const { data: authUser } = await supabase.auth.admin.getUserById(campaign.advertiserId);
+
+      if (!authUser?.user?.email) {
+        console.error('❌ [Notification] Advertiser email not found');
+        return;
+      }
+
+      const email = authUser.user.email;
+
+      // Отправляем email через edge function
+      const emailData = {
+        to: email,
+        subject: `Автокампания "${campaign.title}" - частичный набор инфлюенсеров`,
+        template: 'partial_recruitment',
+        data: {
+          campaignTitle: campaign.title,
+          requested,
+          recruited,
+          campaignId: campaign.campaignId
+        }
+      };
+
+      console.log('📧 [Notification] Sending email to:', email);
+
+      await supabase.functions.invoke('send-email-notification', {
+        body: emailData
+      });
+
+      console.log('✅ [Notification] Email sent successfully');
+
+      // Сохраняем факт отправки уведомления в метаданные
+      await supabase
+        .from(TABLES.CAMPAIGNS)
+        .update({
+          metadata: {
+            ...(campaign as any).metadata,
+            partialRecruitmentNotificationSent: true,
+            partialRecruitmentNotificationSentAt: new Date().toISOString()
+          }
+        })
+        .eq('campaign_id', campaign.campaignId);
+
+    } catch (error) {
+      console.error('❌ [Notification] Failed to send partial recruitment notification:', error);
+    }
   }
 }
 

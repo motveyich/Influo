@@ -44,20 +44,21 @@ export class CampaignValidationService {
     overbookingPercentage: number
   ): Promise<ValidationResult> {
     try {
-      const requiredCount = Math.ceil(targetCount * (1 + overbookingPercentage / 100));
-
-      // НЕ модифицируем пользовательские значения - используем их как есть
       const matchedInfluencers = await this.findMatchingInfluencers(filters);
 
-      const isValid = matchedInfluencers.length >= requiredCount;
+      // Для запуска требуется минимум 1 подходящий инфлюенсер
+      const isValid = matchedInfluencers.length >= 1;
+
+      const overbookTarget = Math.ceil(targetCount * (1 + overbookingPercentage / 100));
+      const invitesToSend = Math.min(overbookTarget, matchedInfluencers.length);
 
       return {
         isValid,
         matchedInfluencersCount: matchedInfluencers.length,
-        requiredCount,
+        requiredCount: targetCount,
         error: isValid
           ? undefined
-          : `Недостаточно инфлюенсеров. Найдено: ${matchedInfluencers.length}, требуется: ${requiredCount} (включая овербукинг ${overbookingPercentage}%)`
+          : `Не найдено подходящих инфлюенсеров с указанными критериями`
       };
     } catch (error) {
       console.error('Failed to validate campaign:', error);

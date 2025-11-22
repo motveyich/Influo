@@ -271,17 +271,44 @@ export function CampaignCard({
 
       {/* Automatic Campaign Info */}
       {isAutomaticCampaign && automaticSettings && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Zap className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-800">Автоматические настройки</span>
+        <div className="space-y-3 mb-4">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <Zap className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Автоматические настройки</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
+              <span>Цель: {automaticSettings.targetInfluencerCount} инфлюенсеров</span>
+              <span>Овербукинг: {automaticSettings.overbookingPercentage}%</span>
+              <span>Размер пакета: {automaticSettings.batchSize}</span>
+              <span>Задержка: {automaticSettings.batchDelay} мин</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-            <span>Цель: {automaticSettings.targetInfluencerCount} инфлюенсеров</span>
-            <span>Овербукинг: {automaticSettings.overbookingPercentage}%</span>
-            <span>Размер пакета: {automaticSettings.batchSize}</span>
-            <span>Задержка: {automaticSettings.batchDelay} мин</span>
-          </div>
+
+          {/* Recruitment Status */}
+          {(campaign as any).metadata?.recruitmentStatus && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Users className="w-4 h-4 text-yellow-700" />
+                <span className="text-sm font-medium text-yellow-800">Статус набора</span>
+              </div>
+              <div className="text-xs text-yellow-700 space-y-1">
+                <div className="flex justify-between">
+                  <span>Запрошено:</span>
+                  <span className="font-semibold">{(campaign as any).metadata.recruitmentStatus.requested}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Приглашено:</span>
+                  <span className="font-semibold">{(campaign as any).metadata.recruitmentStatus.invited}</span>
+                </div>
+                {(campaign as any).metadata.recruitmentStatus.isComplete && (
+                  <p className="text-xs mt-2 text-yellow-600 italic">
+                    ⚠️ Не удалось найти больше подходящих инфлюенсеров
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
