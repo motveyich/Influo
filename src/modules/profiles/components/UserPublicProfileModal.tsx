@@ -34,12 +34,12 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
       if (profileData) {
         const { supabase } = await import('../../../core/supabase');
 
-        // Загружаем завершённые сделки
+        // Загружаем завершённые сделки (completed + terminated)
         const { data: offersData } = await supabase
           .from('collaboration_offers')
           .select('offer_id')
           .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
-          .eq('status', 'completed');
+          .in('status', ['completed', 'terminated']);
 
         const completedDeals = offersData?.length || 0;
 

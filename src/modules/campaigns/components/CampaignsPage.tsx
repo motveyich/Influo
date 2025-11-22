@@ -11,6 +11,8 @@ import { Search, Filter, Plus, Target, TrendingUp, Users, DollarSign, CheckCircl
 import { analytics } from '../../../core/analytics';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
+import { AutomaticCampaignDetailsModal } from '../../offers/components/AutomaticCampaignDetailsModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 
 // Remove mock data - will be loaded from database
 // Mock data - replace with actual API calls
@@ -110,6 +112,10 @@ export function CampaignsPage() {
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [showAutomaticModal, setShowAutomaticModal] = useState(false);
   const [showMyCampaigns, setShowMyCampaigns] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -233,6 +239,18 @@ export function CampaignsPage() {
     } else {
       setCampaigns(prev => [savedCampaign, ...prev]);
     }
+  };
+
+  const handleViewDetails = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    // Для автоматических кампаний нужен offer_id, но здесь мы можем показать детали кампании
+    // Используем campaignId как offer_id для просмотра деталей кампании
+    setShowDetailsModal(true);
+  };
+
+  const handleViewProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setShowProfileModal(true);
   };
 
   const handleApply = (campaignId: string) => {
@@ -460,6 +478,8 @@ export function CampaignsPage() {
                 onTerminate={handleTerminateCollaboration}
                 onFindInfluencers={handleFindInfluencers}
                 currentUserId={currentUserId}
+                onViewDetails={handleViewDetails}
+                onViewProfile={handleViewProfile}
               />
             ))}
           </div>
@@ -486,6 +506,32 @@ export function CampaignsPage() {
           advertiserId={currentUserId}
           onCampaignSaved={handleCampaignSaved}
         />
+
+        {/* Details Modal - Note: We're using campaignId as offerId for now */}
+        {showDetailsModal && selectedCampaign && (
+          <AutomaticCampaignDetailsModal
+            isOpen={showDetailsModal}
+            onClose={() => {
+              setShowDetailsModal(false);
+              setSelectedCampaign(null);
+            }}
+            offerId={selectedCampaign.campaignId}
+            currentUserId={currentUserId}
+            onOfferUpdated={loadCampaigns}
+          />
+        )}
+
+        {/* Profile Modal */}
+        {showProfileModal && profileUserId && (
+          <UserPublicProfileModal
+            userId={profileUserId}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setShowProfileModal(false);
+              setProfileUserId(null);
+            }}
+          />
+        )}
 
       </div>
       )}

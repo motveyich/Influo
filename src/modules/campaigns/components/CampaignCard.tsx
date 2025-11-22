@@ -1,7 +1,7 @@
 import React from 'react';
 import { Campaign } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag, StopCircle, XCircle } from 'lucide-react';
+import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag, StopCircle, XCircle, Eye, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ReportModal } from '../../../components/ReportModal';
 
@@ -15,6 +15,8 @@ interface CampaignCardProps {
   onTerminate?: (campaignId: string) => void;
   onFindInfluencers?: (campaign: Campaign) => void;
   currentUserId?: string;
+  onViewDetails?: (campaign: Campaign) => void;
+  onViewProfile?: (userId: string) => void;
 }
 
 export function CampaignCard({
@@ -26,7 +28,9 @@ export function CampaignCard({
   onStop,
   onTerminate,
   onFindInfluencers,
-  currentUserId
+  currentUserId,
+  onViewDetails,
+  onViewProfile
 }: CampaignCardProps) {
   const [showReportModal, setShowReportModal] = React.useState(false);
   const { t } = useTranslation();
@@ -320,25 +324,50 @@ export function CampaignCard({
 
       {/* Actions */}
       {onApply && (
-        <div className="flex space-x-3">
-          <button
-            onClick={() => onApply?.(campaign.campaignId)}
-            disabled={campaign.status !== 'active'}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              campaign.status === 'active'
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {campaign.status === 'active' ? t('campaigns.applyToCampaign') : t('common.unavailable')}
-          </button>
-          <button
-            onClick={() => setShowReportModal(true)}
-            className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors"
-            title="Пожаловаться"
-          >
-            <Flag className="w-4 h-4" />
-          </button>
+        <div className="space-y-3">
+          <div className="flex space-x-3">
+            <button
+              onClick={() => onApply?.(campaign.campaignId)}
+              disabled={campaign.status !== 'active'}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                campaign.status === 'active'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {campaign.status === 'active' ? t('campaigns.applyToCampaign') : t('common.unavailable')}
+            </button>
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors"
+              title="Пожаловаться"
+            >
+              <Flag className="w-4 h-4" />
+            </button>
+          </div>
+          {isAutomaticCampaign && (
+            <div className="flex space-x-3">
+              {onViewDetails && (
+                <button
+                  onClick={() => onViewDetails(campaign)}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-md text-sm font-medium transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Подробнее</span>
+                </button>
+              )}
+              {onViewProfile && campaign.advertiserId && (
+                <button
+                  onClick={() => onViewProfile(campaign.advertiserId)}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-md text-sm font-medium transition-colors"
+                  title="Просмотр профиля рекламодателя"
+                >
+                  <UserCircle className="w-4 h-4" />
+                  <span>Профиль</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

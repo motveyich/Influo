@@ -201,14 +201,14 @@ export class HomeService {
         averageRating = 0;
       }
 
-      // 6. Завершенные сделки (считаем из offers с статусом completed)
+      // 6. Завершенные сделки (считаем из offers со статусами completed и terminated)
       let completedDealsCount = 0;
       try {
         const { data: completedOffers } = await supabase
           .from(TABLES.OFFERS)
           .select('offer_id')
           .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
-          .eq('status', 'completed');
+          .in('status', ['completed', 'terminated']);
         completedDealsCount = completedOffers?.length || 0;
       } catch (dealsError) {
         console.log('Failed to get completed deals:', dealsError);
