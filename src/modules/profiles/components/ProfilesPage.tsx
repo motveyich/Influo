@@ -10,6 +10,7 @@ import { SecuritySettings } from '../../settings/components/SecuritySettings';
 import { NotificationSettings } from '../../settings/components/NotificationSettings';
 import { InterfaceSettings } from '../../settings/components/InterfaceSettings';
 import { SupportSettings } from '../../settings/components/SupportSettings';
+import { ReviewsTab } from './ReviewsTab';
 import { 
   User,
   Users,
@@ -28,7 +29,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type ProfileTab = 'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support';
+type ProfileTab = 'basic' | 'influencer' | 'advertiser' | 'security' | 'notifications' | 'interface' | 'support' | 'reviews';
 
 export function ProfilesPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -75,6 +76,7 @@ export function ProfilesPage() {
     { id: 'basic', label: t('profile.basicInfo'), icon: User },
     { id: 'influencer', label: t('profile.influencerSettings'), icon: Users },
     { id: 'advertiser', label: t('profile.advertiserSettings'), icon: Briefcase },
+    { id: 'reviews', label: 'Отзывы', icon: Star },
     { id: 'security', label: t('profile.security'), icon: Shield },
     { id: 'notifications', label: t('profile.notifications'), icon: Bell },
     { id: 'interface', label: t('profile.interface'), icon: Palette },
@@ -581,6 +583,9 @@ export function ProfilesPage() {
 
       case 'support':
         return <SupportSettings />;
+
+      case 'reviews':
+        return <ReviewsTab userId={currentUserId} />;
 
       default:
         return null;

@@ -241,6 +241,9 @@ export function InfluencerCardDetailsModal({ card, onClose }: InfluencerCardDeta
         </div>
 
         <div className="sticky bottom-0 bg-gray-900 border-t border-gray-700 px-6 py-4">
+          <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+            Все данные указываются создателями карточек. В случае несоответствия информации убедительно просим оставить обращение в службу поддержки для проверки и возможных санкций в отношении пользователя, нарушившего правила платформы.
+          </p>
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"

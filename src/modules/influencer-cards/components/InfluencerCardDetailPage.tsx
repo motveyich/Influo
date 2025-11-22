@@ -789,6 +789,13 @@ export function InfluencerCardDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Disclaimer */}
+          <div className="mt-6 px-4">
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Все данные указываются создателями карточек. В случае несоответствия информации убедительно просим оставить обращение в службу поддержки для проверки и возможных санкций в отношении пользователя, нарушившего правила платформы.
+            </p>
+          </div>
         </div>
       </div>
 
