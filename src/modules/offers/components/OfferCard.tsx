@@ -21,7 +21,8 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
-  Globe
+  Globe,
+  UserCircle
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -32,14 +33,16 @@ interface OfferCardProps {
   userRole: 'influencer' | 'advertiser';
   onOfferUpdated: (offer: CollaborationOffer) => void;
   onViewDetails: (offer: CollaborationOffer) => void;
+  onViewProfile?: (userId: string) => void;
 }
 
-export function OfferCard({ 
-  offer, 
-  currentUserId, 
-  userRole, 
-  onOfferUpdated, 
-  onViewDetails 
+export function OfferCard({
+  offer,
+  currentUserId,
+  userRole,
+  onOfferUpdated,
+  onViewDetails,
+  onViewProfile
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
@@ -479,13 +482,29 @@ export function OfferCard({
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-        <button
-          onClick={() => onViewDetails(offer)}
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors flex items-center space-x-1"
-        >
-          <Eye className="w-4 h-4" />
-          <span>Подробнее</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => onViewDetails(offer)}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors flex items-center space-x-1"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Подробнее</span>
+          </button>
+
+          {onViewProfile && (
+            <button
+              onClick={() => {
+                const otherUserId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+                onViewProfile(otherUserId);
+              }}
+              className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors flex items-center space-x-1"
+              title="Просмотр профиля"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span>Профиль</span>
+            </button>
+          )}
+        </div>
 
         {availableActions.length > 0 && (
           <div className="flex space-x-2">

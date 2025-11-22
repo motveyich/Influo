@@ -9,6 +9,7 @@ import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
 import { AutomaticCampaignDetailsModal } from './AutomaticCampaignDetailsModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { 
   Search, 
   Filter,
@@ -39,6 +40,8 @@ export function OffersPage() {
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAutomaticDetailsModal, setShowAutomaticDetailsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const { user, loading } = useAuth();
   const currentUserId = user?.id || '';
@@ -106,6 +109,11 @@ export function OffersPage() {
     } else {
       setShowDetailsModal(true);
     }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setShowProfileModal(true);
   };
 
   const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
@@ -388,6 +396,7 @@ export function OffersPage() {
                     userRole={getUserRole(offer)}
                     onOfferUpdated={handleOfferUpdated}
                     onViewDetails={handleViewDetails}
+                    onViewProfile={handleViewProfile}
                   />
                 ))}
               </div>
@@ -419,6 +428,18 @@ export function OffersPage() {
             offerId={selectedOffer.id}
             currentUserId={currentUserId}
             onOfferUpdated={loadOffers}
+          />
+        )}
+
+        {/* Public Profile Modal */}
+        {showProfileModal && profileUserId && (
+          <UserPublicProfileModal
+            userId={profileUserId}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setShowProfileModal(false);
+              setProfileUserId(null);
+            }}
           />
         )}
       </div>

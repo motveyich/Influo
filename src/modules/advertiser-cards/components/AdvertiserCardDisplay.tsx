@@ -8,6 +8,7 @@ import { cardAnalyticsService } from '../../card-analytics/services/cardAnalytic
 import toast from 'react-hot-toast';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { supabase } from '../../../core/supabase';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AdvertiserCardDisplayProps {
   card: AdvertiserCard;
@@ -19,19 +20,20 @@ interface AdvertiserCardDisplayProps {
   currentUserId?: string;
 }
 
-export function AdvertiserCardDisplay({ 
-  card, 
-  showActions = false, 
-  onEdit, 
-  onDelete, 
+export function AdvertiserCardDisplay({
+  card,
+  showActions = false,
+  onEdit,
+  onDelete,
   onToggleStatus,
   onViewAnalytics,
   currentUserId
 }: AdvertiserCardDisplayProps) {
+  const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showProfileModal, setShowProfileModal] = React.useState(false);
-  
+
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
 
