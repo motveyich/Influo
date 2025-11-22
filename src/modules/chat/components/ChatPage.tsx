@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../../../core/types';
-import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield } from 'lucide-react';
+import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { CollaborationRequestModal } from './CollaborationRequestModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { AIChatPanel } from './AIChatPanel';
 import { MessageBubble } from './MessageBubble';
 import { useAuth } from '../../../hooks/useAuth';
@@ -41,6 +42,7 @@ export function ChatPage() {
   const [activeTab, setActiveTab] = useState<ChatTab>('main');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
@@ -817,6 +819,14 @@ export function ChatPage() {
               </div>
               
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="p-2 text-gray-400 hover:text-blue-600 rounded-md hover:bg-gray-100"
+                  title="Посмотреть профиль"
+                >
+                  <UserCircle className="w-5 h-5" />
+                </button>
+
                 {selectedConversation.chatType !== 'restricted' && (
                   <button
                     onClick={handleSendCollaborationRequest}
@@ -986,6 +996,15 @@ export function ChatPage() {
         senderId={currentUserId}
         onRequestSent={handleCollaborationRequestSent}
       />
+
+      {/* Public Profile Modal */}
+      {showProfileModal && selectedConversation && (
+        <UserPublicProfileModal
+          userId={selectedConversation.participantId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import React from 'react';
 import { AdvertiserCard } from '../../../core/types';
-import { Star, MapPin, Clock, Users, DollarSign, Calendar, Building, Target, Heart, MessageCircle, Send, Edit, Trash2, ToggleLeft, ToggleRight, BarChart3 } from 'lucide-react';
+import { Star, MapPin, Clock, Users, DollarSign, Calendar, Building, Target, Heart, MessageCircle, Send, Edit, Trash2, ToggleLeft, ToggleRight, BarChart3, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import toast from 'react-hot-toast';
-
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { supabase } from '../../../core/supabase';
 
 interface AdvertiserCardDisplayProps {
@@ -30,6 +30,7 @@ export function AdvertiserCardDisplay({
 }: AdvertiserCardDisplayProps) {
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showProfileModal, setShowProfileModal] = React.useState(false);
   
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
@@ -483,19 +484,26 @@ export function AdvertiserCardDisplay({
           {/* Secondary Actions */}
           <div className="flex space-x-2">
             <button
+              onClick={() => setShowProfileModal(true)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span>Профиль</span>
+            </button>
+
+            <button
               onClick={handleSendMessage}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
             >
               <MessageCircle className="w-4 h-4" />
               <span>{t('influencerCards.sendMessage')}</span>
             </button>
-            
+
             <button
               onClick={() => onViewAnalytics?.(card.id)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
             >
               <BarChart3 className="w-4 h-4" />
-              <span>{t('influencerCards.viewAnalytics')}</span>
             </button>
           </div>
         </div>
@@ -522,6 +530,15 @@ export function AdvertiserCardDisplay({
           Все данные указываются создателями карточек. В случае несоответствия информации убедительно просим оставить обращение в службу поддержки для проверки и возможных санкций в отношении пользователя, нарушившего правила платформы.
         </p>
       </div>
+
+      {/* Public Profile Modal */}
+      {showProfileModal && (
+        <UserPublicProfileModal
+          userId={card.userId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }

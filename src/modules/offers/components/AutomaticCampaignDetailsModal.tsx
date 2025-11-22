@@ -22,13 +22,15 @@ import {
   XCircle,
   Ban,
   Flag,
-  Check
+  Check,
+  UserCircle
 } from 'lucide-react';
 import { automaticOfferService } from '../../campaigns/services/automaticOfferService';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReportModal } from '../../../components/ReportModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { PaymentRequest, PaymentRequestStatus } from '../../../core/types';
 import { MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -54,6 +56,8 @@ export function AutomaticCampaignDetailsModal({
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
@@ -281,11 +285,18 @@ export function AutomaticCampaignDetailsModal({
   const companyName = advertiserData.companyName || details?.advertiserProfile?.full_name || 'Не указано';
   const website = advertiserData.organizationWebsite || details?.advertiserProfile?.website;
 
+  const handleViewProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setShowProfileModal(true);
+  };
+
+  const otherUserId = isInfluencer ? details?.offer?.advertiser_id : details?.offer?.influencer_id;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-1">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center shadow-lg">
               <Zap className="w-7 h-7 text-white" />
             </div>
@@ -294,12 +305,24 @@ export function AutomaticCampaignDetailsModal({
               <p className="text-sm text-gray-600 dark:text-gray-400">Детали предложения и условия</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {otherUserId && (
+              <button
+                onClick={() => handleViewProfile(otherUserId)}
+                className="flex items-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-orange-600 dark:text-orange-400 rounded-md transition-colors border border-orange-200 dark:border-orange-700"
+                title="Посмотреть профиль"
+              >
+                <UserCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Профиль</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800">
@@ -904,6 +927,17 @@ export function AutomaticCampaignDetailsModal({
           entityType="offer"
           entityId={offerId}
           reportedUserId={isInfluencer ? details.advertiser_id : details.influencer_id}
+        />
+      )}
+
+      {showProfileModal && profileUserId && (
+        <UserPublicProfileModal
+          userId={profileUserId}
+          currentUserId={currentUserId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setProfileUserId(null);
+          }}
         />
       )}
     </div>

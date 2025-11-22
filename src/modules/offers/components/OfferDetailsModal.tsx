@@ -6,7 +6,8 @@ import { reviewService } from '../services/reviewService';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
 import { ReportModal } from '../../../components/ReportModal';
-import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag } from 'lucide-react';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { blacklistService } from '../../../services/blacklistService';
@@ -34,6 +35,8 @@ export function OfferDetailsModal({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [canReview, setCanReview] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
   const [initiatorProfile, setInitiatorProfile] = useState<any>(null);
@@ -378,6 +381,13 @@ export function OfferDetailsModal({
   const availableActions = getAvailableActions();
   const activePaymentRequest = getActivePaymentRequest();
 
+  const handleViewProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setShowProfileModal(true);
+  };
+
+  const otherUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+
   if (!isOpen) return null;
 
   return (
@@ -394,7 +404,7 @@ export function OfferDetailsModal({
         )}
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
+          <div className="flex-1">
             <h2 className="text-xl font-semibold text-gray-900">{offer.title}</h2>
             <div className="flex items-center space-x-4 mt-2">
               <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
@@ -410,12 +420,22 @@ export function OfferDetailsModal({
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleViewProfile(otherUserId)}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-md transition-colors"
+              title="Посмотреть профиль"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">Профиль</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -957,6 +977,18 @@ export function OfferDetailsModal({
           targetId={offer.id}
           targetTitle={offer.title}
         />
+
+        {/* Public Profile Modal */}
+        {showProfileModal && profileUserId && (
+          <UserPublicProfileModal
+            userId={profileUserId}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setShowProfileModal(false);
+              setProfileUserId(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

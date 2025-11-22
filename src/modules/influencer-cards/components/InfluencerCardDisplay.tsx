@@ -1,12 +1,13 @@
 import React from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag } from 'lucide-react';
+import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag, UserCircle } from 'lucide-react';
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import { supabase } from '../../../core/supabase';
 import { ReportModal } from '../../../components/ReportModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
 import { IntegrationDetailsModal } from './IntegrationDetailsModal';
 import toast from 'react-hot-toast';
@@ -36,6 +37,7 @@ export function InfluencerCardDisplay({
   const [showReportModal, setShowReportModal] = React.useState(false);
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [showIntegrationModal, setShowIntegrationModal] = React.useState(false);
+  const [showProfileModal, setShowProfileModal] = React.useState(false);
   
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
@@ -434,6 +436,14 @@ export function InfluencerCardDisplay({
             {/* Secondary Actions */}
             <div className="flex space-x-2">
               <button
+                onClick={() => setShowProfileModal(true)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+              >
+                <UserCircle className="w-4 h-4" />
+                <span>Профиль</span>
+              </button>
+
+              <button
                 onClick={handleSendMessage}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
@@ -443,10 +453,9 @@ export function InfluencerCardDisplay({
 
               <button
                 onClick={() => setShowDetailsModal(true)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span>{t('influencerCards.moreDetails')}</span>
               </button>
 
               <button
@@ -550,6 +559,15 @@ export function InfluencerCardDisplay({
         onClose={() => setShowIntegrationModal(false)}
         onSubmit={handleIntegrationSubmit}
       />
+
+      {/* Public Profile Modal */}
+      {showProfileModal && (
+        <UserPublicProfileModal
+          userId={card.userId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }
