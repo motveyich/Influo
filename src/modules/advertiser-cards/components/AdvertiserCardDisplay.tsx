@@ -484,14 +484,6 @@ export function AdvertiserCardDisplay({
           {/* Secondary Actions */}
           <div className="flex space-x-2">
             <button
-              onClick={() => setShowProfileModal(true)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
-            >
-              <UserCircle className="w-4 h-4" />
-              <span>Профиль</span>
-            </button>
-
-            <button
               onClick={handleSendMessage}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
             >
@@ -501,9 +493,18 @@ export function AdvertiserCardDisplay({
 
             <button
               onClick={() => onViewAnalytics?.(card.id)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
             >
               <BarChart3 className="w-4 h-4" />
+              <span>{t('influencerCards.viewAnalytics')}</span>
+            </button>
+
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+              title="Профиль"
+            >
+              <UserCircle className="w-4 h-4" />
             </button>
           </div>
         </div>

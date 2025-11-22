@@ -31,6 +31,35 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
         userSettingsService.getUserSettings(userId)
       ]);
 
+      if (profileData) {
+        const { supabase } = await import('../../../core/supabase');
+
+        const { data: offersData } = await supabase
+          .from('collaboration_offers')
+          .select('id, status')
+          .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+          .eq('status', 'completed');
+
+        const completedDeals = offersData?.length || 0;
+
+        const { data: reviewsData } = await supabase
+          .from('collaboration_reviews')
+          .select('id, rating')
+          .eq('reviewee_id', userId);
+
+        const totalReviews = reviewsData?.length || 0;
+        const averageRating = reviewsData && reviewsData.length > 0
+          ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
+          : 0;
+
+        profileData.unifiedAccountInfo = {
+          ...profileData.unifiedAccountInfo,
+          completedDeals,
+          totalReviews,
+          averageRating
+        };
+      }
+
       setProfile(profileData);
       setSettings(settingsData);
     } catch (error) {
