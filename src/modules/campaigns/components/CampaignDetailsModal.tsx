@@ -35,7 +35,7 @@ export function CampaignDetailsModal({
   const loadCampaignDetails = async () => {
     try {
       setIsLoading(true);
-      const data = await campaignService.getCampaignById(campaignId);
+      const data = await campaignService.getCampaign(campaignId);
       setCampaign(data);
     } catch (error) {
       console.error('Failed to load campaign details:', error);
