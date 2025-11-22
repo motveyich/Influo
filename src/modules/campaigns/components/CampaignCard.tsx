@@ -345,29 +345,28 @@ export function CampaignCard({
               <Flag className="w-4 h-4" />
             </button>
           </div>
-          {isAutomaticCampaign && (
-            <div className="flex space-x-3">
-              {onViewDetails && (
-                <button
-                  onClick={() => onViewDetails(campaign)}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-md text-sm font-medium transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>Подробнее</span>
-                </button>
-              )}
-              {onViewProfile && campaign.advertiserId && (
-                <button
-                  onClick={() => onViewProfile(campaign.advertiserId)}
-                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-md text-sm font-medium transition-colors"
-                  title="Просмотр профиля рекламодателя"
-                >
-                  <UserCircle className="w-4 h-4" />
-                  <span>Профиль</span>
-                </button>
-              )}
-            </div>
-          )}
+          {/* Кнопки "Подробнее" и "Профиль" для всех кампаний */}
+          <div className="flex space-x-3">
+            {onViewDetails && (
+              <button
+                onClick={() => onViewDetails(campaign)}
+                className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Подробнее</span>
+              </button>
+            )}
+            {onViewProfile && campaign.advertiserId && (
+              <button
+                onClick={() => onViewProfile(campaign.advertiserId)}
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors"
+                title="Просмотр профиля рекламодателя"
+              >
+                <UserCircle className="w-4 h-4" />
+                <span>Профиль</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
