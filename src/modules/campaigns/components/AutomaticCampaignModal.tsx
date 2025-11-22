@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../../core/types';
 import { automaticCampaignService } from '../services/automaticCampaignService';
 import { campaignValidationService } from '../services/campaignValidationService';
-import { X, Save, AlertCircle, Plus, Trash2, Calendar, DollarSign, Target, Users, Zap, Settings } from 'lucide-react';
+import { X, Save, AlertCircle, Plus, Trash2, Calendar, Target, Users, Zap, Settings, BadgeRussianRuble } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CONTENT_TYPES } from '../../../core/constants';
 
@@ -102,16 +102,10 @@ export function AutomaticCampaignModal({
     automaticSettings: {
       targetInfluencerCount: 10,
       overbookingPercentage: 25,
-      batchSize: 20,
-      batchDelay: 30, // minutes
-      scoringWeights: {
-        followers: 40,
-        engagement: 30,
-        rating: 20,
-        completedCampaigns: 10
-      },
-      autoReplacement: true,
-      maxReplacements: 3
+      batchSize: 30,
+      batchDelay: 2,
+      followersDeviation: 20,
+      minRating: 3.0
     },
     enableChat: false,
     status: 'draft' as Campaign['status']
@@ -131,16 +125,10 @@ export function AutomaticCampaignModal({
         automaticSettings: (currentCampaign as any).automaticSettings || {
           targetInfluencerCount: 10,
           overbookingPercentage: 25,
-          batchSize: 20,
-          batchDelay: 30,
-          scoringWeights: {
-            followers: 40,
-            engagement: 30,
-            rating: 20,
-            completedCampaigns: 10
-          },
-          autoReplacement: true,
-          maxReplacements: 3
+          batchSize: 30,
+          batchDelay: 2,
+          followersDeviation: 20,
+          minRating: 3.0
         },
         enableChat: currentCampaign.enableChat || false,
         status: currentCampaign.status
@@ -172,16 +160,10 @@ export function AutomaticCampaignModal({
         automaticSettings: {
           targetInfluencerCount: 10,
           overbookingPercentage: 25,
-          batchSize: 20,
-          batchDelay: 30,
-          scoringWeights: {
-            followers: 40,
-            engagement: 30,
-            rating: 20,
-            completedCampaigns: 10
-          },
-          autoReplacement: true,
-          maxReplacements: 3
+          batchSize: 30,
+          batchDelay: 2,
+          followersDeviation: 20,
+          minRating: 3.0
         },
         status: 'draft'
       });
@@ -319,13 +301,12 @@ export function AutomaticCampaignModal({
         newErrors.targetCount = 'Количество инфлюенсеров должно быть больше 0';
       }
 
-      if (formData.automaticSettings.overbookingPercentage < 0 || formData.automaticSettings.overbookingPercentage > 100) {
-        newErrors.overbooking = 'Овербукинг должен быть от 0 до 100%';
+      if (formData.automaticSettings.followersDeviation < 0 || formData.automaticSettings.followersDeviation > 100) {
+        newErrors.followersDeviation = 'Отклонение должно быть от 0 до 100%';
       }
 
-      const totalWeight = Object.values(formData.automaticSettings.scoringWeights).reduce((sum, weight) => sum + weight, 0);
-      if (totalWeight !== 100) {
-        newErrors.weights = 'Сумма весов должна равняться 100%';
+      if (formData.automaticSettings.minRating < 0 || formData.automaticSettings.minRating > 5) {
+        newErrors.minRating = 'Минимальный рейтинг должен быть от 0 до 5';
       }
     }
 
@@ -341,7 +322,7 @@ export function AutomaticCampaignModal({
         audienceSize: formData.preferences.audienceSize,
         demographics: formData.preferences.demographics
       },
-      formData.automaticSettings.scoringWeights,
+      { followersDeviation: formData.automaticSettings.followersDeviation, minRating: formData.automaticSettings.minRating },
       formData.automaticSettings.targetInfluencerCount,
       formData.automaticSettings.overbookingPercentage
     );
@@ -440,17 +421,6 @@ export function AutomaticCampaignModal({
     }
   };
 
-  const calculateOverbooking = () => {
-    const base = formData.automaticSettings.targetInfluencerCount;
-    const overbook = Math.ceil(base * (formData.automaticSettings.overbookingPercentage / 100));
-    return base + overbook;
-  };
-
-  const calculateBatches = () => {
-    const total = calculateOverbooking();
-    return Math.ceil(total / formData.automaticSettings.batchSize);
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -501,7 +471,7 @@ export function AutomaticCampaignModal({
             <span>Основное</span>
             <span>Критерии</span>
             <span>Сроки</span>
-            <span>Автоматика</span>
+            <span>Заключающие</span>
           </div>
         </div>
 
@@ -750,7 +720,7 @@ export function AutomaticCampaignModal({
                       Минимум *
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <BadgeRussianRuble className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <input
                         type="number"
                         value={formData.budget.min}
@@ -777,7 +747,7 @@ export function AutomaticCampaignModal({
                       Максимум *
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <BadgeRussianRuble className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <input
                         type="number"
                         value={formData.budget.max}
@@ -822,6 +792,9 @@ export function AutomaticCampaignModal({
                     {errors.budget}
                   </p>
                 )}
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Инфлюенсеры будут выбраны по средней рыночной цене, а цена за интеграцию будет выставлена исходя из стоимости, указанной в карточке инфлюенсера.
+                </p>
                 {marketBudget && (
                   <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">
@@ -922,6 +895,9 @@ export function AutomaticCampaignModal({
                     {errors.contentTypes}
                   </p>
                 )}
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Реклама будет произведена только по одному из выбранных типов контента. Выбор интеграции выполняется автоматически — выбирается формат с минимальной ценой в карточке инфлюенсера.
+                </p>
               </div>
             </div>
           )}
@@ -940,8 +916,8 @@ export function AutomaticCampaignModal({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Дата начала *
                   </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <label className="relative block cursor-pointer">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                     <input
                       type="date"
                       value={formData.timeline.startDate}
@@ -949,11 +925,11 @@ export function AutomaticCampaignModal({
                         ...prev,
                         timeline: { ...prev.timeline, startDate: e.target.value }
                       }))}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer ${
                         errors.startDate ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
-                  </div>
+                  </label>
                   {errors.startDate && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
@@ -966,8 +942,8 @@ export function AutomaticCampaignModal({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Дата окончания *
                   </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <label className="relative block cursor-pointer">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                     <input
                       type="date"
                       value={formData.timeline.endDate}
@@ -975,11 +951,11 @@ export function AutomaticCampaignModal({
                         ...prev,
                         timeline: { ...prev.timeline, endDate: e.target.value }
                       }))}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer ${
                         errors.endDate ? 'border-red-300' : 'border-gray-300'
                       }`}
                     />
-                  </div>
+                  </label>
                   {errors.endDate && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
@@ -1002,8 +978,8 @@ export function AutomaticCampaignModal({
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <Zap className="w-12 h-12 text-orange-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Настройки автоматики</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Настройте алгоритм подбора инфлюенсеров</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Заключающие настройки</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Настройте параметры подбора инфлюенсеров</p>
               </div>
 
               {/* Target Count and Overbooking */}
@@ -1039,246 +1015,82 @@ export function AutomaticCampaignModal({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Овербукинг (%) *
+                    Отклонение по подписчикам (%) *
                   </label>
                   <input
-                    type="number"
+                    type="range"
                     min="0"
                     max="100"
-                    value={formData.automaticSettings.overbookingPercentage}
+                    value={formData.automaticSettings.followersDeviation}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      automaticSettings: { 
-                        ...prev.automaticSettings, 
-                        overbookingPercentage: parseInt(e.target.value) || 0 
+                      automaticSettings: {
+                        ...prev.automaticSettings,
+                        followersDeviation: parseInt(e.target.value) || 20
                       }
                     }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.overbooking ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="25"
+                    className="w-full"
                   />
-                  {errors.overbooking && (
+                  <div className="flex justify-between text-xs text-gray-600 mt-1">
+                    <span>0%</span>
+                    <span className="font-semibold text-blue-600">{formData.automaticSettings.followersDeviation}%</span>
+                    <span>100%</span>
+                  </div>
+                  {errors.followersDeviation && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
-                      {errors.overbooking}
+                      {errors.followersDeviation}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Будет отправлено {calculateOverbooking()} предложений
+                  <p className="text-xs text-gray-500 mt-2">
+                    Допустимое отклонение от целевого количества подписчиков
                   </p>
                 </div>
               </div>
 
-              {/* Batch Settings */}
+              {/* Min Rating */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Настройки рассылки</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Размер пакета
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={formData.automaticSettings.batchSize}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: { 
-                          ...prev.automaticSettings, 
-                          batchSize: parseInt(e.target.value) || 20 
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      placeholder="20"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Количество предложений в одном пакете
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Задержка между пакетами (мин)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="1440"
-                      value={formData.automaticSettings.batchDelay}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: { 
-                          ...prev.automaticSettings, 
-                          batchDelay: parseInt(e.target.value) || 30 
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      placeholder="30"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Будет {calculateBatches()} пакетов
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scoring Weights */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Веса для оценки инфлюенсеров</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Подписчики ({formData.automaticSettings.scoringWeights.followers}%)
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData.automaticSettings.scoringWeights.followers}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: {
-                          ...prev.automaticSettings,
-                          scoringWeights: {
-                            ...prev.automaticSettings.scoringWeights,
-                            followers: parseInt(e.target.value)
-                          }
-                        }
-                      }))}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Вовлеченность ({formData.automaticSettings.scoringWeights.engagement}%)
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData.automaticSettings.scoringWeights.engagement}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: {
-                          ...prev.automaticSettings,
-                          scoringWeights: {
-                            ...prev.automaticSettings.scoringWeights,
-                            engagement: parseInt(e.target.value)
-                          }
-                        }
-                      }))}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Рейтинг ({formData.automaticSettings.scoringWeights.rating}%)
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData.automaticSettings.scoringWeights.rating}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: {
-                          ...prev.automaticSettings,
-                          scoringWeights: {
-                            ...prev.automaticSettings.scoringWeights,
-                            rating: parseInt(e.target.value)
-                          }
-                        }
-                      }))}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Завершенных кампаний ({formData.automaticSettings.scoringWeights.completedCampaigns}%)
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData.automaticSettings.scoringWeights.completedCampaigns}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: {
-                          ...prev.automaticSettings,
-                          scoringWeights: {
-                            ...prev.automaticSettings.scoringWeights,
-                            completedCampaigns: parseInt(e.target.value)
-                          }
-                        }
-                      }))}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
-                    Общий вес: {Object.values(formData.automaticSettings.scoringWeights).reduce((sum, weight) => sum + weight, 0)}%
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Минимальный рейтинг *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={formData.automaticSettings.minRating}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    automaticSettings: {
+                      ...prev.automaticSettings,
+                      minRating: parseFloat(e.target.value) || 0
+                    }
+                  }))}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.minRating ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="3.0"
+                />
+                {errors.minRating && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.minRating}
                   </p>
-                  {errors.weights && (
-                    <p className="text-sm text-red-600 flex items-center mt-1">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {errors.weights}
-                    </p>
-                  )}
-                </div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Будут отобраны только инфлюенсеры с рейтингом не ниже указанного
+                </p>
               </div>
 
-              {/* Auto Replacement */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3">Автозамена</h4>
-                <div className="space-y-3">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.automaticSettings.autoReplacement}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        automaticSettings: { 
-                          ...prev.automaticSettings, 
-                          autoReplacement: e.target.checked 
-                        }
-                      }))}
-                      className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      Автоматически заменять ушедших инфлюенсеров
-                    </span>
-                  </label>
-
-                  {formData.automaticSettings.autoReplacement && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Максимум замен на одного инфлюенсера
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={formData.automaticSettings.maxReplacements}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          automaticSettings: { 
-                            ...prev.automaticSettings, 
-                            maxReplacements: parseInt(e.target.value) || 3 
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="3"
-                      />
-                    </div>
-                  )}
-                </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm text-blue-900 dark:text-blue-300">
+                  <strong>Системные настройки:</strong>
+                </p>
+                <ul className="text-sm text-blue-800 dark:text-blue-400 mt-2 space-y-1 list-disc list-inside">
+                  <li>Овербукинг: 25% (автоматически)</li>
+                  <li>Рассылка: 30 предложений в минуту</li>
+                  <li>Автозамена: включена при отказе инфлюенсера</li>
+                </ul>
               </div>
 
               {/* Chat Settings */}
