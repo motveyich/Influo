@@ -32,35 +32,22 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
       ]);
 
       if (profileData) {
+        // Метрики теперь хранятся непосредственно в user_profiles
+        // и обновляются автоматически через триггеры БД
         const { supabase } = await import('../../../core/supabase');
 
-        // Загружаем завершённые сделки (completed + terminated)
-        const { data: offersData } = await supabase
-          .from('collaboration_offers')
-          .select('offer_id')
-          .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
-          .in('status', ['completed', 'terminated']);
+        const { data: profileMetrics } = await supabase
+          .from('user_profiles')
+          .select('completed_deals_count, total_reviews_count, average_rating')
+          .eq('user_id', userId)
+          .single();
 
-        const completedDeals = offersData?.length || 0;
-
-        // Загружаем отзывы
-        const { data: reviewsData } = await supabase
-          .from('collaboration_reviews')
-          .select('id, rating')
-          .eq('reviewee_id', userId)
-          .eq('is_public', true);
-
-        const totalReviews = reviewsData?.length || 0;
-        const averageRating = reviewsData && reviewsData.length > 0
-          ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
-          : 0;
-
-        // Обновляем данные профиля с реальными метриками
+        // Обновляем данные профиля с метриками из БД
         profileData.unifiedAccountInfo = {
           ...profileData.unifiedAccountInfo,
-          completedDeals,
-          totalReviews,
-          averageRating
+          completedDeals: profileMetrics?.completed_deals_count || 0,
+          totalReviews: profileMetrics?.total_reviews_count || 0,
+          averageRating: profileMetrics?.average_rating || 0
         };
       }
 

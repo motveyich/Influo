@@ -11,7 +11,7 @@ import { Search, Filter, Plus, Target, TrendingUp, Users, DollarSign, CheckCircl
 import { analytics } from '../../../core/analytics';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../hooks/useAuth';
-import { AutomaticCampaignDetailsModal } from '../../offers/components/AutomaticCampaignDetailsModal';
+import { CampaignDetailsModal } from './CampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 
 // Remove mock data - will be loaded from database
@@ -131,16 +131,17 @@ export function CampaignsPage() {
   const loadCampaigns = async () => {
     try {
       setIsLoading(true);
-      
+
       let loadedCampaigns: Campaign[];
       if (showMyCampaigns) {
         // Load user's own campaigns
         loadedCampaigns = await campaignService.getAdvertiserCampaigns(currentUserId);
       } else {
-        // Load all campaigns with filters
+        // Load all campaigns with filters - только активные кампании
         loadedCampaigns = await campaignService.getAllCampaigns({
           searchQuery: searchQuery || undefined,
-          platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
+          platform: selectedPlatform !== 'all' ? selectedPlatform : undefined,
+          status: 'active' // Показываем только активные кампании
         });
       }
       setCampaigns(loadedCampaigns);
@@ -243,8 +244,6 @@ export function CampaignsPage() {
 
   const handleViewDetails = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
-    // Для автоматических кампаний нужен offer_id, но здесь мы можем показать детали кампании
-    // Используем campaignId как offer_id для просмотра деталей кампании
     setShowDetailsModal(true);
   };
 
@@ -507,17 +506,17 @@ export function CampaignsPage() {
           onCampaignSaved={handleCampaignSaved}
         />
 
-        {/* Details Modal - Note: We're using campaignId as offerId for now */}
+        {/* Campaign Details Modal */}
         {showDetailsModal && selectedCampaign && (
-          <AutomaticCampaignDetailsModal
+          <CampaignDetailsModal
             isOpen={showDetailsModal}
             onClose={() => {
               setShowDetailsModal(false);
               setSelectedCampaign(null);
             }}
-            offerId={selectedCampaign.campaignId}
+            campaignId={selectedCampaign.campaignId}
             currentUserId={currentUserId}
-            onOfferUpdated={loadCampaigns}
+            onApply={handleApply}
           />
         )}
 

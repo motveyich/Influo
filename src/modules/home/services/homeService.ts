@@ -181,38 +181,25 @@ export class HomeService {
         pendingPayoutsCount = 0;
       }
 
-      // 5. Рейтинг аккаунта
+      // 5 и 6. Рейтинг, отзывы и завершенные сделки берём из user_profiles
+      // (обновляются автоматически через триггеры БД)
       let totalReviews = 0;
       let averageRating = 0;
-      try {
-        const { data: reviews } = await supabase
-          .from(TABLES.REVIEWS)
-          .select('rating')
-          .eq('reviewee_id', userId)
-          .eq('is_public', true);
-
-        totalReviews = reviews?.length || 0;
-        averageRating = totalReviews > 0
-          ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
-          : 0;
-      } catch (reviewsError) {
-        console.log('Failed to get reviews:', reviewsError);
-        totalReviews = 0;
-        averageRating = 0;
-      }
-
-      // 6. Завершенные сделки (считаем из offers со статусами completed и terminated)
       let completedDealsCount = 0;
       try {
-        const { data: completedOffers } = await supabase
-          .from(TABLES.OFFERS)
-          .select('offer_id')
-          .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
-          .in('status', ['completed', 'terminated']);
-        completedDealsCount = completedOffers?.length || 0;
-      } catch (dealsError) {
-        console.log('Failed to get completed deals:', dealsError);
-        completedDealsCount = 0;
+        const { data: profileMetrics } = await supabase
+          .from(TABLES.USER_PROFILES)
+          .select('completed_deals_count, total_reviews_count, average_rating')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileMetrics) {
+          totalReviews = profileMetrics.total_reviews_count || 0;
+          averageRating = profileMetrics.average_rating || 0;
+          completedDealsCount = profileMetrics.completed_deals_count || 0;
+        }
+      } catch (metricsError) {
+        console.log('Failed to get user metrics:', metricsError);
       }
 
       return {
