@@ -6,9 +6,9 @@ import { ru } from 'date-fns/locale';
 
 interface Review {
   id: string;
-  offerId: string;
+  dealId: string;
   reviewerId: string;
-  reviewedUserId: string;
+  revieweeId: string;
   rating: number;
   comment: string;
   createdAt: string;
@@ -16,7 +16,7 @@ interface Review {
     fullName: string;
     avatarUrl?: string;
   };
-  reviewedProfile?: {
+  revieweeProfile?: {
     fullName: string;
     avatarUrl?: string;
   };
@@ -43,7 +43,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
       const { data: received, error: receivedError } = await supabase
         .from(TABLES.REVIEWS)
         .select('*')
-        .eq('reviewed_user_id', userId)
+        .eq('reviewee_id', userId)
         .order('created_at', { ascending: false });
 
       if (receivedError) throw receivedError;
@@ -68,11 +68,11 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
         const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
         setReceivedReviews(received.map(r => ({
-          id: r.review_id,
-          offerId: r.offer_id,
+          id: r.id,
+          dealId: r.deal_id,
           reviewerId: r.reviewer_id,
-          reviewedUserId: r.reviewed_user_id,
-          rating: r.rating,
+          revieweeId: r.reviewee_id,
+          rating: parseFloat(r.rating),
           comment: r.comment,
           createdAt: r.created_at,
           reviewerProfile: profilesMap.get(r.reviewer_id) ? {
@@ -84,7 +84,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
 
       // Загружаем профили для отданных отзывов
       if (given && given.length > 0) {
-        const reviewedIds = given.map(r => r.reviewed_user_id);
+        const reviewedIds = given.map(r => r.reviewee_id);
         const { data: profiles } = await supabase
           .from(TABLES.USER_PROFILES)
           .select('user_id, full_name, avatar_url')
@@ -93,16 +93,16 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
         const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
         setGivenReviews(given.map(r => ({
-          id: r.review_id,
-          offerId: r.offer_id,
+          id: r.id,
+          dealId: r.deal_id,
           reviewerId: r.reviewer_id,
-          reviewedUserId: r.reviewed_user_id,
-          rating: r.rating,
+          revieweeId: r.reviewee_id,
+          rating: parseFloat(r.rating),
           comment: r.comment,
           createdAt: r.created_at,
-          reviewedProfile: profilesMap.get(r.reviewed_user_id) ? {
-            fullName: profilesMap.get(r.reviewed_user_id)!.full_name,
-            avatarUrl: profilesMap.get(r.reviewed_user_id)!.avatar_url
+          revieweeProfile: profilesMap.get(r.reviewee_id) ? {
+            fullName: profilesMap.get(r.reviewee_id)!.full_name,
+            avatarUrl: profilesMap.get(r.reviewee_id)!.avatar_url
           } : undefined
         })));
       }
@@ -132,7 +132,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
   };
 
   const renderReviewCard = (review: Review, type: 'received' | 'given') => {
-    const profile = type === 'received' ? review.reviewerProfile : review.reviewedProfile;
+    const profile = type === 'received' ? review.reviewerProfile : review.revieweeProfile;
     const label = type === 'received' ? 'От' : 'Для';
 
     return (
