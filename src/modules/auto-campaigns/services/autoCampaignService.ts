@@ -253,6 +253,17 @@ export class AutoCampaignService {
     });
 
     // Получаем активные карточки инфлюенсеров
+    console.log('\n📋 Building database query...');
+    console.log('  Table:', TABLES.INFLUENCER_CARDS);
+    console.log('  Filters:');
+    console.log('    - is_active = true');
+    console.log('    - is_deleted = false');
+
+    // ВАЖНО: В БД платформы хранятся в lowercase, а в кампании в PascalCase
+    // Нужно привести к lowercase для сравнения
+    const platformsLowercase = campaign.platforms.map(p => p.toLowerCase());
+    console.log('    - platform IN', platformsLowercase, '(converted from', campaign.platforms, ')');
+
     let query = supabase
       .from(TABLES.INFLUENCER_CARDS)
       .select('*')
@@ -260,15 +271,40 @@ export class AutoCampaignService {
       .eq('is_deleted', false);
 
     // Фильтрация по платформе (ОБЯЗАТЕЛЬНОЕ поле - используем SQL)
-    if (campaign.platforms.length > 0) {
-      query = query.in('platform', campaign.platforms);
+    if (platformsLowercase.length > 0) {
+      query = query.in('platform', platformsLowercase);
     }
 
+    console.log('\n⏳ Executing query...');
     const { data: cards, error } = await query;
-    if (error) throw error;
+
+    if (error) {
+      console.error('❌ Database query error:', error);
+      throw error;
+    }
+
+    console.log(`✅ Query returned ${cards?.length || 0} cards`);
 
     if (!cards || cards.length === 0) {
-      console.log('❌ No active cards found in database');
+      console.log('\n❌ No cards found in database!');
+      console.log('This could mean:');
+      console.log('  1. No influencer cards exist with is_active=true and is_deleted=false');
+      console.log('  2. No cards match platform filter:', campaign.platforms);
+      console.log('  3. Table is empty or query is incorrect');
+
+      // Давайте проверим есть ли вообще карточки
+      const { data: allCards, error: countError } = await supabase
+        .from(TABLES.INFLUENCER_CARDS)
+        .select('id, platform, is_active, is_deleted')
+        .limit(10);
+
+      if (!countError && allCards) {
+        console.log(`\nℹ️  Found ${allCards.length} total cards (including inactive):`);
+        allCards.forEach(c => {
+          console.log(`  - ${c.id}: platform=${c.platform}, active=${c.is_active}, deleted=${c.is_deleted}`);
+        });
+      }
+
       return [];
     }
 

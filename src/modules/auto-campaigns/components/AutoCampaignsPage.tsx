@@ -56,7 +56,13 @@ export function AutoCampaignsPage() {
       loadCampaigns();
     } catch (error) {
       console.error('Failed to launch campaign:', error);
-      toast.error('Не удалось запустить автокомпанию');
+
+      // Показываем конкретное сообщение об ошибке
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Не удалось запустить автокомпанию';
+
+      toast.error(errorMessage);
     }
   };
 
