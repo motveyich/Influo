@@ -246,11 +246,9 @@ export class AutoCampaignService {
       contentTypes: campaign.contentTypes,
       audienceRange: [campaign.audienceMin, campaign.audienceMax],
       budgetRange: [campaign.budgetMin, campaign.budgetMax],
-      targetAgeGroups: campaign.targetAgeGroups,
-      targetGenders: campaign.targetGenders,
-      targetCountries: campaign.targetCountries,
-      targetAudienceInterests: campaign.targetAudienceInterests,
-      productCategories: campaign.productCategories,
+      targetCountries: campaign.targetCountries.length > 0 ? campaign.targetCountries : '(not set)',
+      targetAudienceInterests: campaign.targetAudienceInterests.length > 0 ? campaign.targetAudienceInterests : '(not set)',
+      productCategories: campaign.productCategories.length > 0 ? campaign.productCategories : '(not set)',
       targetPricePerFollower: campaign.targetPricePerFollower
     });
 
@@ -319,84 +317,56 @@ export class AutoCampaignService {
           console.log(`    Content types: [${contentTypes.join(', ')}]`);
           console.log(`    Pricing:`, pricing);
 
-          // ============ ОБЯЗАТЕЛЬНЫЕ ФИЛЬТРЫ ============
+          // ============ ФИЛЬТРЫ ============
 
-          // 1. Аудитория (ОБЯЗАТЕЛЬНЫЙ)
+          // 1. Аудитория - диапазон (ОБЯЗАТЕЛЬНО)
           if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
             console.log(`    ❌ FILTERED: Audience ${followers} not in [${campaign.audienceMin}, ${campaign.audienceMax}]`);
             continue;
           }
-          console.log(`    ✓ Audience OK: ${followers}`);
+          console.log(`    ✓ Audience: ${followers}`);
 
-          // 2. Типы контента (ОБЯЗАТЕЛЬНЫЙ - хотя бы одно пересечение)
+          // 2. Типы контента - хотя бы 1 совпадение (ОБЯЗАТЕЛЬНО)
           const matchingContentTypes = campaign.contentTypes.filter(ct => contentTypes.includes(ct));
           if (matchingContentTypes.length === 0) {
-            console.log(`    ❌ FILTERED: No content type overlap. Card has [${contentTypes.join(', ')}], need one of [${campaign.contentTypes.join(', ')}]`);
+            console.log(`    ❌ FILTERED: No content type overlap. Card: [${contentTypes.join(', ')}], Campaign: [${campaign.contentTypes.join(', ')}]`);
             continue;
           }
-          console.log(`    ✓ Content types overlap: [${matchingContentTypes.join(', ')}]`);
+          console.log(`    ✓ Content types: [${matchingContentTypes.join(', ')}]`);
 
-          // ============ ОПЦИОНАЛЬНЫЕ ФИЛЬТРЫ (применяются только если массив НЕ пустой) ============
-
-          // 3. Возрастные группы (ОПЦИОНАЛЬНО)
-          if (campaign.targetAgeGroups && campaign.targetAgeGroups.length > 0) {
-            const cardAgeGroupsList = Object.keys(cardAgeGroups);
-            const hasAgeOverlap = campaign.targetAgeGroups.some(age => cardAgeGroupsList.includes(age));
-
-            if (!hasAgeOverlap) {
-              console.log(`    ❌ FILTERED: No age group overlap. Card has [${cardAgeGroupsList.join(', ')}], need one of [${campaign.targetAgeGroups.join(', ')}]`);
-              continue;
-            }
-            console.log(`    ✓ Age groups overlap`);
-          }
-
-          // 4. Гендеры (ОПЦИОНАЛЬНО)
-          if (campaign.targetGenders && campaign.targetGenders.length > 0) {
-            const cardGenders = Object.keys(cardGenderSplit).filter(g => (cardGenderSplit as any)[g] > 0);
-            const hasGenderOverlap = campaign.targetGenders.some(gender => cardGenders.includes(gender));
-
-            if (!hasGenderOverlap) {
-              console.log(`    ❌ FILTERED: No gender overlap. Card has [${cardGenders.join(', ')}], need one of [${campaign.targetGenders.join(', ')}]`);
-              continue;
-            }
-            console.log(`    ✓ Genders overlap`);
-          }
-
-          // 5. Страны (ОПЦИОНАЛЬНО)
+          // 3. Страны - хотя бы 1 совпадение (если указано в кампании)
           if (campaign.targetCountries && campaign.targetCountries.length > 0) {
             const hasCountryOverlap = campaign.targetCountries.some(country => cardCountries.includes(country));
-
             if (!hasCountryOverlap) {
-              console.log(`    ❌ FILTERED: No country overlap. Card has [${cardCountries.join(', ')}], need one of [${campaign.targetCountries.join(', ')}]`);
+              console.log(`    ❌ FILTERED: No country overlap. Card: [${cardCountries.join(', ')}], Campaign: [${campaign.targetCountries.join(', ')}]`);
               continue;
             }
-            console.log(`    ✓ Countries overlap`);
+            const matchingCountries = campaign.targetCountries.filter(c => cardCountries.includes(c));
+            console.log(`    ✓ Countries: [${matchingCountries.join(', ')}]`);
           }
 
-          // 6. Интересы аудитории (ОПЦИОНАЛЬНО)
+          // 4. Интересы аудитории - хотя бы 1 совпадение (если указано в кампании)
           if (campaign.targetAudienceInterests && campaign.targetAudienceInterests.length > 0) {
             const hasInterestOverlap = campaign.targetAudienceInterests.some(interest => cardInterests.includes(interest));
-
             if (!hasInterestOverlap) {
-              console.log(`    ❌ FILTERED: No interest overlap. Card has [${cardInterests.join(', ')}], need one of [${campaign.targetAudienceInterests.join(', ')}]`);
+              console.log(`    ❌ FILTERED: No interest overlap. Card: [${cardInterests.join(', ')}], Campaign: [${campaign.targetAudienceInterests.join(', ')}]`);
               continue;
             }
             const matchingInterests = campaign.targetAudienceInterests.filter(i => cardInterests.includes(i));
-            console.log(`    ✓ Interests overlap: [${matchingInterests.join(', ')}]`);
+            console.log(`    ✓ Interests: [${matchingInterests.join(', ')}]`);
           }
 
-          // 7. Категории товаров (ОПЦИОНАЛЬНО - blacklist проверка)
+          // 5. Категории товаров - проверка черного списка инфлюенсера (если указано в кампании)
           if (campaign.productCategories && campaign.productCategories.length > 0) {
             const hasBlacklistedCategory = campaign.productCategories.some(cat =>
               cardProductCategories.includes(cat)
             );
-
             if (hasBlacklistedCategory) {
               const blacklisted = campaign.productCategories.filter(cat => cardProductCategories.includes(cat));
-              console.log(`    ❌ FILTERED: Product categories blacklisted: [${blacklisted.join(', ')}]`);
+              console.log(`    ❌ FILTERED: Campaign categories in influencer blacklist: [${blacklisted.join(', ')}]`);
               continue;
             }
-            console.log(`    ✓ No blacklisted product categories`);
+            console.log(`    ✓ No blacklisted categories`);
           }
 
           // ============ PRICING SELECTION ============
