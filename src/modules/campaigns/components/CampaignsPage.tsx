@@ -172,9 +172,14 @@ export function CampaignsPage() {
   };
 
   const handleEditCampaign = (campaign: Campaign) => {
+    if (campaign.status !== 'draft') {
+      toast.error('Редактирование доступно только для черновиков');
+      return;
+    }
+
     setEditingCampaign(campaign);
     // Check if this is an automatic campaign
-    const isAutomaticCampaign = (campaign as any).metadata?.isAutomatic;
+    const isAutomaticCampaign = (campaign as any).is_automatic;
     if (isAutomaticCampaign) {
       setShowAutomaticModal(true);
     } else {
@@ -269,9 +274,37 @@ export function CampaignsPage() {
     toast.success(t('campaigns.success.applied'));
   };
 
-  const handleFindInfluencers = (campaign: Campaign) => {
-    // Start automatic influencer matching for this campaign
-    toast.success('Запуск автоматического подбора инфлюенсеров...');
+  const handleFindInfluencers = async (campaign: Campaign) => {
+    const isAutomatic = (campaign as any).is_automatic;
+
+    if (!isAutomatic) {
+      toast.error('Эта функция доступна только для автоматических кампаний');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const { automaticCampaignService } = await import('../services/automaticCampaignService');
+
+      if (campaign.status === 'draft') {
+        await automaticCampaignService.startAutomaticCampaign(campaign.campaignId);
+        toast.success('Кампания запущена! Рассылка предложений началась.');
+      } else if (campaign.status === 'paused') {
+        await automaticCampaignService.resumeAutomaticCampaign(campaign.campaignId);
+        toast.success('Кампания возобновлена!');
+      } else {
+        await automaticCampaignService.startAutomaticCampaign(campaign.campaignId);
+        toast.success('Подбор инфлюенсеров перезапущен!');
+      }
+
+      await loadCampaigns();
+    } catch (error: any) {
+      console.error('Error starting campaign:', error);
+      toast.error(error.message || 'Ошибка запуска кампании');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Update campaigns loading when filters change

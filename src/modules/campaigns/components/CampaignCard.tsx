@@ -37,8 +37,8 @@ export function CampaignCard({
   const { t } = useTranslation();
 
   // Check if this is an automatic campaign
-  const isAutomaticCampaign = (campaign as any).metadata?.isAutomatic;
-  const automaticSettings = (campaign as any).metadata?.automaticSettings;
+  const isAutomaticCampaign = (campaign as any).is_automatic;
+  const automaticSettings = (campaign as any).automatic_settings;
 
   // Track campaign view when card is displayed
   React.useEffect(() => {
@@ -55,12 +55,12 @@ export function CampaignCard({
         return 'bg-gray-100 text-gray-800';
       case 'paused':
         return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
+      case 'in_progress':
         return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
-      case 'paused':
-        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -128,6 +128,7 @@ export function CampaignCard({
                   {campaign.status === 'active' ? 'Активная' :
                campaign.status === 'draft' ? 'Черновик' :
                campaign.status === 'paused' ? 'Приостановлена' :
+               campaign.status === 'in_progress' ? 'В работе' :
                campaign.status === 'completed' ? 'Завершена' :
                campaign.status === 'cancelled' ? 'Отменена' :
                    campaign.status}
@@ -388,26 +389,43 @@ export function CampaignCard({
         </div>
       )}
 
-      {showActions && (
+      {showActions && isAutomaticCampaign && (
         <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => onFindInfluencers?.(campaign)}
-            disabled={!isAutomaticCampaign}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
-              isAutomaticCampaign
-                ? 'bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            <Zap className="w-4 h-4" />
-            <span>{isAutomaticCampaign ? 'Перезапустить подбор' : 'Только для автоматических'}</span>
-          </button>
-          <button
-            onClick={() => onEdit?.(campaign)}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            {t('common.edit')}
-          </button>
+          {campaign.status === 'draft' && (
+            <button
+              onClick={() => onFindInfluencers?.(campaign)}
+              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-green-600 hover:from-green-700 hover:to-green-700 text-white"
+            >
+              <Play className="w-4 h-4" />
+              <span>Запустить кампанию</span>
+            </button>
+          )}
+          {(campaign.status === 'active' || campaign.status === 'in_progress') && (
+            <button
+              onClick={() => onFindInfluencers?.(campaign)}
+              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Перезапустить подбор</span>
+            </button>
+          )}
+          {campaign.status === 'paused' && (
+            <button
+              onClick={() => onFindInfluencers?.(campaign)}
+              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-600 to-yellow-600 hover:from-yellow-700 hover:to-yellow-700 text-white"
+            >
+              <Play className="w-4 h-4" />
+              <span>Возобновить кампанию</span>
+            </button>
+          )}
+          {campaign.status === 'draft' && (
+            <button
+              onClick={() => onEdit?.(campaign)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Редактировать
+            </button>
+          )}
         </div>
       )}
 
