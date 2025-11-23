@@ -500,10 +500,15 @@ export function CampaignsPage() {
         {/* Campaign Modal */}
         <AutomaticCampaignModal
           isOpen={showAutomaticModal}
-          onClose={() => setShowAutomaticModal(false)}
-          currentCampaign={editingCampaign}
+          onClose={() => {
+            setShowAutomaticModal(false);
+            setEditingCampaign(null);
+          }}
           advertiserId={currentUserId}
-          onCampaignSaved={handleCampaignSaved}
+          onCampaignCreated={() => {
+            loadCampaigns();
+            toast.success('Кампания создана! Рассылка предложений началась.');
+          }}
         />
 
         {/* Campaign Details Modal */}

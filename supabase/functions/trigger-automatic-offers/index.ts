@@ -25,37 +25,40 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('Fetching campaign:', campaignId);
+    console.log('[Auto-Campaign] Processing campaign:', campaignId);
 
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
       .select('*')
       .eq('campaign_id', campaignId)
+      .eq('is_automatic', true)
       .single();
 
     if (campaignError || !campaign) {
+      console.error('[Auto-Campaign] Campaign not found:', campaignError);
       return new Response(
-        JSON.stringify({ error: 'Campaign not found' }),
+        JSON.stringify({ error: 'Campaign not found or not automatic' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const automaticSettings = campaign.metadata?.automaticSettings;
-    if (!automaticSettings) {
+    const settings = campaign.automatic_settings;
+    if (!settings) {
       return new Response(
-        JSON.stringify({ error: 'Not an automatic campaign' }),
+        JSON.stringify({ error: 'Missing automatic settings' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Finding matching influencers...');
+    console.log('[Auto-Campaign] Finding influencers...');
 
     let query = supabase
       .from('influencer_cards')
       .select('*, user_profiles!inner(user_id, full_name, email)')
       .eq('is_active', true)
       .eq('is_deleted', false)
-      .eq('moderation_status', 'approved');
+      .eq('moderation_status', 'approved')
+      .gte('rating', settings.minRating || 0);
 
     if (campaign.preferences.platforms?.length > 0) {
       query = query.in('platform', campaign.preferences.platforms);
@@ -64,17 +67,23 @@ Deno.serve(async (req: Request) => {
     const { data: cards, error: cardsError } = await query;
 
     if (cardsError) {
+      console.error('[Auto-Campaign] Error fetching cards:', cardsError);
       throw cardsError;
     }
 
-    console.log(`Found ${cards?.length || 0} cards in database`);
-
     if (!cards || cards.length === 0) {
+      console.log('[Auto-Campaign] No cards found');
       return new Response(
-        JSON.stringify({ error: 'No matching influencers found', offersCreated: 0 }),
+        JSON.stringify({ 
+          success: true, 
+          offersCreated: 0, 
+          message: 'No matching influencers found' 
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`[Auto-Campaign] Found ${cards.length} cards, filtering...`);
 
     const filtered = cards.filter(card => {
       const reach = card.reach || {};
@@ -82,29 +91,31 @@ Deno.serve(async (req: Request) => {
       const audienceDemographics = card.audience_demographics || {};
       const followers = reach.followers || 0;
 
-      if (campaign.preferences.audienceSize?.min > 0 && followers < campaign.preferences.audienceSize.min) {
+      if (followers === 0) return false;
+
+      if (campaign.preferences.audienceSize?.min && followers < campaign.preferences.audienceSize.min) {
         return false;
       }
-      if (campaign.preferences.audienceSize?.max > 0 && followers > campaign.preferences.audienceSize.max) {
+      if (campaign.preferences.audienceSize?.max && followers > campaign.preferences.audienceSize.max) {
         return false;
       }
 
       if (campaign.preferences.contentTypes?.length > 0) {
         const cardContentTypes = serviceDetails.contentTypes || [];
-        const normalizeType = (t: string) => t.toLowerCase().trim();
-        const hasMatch = campaign.preferences.contentTypes.some((ft: string) =>
-          cardContentTypes.some((ct: string) => normalizeType(ct).includes(normalizeType(ft)) || normalizeType(ft).includes(normalizeType(ct)))
+        const hasMatch = campaign.preferences.contentTypes.some((prefType: string) =>
+          cardContentTypes.some((cardType: string) => 
+            cardType.toLowerCase().includes(prefType.toLowerCase()) ||
+            prefType.toLowerCase().includes(cardType.toLowerCase())
+          )
         );
         if (!hasMatch) return false;
       }
 
-      // Geography filtering
-      const targetCountries = campaign.preferences.demographics?.countries || [];
-      if (targetCountries.length > 0) {
-        const cardCountries = Object.keys(audienceDemographics.topCountries) || [];
-        const hasCountryMatch = cardCountries.some((country: string) =>
-          targetCountries.some((target: string) =>
-            target.toLowerCase() === country.toLowerCase()
+      if (campaign.preferences.demographics?.countries?.length > 0) {
+        const cardCountries = Object.keys(audienceDemographics.topCountries || {});
+        const hasCountryMatch = campaign.preferences.demographics.countries.some((prefCountry: string) =>
+          cardCountries.some((cardCountry: string) => 
+            cardCountry.toLowerCase() === prefCountry.toLowerCase()
           )
         );
         if (!hasCountryMatch) return false;
@@ -113,10 +124,21 @@ Deno.serve(async (req: Request) => {
       return true;
     });
 
-    console.log(`${filtered.length} cards passed filtering`);
+    console.log(`[Auto-Campaign] ${filtered.length} cards passed filtering`);
+
+    if (filtered.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          offersCreated: 0, 
+          message: 'No influencers match criteria' 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const scored = filtered
-      .filter(card => card.reach && card.reach.followers && card.reach.followers > 0)
+      .filter(card => card.reach && card.reach.followers > 0)
       .map(card => {
         const reach = card.reach || {};
         const followers = reach.followers || 0;
@@ -124,25 +146,26 @@ Deno.serve(async (req: Request) => {
         const rating = card.rating || 0;
         const completed = card.completed_campaigns || 0;
 
-        const maxFollowers = Math.max(...filtered.map(c => (c.reach?.followers && c.reach.followers > 0) ? c.reach.followers : 0), 1);
-        const maxEngagement = Math.max(...filtered.map(c => c.reach?.engagementRate || 0), 1);
-        const maxRating = 5;
-        const maxCompleted = Math.max(...filtered.map(c => c.completed_campaigns || 0), 1);
+        const weights = settings.scoringWeights || { followers: 30, engagement: 30, rating: 20, completedCampaigns: 20 };
+        const maxFollowers = Math.max(...filtered.map((c: any) => c.reach?.followers || 0), 1);
+        const maxEngagement = Math.max(...filtered.map((c: any) => c.reach?.engagementRate || 0), 1);
+        const maxCompleted = Math.max(...filtered.map((c: any) => c.completed_campaigns || 0), 1);
 
-        const score =
-          (followers / maxFollowers) * automaticSettings.scoringWeights.followers +
-          (engagement / maxEngagement) * automaticSettings.scoringWeights.engagement +
-          (rating / maxRating) * automaticSettings.scoringWeights.rating +
-          (completed / maxCompleted) * automaticSettings.scoringWeights.completedCampaigns;
+        const score = 
+          (followers / maxFollowers) * (weights.followers / 100) +
+          (engagement / maxEngagement) * (weights.engagement / 100) +
+          (rating / 5) * (weights.rating / 100) +
+          (completed / maxCompleted) * (weights.completedCampaigns / 100);
 
-        return { ...card, score };
+        return { ...card, score: score * 100 };
       });
 
     scored.sort((a, b) => b.score - a.score);
 
-    const topInfluencers = scored.slice(0, automaticSettings.targetInfluencerCount);
+    const targetCount = settings.targetInfluencerCount || 5;
+    const topInfluencers = scored.slice(0, targetCount);
 
-    console.log(`Creating offers for ${topInfluencers.length} influencers`);
+    console.log(`[Auto-Campaign] Creating offers for ${topInfluencers.length} influencers`);
 
     let offersCreated = 0;
     const errors: string[] = [];
@@ -152,7 +175,6 @@ Deno.serve(async (req: Request) => {
         const pricing = influencer.service_details?.pricing || {};
         const contentTypes = campaign.preferences.contentTypes || [];
 
-        // Find matching content types with prices
         const matchingTypes: Array<{ type: string; price: number }> = [];
         for (const type of contentTypes) {
           const key = type.toLowerCase();
@@ -161,24 +183,17 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        // Skip if no matching content types
         if (matchingTypes.length === 0) {
-          console.log(`⚠️ No matching content types for ${influencer.user_id}`);
+          console.log(`[Auto-Campaign] No matching content types for ${influencer.user_id}`);
           continue;
         }
 
-        // Choose content type with minimum price
         const bestContent = matchingTypes.reduce((min, current) =>
           current.price < min.price ? current : min
         );
 
-        const contentType = bestContent.type;
-        const suggestedBudget = bestContent.price;
-
-        const timelineText = `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`;
-
         const { error: offerError } = await supabase
-          .from('collaboration_offers')
+          .from('offers')
           .insert([{
             influencer_id: influencer.user_id,
             campaign_id: campaignId,
@@ -187,55 +202,54 @@ Deno.serve(async (req: Request) => {
             details: {
               title: campaign.title,
               description: campaign.description,
-              contentType: contentType,
-              proposed_rate: suggestedBudget,
+              contentType: bestContent.type,
+              proposed_rate: bestContent.price,
               currency: campaign.budget.currency || 'RUB',
-              timeline: timelineText,
-              suggestedBudget,
+              timeline: `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`,
               deliverables: [{
-                type: contentType,
+                type: bestContent.type,
                 quantity: 1,
-                description: `Создание ${contentType.toLowerCase()}`
+                description: `Создание ${bestContent.type.toLowerCase()}`
               }]
             },
             status: 'pending',
             timeline: campaign.timeline,
             metadata: {
               isAutomatic: true,
-              campaignId,
               score: influencer.score || 0,
               sentAt: new Date().toISOString()
             },
             current_stage: 'offer_sent',
-            initiated_by: campaign.advertiser_id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            initiated_by: campaign.advertiser_id
           }]);
 
         if (offerError) {
-          console.error('Failed to create offer:', offerError);
+          console.error('[Auto-Campaign] Failed to create offer:', offerError);
           errors.push(`Error for ${influencer.user_id}: ${offerError.message}`);
         } else {
           offersCreated++;
-          console.log(`✓ Offer created for ${influencer.user_id} (score: ${influencer.score})`);
+          console.log(`[Auto-Campaign] ✓ Offer created for ${influencer.user_id} (score: ${influencer.score?.toFixed(1)})`);
         }
       } catch (error) {
-        console.error('Error creating offer:', error);
+        console.error('[Auto-Campaign] Error creating offer:', error);
         errors.push(`Error for ${influencer.user_id}: ${error.message}`);
       }
     }
+
+    console.log(`[Auto-Campaign] Completed: ${offersCreated} offers created`);
 
     return new Response(
       JSON.stringify({
         success: offersCreated > 0,
         offersCreated,
+        targetCount,
         totalCandidates: filtered.length,
-        errors
+        errors: errors.length > 0 ? errors : undefined
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('[Auto-Campaign] Function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

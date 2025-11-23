@@ -25,7 +25,6 @@ import {
   Check,
   UserCircle
 } from 'lucide-react';
-import { automaticOfferService } from '../../campaigns/services/automaticOfferService';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { PaymentRequestModal } from './PaymentRequestModal';
