@@ -12,13 +12,54 @@ interface MatchedInfluencer {
   priceDifference: number;
 }
 
+interface FilteringStats {
+  totalCards: number;
+  afterPlatform: number;
+  afterAudience: number;
+  afterContentTypes: number;
+  afterBudget: number;
+  afterCountries: number;
+  afterInterests: number;
+  afterProductCategories: number;
+  matched: number;
+}
+
 export class AutoCampaignService {
+
+  private normalizeString(str: string): string {
+    return str.trim().toLowerCase();
+  }
+
+  private normalizeArray(arr: string[]): string[] {
+    return arr.map(s => this.normalizeString(s));
+  }
+
+  private arraysOverlap(arr1: string[], arr2: string[]): boolean {
+    const normalized1 = this.normalizeArray(arr1);
+    const normalized2 = this.normalizeArray(arr2);
+    return normalized1.some(item => normalized2.includes(item));
+  }
+
+  private findPriceForFormat(pricing: Record<string, number>, format: string): number | null {
+    const normalizedFormat = this.normalizeString(format);
+
+    for (const [key, value] of Object.entries(pricing)) {
+      if (this.normalizeString(key) === normalizedFormat) {
+        return value;
+      }
+    }
+
+    return null;
+  }
 
   async createCampaign(advertiserId: string, data: AutoCampaignFormData): Promise<AutoCampaign> {
     // Вычисляем идеальную цену за подписчика
     const avgBudget = (data.budgetMin + data.budgetMax) / 2;
     const avgAudience = (data.audienceMin + data.audienceMax) / 2;
     const targetPricePerFollower = avgAudience / avgBudget;
+
+    // Нормализуем платформы в lowercase для совместимости с БД
+    const normalizedPlatforms = data.platforms.map(p => p.toLowerCase());
 
     const { data: campaign, error } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
@@ -33,7 +74,7 @@ export class AutoCampaignService {
         audience_max: data.audienceMax,
         target_influencers_count: data.targetInfluencersCount,
         content_types: data.contentTypes,
-        platforms: data.platforms,
+        platforms: normalizedPlatforms,
         target_countries: data.targetCountries,
         target_audience_interests: data.targetAudienceInterests,
         product_categories: data.productCategories,
@@ -68,18 +109,51 @@ export class AutoCampaignService {
   }
 
   async getCampaign(campaignId: string): Promise<AutoCampaign | null> {
-    const { data, error } = await supabase
-      .from(TABLES.AUTO_CAMPAIGNS)
-      .select('*')
-      .eq('id', campaignId)
-      .single();
+    try {
+      console.log(`[getCampaign] Fetching campaign: ${campaignId}`);
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
+      const { data, error } = await supabase
+        .from(TABLES.AUTO_CAMPAIGNS)
+        .select('*')
+        .eq('id', campaignId)
+        .single();
+
+      if (error) {
+        console.error('[getCampaign] Database error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+
+        if (error.code === 'PGRST116') {
+          console.log('[getCampaign] Campaign not found (404)');
+          return null;
+        }
+        throw error;
+      }
+
+      if (!data) {
+        console.log('[getCampaign] No data returned');
+        return null;
+      }
+
+      console.log('[getCampaign] Campaign data received:', {
+        id: data.id,
+        title: data.title,
+        status: data.status,
+        platforms: data.platforms,
+        contentTypes: data.content_types
+      });
+
+      return this.mapCampaignFromDb(data);
+    } catch (error) {
+      console.error('[getCampaign] Unexpected error:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Ошибка сети: не удалось подключиться к базе данных. Проверьте соединение с интернетом.');
+      }
       throw error;
     }
-
-    return this.mapCampaignFromDb(data);
   }
 
   async updateCampaign(campaignId: string, updates: Partial<AutoCampaignFormData>): Promise<AutoCampaign> {
@@ -93,7 +167,10 @@ export class AutoCampaignService {
     if (updates.audienceMax !== undefined) dbUpdates.audience_max = updates.audienceMax;
     if (updates.targetInfluencersCount !== undefined) dbUpdates.target_influencers_count = updates.targetInfluencersCount;
     if (updates.contentTypes !== undefined) dbUpdates.content_types = updates.contentTypes;
-    if (updates.platforms !== undefined) dbUpdates.platforms = updates.platforms;
+    if (updates.platforms !== undefined) {
+      // Нормализуем платформы в lowercase
+      dbUpdates.platforms = updates.platforms.map(p => p.toLowerCase());
+    }
     if (updates.targetCountries !== undefined) dbUpdates.target_countries = updates.targetCountries;
     if (updates.targetAudienceInterests !== undefined) dbUpdates.target_audience_interests = updates.targetAudienceInterests;
     if (updates.productCategories !== undefined) dbUpdates.product_categories = updates.productCategories;
@@ -145,20 +222,52 @@ export class AutoCampaignService {
     console.log(`Campaign ID: ${campaignId}`);
     console.log(`Advertiser ID: ${advertiserId}`);
 
-    const campaign = await this.getCampaign(campaignId);
-    if (!campaign) throw new Error('Campaign not found');
-    if (campaign.status !== 'draft') throw new Error('Campaign already launched');
+    let campaign: AutoCampaign | null;
+    try {
+      campaign = await this.getCampaign(campaignId);
+    } catch (error) {
+      console.error('[launchCampaign] Failed to fetch campaign:', error);
+      throw new Error(`Не удалось загрузить данные кампании: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
+
+    if (!campaign) {
+      throw new Error('Кампания не найдена. Возможно, она была удалена.');
+    }
+
+    if (campaign.status !== 'draft') {
+      throw new Error(`Кампания уже запущена. Текущий статус: ${campaign.status}`);
+    }
 
     console.log(`Campaign: ${campaign.title}`);
     console.log(`Target influencers: ${campaign.targetInfluencersCount}`);
 
     // Подбираем инфлюенсеров
-    const matchedInfluencers = await this.findMatchingInfluencers(campaign);
+    const result = await this.findMatchingInfluencers(campaign);
 
-    if (matchedInfluencers.length === 0) {
+    if (result.length === 0) {
       console.log('⚠️  No matching influencers found');
-      throw new Error('Не найдено инфлюенсеров по заданным критериям. Попробуйте изменить параметры кампании.');
+
+      // Генерируем рекомендации на основе логов
+      const recommendations: string[] = [];
+
+      // Эти рекомендации должны быть основаны на реальной статистике фильтрации
+      // Для простоты приведем общие рекомендации
+      recommendations.push('💡 Попробуйте расширить параметры кампании:');
+      recommendations.push('   • Увеличьте максимальный бюджет');
+      recommendations.push('   • Расширьте диапазон аудитории (подписчиков)');
+      recommendations.push('   • Добавьте больше типов контента');
+      recommendations.push('   • Уберите фильтры по странам или интересам, если они указаны');
+
+      const errorMessage = [
+        'Не найдено инфлюенсеров по заданным критериям.',
+        '',
+        ...recommendations
+      ].join('\n');
+
+      throw new Error(errorMessage);
     }
+
+    const matchedInfluencers = result;
 
     // Рассчитываем сколько отправлять приглашений
     // Применяем овербукинг (25%) для компенсации возможных отказов
@@ -332,6 +441,19 @@ export class AutoCampaignService {
 
     console.log(`\n✓ Found ${cards.length} active cards, starting filtering...`);
 
+    // Статистика фильтрации
+    const stats: FilteringStats = {
+      totalCards: cards.length,
+      afterPlatform: cards.length,
+      afterAudience: 0,
+      afterContentTypes: 0,
+      afterBudget: 0,
+      afterCountries: 0,
+      afterInterests: 0,
+      afterProductCategories: 0,
+      matched: 0
+    };
+
     // Группируем карточки по инфлюенсерам
     const cardsByInfluencer = new Map<string, any[]>();
 
@@ -346,6 +468,12 @@ export class AutoCampaignService {
     console.log(`✓ Grouped into ${cardsByInfluencer.size} unique influencers\n`);
 
     const matched: MatchedInfluencer[] = [];
+    let filteredByAudience = 0;
+    let filteredByContentTypes = 0;
+    let filteredByBudget = 0;
+    let filteredByCountries = 0;
+    let filteredByInterests = 0;
+    let filteredByCategories = 0;
 
     // Для каждого инфлюенсера ищем лучшую комбинацию карточка + формат
     for (const [influencerId, influencerCards] of cardsByInfluencer.entries()) {
@@ -380,52 +508,61 @@ export class AutoCampaignService {
           // 1. Аудитория - диапазон (ОБЯЗАТЕЛЬНО)
           if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
             console.log(`    ❌ FILTERED: Audience ${followers} not in [${campaign.audienceMin}, ${campaign.audienceMax}]`);
+            filteredByAudience++;
             continue;
           }
           console.log(`    ✓ Audience: ${followers}`);
 
-          // 2. Типы контента - хотя бы 1 совпадение (ОБЯЗАТЕЛЬНО)
-          const matchingContentTypes = campaign.contentTypes.filter(ct => contentTypes.includes(ct));
+          // 2. Типы контента - хотя бы 1 совпадение (ОБЯЗАТЕЛЬНО) - case-insensitive
+          const matchingContentTypes: string[] = [];
+          for (const campaignType of campaign.contentTypes) {
+            for (const cardType of contentTypes) {
+              if (this.normalizeString(campaignType) === this.normalizeString(cardType)) {
+                matchingContentTypes.push(cardType); // Используем оригинальное имя из карточки
+                break;
+              }
+            }
+          }
+
           if (matchingContentTypes.length === 0) {
             console.log(`    ❌ FILTERED: No content type overlap. Card: [${contentTypes.join(', ')}], Campaign: [${campaign.contentTypes.join(', ')}]`);
+            filteredByContentTypes++;
             continue;
           }
           console.log(`    ✓ Content types: [${matchingContentTypes.join(', ')}]`);
 
-          // 3. Страны - хотя бы 1 совпадение (если указано в кампании)
+          // 3. Страны - хотя бы 1 совпадение (если указано в кампании) - case-insensitive
           if (Array.isArray(campaign.targetCountries) && campaign.targetCountries.length > 0) {
-            const hasCountryOverlap = campaign.targetCountries.some(country => cardCountries.includes(country));
+            const hasCountryOverlap = this.arraysOverlap(campaign.targetCountries, cardCountries);
             if (!hasCountryOverlap) {
               console.log(`    ❌ FILTERED: No country overlap. Card: [${cardCountries.join(', ')}], Campaign: [${campaign.targetCountries.join(', ')}]`);
+              filteredByCountries++;
               continue;
             }
-            const matchingCountries = campaign.targetCountries.filter(c => cardCountries.includes(c));
-            console.log(`    ✓ Countries: [${matchingCountries.join(', ')}]`);
+            console.log(`    ✓ Countries match`);
           } else {
             console.log(`    ℹ️  Countries: not filtered (campaign has no country filter)`);
           }
 
-          // 4. Интересы аудитории - хотя бы 1 совпадение (если указано в кампании)
+          // 4. Интересы аудитории - хотя бы 1 совпадение (если указано в кампании) - case-insensitive
           if (Array.isArray(campaign.targetAudienceInterests) && campaign.targetAudienceInterests.length > 0) {
-            const hasInterestOverlap = campaign.targetAudienceInterests.some(interest => cardInterests.includes(interest));
+            const hasInterestOverlap = this.arraysOverlap(campaign.targetAudienceInterests, cardInterests);
             if (!hasInterestOverlap) {
               console.log(`    ❌ FILTERED: No interest overlap. Card: [${cardInterests.join(', ')}], Campaign: [${campaign.targetAudienceInterests.join(', ')}]`);
+              filteredByInterests++;
               continue;
             }
-            const matchingInterests = campaign.targetAudienceInterests.filter(i => cardInterests.includes(i));
-            console.log(`    ✓ Interests: [${matchingInterests.join(', ')}]`);
+            console.log(`    ✓ Interests match`);
           } else {
             console.log(`    ℹ️  Interests: not filtered (campaign has no interest filter)`);
           }
 
-          // 5. Категории товаров - проверка черного списка инфлюенсера (если указано в кампании)
+          // 5. Категории товаров - проверка черного списка инфлюенсера (если указано в кампании) - case-insensitive
           if (Array.isArray(campaign.productCategories) && campaign.productCategories.length > 0) {
-            const hasBlacklistedCategory = campaign.productCategories.some(cat =>
-              cardProductCategories.includes(cat)
-            );
+            const hasBlacklistedCategory = this.arraysOverlap(campaign.productCategories, cardProductCategories);
             if (hasBlacklistedCategory) {
-              const blacklisted = campaign.productCategories.filter(cat => cardProductCategories.includes(cat));
-              console.log(`    ❌ FILTERED: Campaign categories in influencer blacklist: [${blacklisted.join(', ')}]`);
+              console.log(`    ❌ FILTERED: Campaign categories in influencer blacklist`);
+              filteredByCategories++;
               continue;
             }
             console.log(`    ✓ No blacklisted categories`);
@@ -435,16 +572,20 @@ export class AutoCampaignService {
 
           // ============ PRICING SELECTION ============
 
-          // Находим все подходящие форматы с ценами в бюджете
+          // Находим все подходящие форматы с ценами в бюджете - с использованием case-insensitive поиска
           const matchingFormats: Array<{format: string, price: number}> = [];
 
           for (const format of matchingContentTypes) {
-            const price = pricing[format];
-            if (price && price > 0 && price >= campaign.budgetMin && price <= campaign.budgetMax) {
-              matchingFormats.push({ format, price });
-              console.log(`    💰 ${format}: ${price} ₽ (in budget)`);
-            } else if (price) {
-              console.log(`    ⚠️  ${format}: ${price} ₽ (out of budget [${campaign.budgetMin}, ${campaign.budgetMax}])`);
+            // Используем новую функцию для поиска цены с учетом регистра
+            const price = this.findPriceForFormat(pricing, format);
+
+            if (price && price > 0) {
+              if (price >= campaign.budgetMin && price <= campaign.budgetMax) {
+                matchingFormats.push({ format, price });
+                console.log(`    💰 ${format}: ${price} ₽ (in budget)`);
+              } else {
+                console.log(`    ⚠️  ${format}: ${price} ₽ (out of budget [${campaign.budgetMin}, ${campaign.budgetMax}])`);
+              }
             } else {
               console.log(`    ⚠️  ${format}: no price set`);
             }
@@ -452,6 +593,7 @@ export class AutoCampaignService {
 
           if (matchingFormats.length === 0) {
             console.log(`    ❌ FILTERED: No formats with prices in budget range`);
+            filteredByBudget++;
             continue;
           }
 
@@ -513,6 +655,32 @@ export class AutoCampaignService {
 
     console.log(`\n========== MATCHING COMPLETE ==========`);
     console.log(`✅ ${matched.length} influencers matched`);
+
+    // Выводим детальную статистику фильтрации
+    console.log(`\n📊 Filtering Statistics:`);
+    console.log(`  Total cards found: ${stats.totalCards}`);
+    console.log(`  After platform filter: ${stats.afterPlatform}`);
+
+    if (filteredByAudience > 0) {
+      console.log(`  ❌ Filtered by audience: ${filteredByAudience} cards`);
+    }
+    if (filteredByContentTypes > 0) {
+      console.log(`  ❌ Filtered by content types: ${filteredByContentTypes} cards`);
+    }
+    if (filteredByBudget > 0) {
+      console.log(`  ❌ Filtered by budget: ${filteredByBudget} cards`);
+    }
+    if (filteredByCountries > 0) {
+      console.log(`  ❌ Filtered by countries: ${filteredByCountries} cards`);
+    }
+    if (filteredByInterests > 0) {
+      console.log(`  ❌ Filtered by interests: ${filteredByInterests} cards`);
+    }
+    if (filteredByCategories > 0) {
+      console.log(`  ❌ Filtered by blacklisted categories: ${filteredByCategories} cards`);
+    }
+
+    console.log(`  ✅ Final matches: ${matched.length}`);
     console.log(`=========================================\n`);
 
     // Сортируем по близости к идеальной цене
