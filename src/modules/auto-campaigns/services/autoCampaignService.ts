@@ -96,6 +96,12 @@ export class AutoCampaignService {
     if (updates.targetInfluencersCount !== undefined) dbUpdates.target_influencers_count = updates.targetInfluencersCount;
     if (updates.contentTypes !== undefined) dbUpdates.content_types = updates.contentTypes;
     if (updates.platforms !== undefined) dbUpdates.platforms = updates.platforms;
+    if (updates.targetAgeGroups !== undefined) dbUpdates.target_age_groups = updates.targetAgeGroups;
+    if (updates.targetGenders !== undefined) dbUpdates.target_genders = updates.targetGenders;
+    if (updates.targetCountries !== undefined) dbUpdates.target_countries = updates.targetCountries;
+    if (updates.targetAudienceInterests !== undefined) dbUpdates.target_audience_interests = updates.targetAudienceInterests;
+    if (updates.productCategories !== undefined) dbUpdates.product_categories = updates.productCategories;
+    if (updates.enableChat !== undefined) dbUpdates.enable_chat = updates.enableChat;
     if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
     if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
 
@@ -111,7 +117,8 @@ export class AutoCampaignService {
 
         const avgBudget = (budgetMin + budgetMax) / 2;
         const avgAudience = (audienceMin + audienceMax) / 2;
-        dbUpdates.target_price_per_follower = avgAudience / avgBudget;
+        // Исправлено: цена ЗА подписчика = бюджет / аудитория
+        dbUpdates.target_price_per_follower = avgBudget / avgAudience;
       }
     }
 
@@ -172,10 +179,17 @@ export class AutoCampaignService {
     const influencersToInvite = matchedInfluencers.slice(0, invitesToSend);
 
     // Обновляем статус кампании на active
-    await supabase
+    console.log('\n🔄 Updating campaign status to active...');
+    const { error: statusError } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .update({ status: 'active' })
       .eq('id', campaignId);
+
+    if (statusError) {
+      console.error('❌ Failed to update campaign status:', statusError);
+      throw new Error(`Не удалось обновить статус кампании: ${statusError.message}`);
+    }
+    console.log('✅ Campaign status updated to active');
 
     console.log(`\n📤 Sending offers to ${influencersToInvite.length} influencers...`);
 
@@ -212,12 +226,20 @@ export class AutoCampaignService {
     // Обновляем счетчики
     // Кампания остается active даже если sentCount = 0
     // (возможно, все были пропущены по rate limit, но они станут доступны позже)
-    await supabase
+    console.log('\n🔄 Updating campaign counters...');
+    const { error: counterError } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .update({
         sent_offers_count: sentCount
       })
       .eq('id', campaignId);
+
+    if (counterError) {
+      console.error('❌ Failed to update counters:', counterError);
+      // Не выбрасываем ошибку - кампания уже активна
+    } else {
+      console.log('✅ Campaign counters updated');
+    }
 
     if (sentCount === 0) {
       console.log('⚠️  No offers were sent (all skipped by rate limit or failed)');
