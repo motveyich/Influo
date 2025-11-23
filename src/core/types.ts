@@ -713,6 +713,8 @@ export interface AutoCampaign {
   contentTypes: string[];
   platforms: string[];
   targetCountries: string[];
+  targetAgeGroups: string[];
+  targetGenders: string[];
   targetAudienceInterests: string[];
   productCategories: string[];
   enableChat: boolean;
