@@ -40,7 +40,6 @@ export function Layout({ children }: LayoutProps) {
   const baseNavigation = [
     { name: t('nav.home'), href: '/app', icon: Zap },
     { name: t('nav.profiles'), href: '/app/profiles', icon: Users },
-    { name: t('nav.automaticCampaigns'), href: '/app/campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/app/influencer-cards', icon: Grid },
     { name: t('nav.offers'), href: '/app/offers', icon: MessageCircle },
     { name: t('nav.chat'), href: '/app/chat', icon: MessageCircle },
@@ -105,7 +104,6 @@ export function Layout({ children }: LayoutProps) {
   const getCurrentFeature = () => {
     const path = location.pathname;
     if (path.startsWith('/analytics')) return 'analytics_dashboard';
-    if (path.startsWith('/campaigns')) return 'campaigns';
     if (path.startsWith('/chat')) return 'chat';
     if (path.startsWith('/offers')) return 'offers';
     if (path.startsWith('/profiles')) return 'profiles';

@@ -31,8 +31,7 @@ interface TopUser {
   successRate: number;
 }
 
-interface CampaignStats {
-  activeCampaigns: number;
+interface UserStats {
   pendingApplications: number;
   unreadMessages: number;
   pendingPayouts: number;
@@ -88,44 +87,26 @@ export class HomeService {
     }
   }
 
-  async getCampaignStats(userId: string): Promise<CampaignStats> {
+  async getUserStats(userId: string): Promise<UserStats> {
     try {
       return await this.getUserActualStats(userId);
     } catch (error) {
-      console.error('Failed to fetch campaign stats:', error);
+      console.error('Failed to fetch user stats:', error);
       return this.getEmptyStats();
     }
   }
 
-  async getUserActualStats(userId: string): Promise<CampaignStats> {
+  async getUserActualStats(userId: string): Promise<UserStats> {
     try {
-      // 1. Активные кампании (если пользователь - рекламодатель)
-      const { data: userProfile } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('user_type')
-        .eq('user_id', userId)
-        .single();
-
-      let activeCampaigns = 0;
-      if (userProfile?.user_type === 'advertiser') {
-        const { data: campaigns } = await supabase
-          .from(TABLES.CAMPAIGNS)
-          .select('campaign_id')
-          .eq('advertiser_id', userId)
-          .eq('status', 'active')
-          .eq('is_deleted', false);
-        activeCampaigns = campaigns?.length || 0;
-      }
-
-      // 2. Предложения о сотрудничестве, ожидающие ответа пользователя
+      // 1. Предложения о сотрудничестве, ожидающие ответа пользователя
       const { data: pendingOffers } = await supabase
         .from(TABLES.OFFERS)
-        .select('offer_id')
+        .select('id')
         .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .eq('status', 'pending');
       const pendingApplications = pendingOffers?.length || 0;
 
-      // 3. Неотвеченные сообщения
+      // 2. Неотвеченные сообщения
       const { data: unreadMessages } = await supabase
         .from(TABLES.CHAT_MESSAGES)
         .select('id')
@@ -133,7 +114,7 @@ export class HomeService {
         .eq('is_read', false);
       const unreadCount = unreadMessages?.length || 0;
 
-      // 4. Ждут выплат (окна оплаты, ожидающие действий)
+      // 3. Ждут выплат (окна оплаты, ожидающие действий)
       let pendingPayoutsCount = 0;
       try {
         // Для рекламодателя - окна в статусе pending (нужно оплатить)
@@ -203,7 +184,6 @@ export class HomeService {
       }
 
       return {
-        activeCampaigns,
         pendingApplications,
         unreadMessages: unreadCount,
         pendingPayouts: pendingPayoutsCount,
@@ -237,9 +217,8 @@ export class HomeService {
     }
   }
 
-  private getEmptyStats(): CampaignStats {
+  private getEmptyStats(): UserStats {
     return {
-      activeCampaigns: 0,
       pendingApplications: 0,
       unreadMessages: 0,
       pendingPayouts: 0,

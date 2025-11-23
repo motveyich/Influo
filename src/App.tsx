@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/Layout';
 import { ProfilesPage } from './modules/profiles/components/ProfilesPage';
-import { CampaignsPage } from './modules/campaigns/components/CampaignsPage';
 import { ChatPage } from './modules/chat/components/ChatPage';
 import { InfluencerCardsPage } from './modules/influencer-cards/components/InfluencerCardsPage';
 import { InfluencerCardDetailPage } from './modules/influencer-cards/components/InfluencerCardDetailPage';
@@ -14,7 +13,6 @@ import { DemoProvider } from './demo/DemoContext';
 import { DemoLayout } from './demo/components/DemoLayout';
 import { DemoHomePage } from './demo/pages/DemoHomePage';
 import { DemoProfilesPage } from './demo/pages/DemoProfilesPage';
-import { DemoCampaignsPage } from './demo/pages/DemoCampaignsPage';
 import { DemoInfluencerCardsPage } from './demo/pages/DemoInfluencerCardsPage';
 import { DemoOffersPage } from './demo/pages/DemoOffersPage';
 import { DemoChatPage } from './demo/pages/DemoChatPage';
@@ -38,11 +36,6 @@ function App() {
             <Route path="/profiles" element={
               <DemoLayout>
                 <DemoProfilesPage />
-              </DemoLayout>
-            } />
-            <Route path="/campaigns" element={
-              <DemoLayout>
-                <DemoCampaignsPage />
               </DemoLayout>
             } />
             <Route path="/influencer-cards" element={
@@ -70,11 +63,6 @@ function App() {
             <Route path="/app/profiles" element={
               <Layout>
                 <ProfilesPage />
-              </Layout>
-            } />
-            <Route path="/app/campaigns" element={
-              <Layout>
-                <CampaignsPage />
               </Layout>
             } />
             <Route path="/app/influencer-cards" element={

@@ -3,7 +3,6 @@ import { ChatMessage } from '../../../core/types';
 import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
-import { CollaborationRequestModal } from './CollaborationRequestModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { AIChatPanel } from './AIChatPanel';
 import { MessageBubble } from './MessageBubble';
@@ -41,7 +40,6 @@ export function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ChatTab>('main');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showCollaborationModal, setShowCollaborationModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
@@ -987,15 +985,6 @@ export function ChatPage() {
           conversationMessages={messages}
         />
       )}
-
-      {/* Collaboration Request Modal */}
-      <CollaborationRequestModal
-        isOpen={showCollaborationModal}
-        onClose={() => setShowCollaborationModal(false)}
-        receiverId={selectedConversation?.participantId || ''}
-        senderId={currentUserId}
-        onRequestSent={handleCollaborationRequestSent}
-      />
 
       {/* Public Profile Modal */}
       {showProfileModal && selectedConversation && (

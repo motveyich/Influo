@@ -43,15 +43,7 @@ interface PlatformEvent {
   publishedAt: string;
 }
 
-interface CampaignStats {
-  totalCampaigns: number;
-  activeCampaigns: number;
-  averageBudget: number;
-  averageConversion: number;
-  newApplicationsThisWeek: number;
-  totalBudgetThisMonth: number;
-  successfulDeals: number;
-  averageResponseTime: number;
+interface UserStats {
   pendingApplications: number;
   unreadMessages: number;
   pendingPayouts: number;
@@ -62,7 +54,7 @@ interface CampaignStats {
 export function HomePage() {
   const [platformUpdates, setPlatformUpdates] = useState<PlatformUpdate[]>([]);
   const [platformEvents, setPlatformEvents] = useState<PlatformEvent[]>([]);
-  const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -88,12 +80,12 @@ export function HomePage() {
       ] = await Promise.all([
         homeService.getPlatformUpdates(),
         homeService.getPlatformEvents(),
-        homeService.getCampaignStats(currentUserId)
+        homeService.getUserStats(currentUserId)
       ]);
 
       setPlatformUpdates(updatesData);
       setPlatformEvents(eventsData);
-      setCampaignStats(statsData);
+      setUserStats(statsData);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Failed to load home data:', error);
@@ -217,135 +209,6 @@ export function HomePage() {
         </button>
       </div>
 
-      {/* Campaign Statistics */}
-      {campaignStats && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">{t('home.yourStats')}</h2>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Activity className="w-4 h-4" />
-              <span>Ваша статистика</span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Target className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">{t('home.activeCampaigns')}</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.activeCampaigns}</p>
-              <p className="text-sm text-blue-600">
-                {campaignStats.activeCampaigns === 0 ? t('home.noActive') : t('home.launched')}
-              </p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium text-gray-600">{t('home.applications')}</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingApplications}</p>
-              <p className="text-sm text-orange-600">
-                {campaignStats.pendingApplications === 0 ? t('home.noNew') : t('home.awaitingResponse')}
-              </p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <MessageCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-600">{t('home.unread')}</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.unreadMessages}</p>
-              <p className="text-sm text-green-600">
-                {campaignStats.unreadMessages === 0 ? t('home.allRead') : t('home.newMessages')}
-              </p>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <DollarSign className="w-5 h-5 text-red-600" />
-                <span className="text-sm font-medium text-gray-600">{t('home.awaitingPayouts')}</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{campaignStats.pendingPayouts}</p>
-              <p className="text-sm text-red-600">
-                {campaignStats.pendingPayouts === 0 ? t('home.noAwaiting') : t('home.requireAttention')}
-              </p>
-            </div>
-          
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Star className="w-5 h-5 text-yellow-600" />
-                <span className="text-sm font-medium text-gray-600">{t('home.rating')}</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {campaignStats.accountRating > 0 ? campaignStats.accountRating : '—'}
-              </p>
-              <p className="text-sm text-yellow-600">
-                {campaignStats.totalReviews === 0 ? (
-                  <span className="text-gray-500">{t('home.noReviews')}</span>
-                ) : (
-                  t('home.fromReviews', { count: campaignStats.totalReviews })
-                )}
-              </p>
-            </div>
-          </div>
-            
-          {/* Call to actions для пустых метрик */}
-          <div className="mt-6 space-y-3">
-            {campaignStats.totalReviews === 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <Star className="w-5 h-5 text-yellow-600" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-yellow-800">{t('home.getFirstReview')}</h4>
-                    <p className="text-sm text-yellow-700">{t('home.completeDealsForReviews')}</p>
-                  </div>
-                  <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md text-sm transition-colors">
-                    {t('home.learnHow')}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {campaignStats.activeCampaigns === 0 && currentUserProfile?.profileCompletion.advertiserSetup && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <Target className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-blue-800">{t('home.createFirstCampaign')}</h4>
-                    <p className="text-sm text-blue-700">{t('home.launchAutomaticCampaign')}</p>
-                  </div>
-                  <button 
-                    onClick={() => window.location.href = '/campaigns'}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
-                  >
-                    {t('home.create')}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {campaignStats.pendingApplications > 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <Bell className="w-5 h-5 text-orange-600" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-orange-800">{t('home.newApplications', { count: campaignStats.pendingApplications })}</h4>
-                    <p className="text-sm text-orange-700">{t('home.reviewApplications')}</p>
-                  </div>
-                  <button 
-                    onClick={() => window.location.href = '/chat'}
-                    className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
-                  >
-                    {t('home.review')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Platform Updates */}
