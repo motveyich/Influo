@@ -4,6 +4,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag, StopCircle, XCircle, Eye, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ReportModal } from '../../../components/ReportModal';
+import { campaignMetricsService } from '../../../services/campaignMetricsService';
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -38,6 +39,13 @@ export function CampaignCard({
   // Check if this is an automatic campaign
   const isAutomaticCampaign = (campaign as any).metadata?.isAutomatic;
   const automaticSettings = (campaign as any).metadata?.automaticSettings;
+
+  // Track campaign view when card is displayed
+  React.useEffect(() => {
+    if (campaign.campaignId && currentUserId) {
+      campaignMetricsService.trackCampaignView(campaign.campaignId, currentUserId);
+    }
+  }, [campaign.campaignId, currentUserId]);
 
   const getStatusColor = (status: Campaign['status']) => {
     switch (status) {
@@ -254,22 +262,32 @@ export function CampaignCard({
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            {isAutomaticCampaign ? 'Авто' : campaign.metrics.applicants}
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {campaign.metrics?.applicants || 0}
           </p>
-          <p className="text-xs text-gray-600">
-            {isAutomaticCampaign ? 'Подбор' : t('campaigns.stats.applicants')}
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            {t('campaigns.stats.applicants')}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">{campaign.metrics.accepted}</p>
-          <p className="text-xs text-gray-600">{t('campaigns.stats.accepted')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {campaign.metrics?.accepted || 0}
+          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            {t('campaigns.stats.accepted')}
+          </p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            {campaign.metrics.impressions ? `${(campaign.metrics.impressions / 1000).toFixed(0)}K` : '0'}
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {campaign.metrics?.impressions
+              ? (campaign.metrics.impressions >= 1000
+                  ? `${(campaign.metrics.impressions / 1000).toFixed(1)}K`
+                  : campaign.metrics.impressions)
+              : 0}
           </p>
-          <p className="text-xs text-gray-600">{t('campaigns.stats.impressions')}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            {t('campaigns.stats.impressions')}
+          </p>
         </div>
       </div>
 
