@@ -8,7 +8,6 @@ import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion'
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
-import { AutomaticCampaignDetailsModal } from './AutomaticCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { 
   Search, 
@@ -39,7 +38,6 @@ export function OffersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showAutomaticDetailsModal, setShowAutomaticDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
@@ -104,11 +102,7 @@ export function OffersPage() {
 
   const handleViewDetails = (offer: CollaborationOffer) => {
     setSelectedOffer(offer);
-    if ((offer as any).metadata?.isAutomatic) {
-      setShowAutomaticDetailsModal(true);
-    } else {
-      setShowDetailsModal(true);
-    }
+    setShowDetailsModal(true);
   };
 
   const handleViewProfile = (userId: string) => {
@@ -418,18 +412,6 @@ export function OffersPage() {
           />
         )}
 
-        {selectedOffer && (
-          <AutomaticCampaignDetailsModal
-            isOpen={showAutomaticDetailsModal}
-            onClose={() => {
-              setShowAutomaticDetailsModal(false);
-              setSelectedOffer(null);
-            }}
-            offerId={selectedOffer.id}
-            currentUserId={currentUserId}
-            onOfferUpdated={loadOffers}
-          />
-        )}
 
         {/* Public Profile Modal */}
         {showProfileModal && profileUserId && (

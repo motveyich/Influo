@@ -347,12 +347,12 @@ export function CampaignsPage() {
             </button>
             
             {showMyCampaigns && (
-              <button 
+              <button
                 onClick={handleCreateCampaign}
                 className="bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white px-6 py-3 rounded-md text-sm font-medium flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl dark:text-white"
               >
                 <Plus className="w-4 h-4" />
-                <span>{t('campaigns.createAutomaticCampaign')}</span>
+                <span>{t('campaigns.createCampaign')}</span>
               </button>
             )}
           </div>
