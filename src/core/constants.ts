@@ -22,6 +22,37 @@ export const OVERBOOKING_PERCENTAGE = 0.25;
 // Rate limit for offers (in milliseconds)
 export const OFFER_RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 
+// Demographics
+export const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'] as const;
+export type AgeGroup = typeof AGE_GROUPS[number];
+
+export const GENDERS = ['male', 'female', 'other'] as const;
+export type Gender = typeof GENDERS[number];
+
+export const GENDER_LABELS: Record<Gender, string> = {
+  male: 'Мужской',
+  female: 'Женский',
+  other: 'Другой'
+};
+
+export const COUNTRIES = [
+  'Россия',
+  'Украина',
+  'Беларусь',
+  'Казахстан',
+  'США',
+  'Великобритания',
+  'Германия',
+  'Франция',
+  'Испания',
+  'Италия',
+  'Польша',
+  'Турция',
+  'ОАЭ',
+  'Другое'
+] as const;
+export type Country = typeof COUNTRIES[number];
+
 export const PRODUCT_CATEGORIES = [
   'Косметика',
   'Химия для дома',

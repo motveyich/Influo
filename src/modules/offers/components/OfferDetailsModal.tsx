@@ -817,6 +817,24 @@ export function OfferDetailsModal({
           {/* Right Column - Actions */}
           <div className="lg:w-80 bg-gray-50 p-6 overflow-y-auto border-l border-gray-200">
             <div className="space-y-6">
+              {/* Chat Button (for auto-campaigns with chat enabled) */}
+              {(offer as any).enable_chat && isInfluencer && offer.advertiserId && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => {
+                      window.location.href = `/app/chat?userId=${offer.advertiserId}`;
+                    }}
+                    className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Написать рекламодателю</span>
+                  </button>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    Автокомпания разрешает прямой контакт
+                  </p>
+                </div>
+              )}
+
               {/* Quick Actions */}
               {availableActions.length > 0 && (
                 <div>

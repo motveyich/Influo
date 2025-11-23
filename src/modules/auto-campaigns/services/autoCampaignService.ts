@@ -34,6 +34,11 @@ export class AutoCampaignService {
         target_influencers_count: data.targetInfluencersCount,
         content_types: data.contentTypes,
         platforms: data.platforms,
+        target_age_groups: data.targetAgeGroups,
+        target_genders: data.targetGenders,
+        target_countries: data.targetCountries,
+        product_categories: data.productCategories,
+        enable_chat: data.enableChat,
         start_date: data.startDate,
         end_date: data.endDate,
         target_price_per_follower: targetPricePerFollower,
@@ -208,23 +213,41 @@ export class AutoCampaignService {
     for (const cardData of cards) {
       const card = this.mapInfluencerCardFromDb(cardData);
 
+      // Проверяем наличие integrationDetails
+      if (!card.integrationDetails || card.integrationDetails.length === 0) {
+        console.log(`Card ${card.id} has no integration details, skipping`);
+        continue;
+      }
+
       // Проверяем пересечение типов контента
       const commonContentTypes = campaign.contentTypes.filter(ct =>
         card.integrationDetails?.some(detail => detail.format === ct)
       );
 
-      if (commonContentTypes.length === 0) continue;
+      if (commonContentTypes.length === 0) {
+        console.log(`Card ${card.id} has no matching content types, skipping`);
+        continue;
+      }
 
       // Выбираем формат с минимальной ценой среди пересекающихся
       const availableFormats = card.integrationDetails?.filter(detail =>
-        commonContentTypes.includes(detail.format)
+        commonContentTypes.includes(detail.format) && detail.price > 0
       ) || [];
 
-      if (availableFormats.length === 0) continue;
+      if (availableFormats.length === 0) {
+        console.log(`Card ${card.id} has no available formats with price, skipping`);
+        continue;
+      }
 
       const minPriceFormat = availableFormats.reduce((min, current) =>
         current.price < min.price ? current : min
       );
+
+      // Защита от деления на ноль
+      if (minPriceFormat.price <= 0) {
+        console.log(`Card ${card.id} has invalid price, skipping`);
+        continue;
+      }
 
       // Вычисляем цену за подписчика для этой карточки
       const cardPricePerFollower = card.followersCount / minPriceFormat.price;
@@ -286,6 +309,7 @@ export class AutoCampaignService {
         start_date: campaign.startDate,
         end_date: campaign.endDate,
         status: 'pending',
+        enable_chat: campaign.enableChat,
         metadata: {
           isAutoCampaign: true,
           campaignId: campaign.id,
@@ -371,6 +395,11 @@ export class AutoCampaignService {
       targetInfluencersCount: data.target_influencers_count,
       contentTypes: data.content_types || [],
       platforms: data.platforms || [],
+      targetAgeGroups: data.target_age_groups || [],
+      targetGenders: data.target_genders || [],
+      targetCountries: data.target_countries || [],
+      productCategories: data.product_categories || [],
+      enableChat: data.enable_chat !== false,
       startDate: data.start_date,
       endDate: data.end_date,
       targetPricePerFollower: data.target_price_per_follower ? Number(data.target_price_per_follower) : undefined,

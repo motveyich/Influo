@@ -712,6 +712,11 @@ export interface AutoCampaign {
   targetInfluencersCount: number;
   contentTypes: string[];
   platforms: string[];
+  targetAgeGroups: string[];
+  targetGenders: string[];
+  targetCountries: string[];
+  productCategories: string[];
+  enableChat: boolean;
   startDate?: string;
   endDate?: string;
   targetPricePerFollower?: number;
@@ -732,6 +737,11 @@ export interface AutoCampaignFormData {
   targetInfluencersCount: number;
   contentTypes: string[];
   platforms: string[];
+  targetAgeGroups: string[];
+  targetGenders: string[];
+  targetCountries: string[];
+  productCategories: string[];
+  enableChat: boolean;
   startDate?: string;
   endDate?: string;
 }

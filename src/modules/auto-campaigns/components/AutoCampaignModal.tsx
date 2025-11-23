@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
-import { PLATFORMS, CONTENT_TYPES } from '../../../core/constants';
-import { X, DollarSign, Users, Target, Calendar, CheckSquare } from 'lucide-react';
+import { PLATFORMS, CONTENT_TYPES, AGE_GROUPS, GENDERS, GENDER_LABELS, COUNTRIES, PRODUCT_CATEGORIES } from '../../../core/constants';
+import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface AutoCampaignModalProps {
@@ -23,6 +23,11 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
     targetInfluencersCount: 10,
     contentTypes: ['post'],
     platforms: ['Instagram'],
+    targetAgeGroups: [],
+    targetGenders: [],
+    targetCountries: [],
+    productCategories: [],
+    enableChat: true,
     startDate: '',
     endDate: ''
   });
@@ -114,6 +119,38 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
         ...formData,
         platforms: [...formData.platforms, platform]
       });
+    }
+  };
+
+  const toggleAgeGroup = (age: string) => {
+    if (formData.targetAgeGroups.includes(age)) {
+      setFormData({ ...formData, targetAgeGroups: formData.targetAgeGroups.filter(a => a !== age) });
+    } else {
+      setFormData({ ...formData, targetAgeGroups: [...formData.targetAgeGroups, age] });
+    }
+  };
+
+  const toggleGender = (gender: string) => {
+    if (formData.targetGenders.includes(gender)) {
+      setFormData({ ...formData, targetGenders: formData.targetGenders.filter(g => g !== gender) });
+    } else {
+      setFormData({ ...formData, targetGenders: [...formData.targetGenders, gender] });
+    }
+  };
+
+  const toggleCountry = (country: string) => {
+    if (formData.targetCountries.includes(country)) {
+      setFormData({ ...formData, targetCountries: formData.targetCountries.filter(c => c !== country) });
+    } else {
+      setFormData({ ...formData, targetCountries: [...formData.targetCountries, country] });
+    }
+  };
+
+  const toggleCategory = (category: string) => {
+    if (formData.productCategories.includes(category)) {
+      setFormData({ ...formData, productCategories: formData.productCategories.filter(c => c !== category) });
+    } else {
+      setFormData({ ...formData, productCategories: [...formData.productCategories, category] });
     }
   };
 
@@ -343,6 +380,124 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
                 />
               </div>
             </div>
+          </div>
+
+          {/* Demographics - Age Groups */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-1" />
+              Возрастные группы аудитории (опционально)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {AGE_GROUPS.map((age) => (
+                <button
+                  key={age}
+                  type="button"
+                  onClick={() => toggleAgeGroup(age)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.targetAgeGroups.includes(age)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {age}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Demographics - Genders */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-1" />
+              Гендеры аудитории (опционально)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {GENDERS.map((gender) => (
+                <button
+                  key={gender}
+                  type="button"
+                  onClick={() => toggleGender(gender)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.targetGenders.includes(gender)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {GENDER_LABELS[gender as keyof typeof GENDER_LABELS]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Demographics - Countries */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Globe className="w-4 h-4 inline mr-1" />
+              Целевые страны (опционально)
+            </label>
+            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+              {COUNTRIES.map((country) => (
+                <button
+                  key={country}
+                  type="button"
+                  onClick={() => toggleCountry(country)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.targetCountries.includes(country)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {country}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Product Categories */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Briefcase className="w-4 h-4 inline mr-1" />
+              Категории товаров (опционально)
+            </label>
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {PRODUCT_CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => toggleCategory(category)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors text-left ${
+                    formData.productCategories.includes(category)
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Enable Chat */}
+          <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <input
+              type="checkbox"
+              id="enableChat"
+              checked={formData.enableChat}
+              onChange={(e) => setFormData({ ...formData, enableChat: e.target.checked })}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="enableChat" className="flex-1 cursor-pointer">
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-gray-900">
+                  Разрешить инфлюенсерам обращаться в чат
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Если включено, инфлюенсеры смогут связаться с вами через чат из деталей предложения
+              </p>
+            </label>
           </div>
 
           {/* Actions */}
