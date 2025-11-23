@@ -3,8 +3,9 @@ import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle } from 'lucide-react';
+import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
+import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -12,7 +13,9 @@ export function AutoCampaignsPage() {
   const [campaigns, setCampaigns] = useState<AutoCampaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<AutoCampaign | null>(null);
+  const [editingCampaign, setEditingCampaign] = useState<AutoCampaign | null>(null);
 
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -70,6 +73,16 @@ export function AutoCampaignsPage() {
       console.error('Failed to delete campaign:', error);
       toast.error('Не удалось удалить автокомпанию');
     }
+  };
+
+  const handleViewDetails = (campaign: AutoCampaign) => {
+    setSelectedCampaign(campaign);
+    setShowDetailsModal(true);
+  };
+
+  const handleEditCampaign = (campaign: AutoCampaign) => {
+    setEditingCampaign(campaign);
+    setShowModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -206,9 +219,17 @@ export function AutoCampaignsPage() {
                     <>
                       <button
                         onClick={() => handleLaunchCampaign(campaign)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
                       >
-                        Запустить
+                        <PlayCircle className="w-4 h-4" />
+                        <span>Запустить</span>
+                      </button>
+                      <button
+                        onClick={() => handleEditCampaign(campaign)}
+                        className="text-gray-700 hover:text-gray-900 px-4 py-2 text-sm font-medium transition-colors flex items-center space-x-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span>Редактировать</span>
                       </button>
                       <button
                         onClick={() => handleDeleteCampaign(campaign)}
@@ -258,10 +279,31 @@ export function AutoCampaignsPage() {
                     </div>
                   )}
                 </div>
+
+                {/* View Details Button - always visible */}
+                <button
+                  onClick={() => handleViewDetails(campaign)}
+                  className="text-blue-600 hover:text-blue-700 px-4 py-2 text-sm font-medium transition-colors flex items-center space-x-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Подробнее</span>
+                </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modals */}
+      {showDetailsModal && selectedCampaign && (
+        <AutoCampaignDetailsModal
+          isOpen={showDetailsModal}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedCampaign(null);
+          }}
+          campaign={selectedCampaign}
+        />
       )}
 
       {/* Modal */}

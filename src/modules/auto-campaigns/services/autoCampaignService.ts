@@ -215,6 +215,12 @@ export class AutoCampaignService {
     }
 
     console.log(`Found ${cards.length} cards, filtering...`);
+    console.log('Campaign filters:', {
+      platforms: campaign.platforms,
+      audienceMin: campaign.audienceMin,
+      audienceMax: campaign.audienceMax,
+      contentTypes: campaign.contentTypes
+    });
 
     const matched: MatchedInfluencer[] = [];
 
@@ -227,8 +233,16 @@ export class AutoCampaignService {
         const pricing = serviceDetails.pricing || {};
         const contentTypes = serviceDetails.contentTypes || [];
 
+        console.log(`Card ${cardData.id}:`, {
+          platform: cardData.platform,
+          followers,
+          contentTypes,
+          pricing
+        });
+
         // Проверяем размер аудитории
         if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
+          console.log(`Card ${cardData.id} filtered: audience ${followers} not in range [${campaign.audienceMin}, ${campaign.audienceMax}]`);
           continue;
         }
 
@@ -238,6 +252,7 @@ export class AutoCampaignService {
         );
 
         if (commonContentTypes.length === 0) {
+          console.log(`Card ${cardData.id} filtered: no matching content types. Card has: ${contentTypes.join(',')}, need: ${campaign.contentTypes.join(',')}`);
           continue;
         }
 
