@@ -34,8 +34,6 @@ export class AutoCampaignService {
         target_influencers_count: data.targetInfluencersCount,
         content_types: data.contentTypes,
         platforms: data.platforms,
-        target_age_groups: data.targetAgeGroups,
-        target_genders: data.targetGenders,
         target_countries: data.targetCountries,
         target_audience_interests: data.targetAudienceInterests,
         product_categories: data.productCategories,
@@ -96,8 +94,6 @@ export class AutoCampaignService {
     if (updates.targetInfluencersCount !== undefined) dbUpdates.target_influencers_count = updates.targetInfluencersCount;
     if (updates.contentTypes !== undefined) dbUpdates.content_types = updates.contentTypes;
     if (updates.platforms !== undefined) dbUpdates.platforms = updates.platforms;
-    if (updates.targetAgeGroups !== undefined) dbUpdates.target_age_groups = updates.targetAgeGroups;
-    if (updates.targetGenders !== undefined) dbUpdates.target_genders = updates.targetGenders;
     if (updates.targetCountries !== undefined) dbUpdates.target_countries = updates.targetCountries;
     if (updates.targetAudienceInterests !== undefined) dbUpdates.target_audience_interests = updates.targetAudienceInterests;
     if (updates.productCategories !== undefined) dbUpdates.product_categories = updates.productCategories;
@@ -164,17 +160,21 @@ export class AutoCampaignService {
       throw new Error('Не найдено инфлюенсеров по заданным критериям. Попробуйте изменить параметры кампании.');
     }
 
-    // Применяем овербукинг (25%)
+    // Рассчитываем сколько отправлять приглашений
+    // Применяем овербукинг (25%) для компенсации возможных отказов
     const target = campaign.targetInfluencersCount;
     const overbookTarget = Math.ceil(target * (1 + OVERBOOKING_PERCENTAGE));
     const available = matchedInfluencers.length;
+
+    // Отправляем все доступные, но не больше чем ovebook target
+    // Если доступен 1 инфлюенсер, а целевое число 1 - отправим этому 1
     const invitesToSend = Math.min(overbookTarget, available);
 
-    console.log(`\n📊 Overbooking calculation:`);
+    console.log(`\n📊 Invitation calculation:`);
     console.log(`  Target: ${target} influencers`);
-    console.log(`  Overbooking (25%): ${overbookTarget} influencers`);
-    console.log(`  Available: ${available} influencers`);
-    console.log(`  Will invite: ${invitesToSend} influencers`);
+    console.log(`  With overbooking (+25%): ${overbookTarget} influencers`);
+    console.log(`  Available matches: ${available} influencers`);
+    console.log(`  Will send invites to: ${invitesToSend} influencers`);
 
     const influencersToInvite = matchedInfluencers.slice(0, invitesToSend);
 
@@ -363,8 +363,6 @@ export class AutoCampaignService {
           const pricing = serviceDetails.pricing || {};
           const contentTypes = serviceDetails.contentTypes || [];
           const cardInterests = audienceDemographics.interests || [];
-          const cardAgeGroups = audienceDemographics.ageGroups || {};
-          const cardGenderSplit = audienceDemographics.genderSplit || {};
           const cardCountries = (audienceDemographics.topCountries || []).map((c: any) =>
             typeof c === 'string' ? c : c.country
           );
@@ -648,8 +646,6 @@ export class AutoCampaignService {
       targetInfluencersCount: data.target_influencers_count,
       contentTypes: data.content_types || [],
       platforms: data.platforms || [],
-      targetAgeGroups: data.target_age_groups || [],
-      targetGenders: data.target_genders || [],
       targetCountries: data.target_countries || [],
       targetAudienceInterests: data.target_audience_interests || [],
       productCategories: data.product_categories || [],

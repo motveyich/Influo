@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
-import { PLATFORMS, CONTENT_TYPES, AGE_GROUPS, GENDERS, GENDER_LABELS, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
+import { PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,8 +23,6 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
     targetInfluencersCount: 10,
     contentTypes: ['post'],
     platforms: ['Instagram'],
-    targetAgeGroups: [],
-    targetGenders: [],
     targetCountries: [],
     targetAudienceInterests: [],
     productCategories: [],
@@ -123,21 +121,6 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
     }
   };
 
-  const toggleAgeGroup = (age: string) => {
-    if (formData.targetAgeGroups.includes(age)) {
-      setFormData({ ...formData, targetAgeGroups: formData.targetAgeGroups.filter(a => a !== age) });
-    } else {
-      setFormData({ ...formData, targetAgeGroups: [...formData.targetAgeGroups, age] });
-    }
-  };
-
-  const toggleGender = (gender: string) => {
-    if (formData.targetGenders.includes(gender)) {
-      setFormData({ ...formData, targetGenders: formData.targetGenders.filter(g => g !== gender) });
-    } else {
-      setFormData({ ...formData, targetGenders: [...formData.targetGenders, gender] });
-    }
-  };
 
   const toggleCountry = (country: string) => {
     if (formData.targetCountries.includes(country)) {
@@ -388,54 +371,6 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Demographics - Age Groups */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4 inline mr-1" />
-              Возрастные группы аудитории (опционально)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {AGE_GROUPS.map((age) => (
-                <button
-                  key={age}
-                  type="button"
-                  onClick={() => toggleAgeGroup(age)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    formData.targetAgeGroups.includes(age)
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {age}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Demographics - Genders */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4 inline mr-1" />
-              Гендеры аудитории (опционально)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {GENDERS.map((gender) => (
-                <button
-                  key={gender}
-                  type="button"
-                  onClick={() => toggleGender(gender)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    formData.targetGenders.includes(gender)
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {GENDER_LABELS[gender as keyof typeof GENDER_LABELS]}
-                </button>
-              ))}
             </div>
           </div>
 

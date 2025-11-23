@@ -712,8 +712,6 @@ export interface AutoCampaign {
   targetInfluencersCount: number;
   contentTypes: string[];
   platforms: string[];
-  targetAgeGroups: string[];
-  targetGenders: string[];
   targetCountries: string[];
   targetAudienceInterests: string[];
   productCategories: string[];
@@ -738,8 +736,6 @@ export interface AutoCampaignFormData {
   targetInfluencersCount: number;
   contentTypes: string[];
   platforms: string[];
-  targetAgeGroups: string[];
-  targetGenders: string[];
   targetCountries: string[];
   targetAudienceInterests: string[];
   productCategories: string[];
