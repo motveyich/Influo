@@ -222,96 +222,125 @@ export class AutoCampaignService {
       contentTypes: campaign.contentTypes
     });
 
-    const matched: MatchedInfluencer[] = [];
+    // Группируем карточки по инфлюенсерам
+    const cardsByInfluencer = new Map<string, any[]>();
 
     for (const cardData of cards) {
-      try {
-        // Извлекаем данные из JSONB полей
-        const reach = cardData.reach || {};
-        const serviceDetails = cardData.service_details || {};
-        const followers = reach.followers || 0;
-        const pricing = serviceDetails.pricing || {};
-        const contentTypes = serviceDetails.contentTypes || [];
+      const influencerId = cardData.user_id;
+      if (!cardsByInfluencer.has(influencerId)) {
+        cardsByInfluencer.set(influencerId, []);
+      }
+      cardsByInfluencer.get(influencerId)!.push(cardData);
+    }
 
-        console.log(`Card ${cardData.id}:`, {
-          platform: cardData.platform,
-          followers,
-          contentTypes,
-          pricing
-        });
+    console.log(`Found ${cardsByInfluencer.size} unique influencers`);
 
-        // Проверяем размер аудитории
-        if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
-          console.log(`Card ${cardData.id} filtered: audience ${followers} not in range [${campaign.audienceMin}, ${campaign.audienceMax}]`);
-          continue;
-        }
+    const matched: MatchedInfluencer[] = [];
 
-        // Проверяем пересечение типов контента
-        const commonContentTypes = campaign.contentTypes.filter(ct =>
-          contentTypes.includes(ct)
-        );
+    // Для каждого инфлюенсера ищем лучшую комбинацию карточка + формат
+    for (const [influencerId, influencerCards] of cardsByInfluencer.entries()) {
+      let bestMatch: MatchedInfluencer | null = null;
+      let bestPrice = Infinity;
 
-        if (commonContentTypes.length === 0) {
-          console.log(`Card ${cardData.id} filtered: no matching content types. Card has: ${contentTypes.join(',')}, need: ${campaign.contentTypes.join(',')}`);
-          continue;
-        }
+      console.log(`\nProcessing influencer ${influencerId} with ${influencerCards.length} cards:`);
 
-        // Находим формат с минимальной ценой среди пересекающихся
-        let minPrice = Infinity;
-        let selectedFormat = '';
+      for (const cardData of influencerCards) {
+        try {
+          const reach = cardData.reach || {};
+          const serviceDetails = cardData.service_details || {};
+          const followers = reach.followers || 0;
+          const pricing = serviceDetails.pricing || {};
+          const contentTypes = serviceDetails.contentTypes || [];
 
-        for (const contentType of commonContentTypes) {
-          const price = pricing[contentType];
-          if (price && price > 0 && price < minPrice) {
-            minPrice = price;
-            selectedFormat = contentType;
+          console.log(`  Card ${cardData.id} (${cardData.platform}):`, {
+            followers,
+            contentTypes,
+            pricing
+          });
+
+          // Проверяем размер аудитории
+          if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
+            console.log(`    ✗ Filtered: audience ${followers} not in range [${campaign.audienceMin}, ${campaign.audienceMax}]`);
+            continue;
           }
-        }
 
-        if (minPrice === Infinity || minPrice <= 0) {
+          // Ищем ВСЕ совпадающие форматы контента для этой карточки
+          const matchingFormats: Array<{format: string, price: number}> = [];
+
+          for (const campaignFormat of campaign.contentTypes) {
+            if (contentTypes.includes(campaignFormat)) {
+              const price = pricing[campaignFormat];
+              if (price && price > 0 && price >= campaign.budgetMin && price <= campaign.budgetMax) {
+                matchingFormats.push({ format: campaignFormat, price });
+                console.log(`    ✓ Matching: ${campaignFormat} = ${price} ₽`);
+              } else if (price) {
+                console.log(`    ✗ Format ${campaignFormat} price ${price} not in budget [${campaign.budgetMin}, ${campaign.budgetMax}]`);
+              }
+            }
+          }
+
+          if (matchingFormats.length === 0) {
+            console.log(`    ✗ No matching formats with valid pricing`);
+            continue;
+          }
+
+          // Находим формат с минимальной ценой для этой карточки
+          const cheapest = matchingFormats.reduce((min, curr) =>
+            curr.price < min.price ? curr : min
+          );
+
+          console.log(`    → Best option: ${cheapest.format} at ${cheapest.price} ₽`);
+
+          // Если это лучшая цена для данного инфлюенсера
+          if (cheapest.price < bestPrice) {
+            bestPrice = cheapest.price;
+
+            const cardPricePerFollower = followers > 0 ? cheapest.price / followers : Infinity;
+            const priceDifference = Math.abs(cardPricePerFollower - (campaign.targetPricePerFollower || 0));
+
+            bestMatch = {
+              card: {
+                id: cardData.id,
+                influencerId: cardData.user_id,
+                platform: cardData.platform,
+                followersCount: followers,
+                engagementRate: reach.engagementRate || 0,
+                category: '',
+                interests: [],
+                averageViews: reach.averageViews || 0,
+                contentTypes: contentTypes,
+                integrationDetails: Object.entries(pricing).map(([format, price]) => ({
+                  format,
+                  price: Number(price),
+                  description: serviceDetails.description || ''
+                })),
+                isActive: cardData.is_active,
+                isDeleted: cardData.is_deleted || false,
+                createdAt: cardData.created_at,
+                updatedAt: cardData.updated_at
+              } as InfluencerCard,
+              selectedFormat: cheapest.format,
+              selectedPrice: cheapest.price,
+              pricePerFollower: cardPricePerFollower,
+              priceDifference
+            };
+          }
+        } catch (err) {
+          console.error(`Error processing card ${cardData.id}:`, err);
           continue;
         }
+      }
 
-        // Вычисляем цену за подписчика для этой карточки
-        const cardPricePerFollower = followers / minPrice;
-
-        // Вычисляем разницу с идеальной ценой
-        const priceDifference = Math.abs(cardPricePerFollower - (campaign.targetPricePerFollower || 0));
-
-        // Создаем упрощенный объект карточки для matched
-        matched.push({
-          card: {
-            id: cardData.id,
-            influencerId: cardData.user_id,
-            platform: cardData.platform,
-            followersCount: followers,
-            engagementRate: reach.engagementRate || 0,
-            category: '',
-            interests: [],
-            averageViews: reach.averageViews || 0,
-            contentTypes: contentTypes,
-            integrationDetails: Object.entries(pricing).map(([format, price]) => ({
-              format,
-              price: Number(price),
-              description: serviceDetails.description || ''
-            })),
-            isActive: cardData.is_active,
-            isDeleted: cardData.is_deleted || false,
-            createdAt: cardData.created_at,
-            updatedAt: cardData.updated_at
-          } as InfluencerCard,
-          selectedFormat,
-          selectedPrice: minPrice,
-          pricePerFollower: cardPricePerFollower,
-          priceDifference
-        });
-      } catch (err) {
-        console.error(`Error processing card ${cardData.id}:`, err);
-        continue;
+      // Если нашли хотя бы одну подходящую комбинацию для инфлюенсера
+      if (bestMatch) {
+        console.log(`  ✓ Selected best match for influencer: ${bestMatch.card.platform} - ${bestMatch.selectedFormat} at ${bestMatch.selectedPrice} ₽`);
+        matched.push(bestMatch);
+      } else {
+        console.log(`  ✗ No valid matches for this influencer`);
       }
     }
 
-    console.log(`Matched ${matched.length} cards`);
+    console.log(`\n=== Final result: ${matched.length} influencers matched ===`);
 
     // Сортируем по близости к идеальной цене
     matched.sort((a, b) => a.priceDifference - b.priceDifference);
