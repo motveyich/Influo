@@ -170,14 +170,22 @@ export class AutoCampaignService {
       }
     }
 
-    // Обновляем счетчики
+    // Обновляем счетчики и статус
+    // Кампания остается active если отправлено хотя бы одно предложение
+    // Она закроется автоматически когда будет набрано нужное количество принятых
+    const newStatus = sentCount > 0 ? 'active' : 'draft';
+
     await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .update({
         sent_offers_count: sentCount,
-        status: sentCount > 0 ? 'active' : 'closed'
+        status: newStatus
       })
       .eq('id', campaignId);
+
+    if (sentCount === 0) {
+      throw new Error('Не найдено подходящих инфлюенсеров. Попробуйте изменить параметры кампании.');
+    }
 
     analytics.track('auto_campaign_launched', {
       campaignId,

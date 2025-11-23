@@ -200,38 +200,64 @@ export function AutoCampaignsPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center space-x-3">
-                {campaign.status === 'draft' && (
-                  <>
-                    <button
-                      onClick={() => handleLaunchCampaign(campaign)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Запустить
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCampaign(campaign)}
-                      className="text-red-600 hover:text-red-700 px-4 py-2 text-sm font-medium transition-colors"
-                    >
-                      Удалить
-                    </button>
-                  </>
-                )}
-                {campaign.status === 'active' && (
-                  <span className="text-sm text-blue-600 font-medium">
-                    ⚡ Кампания активна, предложения отправляются
-                  </span>
-                )}
-                {campaign.status === 'closed' && (
-                  <span className="text-sm text-orange-600 font-medium">
-                    ✓ Набор завершён, ожидаем завершения сотрудничеств
-                  </span>
-                )}
-                {campaign.status === 'completed' && (
-                  <span className="text-sm text-green-600 font-medium">
-                    ✓ Кампания полностью завершена
-                  </span>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {campaign.status === 'draft' && (
+                    <>
+                      <button
+                        onClick={() => handleLaunchCampaign(campaign)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Запустить
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign)}
+                        className="text-red-600 hover:text-red-700 px-4 py-2 text-sm font-medium transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    </>
+                  )}
+                  {campaign.status === 'active' && (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-blue-600 font-medium">
+                        ⚡ Кампания активна, идёт набор инфлюенсеров
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  )}
+                  {campaign.status === 'closed' && (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-orange-600 font-medium">
+                        ✓ Набор завершён ({campaign.acceptedOffersCount}/{campaign.targetInfluencersCount}), ожидаем завершения сотрудничеств
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  )}
+                  {campaign.status === 'completed' && (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-green-600 font-medium">
+                        ✓ Кампания полностью завершена
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign)}
+                        className="text-gray-600 hover:text-gray-700 text-sm font-medium transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
