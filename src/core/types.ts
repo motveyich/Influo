@@ -693,7 +693,45 @@ export interface UserSettings {
     deactivatedAt?: string;
     deactivationReason?: string;
   };
-  
+
   createdAt: string;
   updatedAt: string;
+}
+
+// Auto-campaigns
+export interface AutoCampaign {
+  id: string;
+  advertiserId: string;
+  title: string;
+  description?: string;
+  status: 'draft' | 'active' | 'closed' | 'completed';
+  budgetMin: number;
+  budgetMax: number;
+  audienceMin: number;
+  audienceMax: number;
+  targetInfluencersCount: number;
+  contentTypes: string[];
+  platforms: string[];
+  startDate?: string;
+  endDate?: string;
+  targetPricePerFollower?: number;
+  sentOffersCount: number;
+  acceptedOffersCount: number;
+  completedOffersCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutoCampaignFormData {
+  title: string;
+  description?: string;
+  budgetMin: number;
+  budgetMax: number;
+  audienceMin: number;
+  audienceMax: number;
+  targetInfluencersCount: number;
+  contentTypes: string[];
+  platforms: string[];
+  startDate?: string;
+  endDate?: string;
 }

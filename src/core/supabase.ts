@@ -91,4 +91,5 @@ export const TABLES = {
   OFFERS: 'offers', // Унифицированная таблица предложений
   COLLABORATION_OFFERS: 'collaboration_offers', // Deprecated - используйте OFFERS
   USER_SETTINGS: 'user_settings',
+  AUTO_CAMPAIGNS: 'auto_campaigns',
 } as const;

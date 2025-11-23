@@ -40,6 +40,7 @@ export function Layout({ children }: LayoutProps) {
   const baseNavigation = [
     { name: t('nav.home'), href: '/app', icon: Zap },
     { name: t('nav.profiles'), href: '/app/profiles', icon: Users },
+    { name: t('nav.autoCampaigns'), href: '/app/auto-campaigns', icon: Target },
     { name: t('nav.influencerCards'), href: '/app/influencer-cards', icon: Grid },
     { name: t('nav.offers'), href: '/app/offers', icon: MessageCircle },
     { name: t('nav.chat'), href: '/app/chat', icon: MessageCircle },

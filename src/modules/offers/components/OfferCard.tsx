@@ -17,6 +17,7 @@ import {
   Ban,
   CreditCard,
   FileText,
+  Target,
   User,
   ChevronDown,
   ChevronUp,
@@ -266,11 +267,11 @@ export function OfferCard({
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {offer.title}
             </h3>
-            {(offer as any).metadata?.isAutomatic && (
-              <span className="px-3 py-1 text-sm font-medium rounded-full border bg-orange-100 text-orange-800 border-orange-200">
+            {(offer as any).metadata?.isAutoCampaign && (
+              <span className="px-3 py-1 text-sm font-medium rounded-full border bg-blue-100 text-blue-800 border-blue-200">
                 <div className="flex items-center space-x-1">
-                  <Zap className="w-3 h-3" />
-                  <span>Автоматическая кампания</span>
+                  <Target className="w-3 h-3" />
+                  <span>Автокомпания</span>
                 </div>
               </span>
             )}

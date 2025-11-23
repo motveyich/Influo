@@ -9,6 +9,7 @@ import { InfluencerCardDetailPage } from './modules/influencer-cards/components/
 import { HomePage } from './modules/home/components/HomePage';
 import { AdminPanel } from './modules/admin/components/AdminPanel';
 import { OffersPage } from './modules/offers/components/OffersPage';
+import { AutoCampaignsPage } from './modules/auto-campaigns/components/AutoCampaignsPage';
 import { DemoProvider } from './demo/DemoContext';
 import { DemoLayout } from './demo/components/DemoLayout';
 import { DemoHomePage } from './demo/pages/DemoHomePage';
@@ -63,6 +64,11 @@ function App() {
             <Route path="/app/profiles" element={
               <Layout>
                 <ProfilesPage />
+              </Layout>
+            } />
+            <Route path="/app/auto-campaigns" element={
+              <Layout>
+                <AutoCampaignsPage />
               </Layout>
             } />
             <Route path="/app/influencer-cards" element={

@@ -260,6 +260,12 @@ export class OfferService {
         user_id: userId
       });
 
+      // Update auto-campaign stats if this offer belongs to a campaign
+      if (data.auto_campaign_id) {
+        const { autoCampaignService } = await import('../../auto-campaigns/services/autoCampaignService');
+        await autoCampaignService.updateCampaignStats(data.auto_campaign_id);
+      }
+
       return updatedOffer;
     } catch (error) {
       console.error('Failed to update offer status:', error);
