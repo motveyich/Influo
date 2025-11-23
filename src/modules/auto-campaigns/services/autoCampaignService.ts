@@ -349,9 +349,11 @@ export class AutoCampaignService {
           const cardProductCategories = serviceDetails.blacklistedProductCategories || [];
 
           console.log(`  Card ${cardData.id} (${cardData.platform}):`);
-          console.log(`    Followers: ${followers}`);
-          console.log(`    Content types: [${contentTypes.join(', ')}]`);
+          console.log(`    Followers: ${followers} (range: ${campaign.audienceMin}-${campaign.audienceMax})`);
+          console.log(`    Content types: [${contentTypes.join(', ')}] vs Campaign: [${campaign.contentTypes.join(', ')}]`);
           console.log(`    Pricing:`, pricing);
+          console.log(`    Countries: [${cardCountries.join(', ')}]`);
+          console.log(`    Interests: [${cardInterests.join(', ')}]`);
 
           // ============ ФИЛЬТРЫ ============
 
@@ -371,7 +373,7 @@ export class AutoCampaignService {
           console.log(`    ✓ Content types: [${matchingContentTypes.join(', ')}]`);
 
           // 3. Страны - хотя бы 1 совпадение (если указано в кампании)
-          if (campaign.targetCountries && campaign.targetCountries.length > 0) {
+          if (Array.isArray(campaign.targetCountries) && campaign.targetCountries.length > 0) {
             const hasCountryOverlap = campaign.targetCountries.some(country => cardCountries.includes(country));
             if (!hasCountryOverlap) {
               console.log(`    ❌ FILTERED: No country overlap. Card: [${cardCountries.join(', ')}], Campaign: [${campaign.targetCountries.join(', ')}]`);
@@ -379,10 +381,12 @@ export class AutoCampaignService {
             }
             const matchingCountries = campaign.targetCountries.filter(c => cardCountries.includes(c));
             console.log(`    ✓ Countries: [${matchingCountries.join(', ')}]`);
+          } else {
+            console.log(`    ℹ️  Countries: not filtered (campaign has no country filter)`);
           }
 
           // 4. Интересы аудитории - хотя бы 1 совпадение (если указано в кампании)
-          if (campaign.targetAudienceInterests && campaign.targetAudienceInterests.length > 0) {
+          if (Array.isArray(campaign.targetAudienceInterests) && campaign.targetAudienceInterests.length > 0) {
             const hasInterestOverlap = campaign.targetAudienceInterests.some(interest => cardInterests.includes(interest));
             if (!hasInterestOverlap) {
               console.log(`    ❌ FILTERED: No interest overlap. Card: [${cardInterests.join(', ')}], Campaign: [${campaign.targetAudienceInterests.join(', ')}]`);
@@ -390,10 +394,12 @@ export class AutoCampaignService {
             }
             const matchingInterests = campaign.targetAudienceInterests.filter(i => cardInterests.includes(i));
             console.log(`    ✓ Interests: [${matchingInterests.join(', ')}]`);
+          } else {
+            console.log(`    ℹ️  Interests: not filtered (campaign has no interest filter)`);
           }
 
           // 5. Категории товаров - проверка черного списка инфлюенсера (если указано в кампании)
-          if (campaign.productCategories && campaign.productCategories.length > 0) {
+          if (Array.isArray(campaign.productCategories) && campaign.productCategories.length > 0) {
             const hasBlacklistedCategory = campaign.productCategories.some(cat =>
               cardProductCategories.includes(cat)
             );
@@ -403,6 +409,8 @@ export class AutoCampaignService {
               continue;
             }
             console.log(`    ✓ No blacklisted categories`);
+          } else {
+            console.log(`    ℹ️  Product categories: not filtered (campaign has no category filter)`);
           }
 
           // ============ PRICING SELECTION ============
