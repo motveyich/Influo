@@ -1,7 +1,7 @@
 import React from 'react';
 import { Campaign } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Search, MoreVertical, Zap, Target, TrendingUp, Pause, Play, Flag, StopCircle, XCircle, Eye, UserCircle } from 'lucide-react';
+import { Calendar, DollarSign, Users, MapPin, Clock, Edit, Trash2, Target, TrendingUp, Pause, Play, Flag, Eye, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ReportModal } from '../../../components/ReportModal';
 import { campaignMetricsService } from '../../../services/campaignMetricsService';
@@ -14,7 +14,6 @@ interface CampaignCardProps {
   onDelete?: (campaignId: string) => void;
   onStop?: (campaignId: string) => void;
   onTerminate?: (campaignId: string) => void;
-  onFindInfluencers?: (campaign: Campaign) => void;
   currentUserId?: string;
   onViewDetails?: (campaign: Campaign) => void;
   onViewProfile?: (userId: string) => void;
@@ -28,17 +27,12 @@ export function CampaignCard({
   onDelete,
   onStop,
   onTerminate,
-  onFindInfluencers,
   currentUserId,
   onViewDetails,
   onViewProfile
 }: CampaignCardProps) {
   const [showReportModal, setShowReportModal] = React.useState(false);
   const { t } = useTranslation();
-
-  // Check if this is an automatic campaign
-  const isAutomaticCampaign = (campaign as any).is_automatic;
-  const automaticSettings = (campaign as any).automatic_settings;
 
   // Track campaign view when card is displayed
   React.useEffect(() => {
@@ -55,10 +49,8 @@ export function CampaignCard({
         return 'bg-gray-100 text-gray-800';
       case 'paused':
         return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
       case 'completed':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-blue-100 text-blue-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
@@ -112,12 +104,6 @@ export function CampaignCard({
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            {isAutomaticCampaign && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md">
-                <Zap className="w-3 h-3" />
-                <span className="text-xs font-medium">Автоматическая</span>
-              </div>
-            )}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
               {campaign.title}
             </h3>
@@ -128,7 +114,6 @@ export function CampaignCard({
                   {campaign.status === 'active' ? 'Активная' :
                campaign.status === 'draft' ? 'Черновик' :
                campaign.status === 'paused' ? 'Приостановлена' :
-               campaign.status === 'in_progress' ? 'В работе' :
                campaign.status === 'completed' ? 'Завершена' :
                campaign.status === 'cancelled' ? 'Отменена' :
                    campaign.status}
@@ -142,31 +127,6 @@ export function CampaignCard({
         
         {showActions && (
           <div className="flex items-center space-x-2 ml-4">
-            {isAutomaticCampaign && (campaign.status === 'active' || campaign.status === 'in_progress') && (
-              <button
-                onClick={() => onStop?.(campaign.campaignId)}
-                className="p-2 text-gray-400 hover:text-amber-600 transition-colors"
-                title="Остановить поиск инфлюенсеров"
-              >
-                <StopCircle className="w-4 h-4" />
-              </button>
-            )}
-            {isAutomaticCampaign && campaign.status === 'paused' && (
-              <button
-                onClick={() => onTerminate?.(campaign.campaignId)}
-                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                title="Расторгнуть сотрудничество"
-              >
-                <XCircle className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={() => onFindInfluencers?.(campaign)}
-              className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-              title="Find influencers"
-            >
-              <Search className="w-4 h-4" />
-            </button>
             <button
               onClick={() => onEdit?.(campaign)}
               className="p-2 text-gray-400 hover:text-green-600 transition-colors"
@@ -174,15 +134,13 @@ export function CampaignCard({
             >
               <Edit className="w-4 h-4" />
             </button>
-            {!(isAutomaticCampaign && (campaign.status === 'active' || campaign.status === 'in_progress')) && (
-              <button
-                onClick={() => onDelete?.(campaign.campaignId)}
-                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                title="Delete campaign"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={() => onDelete?.(campaign.campaignId)}
+              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+              title="Delete campaign"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
@@ -292,48 +250,6 @@ export function CampaignCard({
         </div>
       </div>
 
-      {/* Automatic Campaign Info */}
-      {isAutomaticCampaign && automaticSettings && (
-        <div className="space-y-3 mb-4">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-2">
-              <Zap className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Автоматические настройки</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-              <span>Цель: {automaticSettings.targetInfluencerCount} инфлюенсеров</span>
-              <span>Овербукинг: {automaticSettings.overbookingPercentage}%</span>
-              <span>Размер пакета: {automaticSettings.batchSize}</span>
-              <span>Задержка: {automaticSettings.batchDelay} мин</span>
-            </div>
-          </div>
-
-          {/* Recruitment Status */}
-          {(campaign as any).metadata?.recruitmentStatus && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-4 h-4 text-yellow-700" />
-                <span className="text-sm font-medium text-yellow-800">Статус набора</span>
-              </div>
-              <div className="text-xs text-yellow-700 space-y-1">
-                <div className="flex justify-between">
-                  <span>Запрошено:</span>
-                  <span className="font-semibold">{(campaign as any).metadata.recruitmentStatus.requested}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Приглашено:</span>
-                  <span className="font-semibold">{(campaign as any).metadata.recruitmentStatus.invited}</span>
-                </div>
-                {(campaign as any).metadata.recruitmentStatus.isComplete && (
-                  <p className="text-xs mt-2 text-yellow-600 italic">
-                    ⚠️ Не удалось найти больше подходящих инфлюенсеров
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Created Date */}
       <div className="flex items-center space-x-2 text-xs text-gray-500 mb-4">
@@ -389,45 +305,6 @@ export function CampaignCard({
         </div>
       )}
 
-      {showActions && isAutomaticCampaign && (
-        <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          {campaign.status === 'draft' && (
-            <button
-              onClick={() => onFindInfluencers?.(campaign)}
-              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-green-600 hover:from-green-700 hover:to-green-700 text-white"
-            >
-              <Play className="w-4 h-4" />
-              <span>Запустить кампанию</span>
-            </button>
-          )}
-          {(campaign.status === 'active' || campaign.status === 'in_progress') && (
-            <button
-              onClick={() => onFindInfluencers?.(campaign)}
-              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white"
-            >
-              <Zap className="w-4 h-4" />
-              <span>Перезапустить подбор</span>
-            </button>
-          )}
-          {campaign.status === 'paused' && (
-            <button
-              onClick={() => onFindInfluencers?.(campaign)}
-              className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-600 to-yellow-600 hover:from-yellow-700 hover:to-yellow-700 text-white"
-            >
-              <Play className="w-4 h-4" />
-              <span>Возобновить кампанию</span>
-            </button>
-          )}
-          {campaign.status === 'draft' && (
-            <button
-              onClick={() => onEdit?.(campaign)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Редактировать
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Report Modal */}
       <ReportModal

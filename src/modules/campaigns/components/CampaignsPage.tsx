@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../../core/types';
 import { CampaignCard } from './CampaignCard';
 import { CampaignModal } from './CampaignModal';
-import { AutomaticCampaignModal } from './AutomaticCampaignModal';
 import { campaignService } from '../services/campaignService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -110,7 +109,6 @@ export function CampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
-  const [showAutomaticModal, setShowAutomaticModal] = useState(false);
   const [showMyCampaigns, setShowMyCampaigns] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -165,10 +163,10 @@ export function CampaignsPage() {
 
   const handleCreateCampaign = () => {
     if (!currentUserProfile?.profileCompletion.advertiserSetup) {
-      toast.error('Заполните раздел "Рекламодатель" для создания автоматических кампаний');
+      toast.error('Заполните раздел "Рекламодатель" для создания кампаний');
       return;
     }
-    setShowAutomaticModal(true);
+    setShowCampaignModal(true);
   };
 
   const handleEditCampaign = (campaign: Campaign) => {
@@ -178,13 +176,7 @@ export function CampaignsPage() {
     }
 
     setEditingCampaign(campaign);
-    // Check if this is an automatic campaign
-    const isAutomaticCampaign = (campaign as any).is_automatic;
-    if (isAutomaticCampaign) {
-      setShowAutomaticModal(true);
-    } else {
-      setShowCampaignModal(true);
-    }
+    setShowCampaignModal(true);
   };
 
   const handleStopCampaign = async (campaignId: string) => {
@@ -274,38 +266,6 @@ export function CampaignsPage() {
     toast.success(t('campaigns.success.applied'));
   };
 
-  const handleFindInfluencers = async (campaign: Campaign) => {
-    const isAutomatic = (campaign as any).is_automatic;
-
-    if (!isAutomatic) {
-      toast.error('Эта функция доступна только для автоматических кампаний');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      const { automaticCampaignService } = await import('../services/automaticCampaignService');
-
-      if (campaign.status === 'draft') {
-        await automaticCampaignService.startAutomaticCampaign(campaign.campaignId);
-        toast.success('Кампания запущена! Рассылка предложений началась.');
-      } else if (campaign.status === 'paused') {
-        await automaticCampaignService.resumeAutomaticCampaign(campaign.campaignId);
-        toast.success('Кампания возобновлена!');
-      } else {
-        await automaticCampaignService.startAutomaticCampaign(campaign.campaignId);
-        toast.success('Подбор инфлюенсеров перезапущен!');
-      }
-
-      await loadCampaigns();
-    } catch (error: any) {
-      console.error('Error starting campaign:', error);
-      toast.error(error.message || 'Ошибка запуска кампании');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Update campaigns loading when filters change
   useEffect(() => {
@@ -508,7 +468,6 @@ export function CampaignsPage() {
                 onDelete={handleDeleteCampaign}
                 onStop={handleStopCampaign}
                 onTerminate={handleTerminateCollaboration}
-                onFindInfluencers={handleFindInfluencers}
                 currentUserId={currentUserId}
                 onViewDetails={handleViewDetails}
                 onViewProfile={handleViewProfile}
@@ -530,19 +489,6 @@ export function CampaignsPage() {
           </div>
         )}
 
-        {/* Campaign Modal */}
-        <AutomaticCampaignModal
-          isOpen={showAutomaticModal}
-          onClose={() => {
-            setShowAutomaticModal(false);
-            setEditingCampaign(null);
-          }}
-          advertiserId={currentUserId}
-          onCampaignCreated={() => {
-            loadCampaigns();
-            toast.success('Кампания создана! Рассылка предложений началась.');
-          }}
-        />
 
         {/* Campaign Details Modal */}
         {showDetailsModal && selectedCampaign && (
