@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { influencerCardService } from '../services/influencerCardService';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { PRODUCT_CATEGORIES, CONTENT_TYPES } from '../../../core/constants';
+import { PRODUCT_CATEGORIES, CONTENT_TYPES, AUDIENCE_INTERESTS } from '../../../core/constants';
 import { X, Save, AlertCircle, Plus, Trash2, Instagram, Youtube, Twitter, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -49,39 +49,6 @@ const COUNTRIES = [
 ];
 
 const AGE_GROUPS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
-
-const INTERESTS = [
-  'Мода и стиль',
-  'Красота и косметика', 
-  'Образ жизни',
-  'Путешествия и туризм',
-  'Еда и кулинария',
-  'Фитнес и здоровье',
-  'Спорт',
-  'Технологии и гаджеты',
-  'Игры и киберспорт',
-  'Музыка и развлечения',
-  'Искусство и творчество',
-  'Бизнес и предпринимательство',
-  'Образование и обучение',
-  'Наука и исследования',
-  'Автомобили и транспорт',
-  'Недвижимость и дизайн интерьера',
-  'Финансы и инвестиции',
-  'Родительство и семья',
-  'Домашние животные',
-  'Книги и литература',
-  'Кино и сериалы',
-  'Фотография',
-  'Дизайн и архитектура',
-  'Политика и общество',
-  'Экология и устойчивое развитие',
-  'Психология и саморазвитие',
-  'Медицина и здравоохранение',
-  'Юмор и комедия',
-  'Новости и журналистика',
-  'Религия и духовность'
-];
 
 export function InfluencerCardModal({ 
   isOpen, 
@@ -734,7 +701,7 @@ export function InfluencerCardModal({
                 Интересы аудитории
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {INTERESTS.map((interest) => (
+                {AUDIENCE_INTERESTS.map((interest) => (
                   <button
                     key={interest}
                     type="button"

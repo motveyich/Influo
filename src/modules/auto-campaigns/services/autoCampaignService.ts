@@ -37,6 +37,7 @@ export class AutoCampaignService {
         target_age_groups: data.targetAgeGroups,
         target_genders: data.targetGenders,
         target_countries: data.targetCountries,
+        target_audience_interests: data.targetAudienceInterests,
         product_categories: data.productCategories,
         enable_chat: data.enableChat,
         start_date: data.startDate,
@@ -248,20 +249,38 @@ export class AutoCampaignService {
         try {
           const reach = cardData.reach || {};
           const serviceDetails = cardData.service_details || {};
+          const audienceDemographics = cardData.audience_demographics || {};
           const followers = reach.followers || 0;
           const pricing = serviceDetails.pricing || {};
           const contentTypes = serviceDetails.contentTypes || [];
+          const cardInterests = audienceDemographics.interests || [];
 
           console.log(`  Card ${cardData.id} (${cardData.platform}):`, {
             followers,
             contentTypes,
-            pricing
+            pricing,
+            interests: cardInterests
           });
 
           // Проверяем размер аудитории
           if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
             console.log(`    ✗ Filtered: audience ${followers} not in range [${campaign.audienceMin}, ${campaign.audienceMax}]`);
             continue;
+          }
+
+          // Проверяем интересы аудитории (если указаны в кампании)
+          if (campaign.targetAudienceInterests && campaign.targetAudienceInterests.length > 0) {
+            const hasMatchingInterest = campaign.targetAudienceInterests.some(interest =>
+              cardInterests.includes(interest)
+            );
+
+            if (!hasMatchingInterest) {
+              console.log(`    ✗ Filtered: no matching interests. Card has: [${cardInterests.join(', ')}], need one of: [${campaign.targetAudienceInterests.join(', ')}]`);
+              continue;
+            } else {
+              const matchingInterests = campaign.targetAudienceInterests.filter(i => cardInterests.includes(i));
+              console.log(`    ✓ Matching interests: ${matchingInterests.join(', ')}`);
+            }
           }
 
           // Ищем ВСЕ совпадающие форматы контента для этой карточки
@@ -476,6 +495,7 @@ export class AutoCampaignService {
       targetAgeGroups: data.target_age_groups || [],
       targetGenders: data.target_genders || [],
       targetCountries: data.target_countries || [],
+      targetAudienceInterests: data.target_audience_interests || [],
       productCategories: data.product_categories || [],
       enableChat: data.enable_chat !== false,
       startDate: data.start_date,

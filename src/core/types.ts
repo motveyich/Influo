@@ -715,6 +715,7 @@ export interface AutoCampaign {
   targetAgeGroups: string[];
   targetGenders: string[];
   targetCountries: string[];
+  targetAudienceInterests: string[];
   productCategories: string[];
   enableChat: boolean;
   startDate?: string;
@@ -740,6 +741,7 @@ export interface AutoCampaignFormData {
   targetAgeGroups: string[];
   targetGenders: string[];
   targetCountries: string[];
+  targetAudienceInterests: string[];
   productCategories: string[];
   enableChat: boolean;
   startDate?: string;

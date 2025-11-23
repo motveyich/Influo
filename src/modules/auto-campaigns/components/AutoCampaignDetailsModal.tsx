@@ -133,11 +133,11 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
           </div>
 
           {/* Demographics */}
-          {(campaign.targetAgeGroups.length > 0 || campaign.targetGenders.length > 0 || campaign.targetCountries.length > 0) && (
+          {(campaign.targetAgeGroups.length > 0 || campaign.targetGenders.length > 0 || campaign.targetCountries.length > 0 || campaign.targetAudienceInterests.length > 0) && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <Globe className="w-5 h-5 mr-2 text-green-600" />
-                Демография аудитории
+                Демография и интересы аудитории
               </h3>
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 {campaign.targetAgeGroups.length > 0 && (
@@ -171,6 +171,18 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
                       {campaign.targetCountries.map(country => (
                         <span key={country} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                           {country}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {campaign.targetAudienceInterests.length > 0 && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-2">Интересы аудитории</div>
+                    <div className="flex flex-wrap gap-2">
+                      {campaign.targetAudienceInterests.map(interest => (
+                        <span key={interest} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
+                          {interest}
                         </span>
                       ))}
                     </div>

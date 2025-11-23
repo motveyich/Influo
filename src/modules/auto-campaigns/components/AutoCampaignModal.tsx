@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
-import { PLATFORMS, CONTENT_TYPES, AGE_GROUPS, GENDERS, GENDER_LABELS, COUNTRIES, PRODUCT_CATEGORIES } from '../../../core/constants';
-import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe } from 'lucide-react';
+import { PLATFORMS, CONTENT_TYPES, AGE_GROUPS, GENDERS, GENDER_LABELS, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
+import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface AutoCampaignModalProps {
@@ -26,6 +26,7 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
     targetAgeGroups: [],
     targetGenders: [],
     targetCountries: [],
+    targetAudienceInterests: [],
     productCategories: [],
     enableChat: true,
     startDate: '',
@@ -143,6 +144,14 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
       setFormData({ ...formData, targetCountries: formData.targetCountries.filter(c => c !== country) });
     } else {
       setFormData({ ...formData, targetCountries: [...formData.targetCountries, country] });
+    }
+  };
+
+  const toggleInterest = (interest: string) => {
+    if (formData.targetAudienceInterests.includes(interest)) {
+      setFormData({ ...formData, targetAudienceInterests: formData.targetAudienceInterests.filter(i => i !== interest) });
+    } else {
+      setFormData({ ...formData, targetAudienceInterests: [...formData.targetAudienceInterests, interest] });
     }
   };
 
@@ -449,6 +458,33 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
                   }`}
                 >
                   {country}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Audience Interests */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Heart className="w-4 h-4 inline mr-1" />
+              Интересы аудитории (опционально)
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Выберите интересы аудитории инфлюенсеров. Система будет учитывать эти интересы при подборе.
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+              {AUDIENCE_INTERESTS.map((interest) => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => toggleInterest(interest)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors text-left ${
+                    formData.targetAudienceInterests.includes(interest)
+                      ? 'bg-pink-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {interest}
                 </button>
               ))}
             </div>
