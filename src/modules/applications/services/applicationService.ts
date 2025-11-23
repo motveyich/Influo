@@ -38,17 +38,23 @@ export class ApplicationService {
         throw new Error(rateLimitCheck.reason || 'Слишком частые действия. Попробуйте позже');
       }
 
-      // Check for existing application to prevent duplicates
-      const { data: existingApplication } = await supabase
+      // Check for recent application (within last hour) to prevent duplicates
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { data: recentApplication } = await supabase
         .from('applications')
-        .select('id')
+        .select('id, created_at')
         .eq('applicant_id', applicationData.applicantId)
         .eq('target_reference_id', applicationData.targetReferenceId)
         .eq('target_type', applicationData.targetType)
+        .gte('created_at', oneHourAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (existingApplication) {
-        throw new Error('Вы уже отправили заявку на эту карточку');
+      if (recentApplication) {
+        const timeSinceApplication = Date.now() - new Date(recentApplication.created_at).getTime();
+        const minutesRemaining = Math.ceil((60 * 60 * 1000 - timeSinceApplication) / (60 * 1000));
+        throw new Error(`Вы уже отправили заявку на эту карточку. Попробуйте снова через ${minutesRemaining} мин.`);
       }
       
       this.validateApplicationData(applicationData);

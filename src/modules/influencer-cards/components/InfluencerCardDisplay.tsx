@@ -116,11 +116,7 @@ export function InfluencerCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      if (error.message.includes('уже отправили заявку')) {
-        toast.error('Вы уже отправили заявку этому инфлюенсеру');
-      } else {
-        toast.error(error.message || 'Не удалось отправить заявку');
-      }
+      toast.error(error.message || 'Не удалось отправить заявку');
     } finally {
       setIsLoading(false);
     }

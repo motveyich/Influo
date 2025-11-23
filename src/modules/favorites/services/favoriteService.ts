@@ -243,18 +243,19 @@ export class FavoriteService {
             continue;
           }
 
-          // Check for existing application to this user
-          const { data: existingApplication } = await supabase
+          // Check for recent application (within last hour) to this card
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { data: recentApplication } = await supabase
             .from('applications')
-            .select('id')
+            .select('id, created_at')
             .eq('applicant_id', userId)
-            .eq('target_id', influencerCard.user_id)
+            .eq('target_reference_id', favorite.targetId)
             .eq('target_type', 'influencer_card')
-            .not('status', 'in', '(cancelled,withdrawn)')
+            .gte('created_at', oneHourAgo)
             .maybeSingle();
 
-          if (existingApplication) {
-            console.log(`Skipping duplicate application to user ${influencerCard.user_id}`);
+          if (recentApplication) {
+            console.log(`Skipping - recent application to card ${favorite.targetId} within last hour`);
             continue;
           }
 

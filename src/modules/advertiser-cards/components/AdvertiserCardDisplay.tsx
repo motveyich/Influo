@@ -70,22 +70,6 @@ export function AdvertiserCardDisplay({
         return;
       }
 
-      // Check for existing application to this user
-      const { data: existingApplication } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('applicant_id', currentUserId)
-        .eq('target_reference_id', card.id)
-        .eq('target_type', 'advertiser_card')
-        .not('status', 'in', '(cancelled,withdrawn)')
-        .maybeSingle();
-
-      if (existingApplication) {
-        toast.error('Вы уже отправили заявку на эту карточку');
-        setIsLoading(false);
-        return;
-      }
-
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -103,11 +87,7 @@ export function AdvertiserCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      if (error.message.includes('уже отправили заявку')) {
-        toast.error('Вы уже отправили заявку этому рекламодателю');
-      } else {
-        toast.error(error.message || 'Не удалось отправить заявку');
-      }
+      toast.error(error.message || 'Не удалось отправить заявку');
     } finally {
       setIsLoading(false);
     }

@@ -275,6 +275,36 @@ export class AutomaticOfferService {
       throw new Error(rateLimitCheck.reason || 'Rate limit exceeded');
     }
 
+    // Check for recent applications/offers (within last hour) to prevent duplicates
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    // Check applications table
+    const { data: recentApplication } = await supabase
+      .from('applications')
+      .select('id, created_at')
+      .eq('applicant_id', config.advertiserId)
+      .eq('target_reference_id', influencer.id)
+      .eq('target_type', 'influencer_card')
+      .gte('created_at', oneHourAgo)
+      .maybeSingle();
+
+    if (recentApplication) {
+      throw new Error('Недавно уже было взаимодействие с этой карточкой (через другой канал)');
+    }
+
+    // Check offers table for recent automatic offers
+    const { data: recentOffer } = await supabase
+      .from(TABLES.OFFERS)
+      .select('offer_id, created_at')
+      .eq('advertiser_id', config.advertiserId)
+      .eq('influencer_card_id', influencer.id)
+      .gte('created_at', oneHourAgo)
+      .maybeSingle();
+
+    if (recentOffer) {
+      throw new Error('Недавно уже было взаимодействие с этой карточкой (через другой канал)');
+    }
+
     const serviceDetails = influencer.service_details || {};
     const pricing = serviceDetails.pricing || {};
     const cardContentTypes = serviceDetails.contentTypes || [];
