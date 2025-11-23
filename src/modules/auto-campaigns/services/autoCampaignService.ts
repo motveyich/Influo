@@ -715,7 +715,7 @@ export class AutoCampaignService {
 
     const { data, error } = await supabase
       .from(TABLES.OFFERS)
-      .select('id')
+      .select('offer_id')
       .eq('advertiser_id', senderId)
       .eq('influencer_id', receiverId)
       .gte('created_at', oneHourAgo)
@@ -734,29 +734,38 @@ export class AutoCampaignService {
     matched: MatchedInfluencer,
     advertiserId: string
   ): Promise<void> {
-    const { error } = await supabase
-      .from(TABLES.OFFERS)
-      .insert({
-        advertiser_id: advertiserId,
-        influencer_id: matched.card.influencerId,
-        influencer_card_id: matched.card.id,
-        auto_campaign_id: campaign.id,
+    const newOffer = {
+      influencer_id: matched.card.influencerId,
+      advertiser_id: advertiserId,
+      influencer_card_id: matched.card.id,
+      auto_campaign_id: campaign.id,
+      initiated_by: advertiserId,
+      details: {
         title: campaign.title,
         description: campaign.description,
-        budget: matched.selectedPrice,
-        integration_type: matched.selectedFormat,
+        proposed_rate: matched.selectedPrice,
+        currency: 'RUB',
+        deliverables: [matched.selectedFormat],
         platform: matched.card.platform,
-        start_date: campaign.startDate,
-        end_date: campaign.endDate,
-        status: 'pending',
-        enable_chat: campaign.enableChat,
-        metadata: {
-          isAutoCampaign: true,
-          campaignId: campaign.id,
-          selectedFormat: matched.selectedFormat,
-          calculatedPrice: matched.selectedPrice
+        timeline: {
+          start_date: campaign.startDate,
+          end_date: campaign.endDate
         }
-      });
+      },
+      status: 'pending',
+      timeline: {},
+      metadata: {
+        isAutoCampaign: true,
+        campaignId: campaign.id,
+        selectedFormat: matched.selectedFormat,
+        calculatedPrice: matched.selectedPrice,
+        enable_chat: campaign.enableChat
+      }
+    };
+
+    const { error } = await supabase
+      .from(TABLES.OFFERS)
+      .insert(newOffer);
 
     if (error) throw error;
   }
