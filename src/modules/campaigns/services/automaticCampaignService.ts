@@ -140,8 +140,13 @@ export class AutomaticCampaignService {
       const pricesPerAudience: number[] = [];
 
       for (const card of filteredCards) {
-        const pricing = card.serviceDetails.pricing;
-        const followers = card.reach.followers;
+        const pricing = card.serviceDetails?.pricing;
+        const followers = card.reach?.followers;
+
+        // Skip if no pricing or reach data
+        if (!pricing || !followers || followers <= 0) {
+          continue;
+        }
 
         // Берём среднюю цену за все типы контента (не учитываем фильтр по contentTypes)
         let totalPrice = 0;
@@ -155,7 +160,7 @@ export class AutomaticCampaignService {
           }
         }
 
-        if (priceCount > 0 && followers > 0) {
+        if (priceCount > 0) {
           const avgPrice = totalPrice / priceCount;
           const pricePerFollower = avgPrice / followers;
           pricesPerAudience.push(pricePerFollower);
@@ -594,11 +599,16 @@ export class AutomaticCampaignService {
       const scoredInfluencers: InfluencerScore[] = [];
 
       for (const card of deduplicatedCards) {
+        // Skip if no reach data
+        if (!card.reach || !card.reach.followers || card.reach.followers <= 0) {
+          continue;
+        }
+
         // Рассчитываем pricePerAudience для инфлюенсера
         const influencerPrice = this.calculateInfluencerAveragePrice(card, campaign);
         const influencerAudience = card.reach.followers;
 
-        if (influencerAudience === 0 || influencerPrice === 0) continue;
+        if (influencerPrice === 0) continue;
 
         const pricePerAudience = influencerPrice / influencerAudience;
 
@@ -631,7 +641,11 @@ export class AutomaticCampaignService {
    * Рассчитывает среднюю цену инфлюенсера за требуемые типы контента
    */
   private findBestContentType(card: InfluencerCard, campaign: Campaign): { type: string; price: number } | null {
-    const pricing = card.serviceDetails.pricing;
+    const pricing = card.serviceDetails?.pricing;
+    if (!pricing) {
+      return null;
+    }
+
     const contentTypes = campaign.preferences.contentTypes;
     const matchingTypes: Array<{ type: string; price: number }> = [];
 
@@ -668,17 +682,20 @@ export class AutomaticCampaignService {
     const weights = settings.scoringWeights;
 
     // Followers score (0-100)
-    const followersScore = Math.min(100, (card.reach.followers / 1000000) * 100);
+    const followers = card.reach?.followers || 0;
+    const followersScore = Math.min(100, (followers / 1000000) * 100);
 
     // Engagement score (0-100)
-    const engagementScore = Math.min(100, card.reach.engagementRate * 10);
+    const engagementRate = card.reach?.engagementRate || 0;
+    const engagementScore = Math.min(100, engagementRate * 10);
 
     // Relevance score
     let relevanceScore = 0;
 
+    const cardContentTypes = card.serviceDetails?.contentTypes || [];
     const contentOverlap = campaign.preferences.contentTypes.filter(type => {
       const typeLower = type.toLowerCase();
-      return card.serviceDetails.contentTypes.some(cardType => {
+      return cardContentTypes.some(cardType => {
         const cardTypeLower = cardType.toLowerCase();
         return cardTypeLower === typeLower ||
           cardTypeLower.includes(typeLower) ||
