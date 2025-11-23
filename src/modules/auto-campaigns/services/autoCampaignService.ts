@@ -647,6 +647,8 @@ export class AutoCampaignService {
       contentTypes: data.content_types || [],
       platforms: data.platforms || [],
       targetCountries: data.target_countries || [],
+      targetAgeGroups: data.target_age_groups || [],
+      targetGenders: data.target_genders || [],
       targetAudienceInterests: data.target_audience_interests || [],
       productCategories: data.product_categories || [],
       enableChat: data.enable_chat !== false,
