@@ -479,6 +479,8 @@ export class OfferService {
         : (details.timeline || ''),
       platform: details.platform || dbData.metadata?.platform,
       integrationType: details.integrationType || dbData.metadata?.chosenIntegration,
+      contentType: details.contentType,
+      suggestedBudget: details.suggestedBudget ? parseFloat(details.suggestedBudget) : undefined,
       status: dbData.status,
       currentStage: dbData.current_stage || 'negotiation',
       acceptedAt: details.accepted_at,

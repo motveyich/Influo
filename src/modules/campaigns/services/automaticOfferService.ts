@@ -387,6 +387,8 @@ export class AutomaticOfferService {
         title: config.campaignTitle,
         description: config.campaignDescription,
         platform: influencer.platform,
+        contentType: chosenIntegration.type,
+        suggestedBudget: chosenIntegration.price,
         integrationType: chosenIntegration.type,
         proposed_rate: chosenIntegration.price,
         currency: config.budget.currency || 'RUB',

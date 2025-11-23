@@ -508,6 +508,8 @@ export interface CollaborationOffer {
   timeline: string;
   platform?: string;
   integrationType?: string;
+  contentType?: string;
+  suggestedBudget?: number;
 
   // Status and stages
   status: OfferStatus;

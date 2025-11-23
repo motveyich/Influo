@@ -305,10 +305,15 @@ export function OfferCard({
           <DollarSign className="w-4 h-4 text-green-600" />
           <div>
             <p className="text-sm font-medium text-gray-900">
-              {formatCurrency(offer.acceptedRate || offer.proposedRate, offer.currency)}
+              {formatCurrency(
+                offer.acceptedRate || offer.suggestedBudget || offer.proposedRate,
+                offer.currency
+              )}
             </p>
             <p className="text-xs text-gray-600">
-              {offer.acceptedRate && offer.acceptedRate !== offer.proposedRate ? 'Принятая ставка' : 'Предложенная ставка'}
+              {offer.acceptedRate && offer.acceptedRate !== offer.proposedRate
+                ? 'Принятая ставка'
+                : 'Предложенная ставка'}
             </p>
           </div>
         </div>
@@ -346,12 +351,20 @@ export function OfferCard({
         </div>
       </div>
 
-      {/* Deliverables */}
+      {/* Content Type */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-gray-700 mb-2">Результаты:</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">Тип контента:</p>
         <div className="flex flex-wrap gap-1">
           {(() => {
             const isAutomatic = (offer as any).metadata?.isAutomatic;
+
+            if (offer.contentType) {
+              return (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                  {offer.contentType}
+                </span>
+              );
+            }
 
             if (isAutomatic && offer.integrationType) {
               return (

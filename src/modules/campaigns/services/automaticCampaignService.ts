@@ -630,22 +630,33 @@ export class AutomaticCampaignService {
   /**
    * Рассчитывает среднюю цену инфлюенсера за требуемые типы контента
    */
-  private calculateInfluencerAveragePrice(card: InfluencerCard, campaign: Campaign): number {
+  private findBestContentType(card: InfluencerCard, campaign: Campaign): { type: string; price: number } | null {
     const pricing = card.serviceDetails.pricing;
     const contentTypes = campaign.preferences.contentTypes;
-
-    let totalPrice = 0;
-    let priceCount = 0;
+    const matchingTypes: Array<{ type: string; price: number }> = [];
 
     for (const type of contentTypes) {
       const typeKey = type.toLowerCase();
       if (pricing[typeKey] && pricing[typeKey] > 0) {
-        totalPrice += pricing[typeKey];
-        priceCount++;
+        matchingTypes.push({
+          type: type,
+          price: pricing[typeKey]
+        });
       }
     }
 
-    return priceCount > 0 ? totalPrice / priceCount : 0;
+    if (matchingTypes.length === 0) {
+      return null;
+    }
+
+    return matchingTypes.reduce((min, current) =>
+      current.price < min.price ? current : min
+    );
+  }
+
+  private calculateInfluencerAveragePrice(card: InfluencerCard, campaign: Campaign): number {
+    const bestContent = this.findBestContentType(card, campaign);
+    return bestContent ? bestContent.price : 0;
   }
 
   private calculateInfluencerScore(
@@ -735,24 +746,18 @@ export class AutomaticCampaignService {
         throw new Error('Influencer card not found');
       }
 
-      const pricing = card.service_details?.pricing || {};
-      const contentTypes = campaign.preferences.contentTypes;
+      // Находим лучший тип контента (с минимальной ценой)
+      const bestContent = this.findBestContentType(card as any, campaign);
 
-      // Рассчитываем бюджет предложения
-      let totalPrice = 0;
-      let priceCount = 0;
-
-      for (const type of contentTypes) {
-        const typeKey = type.toLowerCase();
-        if (pricing[typeKey] && pricing[typeKey] > 0) {
-          totalPrice += pricing[typeKey];
-          priceCount++;
-        }
+      if (!bestContent) {
+        console.error('❌ [Create Offer] No matching content types found');
+        throw new Error('No matching content types with valid pricing');
       }
 
-      const suggestedBudget = priceCount > 0
-        ? Math.round(totalPrice / priceCount)
-        : Math.round((campaign.budget.min + campaign.budget.max) / 2);
+      const suggestedBudget = bestContent.price;
+      const contentType = bestContent.type;
+
+      console.log(`✅ [Create Offer] Selected content type: ${contentType} with price: ${suggestedBudget}`);
 
       // Создаём предложение
       const offerData = {
@@ -763,13 +768,13 @@ export class AutomaticCampaignService {
         details: {
           title: campaign.title,
           description: campaign.description,
-          contentTypes: contentTypes,
+          contentType: contentType,
           suggestedBudget,
-          deliverables: contentTypes.map((type: string) => ({
-            type,
+          deliverables: [{
+            type: contentType,
             quantity: 1,
-            description: `Создание ${type.toLowerCase()}`
-          }))
+            description: `Создание ${contentType.toLowerCase()}`
+          }]
         },
         status: 'pending',
         timeline: campaign.timeline,
@@ -792,7 +797,7 @@ export class AutomaticCampaignService {
         campaign_id: offerData.campaign_id,
         influencer_id: offerData.influencer_id,
         suggestedBudget: offerData.details.suggestedBudget,
-        contentTypes: offerData.details.contentTypes
+        contentType: offerData.details.contentType
       });
 
       const { data: insertedOffer, error } = await supabase
