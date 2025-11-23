@@ -115,26 +115,28 @@ Deno.serve(async (req: Request) => {
 
     console.log(`${filtered.length} cards passed filtering`);
 
-    const scored = filtered.map(card => {
-      const reach = card.reach || {};
-      const followers = reach.followers || 0;
-      const engagement = reach.engagementRate || 0;
-      const rating = card.rating || 0;
-      const completed = card.completed_campaigns || 0;
+    const scored = filtered
+      .filter(card => card.reach && card.reach.followers && card.reach.followers > 0)
+      .map(card => {
+        const reach = card.reach || {};
+        const followers = reach.followers || 0;
+        const engagement = reach.engagementRate || 0;
+        const rating = card.rating || 0;
+        const completed = card.completed_campaigns || 0;
 
-      const maxFollowers = Math.max(...filtered.map(c => c.reach?.followers || 0), 1);
-      const maxEngagement = Math.max(...filtered.map(c => c.reach?.engagementRate || 0), 1);
-      const maxRating = 5;
-      const maxCompleted = Math.max(...filtered.map(c => c.completed_campaigns || 0), 1);
+        const maxFollowers = Math.max(...filtered.map(c => (c.reach?.followers && c.reach.followers > 0) ? c.reach.followers : 0), 1);
+        const maxEngagement = Math.max(...filtered.map(c => c.reach?.engagementRate || 0), 1);
+        const maxRating = 5;
+        const maxCompleted = Math.max(...filtered.map(c => c.completed_campaigns || 0), 1);
 
-      const score =
-        (followers / maxFollowers) * automaticSettings.scoringWeights.followers +
-        (engagement / maxEngagement) * automaticSettings.scoringWeights.engagement +
-        (rating / maxRating) * automaticSettings.scoringWeights.rating +
-        (completed / maxCompleted) * automaticSettings.scoringWeights.completedCampaigns;
+        const score =
+          (followers / maxFollowers) * automaticSettings.scoringWeights.followers +
+          (engagement / maxEngagement) * automaticSettings.scoringWeights.engagement +
+          (rating / maxRating) * automaticSettings.scoringWeights.rating +
+          (completed / maxCompleted) * automaticSettings.scoringWeights.completedCampaigns;
 
-      return { ...card, score };
-    });
+        return { ...card, score };
+      });
 
     scored.sort((a, b) => b.score - a.score);
 
@@ -149,20 +151,29 @@ Deno.serve(async (req: Request) => {
       try {
         const pricing = influencer.service_details?.pricing || {};
         const contentTypes = campaign.preferences.contentTypes || [];
-        let totalPrice = 0;
-        let count = 0;
 
+        // Find matching content types with prices
+        const matchingTypes: Array<{ type: string; price: number }> = [];
         for (const type of contentTypes) {
           const key = type.toLowerCase();
           if (pricing[key] && pricing[key] > 0) {
-            totalPrice += pricing[key];
-            count++;
+            matchingTypes.push({ type, price: pricing[key] });
           }
         }
 
-        const suggestedBudget = count > 0
-          ? Math.floor(totalPrice / count)
-          : Math.floor((campaign.budget.min + campaign.budget.max) / 2);
+        // Skip if no matching content types
+        if (matchingTypes.length === 0) {
+          console.log(`⚠️ No matching content types for ${influencer.user_id}`);
+          continue;
+        }
+
+        // Choose content type with minimum price
+        const bestContent = matchingTypes.reduce((min, current) =>
+          current.price < min.price ? current : min
+        );
+
+        const contentType = bestContent.type;
+        const suggestedBudget = bestContent.price;
 
         const timelineText = `${campaign.timeline.startDate} - ${campaign.timeline.endDate}`;
 
@@ -176,16 +187,16 @@ Deno.serve(async (req: Request) => {
             details: {
               title: campaign.title,
               description: campaign.description,
-              contentTypes: contentTypes,
+              contentType: contentType,
               proposed_rate: suggestedBudget,
               currency: campaign.budget.currency || 'RUB',
               timeline: timelineText,
               suggestedBudget,
-              deliverables: contentTypes.map((type: string) => ({
-                type,
+              deliverables: [{
+                type: contentType,
                 quantity: 1,
-                description: `Создание ${type.toLowerCase()}`
-              }))
+                description: `Создание ${contentType.toLowerCase()}`
+              }]
             },
             status: 'pending',
             timeline: campaign.timeline,
