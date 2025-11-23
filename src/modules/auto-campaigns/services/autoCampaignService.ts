@@ -194,11 +194,6 @@ export class AutoCampaignService {
       .eq('is_active', true)
       .eq('is_deleted', false);
 
-    // Фильтрация по размеру аудитории
-    query = query
-      .gte('followers_count', campaign.audienceMin)
-      .lte('followers_count', campaign.audienceMax);
-
     // Фильтрация по платформе (если указана)
     if (campaign.platforms.length > 0) {
       query = query.in('platform', campaign.platforms);
@@ -206,63 +201,94 @@ export class AutoCampaignService {
 
     const { data: cards, error } = await query;
     if (error) throw error;
-    if (!cards || cards.length === 0) return [];
+    if (!cards || cards.length === 0) {
+      console.log('No cards found');
+      return [];
+    }
+
+    console.log(`Found ${cards.length} cards, filtering...`);
 
     const matched: MatchedInfluencer[] = [];
 
     for (const cardData of cards) {
-      const card = this.mapInfluencerCardFromDb(cardData);
+      try {
+        // Извлекаем данные из JSONB полей
+        const reach = cardData.reach || {};
+        const serviceDetails = cardData.service_details || {};
+        const followers = reach.followers || 0;
+        const pricing = serviceDetails.pricing || {};
+        const contentTypes = serviceDetails.contentTypes || [];
 
-      // Проверяем наличие integrationDetails
-      if (!card.integrationDetails || card.integrationDetails.length === 0) {
-        console.log(`Card ${card.id} has no integration details, skipping`);
+        // Проверяем размер аудитории
+        if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
+          continue;
+        }
+
+        // Проверяем пересечение типов контента
+        const commonContentTypes = campaign.contentTypes.filter(ct =>
+          contentTypes.includes(ct)
+        );
+
+        if (commonContentTypes.length === 0) {
+          continue;
+        }
+
+        // Находим формат с минимальной ценой среди пересекающихся
+        let minPrice = Infinity;
+        let selectedFormat = '';
+
+        for (const contentType of commonContentTypes) {
+          const price = pricing[contentType];
+          if (price && price > 0 && price < minPrice) {
+            minPrice = price;
+            selectedFormat = contentType;
+          }
+        }
+
+        if (minPrice === Infinity || minPrice <= 0) {
+          continue;
+        }
+
+        // Вычисляем цену за подписчика для этой карточки
+        const cardPricePerFollower = followers / minPrice;
+
+        // Вычисляем разницу с идеальной ценой
+        const priceDifference = Math.abs(cardPricePerFollower - (campaign.targetPricePerFollower || 0));
+
+        // Создаем упрощенный объект карточки для matched
+        matched.push({
+          card: {
+            id: cardData.id,
+            influencerId: cardData.user_id,
+            platform: cardData.platform,
+            followersCount: followers,
+            engagementRate: reach.engagementRate || 0,
+            category: '',
+            interests: [],
+            averageViews: reach.averageViews || 0,
+            contentTypes: contentTypes,
+            integrationDetails: Object.entries(pricing).map(([format, price]) => ({
+              format,
+              price: Number(price),
+              description: serviceDetails.description || ''
+            })),
+            isActive: cardData.is_active,
+            isDeleted: cardData.is_deleted || false,
+            createdAt: cardData.created_at,
+            updatedAt: cardData.updated_at
+          } as InfluencerCard,
+          selectedFormat,
+          selectedPrice: minPrice,
+          pricePerFollower: cardPricePerFollower,
+          priceDifference
+        });
+      } catch (err) {
+        console.error(`Error processing card ${cardData.id}:`, err);
         continue;
       }
-
-      // Проверяем пересечение типов контента
-      const commonContentTypes = campaign.contentTypes.filter(ct =>
-        card.integrationDetails?.some(detail => detail.format === ct)
-      );
-
-      if (commonContentTypes.length === 0) {
-        console.log(`Card ${card.id} has no matching content types, skipping`);
-        continue;
-      }
-
-      // Выбираем формат с минимальной ценой среди пересекающихся
-      const availableFormats = card.integrationDetails?.filter(detail =>
-        commonContentTypes.includes(detail.format) && detail.price > 0
-      ) || [];
-
-      if (availableFormats.length === 0) {
-        console.log(`Card ${card.id} has no available formats with price, skipping`);
-        continue;
-      }
-
-      const minPriceFormat = availableFormats.reduce((min, current) =>
-        current.price < min.price ? current : min
-      );
-
-      // Защита от деления на ноль
-      if (minPriceFormat.price <= 0) {
-        console.log(`Card ${card.id} has invalid price, skipping`);
-        continue;
-      }
-
-      // Вычисляем цену за подписчика для этой карточки
-      const cardPricePerFollower = card.followersCount / minPriceFormat.price;
-
-      // Вычисляем разницу с идеальной ценой
-      const priceDifference = Math.abs(cardPricePerFollower - (campaign.targetPricePerFollower || 0));
-
-      matched.push({
-        card,
-        selectedFormat: minPriceFormat.format,
-        selectedPrice: minPriceFormat.price,
-        pricePerFollower: cardPricePerFollower,
-        priceDifference
-      });
     }
+
+    console.log(`Matched ${matched.length} cards`);
 
     // Сортируем по близости к идеальной цене
     matched.sort((a, b) => a.priceDifference - b.priceDifference);
@@ -411,24 +437,6 @@ export class AutoCampaignService {
     };
   }
 
-  private mapInfluencerCardFromDb(data: any): InfluencerCard {
-    return {
-      id: data.id,
-      influencerId: data.influencer_id,
-      platform: data.platform,
-      followersCount: data.followers_count,
-      engagementRate: data.engagement_rate,
-      category: data.category,
-      interests: data.interests || [],
-      averageViews: data.average_views,
-      contentTypes: data.content_types || [],
-      integrationDetails: data.integration_details || [],
-      isActive: data.is_active,
-      isDeleted: data.is_deleted,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
-  }
 }
 
 export const autoCampaignService = new AutoCampaignService();
