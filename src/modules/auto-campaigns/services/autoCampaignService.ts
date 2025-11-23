@@ -490,10 +490,31 @@ export class AutoCampaignService {
           const followers = reach.followers || 0;
           const pricing = serviceDetails.pricing || {};
           const contentTypes = serviceDetails.contentTypes || [];
-          const cardInterests = audienceDemographics.interests || [];
-          const cardCountries = (audienceDemographics.topCountries || []).map((c: any) =>
-            typeof c === 'string' ? c : c.country
-          );
+
+          // Handle interests - can be array or object
+          let cardInterests: string[] = [];
+          const interestsData = audienceDemographics.interests;
+          if (Array.isArray(interestsData)) {
+            cardInterests = interestsData;
+          } else if (interestsData && typeof interestsData === 'object') {
+            cardInterests = Object.keys(interestsData);
+          }
+
+          // Handle topCountries - can be array or object {country: percentage}
+          let cardCountries: string[] = [];
+          const topCountries = audienceDemographics.topCountries;
+          if (topCountries) {
+            if (Array.isArray(topCountries)) {
+              // Old format - array of strings or objects
+              cardCountries = topCountries.map((c: any) =>
+                typeof c === 'string' ? c : c.country
+              );
+            } else if (typeof topCountries === 'object') {
+              // New format - object {country: percentage}
+              cardCountries = Object.keys(topCountries);
+            }
+          }
+
           const cardProductCategories = serviceDetails.blacklistedProductCategories || [];
 
           console.log(`  Card ${cardData.id} (${cardData.platform}):`);
