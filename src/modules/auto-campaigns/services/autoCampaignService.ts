@@ -108,7 +108,7 @@ export class AutoCampaignService {
     return (data || []).map(c => this.mapCampaignFromDb(c));
   }
 
-  async getActiveCampaigns(): Promise<AutoCampaign[]> {
+  async getActiveCampaigns(currentUserId?: string): Promise<AutoCampaign[]> {
     const { data, error } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .select('*')
@@ -116,7 +116,30 @@ export class AutoCampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(c => this.mapCampaignFromDb(c));
+
+    const campaigns = (data || []).map(c => this.mapCampaignFromDb(c));
+
+    if (!currentUserId) {
+      return campaigns;
+    }
+
+    const campaignsWithParticipation = await Promise.all(
+      campaigns.map(async (campaign) => {
+        const { data: offers } = await supabase
+          .from('offers')
+          .select('offer_id, status')
+          .eq('auto_campaign_id', campaign.id)
+          .eq('influencer_id', currentUserId)
+          .eq('status', 'accepted');
+
+        return {
+          ...campaign,
+          isParticipating: (offers && offers.length > 0)
+        };
+      })
+    );
+
+    return campaignsWithParticipation;
   }
 
   async getCampaign(campaignId: string): Promise<AutoCampaign | null> {
@@ -888,6 +911,18 @@ export class AutoCampaignService {
 
     if (error) {
       console.error('Failed to increment sent offers count:', error);
+      throw error;
+    }
+  }
+
+  async updateCampaignStatus(campaignId: string, status: 'draft' | 'active' | 'in_progress' | 'paused' | 'completed' | 'cancelled'): Promise<void> {
+    const { error } = await supabase
+      .from('auto_campaigns')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', campaignId);
+
+    if (error) {
+      console.error('Failed to update campaign status:', error);
       throw error;
     }
   }

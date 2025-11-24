@@ -41,7 +41,7 @@ export function AutoCampaignsPage() {
       setIsLoading(true);
 
       if (activeTab === 'all') {
-        const data = await autoCampaignService.getActiveCampaigns();
+        const data = await autoCampaignService.getActiveCampaigns(currentUserId);
         setAllCampaigns(data);
       } else {
         const data = await autoCampaignService.getCampaigns(currentUserId);
@@ -119,6 +119,7 @@ export function AutoCampaignsPage() {
     const badges = {
       draft: { text: 'Черновик', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
       active: { text: 'Активна', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      in_progress: { text: 'В работе', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
       closed: { text: 'Набор завершён', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
       completed: { text: 'Завершена', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
     };
@@ -227,9 +228,14 @@ export function AutoCampaignsPage() {
                 key={campaign.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all overflow-hidden group relative"
               >
-                {/* Status Badge - Floating */}
-                <div className="absolute top-4 right-4 z-10">
+                {/* Status Badges - Floating */}
+                <div className="absolute top-4 right-4 z-10 flex flex-col items-end space-y-2">
                   {getStatusBadge(campaign.status)}
+                  {campaign.isParticipating && (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      Участвую
+                    </span>
+                  )}
                 </div>
 
                 {/* Header */}
