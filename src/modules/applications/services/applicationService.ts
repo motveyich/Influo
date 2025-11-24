@@ -336,7 +336,7 @@ export class ApplicationService {
         let campaignName = 'вашей карточке';
         if (application.targetType === 'campaign') {
           const { data: campaign } = await supabase
-            .from('campaigns')
+            .from('auto_campaigns')
             .select('title')
             .eq('id', application.targetReferenceId)
             .maybeSingle();

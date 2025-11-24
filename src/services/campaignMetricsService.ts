@@ -42,9 +42,9 @@ export class CampaignMetricsService {
   }> {
     try {
       const { data, error } = await supabase
-        .from('campaigns')
+        .from('auto_campaigns')
         .select('metrics')
-        .eq('campaign_id', campaignId)
+        .eq('id', campaignId)
         .maybeSingle();
 
       if (error) throw error;

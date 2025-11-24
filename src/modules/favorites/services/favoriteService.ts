@@ -25,9 +25,9 @@ export class FavoriteService {
         ownerId = data?.user_id || null;
       } else if (targetType === 'campaign') {
         const { data } = await supabase
-          .from('campaigns')
+          .from('auto_campaigns')
           .select('advertiser_id')
-          .eq('campaign_id', targetId)
+          .eq('id', targetId)
           .maybeSingle();
         ownerId = data?.advertiser_id || null;
       }
