@@ -872,6 +872,20 @@ export class AutoCampaignService {
     };
   }
 
+  async incrementSentOffersCount(campaignId: string): Promise<void> {
+    const { error } = await supabase
+      .from(TABLES.AUTO_CAMPAIGNS)
+      .update({
+        sent_offers_count: supabase.raw('sent_offers_count + 1')
+      })
+      .eq('id', campaignId);
+
+    if (error) {
+      console.error('Failed to increment sent offers count:', error);
+      throw error;
+    }
+  }
+
 }
 
 export const autoCampaignService = new AutoCampaignService();

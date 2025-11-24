@@ -532,6 +532,127 @@ export class OfferService {
       throw error;
     }
   }
+
+  async createAutoCampaignOffer(offerData: {
+    autoCampaignId: string;
+    influencerId: string;
+    advertiserId: string;
+    title: string;
+    description: string;
+    proposedRate: number;
+    currency: string;
+    deliverables: string[];
+    timeline: string;
+    platform: string;
+    contentType: string;
+    enableChat: boolean;
+  }): Promise<CollaborationOffer> {
+    try {
+      // Check blacklist
+      const isBlacklisted = await blacklistService.isBlacklisted(
+        offerData.influencerId,
+        offerData.advertiserId
+      );
+      if (isBlacklisted) {
+        throw new Error('Вы не можете взаимодействовать с этим рекламодателем');
+      }
+
+      // Check rate limit for auto-campaigns
+      const rateLimitCheck = await rateLimitService.canInteract(
+        offerData.influencerId,
+        offerData.advertiserId
+      );
+      if (!rateLimitCheck.allowed) {
+        throw new Error(`Предложение уже отправлено этому рекламодателю. Попробуйте через ${rateLimitCheck.remainingMinutes} мин.`);
+      }
+
+      // Check if user already applied to this auto-campaign
+      const { data: existingOffer } = await supabase
+        .from(TABLES.OFFERS)
+        .select('offer_id')
+        .eq('influencer_id', offerData.influencerId)
+        .eq('advertiser_id', offerData.advertiserId)
+        .contains('metadata', { autoCampaignId: offerData.autoCampaignId })
+        .single();
+
+      if (existingOffer) {
+        throw new Error('Вы уже откликнулись на эту автокампанию');
+      }
+
+      const newOffer = {
+        influencer_id: offerData.influencerId,
+        advertiser_id: offerData.advertiserId,
+        initiated_by: offerData.influencerId,
+        details: {
+          title: offerData.title,
+          description: offerData.description,
+          proposed_rate: offerData.proposedRate,
+          currency: offerData.currency,
+          deliverables: offerData.deliverables,
+          timeline: offerData.timeline,
+          platform: offerData.platform,
+          contentType: offerData.contentType
+        },
+        status: 'pending',
+        current_stage: 'negotiation',
+        influencer_response: 'pending',
+        advertiser_response: 'pending',
+        final_terms: '{}',
+        timeline: {},
+        metadata: {
+          sourceType: 'auto_campaign',
+          autoCampaignId: offerData.autoCampaignId,
+          enableChat: offerData.enableChat,
+          createdFromAutoCampaign: true
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.OFFERS)
+        .insert([newOffer])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update auto-campaign sent offers count
+      const { autoCampaignService } = await import('../../auto-campaigns/services/autoCampaignService');
+      await autoCampaignService.incrementSentOffersCount(offerData.autoCampaignId);
+
+      const transformedOffer = this.transformFromDatabase(data);
+
+      // Send notification to advertiser
+      await this.sendOfferNotification(transformedOffer);
+
+      // Track analytics
+      analytics.track('auto_campaign_offer_created', {
+        offer_id: transformedOffer.id,
+        auto_campaign_id: offerData.autoCampaignId,
+        influencer_id: offerData.influencerId,
+        advertiser_id: offerData.advertiserId,
+        proposed_rate: offerData.proposedRate
+      });
+
+      // Record rate limit interaction
+      try {
+        await rateLimitService.recordInteraction(
+          offerData.influencerId,
+          'auto_campaign_offer',
+          undefined,
+          offerData.autoCampaignId
+        );
+      } catch (rateLimitError) {
+        console.error('Failed to record rate limit:', rateLimitError);
+      }
+
+      return transformedOffer;
+    } catch (error) {
+      console.error('Failed to create auto-campaign offer:', error);
+      throw error;
+    }
+  }
 }
 
 export const offerService = new OfferService();

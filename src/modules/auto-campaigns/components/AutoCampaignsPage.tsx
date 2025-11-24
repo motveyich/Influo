@@ -7,6 +7,7 @@ import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircl
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { AutoCampaignApplicationModal } from './AutoCampaignApplicationModal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -20,6 +21,7 @@ export function AutoCampaignsPage() {
   const [showModal, setShowModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<AutoCampaign | null>(null);
   const [selectedAdvertiserId, setSelectedAdvertiserId] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<AutoCampaign | null>(null);
@@ -104,7 +106,8 @@ export function AutoCampaignsPage() {
   };
 
   const handleApplyToCampaign = (campaign: AutoCampaign) => {
-    toast.success('Функция "Откликнуться" в разработке');
+    setSelectedCampaign(campaign);
+    setShowApplicationModal(true);
   };
 
   const handleViewAdvertiserProfile = (campaign: AutoCampaign) => {
@@ -448,6 +451,21 @@ export function AutoCampaignsPage() {
             onClose={() => {
               setShowProfileModal(false);
               setSelectedAdvertiserId(null);
+            }}
+          />
+        )}
+
+        {showApplicationModal && selectedCampaign && (
+          <AutoCampaignApplicationModal
+            isOpen={showApplicationModal}
+            onClose={() => {
+              setShowApplicationModal(false);
+              setSelectedCampaign(null);
+            }}
+            campaign={selectedCampaign}
+            influencerId={currentUserId}
+            onSuccess={() => {
+              loadCampaigns();
             }}
           />
         )}
