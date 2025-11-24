@@ -749,15 +749,16 @@ export class AutoCampaignService {
 
     const { data, error } = await supabase
       .from(TABLES.OFFERS)
-      .select('offer_id')
+      .select('offer_id, status')
       .eq('advertiser_id', senderId)
       .eq('influencer_id', receiverId)
       .gte('created_at', oneHourAgo)
+      .in('status', ['pending', 'accepted'])
       .limit(1);
 
     if (error) {
       console.error('Rate limit check error:', error);
-      return true; // В случае ошибки разрешаем отправку
+      return true;
     }
 
     return !data || data.length === 0;
