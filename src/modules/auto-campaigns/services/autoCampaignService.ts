@@ -97,15 +97,57 @@ export class AutoCampaignService {
     return this.mapCampaignFromDb(campaign);
   }
 
-  async getCampaigns(advertiserId: string): Promise<AutoCampaign[]> {
-    const { data, error } = await supabase
+  async getCampaigns(userId: string): Promise<AutoCampaign[]> {
+    const { data: ownCampaigns, error: ownError } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .select('*')
-      .eq('advertiser_id', advertiserId)
+      .eq('advertiser_id', userId)
       .order('created_at', { ascending: false});
 
-    if (error) throw error;
-    return (data || []).map(c => this.mapCampaignFromDb(c));
+    if (ownError) throw ownError;
+
+    const { data: participatingOffers, error: offersError } = await supabase
+      .from('offers')
+      .select('auto_campaign_id')
+      .eq('influencer_id', userId)
+      .eq('status', 'accepted')
+      .not('auto_campaign_id', 'is', null);
+
+    if (offersError) throw offersError;
+
+    const participatingCampaignIds = new Set(
+      (participatingOffers || [])
+        .map(o => o.auto_campaign_id)
+        .filter(id => id !== null)
+    );
+
+    if (participatingCampaignIds.size === 0) {
+      return (ownCampaigns || []).map(c => this.mapCampaignFromDb(c));
+    }
+
+    const { data: participatingCampaigns, error: participatingError } = await supabase
+      .from(TABLES.AUTO_CAMPAIGNS)
+      .select('*')
+      .in('id', Array.from(participatingCampaignIds))
+      .order('created_at', { ascending: false});
+
+    if (participatingError) throw participatingError;
+
+    const allCampaigns = [
+      ...(ownCampaigns || []),
+      ...(participatingCampaigns || [])
+    ];
+
+    const uniqueCampaigns = Array.from(
+      new Map(allCampaigns.map(c => [c.id, c])).values()
+    );
+
+    return uniqueCampaigns
+      .map(c => ({
+        ...this.mapCampaignFromDb(c),
+        isParticipating: participatingCampaignIds.has(c.id)
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async getActiveCampaigns(currentUserId?: string): Promise<AutoCampaign[]> {
@@ -123,23 +165,20 @@ export class AutoCampaignService {
       return campaigns;
     }
 
-    const campaignsWithParticipation = await Promise.all(
-      campaigns.map(async (campaign) => {
-        const { data: offers } = await supabase
-          .from('offers')
-          .select('offer_id, status')
-          .eq('auto_campaign_id', campaign.id)
-          .eq('influencer_id', currentUserId)
-          .eq('status', 'accepted');
+    const { data: participatingOffers } = await supabase
+      .from('offers')
+      .select('auto_campaign_id')
+      .eq('influencer_id', currentUserId)
+      .eq('status', 'accepted')
+      .not('auto_campaign_id', 'is', null);
 
-        return {
-          ...campaign,
-          isParticipating: (offers && offers.length > 0)
-        };
-      })
+    const participatingCampaignIds = new Set(
+      (participatingOffers || [])
+        .map(o => o.auto_campaign_id)
+        .filter(id => id !== null)
     );
 
-    return campaignsWithParticipation;
+    return campaigns.filter(campaign => !participatingCampaignIds.has(campaign.id));
   }
 
   async getCampaign(campaignId: string): Promise<AutoCampaign | null> {
@@ -838,19 +877,20 @@ export class AutoCampaignService {
       })
       .eq('id', campaignId);
 
-    // Проверяем, нужно ли закрыть кампанию
+    // Проверяем, нужно ли изменить статус кампании
     const campaign = await this.getCampaign(campaignId);
     if (campaign && campaign.status === 'active') {
-      // Если набрано достаточно или больше нельзя отправить
+      // Если набрано достаточно участников, переводим в in_progress
       if (acceptedCount >= campaign.targetInfluencersCount) {
-        await this.closeCampaign(campaignId);
+        await this.updateCampaignStatus(campaignId, 'in_progress');
       }
     }
 
     // Проверяем, нужно ли завершить кампанию полностью
-    if (campaign && campaign.status === 'closed') {
-      if (completedCount + offers.filter(o => o.status === 'cancelled').length === offers.length) {
-        await this.completeCampaign(campaignId);
+    if (campaign && campaign.status === 'in_progress') {
+      // Если все офферы завершены или отменены
+      if (completedCount + offers.filter(o => ['cancelled', 'declined', 'terminated'].includes(o.status)).length === offers.length) {
+        await this.updateCampaignStatus(campaignId, 'completed');
       }
     }
   }
