@@ -462,6 +462,7 @@ export class AutoCampaignService {
     console.log('  Filters:');
     console.log('    - is_active = true');
     console.log('    - is_deleted = false');
+    console.log('    - user_id != advertiserId (exclude campaign creator cards)');
 
     // ВАЖНО: В БД платформы хранятся в lowercase, а в кампании в PascalCase
     // Нужно привести к lowercase для сравнения
@@ -472,7 +473,8 @@ export class AutoCampaignService {
       .from(TABLES.INFLUENCER_CARDS)
       .select('*')
       .eq('is_active', true)
-      .eq('is_deleted', false);
+      .eq('is_deleted', false)
+      .neq('user_id', campaign.advertiserId);
 
     // Фильтрация по платформе (ОБЯЗАТЕЛЬНОЕ поле - используем SQL)
     if (platformsLowercase.length > 0) {
