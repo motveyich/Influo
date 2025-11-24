@@ -102,6 +102,17 @@ export class AutoCampaignService {
       .from(TABLES.AUTO_CAMPAIGNS)
       .select('*')
       .eq('advertiser_id', advertiserId)
+      .order('created_at', { ascending: false});
+
+    if (error) throw error;
+    return (data || []).map(c => this.mapCampaignFromDb(c));
+  }
+
+  async getActiveCampaigns(): Promise<AutoCampaign[]> {
+    const { data, error } = await supabase
+      .from(TABLES.AUTO_CAMPAIGNS)
+      .select('*')
+      .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

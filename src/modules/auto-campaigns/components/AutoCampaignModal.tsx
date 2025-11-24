@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AutoCampaignFormData } from '../../../core/types';
+import React, { useState, useEffect } from 'react';
+import { AutoCampaign, AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
@@ -10,9 +10,10 @@ interface AutoCampaignModalProps {
   onClose: () => void;
   onSuccess: () => void;
   advertiserId: string;
+  editingCampaign?: AutoCampaign | null;
 }
 
-export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: AutoCampaignModalProps) {
+export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, editingCampaign }: AutoCampaignModalProps) {
   const [formData, setFormData] = useState<AutoCampaignFormData>({
     title: '',
     description: '',
@@ -33,6 +34,28 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editingCampaign) {
+      setFormData({
+        title: editingCampaign.title,
+        description: editingCampaign.description,
+        budgetMin: editingCampaign.budgetMin,
+        budgetMax: editingCampaign.budgetMax,
+        audienceMin: editingCampaign.audienceMin,
+        audienceMax: editingCampaign.audienceMax,
+        targetInfluencersCount: editingCampaign.targetInfluencersCount,
+        contentTypes: editingCampaign.contentTypes,
+        platforms: editingCampaign.platforms,
+        targetCountries: editingCampaign.targetCountries || [],
+        targetAudienceInterests: editingCampaign.targetAudienceInterests || [],
+        productCategories: editingCampaign.productCategories || [],
+        enableChat: editingCampaign.enableChat,
+        startDate: editingCampaign.startDate || '',
+        endDate: editingCampaign.endDate || ''
+      });
+    }
+  }, [editingCampaign]);
 
   if (!isOpen) return null;
 
@@ -82,12 +105,17 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
 
     try {
       setIsSubmitting(true);
-      await autoCampaignService.createCampaign(advertiserId, formData);
-      toast.success('Автокомпания создана!');
+      if (editingCampaign) {
+        await autoCampaignService.updateCampaign(editingCampaign.id, formData);
+        toast.success('Автокампания обновлена!');
+      } else {
+        await autoCampaignService.createCampaign(advertiserId, formData);
+        toast.success('Автокампания создана!');
+      }
       onSuccess();
     } catch (error) {
-      console.error('Failed to create campaign:', error);
-      toast.error('Не удалось создать автокомпанию');
+      console.error('Failed to save campaign:', error);
+      toast.error(editingCampaign ? 'Не удалось обновить автокампанию' : 'Не удалось создать автокампанию');
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +179,9 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Создать автокомпанию</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {editingCampaign ? 'Редактировать автокампанию' : 'Создать автокампанию'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -485,7 +515,10 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId }: 
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Создание...' : 'Создать'}
+              {isSubmitting
+                ? (editingCampaign ? 'Сохранение...' : 'Создание...')
+                : (editingCampaign ? 'Сохранить' : 'Создать')
+              }
             </button>
           </div>
         </form>
