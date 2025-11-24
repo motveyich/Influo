@@ -751,6 +751,12 @@ export class AutoCampaignService {
       influencer_card_id: matched.card.id,
       auto_campaign_id: campaign.id,
       initiated_by: advertiserId,
+      proposed_rate: matched.selectedPrice,
+      currency: 'RUB',
+      current_stage: 'negotiation',
+      influencer_response: 'pending',
+      advertiser_response: 'pending',
+      enable_chat: campaign.enableChat,
       details: {
         title: campaign.title,
         description: campaign.description,
@@ -765,12 +771,14 @@ export class AutoCampaignService {
       },
       status: 'pending',
       timeline: {},
+      final_terms: {},
       metadata: {
         isAutoCampaign: true,
-        campaignId: campaign.id,
+        autoCampaignId: campaign.id,
+        sourceType: 'auto_campaign',
         selectedFormat: matched.selectedFormat,
         calculatedPrice: matched.selectedPrice,
-        enable_chat: campaign.enableChat
+        enableChat: campaign.enableChat
       }
     };
 
