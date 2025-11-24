@@ -6,6 +6,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -18,7 +19,9 @@ export function AutoCampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<AutoCampaign | null>(null);
+  const [selectedAdvertiserId, setSelectedAdvertiserId] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<AutoCampaign | null>(null);
 
   const { user } = useAuth();
@@ -105,7 +108,8 @@ export function AutoCampaignsPage() {
   };
 
   const handleViewAdvertiserProfile = (campaign: AutoCampaign) => {
-    toast.success('Функция "Профиль рекламодателя" в разработке');
+    setSelectedAdvertiserId(campaign.advertiserId);
+    setShowProfileModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -434,6 +438,17 @@ export function AutoCampaignsPage() {
             }}
             advertiserId={currentUserId}
             editingCampaign={editingCampaign}
+          />
+        )}
+
+        {showProfileModal && selectedAdvertiserId && (
+          <UserPublicProfileModal
+            userId={selectedAdvertiserId}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setShowProfileModal(false);
+              setSelectedAdvertiserId(null);
+            }}
           />
         )}
       </div>
