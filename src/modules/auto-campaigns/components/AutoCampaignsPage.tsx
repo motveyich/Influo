@@ -3,7 +3,7 @@ import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play, Briefcase } from 'lucide-react';
+import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play, Briefcase, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
@@ -37,6 +37,19 @@ export function AutoCampaignsPage() {
       loadCampaigns();
     }
   }, [currentUserId, activeTab]);
+
+  const getPlatformIcon = (platform: string) => {
+    const platformLower = platform.toLowerCase();
+    const iconProps = { className: "w-3.5 h-3.5" };
+
+    if (platformLower.includes('instagram')) return <Instagram {...iconProps} />;
+    if (platformLower.includes('youtube')) return <Youtube {...iconProps} />;
+    if (platformLower.includes('twitter') || platformLower.includes('x')) return <Twitter {...iconProps} />;
+    if (platformLower.includes('facebook')) return <Facebook {...iconProps} />;
+    if (platformLower.includes('tiktok')) return <Tv {...iconProps} />;
+
+    return <Tv {...iconProps} />;
+  };
 
   const loadCampaigns = async () => {
     try {
@@ -340,9 +353,10 @@ export function AutoCampaignsPage() {
                     {campaign.platforms.slice(0, 4).map((platform) => (
                       <span
                         key={platform}
-                        className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md capitalize font-medium"
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md capitalize font-medium flex items-center space-x-1"
                       >
-                        {platform}
+                        {getPlatformIcon(platform)}
+                        <span>{platform}</span>
                       </span>
                     ))}
                     {campaign.platforms.length > 4 && (

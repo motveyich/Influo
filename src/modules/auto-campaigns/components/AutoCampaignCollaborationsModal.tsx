@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText } from 'lucide-react';
+import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
 import { AutoCampaign, CollaborationOffer } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
@@ -47,6 +47,19 @@ export function AutoCampaignCollaborationsModal({
       loadCollaborations();
     }
   }, [isOpen, campaign.id]);
+
+  const getPlatformIcon = (platform: string) => {
+    const platformLower = platform.toLowerCase();
+    const iconProps = { className: "w-4 h-4" };
+
+    if (platformLower.includes('instagram')) return <Instagram {...iconProps} />;
+    if (platformLower.includes('youtube')) return <Youtube {...iconProps} />;
+    if (platformLower.includes('twitter') || platformLower.includes('x')) return <Twitter {...iconProps} />;
+    if (platformLower.includes('facebook')) return <Facebook {...iconProps} />;
+    if (platformLower.includes('tiktok')) return <Tv {...iconProps} />;
+
+    return <Tv {...iconProps} />;
+  };
 
   const loadCollaborations = async () => {
     try {
@@ -196,7 +209,10 @@ export function AutoCampaignCollaborationsModal({
                             {collab.influencerUsername}
                           </p>
                           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <span className="capitalize">{collab.platform}</span>
+                            <div className="flex items-center space-x-1">
+                              {getPlatformIcon(collab.platform)}
+                              <span className="capitalize">{collab.platform}</span>
+                            </div>
                             <span>•</span>
                             <span>{collab.contentFormat}</span>
                           </div>

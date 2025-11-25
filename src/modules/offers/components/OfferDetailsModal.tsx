@@ -7,7 +7,7 @@ import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
 import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag, UserCircle } from 'lucide-react';
+import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag, UserCircle, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { blacklistService } from '../../../services/blacklistService';
@@ -48,6 +48,19 @@ export function OfferDetailsModal({
   const isReceiver = !isInitiator;
   const userRole = isInfluencer ? 'influencer' : 'advertiser';
   const roleInOffer = isInitiator ? 'Отправитель' : 'Получатель';
+
+  const getPlatformIcon = (platform: string) => {
+    const platformLower = platform?.toLowerCase() || '';
+    const iconProps = { className: "w-4 h-4" };
+
+    if (platformLower.includes('instagram')) return <Instagram {...iconProps} />;
+    if (platformLower.includes('youtube')) return <Youtube {...iconProps} />;
+    if (platformLower.includes('twitter') || platformLower.includes('x')) return <Twitter {...iconProps} />;
+    if (platformLower.includes('facebook')) return <Facebook {...iconProps} />;
+    if (platformLower.includes('tiktok')) return <Tv {...iconProps} />;
+
+    return <Tv {...iconProps} />;
+  };
 
   useEffect(() => {
     if (isOpen && offer.id) {
@@ -447,7 +460,7 @@ export function OfferDetailsModal({
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Детали предложения</h3>
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center space-x-2">
                       <DollarSign className="w-4 h-4 text-green-600" />
                       <div>
@@ -459,7 +472,7 @@ export function OfferDetailsModal({
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Calendar className="w-4 h-4 text-blue-600" />
                       <div>
@@ -467,7 +480,17 @@ export function OfferDetailsModal({
                         <p className="text-xs text-gray-600">Сроки</p>
                       </div>
                     </div>
-                    
+
+                    {offer.platform && (
+                      <div className="flex items-center space-x-2">
+                        {getPlatformIcon(offer.platform)}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 capitalize">{offer.platform}</p>
+                          <p className="text-xs text-gray-600">Платформа</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-gray-600" />
                       <div>
