@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink } from 'lucide-react';
 import { AutoCampaign } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { useAuth } from '../../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,6 +35,8 @@ export function AutoCampaignCollaborationsModal({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const currentUserId = user?.id || '';
 
   useEffect(() => {
     if (isOpen) {
@@ -230,26 +234,11 @@ export function AutoCampaignCollaborationsModal({
 
       {/* User Profile Modal */}
       {selectedProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Профиль пользователя
-                </h3>
-                <button
-                  onClick={() => setSelectedProfile(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Функция просмотра профиля будет добавлена
-              </p>
-            </div>
-          </div>
-        </div>
+        <UserPublicProfileModal
+          userId={selectedProfile}
+          currentUserId={currentUserId}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </>
   );
