@@ -20,6 +20,7 @@ import { useProfileCompletion } from '../modules/profiles/hooks/useProfileComple
 import { AuthModal } from './AuthModal';
 import { BlockedUserNotice } from './BlockedUserNotice';
 import { EngagementTracker } from '../modules/analytics/components/EngagementTracker';
+import { UserAvatar } from './UserAvatar';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -170,6 +171,11 @@ export function Layout({ children }: LayoutProps) {
 
               {/* User info and mobile menu button */}
               <div className="flex items-center space-x-4">
+                <UserAvatar
+                  avatarUrl={currentUserProfile?.avatar}
+                  fullName={currentUserProfile?.fullName}
+                  size="sm"
+                />
                 <span className="text-sm text-gray-600">
                   {currentUserProfile?.fullName || user?.email}
                 </span>

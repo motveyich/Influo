@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
 import { profileService } from '../services/profileService';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { 
-  X, 
-  User, 
-  Briefcase, 
-  Instagram, 
-  Youtube, 
-  Twitter, 
-  Plus, 
-  Trash2, 
-  Save, 
+import {
+  X,
+  User,
+  Briefcase,
+  Instagram,
+  Youtube,
+  Twitter,
+  Plus,
+  Trash2,
+  Save,
   AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AvatarUpload } from '../../../components/AvatarUpload';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface ProfileSetupModalProps {
   isOpen: boolean;
@@ -504,7 +506,18 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   Очистить раздел
                 </button>
               </div>
-              
+
+              <div className="mb-8">
+                <AvatarUpload
+                  userId={currentProfile?.userId || ''}
+                  currentAvatarUrl={basicInfo.avatar}
+                  fullName={basicInfo.fullName}
+                  onAvatarUpdate={(newAvatarUrl) => {
+                    setBasicInfo(prev => ({ ...prev, avatar: newAvatarUrl || '' }));
+                  }}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
