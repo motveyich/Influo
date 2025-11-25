@@ -66,7 +66,7 @@ export function AutoCampaignCollaborationsModal({
             : [];
 
           return {
-            offerId: offer.offerId,
+            offerId: offer.offer_id || offer.id || '',
             influencerId: offer.influencerId,
             influencerUsername: profile?.username || profile?.fullName || 'Пользователь',
             influencerAvatar: profile?.avatar,
@@ -121,9 +121,10 @@ export function AutoCampaignCollaborationsModal({
   };
 
   const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
+    const updatedOfferId = updatedOffer.offer_id || updatedOffer.id;
     setCollaborations(prev => prev.map(collab =>
-      collab.offerId === updatedOffer.offerId
-        ? { ...collab, offer: updatedOffer, status: updatedOffer.status }
+      collab.offerId === updatedOfferId || collab.offer.offer_id === updatedOfferId
+        ? { ...collab, offer: updatedOffer, status: updatedOffer.status, proposedRate: updatedOffer.proposedRate }
         : collab
     ));
     setSelectedOffer(updatedOffer);
@@ -270,6 +271,7 @@ export function AutoCampaignCollaborationsModal({
       {/* Offer Details Modal */}
       {showOfferDetails && selectedOffer && (
         <OfferDetailsModal
+          isOpen={showOfferDetails}
           offer={selectedOffer}
           currentUserId={currentUserId}
           onClose={() => {
