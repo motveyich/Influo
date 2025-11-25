@@ -885,6 +885,8 @@ export class AutoCampaignService {
       // Если набрано достаточно участников, переводим в in_progress
       if (acceptedCount >= campaign.targetInfluencersCount) {
         await this.updateCampaignStatus(campaignId, 'in_progress');
+        // Отменяем все pending офферы, так как набор завершен
+        await this.cancelPendingOffers(campaignId);
       }
     }
 
