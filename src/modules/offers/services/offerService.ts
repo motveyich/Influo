@@ -365,12 +365,11 @@ export class OfferService {
       }
     }
 
-    // Инициатор или инфлюенсер может отменить предложение до принятия
+    // Любой участник может отменить предложение до принятия
     if (newStatus === 'cancelled' && offer.status === 'pending') {
-      const initiatedBy = (offer as any).initiated_by;
-      // Разрешаем отмену инициатору или инфлюенсеру (для автоофферов)
-      if (userId !== initiatedBy && userId !== offer.influencerId) {
-        throw new Error('Only the initiator or influencer can cancel pending offers');
+      // Разрешаем отмену любому участнику оффера
+      if (userId !== offer.influencerId && userId !== offer.advertiserId) {
+        throw new Error('Only participants can cancel pending offers');
       }
     }
 
