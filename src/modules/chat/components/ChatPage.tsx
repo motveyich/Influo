@@ -59,7 +59,7 @@ export function ChatPage() {
     if (userIdParam) {
       setTargetUserId(userIdParam);
       // Clear the URL parameter
-      window.history.replaceState({}, '', '/chat');
+      window.history.replaceState({}, '', '/app/chat');
     }
     
     if (currentUserId && !loading) {
@@ -153,6 +153,7 @@ export function ChatPage() {
         const existingConversation = enhancedConversations.find(conv => conv.participantId === targetUserId);
         if (existingConversation) {
           setSelectedConversation(existingConversation);
+          setActiveTab(existingConversation.chatType); // Switch to appropriate tab
         } else {
           // Create a new conversation entry for the target user
           await createNewConversation(targetUserId);
@@ -199,6 +200,7 @@ export function ChatPage() {
         
         setConversations(prev => [newConversation, ...prev]);
         setSelectedConversation(newConversation);
+        setActiveTab('new'); // Switch to "new" tab for new conversations
       }
     } catch (error) {
       console.error('Failed to create new conversation:', error);

@@ -98,7 +98,7 @@ export function AutoCampaignCollaborationsModal({
   };
 
   const handleOpenChat = (influencerId: string) => {
-    navigate(`/chat?userId=${influencerId}`);
+    navigate(`/app/chat?userId=${influencerId}`);
     onClose();
   };
 
