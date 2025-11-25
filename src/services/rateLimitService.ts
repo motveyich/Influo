@@ -13,11 +13,18 @@ export interface RateLimitInteraction {
 }
 
 class RateLimitService {
-  async isRateLimited(userId: string, targetUserId: string): Promise<boolean> {
+  async isRateLimited(
+    userId: string,
+    targetUserId: string,
+    interactionType?: InteractionType,
+    cardId?: string
+  ): Promise<boolean> {
     try {
       const { data, error } = await supabase.rpc('is_rate_limited', {
         p_user_id: userId,
-        p_target_user_id: targetUserId
+        p_target_user_id: targetUserId,
+        p_interaction_type: interactionType || null,
+        p_card_id: cardId || null
       });
 
       if (error) {
@@ -106,16 +113,26 @@ class RateLimitService {
     }
   }
 
-  async canInteract(userId: string, targetUserId: string): Promise<{ allowed: boolean; remainingMinutes?: number; reason?: string }> {
+  async canInteract(
+    userId: string,
+    targetUserId: string,
+    interactionType?: InteractionType,
+    cardId?: string
+  ): Promise<{ allowed: boolean; remainingMinutes?: number; reason?: string }> {
     try {
-      const isLimited = await this.isRateLimited(userId, targetUserId);
+      const isLimited = await this.isRateLimited(userId, targetUserId, interactionType, cardId);
 
       if (isLimited) {
         const remainingMinutes = await this.getRemainingTime(userId, targetUserId);
+
+        const message = interactionType === 'favorite'
+          ? `Вы недавно добавили эту карточку в избранное. Попробуйте через ${remainingMinutes} мин.`
+          : `Вы недавно взаимодействовали с этим пользователем. Попробуйте через ${remainingMinutes} мин.`;
+
         return {
           allowed: false,
           remainingMinutes,
-          reason: `Вы недавно взаимодействовали с этим пользователем. Попробуйте через ${remainingMinutes} мин.`
+          reason: message
         };
       }
 

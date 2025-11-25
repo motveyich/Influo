@@ -56,10 +56,12 @@ export class FavoriteService {
         throw new Error('Вы не можете взаимодействовать с этим пользователем');
       }
 
-      // Check rate limit
+      // Check rate limit (pass card_id for card-specific rate limiting)
       const rateLimitCheck = await rateLimitService.canInteract(
         favoriteData.userId!,
-        targetUserId
+        targetUserId,
+        'favorite',
+        favoriteData.targetId
       );
       if (!rateLimitCheck.allowed) {
         throw new Error(rateLimitCheck.reason || 'Слишком частые действия. Попробуйте позже');
