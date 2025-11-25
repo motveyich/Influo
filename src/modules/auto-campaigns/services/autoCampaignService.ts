@@ -855,47 +855,86 @@ export class AutoCampaignService {
   }
 
   async updateCampaignStats(campaignId: string): Promise<void> {
-    // Получаем статистику предложений
-    const { data: offers, error } = await supabase
-      .from(TABLES.OFFERS)
-      .select('status')
-      .eq('auto_campaign_id', campaignId);
+    try {
+      console.log('[updateCampaignStats] Starting update for campaign:', campaignId);
 
-    if (error) throw error;
-    if (!offers) return;
+      // Получаем статистику предложений
+      const { data: offers, error } = await supabase
+        .from(TABLES.OFFERS)
+        .select('status')
+        .eq('auto_campaign_id', campaignId);
 
-    const acceptedCount = offers.filter(o =>
-      ['accepted', 'in_progress'].includes(o.status)
-    ).length;
-
-    const completedCount = offers.filter(o => o.status === 'completed').length;
-
-    // Обновляем счетчики
-    await supabase
-      .from(TABLES.AUTO_CAMPAIGNS)
-      .update({
-        accepted_offers_count: acceptedCount,
-        completed_offers_count: completedCount
-      })
-      .eq('id', campaignId);
-
-    // Проверяем, нужно ли изменить статус кампании
-    const campaign = await this.getCampaign(campaignId);
-    if (campaign && campaign.status === 'active') {
-      // Если набрано достаточно участников, переводим в in_progress
-      if (acceptedCount >= campaign.targetInfluencersCount) {
-        await this.updateCampaignStatus(campaignId, 'in_progress');
-        // Отменяем все pending офферы, так как набор завершен
-        await this.cancelPendingOffers(campaignId);
+      if (error) {
+        console.error('[updateCampaignStats] Error fetching offers:', error);
+        throw error;
       }
-    }
 
-    // Проверяем, нужно ли завершить кампанию полностью
-    if (campaign && campaign.status === 'in_progress') {
-      // Если все офферы завершены или отменены
-      if (completedCount + offers.filter(o => ['cancelled', 'declined', 'terminated'].includes(o.status)).length === offers.length) {
-        await this.updateCampaignStatus(campaignId, 'completed');
+      if (!offers) {
+        console.log('[updateCampaignStats] No offers found');
+        return;
       }
+
+      console.log('[updateCampaignStats] Found offers:', offers);
+
+      const acceptedCount = offers.filter(o =>
+        ['accepted', 'in_progress'].includes(o.status)
+      ).length;
+
+      const completedCount = offers.filter(o => o.status === 'completed').length;
+
+      console.log('[updateCampaignStats] Counts - accepted:', acceptedCount, 'completed:', completedCount);
+
+      // Обновляем счетчики
+      const { error: updateError } = await supabase
+        .from(TABLES.AUTO_CAMPAIGNS)
+        .update({
+          accepted_offers_count: acceptedCount,
+          completed_offers_count: completedCount
+        })
+        .eq('id', campaignId);
+
+      if (updateError) {
+        console.error('[updateCampaignStats] Error updating counts:', updateError);
+        throw updateError;
+      }
+
+      console.log('[updateCampaignStats] Counts updated successfully');
+
+      // Проверяем, нужно ли изменить статус кампании
+      const campaign = await this.getCampaign(campaignId);
+
+      if (!campaign) {
+        console.log('[updateCampaignStats] Campaign not found');
+        return;
+      }
+
+      console.log('[updateCampaignStats] Campaign status:', campaign.status, 'target:', campaign.targetInfluencersCount);
+
+      if (campaign.status === 'active') {
+        // Если набрано достаточно участников, переводим в in_progress
+        if (acceptedCount >= campaign.targetInfluencersCount) {
+          console.log('[updateCampaignStats] Changing status to in_progress');
+          await this.updateCampaignStatus(campaignId, 'in_progress');
+          // Отменяем все pending офферы, так как набор завершен
+          await this.cancelPendingOffers(campaignId);
+        }
+      }
+
+      // Проверяем, нужно ли завершить кампанию полностью
+      if (campaign.status === 'in_progress') {
+        // Если все офферы завершены или отменены
+        const finishedCount = completedCount + offers.filter(o =>
+          ['cancelled', 'declined', 'terminated'].includes(o.status)
+        ).length;
+
+        if (finishedCount === offers.length) {
+          console.log('[updateCampaignStats] Completing campaign');
+          await this.updateCampaignStatus(campaignId, 'completed');
+        }
+      }
+    } catch (error) {
+      console.error('[updateCampaignStats] Fatal error:', error);
+      throw error;
     }
   }
 

@@ -266,9 +266,9 @@ export class OfferService {
       });
 
       // Update auto-campaign stats if this offer belongs to a campaign
-      if (data.auto_campaign_id) {
+      if (currentOffer.autoCampaignId) {
         const { autoCampaignService } = await import('../../auto-campaigns/services/autoCampaignService');
-        await autoCampaignService.updateCampaignStats(data.auto_campaign_id);
+        await autoCampaignService.updateCampaignStats(currentOffer.autoCampaignId);
       }
 
       return updatedOffer;
