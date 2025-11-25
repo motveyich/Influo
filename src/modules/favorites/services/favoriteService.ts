@@ -13,14 +13,14 @@ export class FavoriteService {
         const { data } = await supabase
           .from('influencer_cards')
           .select('user_id')
-          .eq('card_id', targetId)
+          .eq('id', targetId)
           .maybeSingle();
         ownerId = data?.user_id || null;
       } else if (targetType === 'advertiser_card') {
         const { data } = await supabase
           .from('advertiser_cards')
           .select('user_id')
-          .eq('card_id', targetId)
+          .eq('id', targetId)
           .maybeSingle();
         ownerId = data?.user_id || null;
       } else if (targetType === 'campaign') {
