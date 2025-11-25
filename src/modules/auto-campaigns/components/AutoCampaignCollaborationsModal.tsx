@@ -74,17 +74,26 @@ export function AutoCampaignCollaborationsModal({
         acceptedOffers.map(async (offer) => {
           const profile = await offerService.getUserProfile(offer.influencerId);
 
-          const deliverables = Array.isArray(offer.details?.deliverables)
-            ? offer.details.deliverables
-            : [];
+          // Получаем формат контента
+          let contentFormat = 'Не указан';
+          if (offer.contentType) {
+            contentFormat = offer.contentType;
+          } else if (offer.deliverables && offer.deliverables.length > 0) {
+            contentFormat = offer.deliverables[0];
+          } else if (offer.details?.deliverables && Array.isArray(offer.details.deliverables) && offer.details.deliverables.length > 0) {
+            contentFormat = offer.details.deliverables[0];
+          }
+
+          // Получаем платформу
+          const platform = offer.platform || offer.details?.platform || campaign.platforms[0] || 'unknown';
 
           return {
             offerId: offer.offer_id || offer.id || '',
             influencerId: offer.influencerId,
             influencerUsername: profile?.username || profile?.fullName || 'Пользователь',
             influencerAvatar: profile?.avatar,
-            platform: offer.details?.platform || campaign.platforms[0] || 'unknown',
-            contentFormat: deliverables[0] || 'Не указан',
+            platform: platform,
+            contentFormat: contentFormat,
             status: offer.status,
             proposedRate: offer.proposedRate,
             currency: offer.currency || 'RUB',
