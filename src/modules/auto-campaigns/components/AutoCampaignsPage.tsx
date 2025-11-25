@@ -415,19 +415,32 @@ export function AutoCampaignsPage() {
                           </div>
                         </div>
                       ) : campaign.status === 'completed' ? (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                            ✓ Завершена
-                          </span>
+                        <div className="space-y-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteCampaign(campaign);
+                              handleViewCollaborations(campaign);
                             }}
-                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                            className="w-full flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                           >
-                            Удалить
+                            <Briefcase className="w-4 h-4" />
+                            <span>Мои сотрудничества</span>
                           </button>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center space-x-1">
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Завершена</span>
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCampaign(campaign);
+                              }}
+                              className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                            >
+                              Удалить
+                            </button>
+                          </div>
                         </div>
                       ) : campaign.status === 'paused' ? (
                         <div className="space-y-2">

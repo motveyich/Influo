@@ -1017,6 +1017,19 @@ export class AutoCampaignService {
   }
 
   async pauseCampaign(campaignId: string): Promise<void> {
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign) {
+      throw new Error('Кампания не найдена');
+    }
+
+    if (campaign.status === 'completed') {
+      throw new Error('Нельзя приостановить завершённую кампанию');
+    }
+
+    if (campaign.status === 'closed') {
+      throw new Error('Нельзя приостановить закрытую кампанию');
+    }
+
     await this.updateCampaignStatus(campaignId, 'paused');
     analytics.track('auto_campaign_paused', { campaignId });
   }
@@ -1025,6 +1038,14 @@ export class AutoCampaignService {
     const campaign = await this.getCampaign(campaignId);
     if (!campaign) {
       throw new Error('Кампания не найдена');
+    }
+
+    if (campaign.status === 'completed') {
+      throw new Error('Нельзя возобновить завершённую кампанию');
+    }
+
+    if (campaign.status === 'closed') {
+      throw new Error('Нельзя возобновить закрытую кампанию');
     }
 
     const newStatus = campaign.acceptedOffersCount >= campaign.targetInfluencersCount
