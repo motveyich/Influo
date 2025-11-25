@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink } from 'lucide-react';
-import { AutoCampaign } from '../../../core/types';
+import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText } from 'lucide-react';
+import { AutoCampaign, CollaborationOffer } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { OfferDetailsModal } from '../../offers/components/OfferDetailsModal';
 import { useAuth } from '../../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ interface Collaboration {
   proposedRate: number;
   currency: string;
   hasPaymentWindow: boolean;
+  offer: CollaborationOffer;
 }
 
 interface AutoCampaignCollaborationsModalProps {
@@ -34,6 +36,8 @@ export function AutoCampaignCollaborationsModal({
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
+  const [showOfferDetails, setShowOfferDetails] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
@@ -71,7 +75,8 @@ export function AutoCampaignCollaborationsModal({
             status: offer.status,
             proposedRate: offer.proposedRate,
             currency: offer.currency || 'RUB',
-            hasPaymentWindow: offer.status === 'completed'
+            hasPaymentWindow: offer.status === 'completed',
+            offer: offer
           };
         })
       );
@@ -108,6 +113,20 @@ export function AutoCampaignCollaborationsModal({
 
   const handleViewProfile = (influencerId: string) => {
     setSelectedProfile(influencerId);
+  };
+
+  const handleViewOfferDetails = (offer: CollaborationOffer) => {
+    setSelectedOffer(offer);
+    setShowOfferDetails(true);
+  };
+
+  const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
+    setCollaborations(prev => prev.map(collab =>
+      collab.offerId === updatedOffer.offerId
+        ? { ...collab, offer: updatedOffer, status: updatedOffer.status }
+        : collab
+    ));
+    setSelectedOffer(updatedOffer);
   };
 
   if (!isOpen) return null;
@@ -210,6 +229,13 @@ export function AutoCampaignCollaborationsModal({
                           <MessageCircle className="w-4 h-4" />
                           <span>Сообщения</span>
                         </button>
+                        <button
+                          onClick={() => handleViewOfferDetails(collab.offer)}
+                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Подробнее</span>
+                        </button>
                       </div>
                       {collab.hasPaymentWindow && (
                         <button
@@ -238,6 +264,19 @@ export function AutoCampaignCollaborationsModal({
           userId={selectedProfile}
           currentUserId={currentUserId}
           onClose={() => setSelectedProfile(null)}
+        />
+      )}
+
+      {/* Offer Details Modal */}
+      {showOfferDetails && selectedOffer && (
+        <OfferDetailsModal
+          offer={selectedOffer}
+          currentUserId={currentUserId}
+          onClose={() => {
+            setShowOfferDetails(false);
+            setSelectedOffer(null);
+          }}
+          onOfferUpdated={handleOfferUpdated}
         />
       )}
     </>
