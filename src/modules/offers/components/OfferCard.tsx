@@ -2,6 +2,8 @@ import React from 'react';
 import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
+import { UserAvatar } from '../../../components/UserAvatar';
+import { supabase } from '../../../core/supabase';
 import {
   Clock,
   DollarSign,
@@ -50,12 +52,28 @@ export function OfferCard({
   const [paymentRequests, setPaymentRequests] = React.useState<PaymentRequest[]>([]);
   const [paymentWindowsLoading, setPaymentWindowsLoading] = React.useState(false);
   const [paymentWindowsLoaded, setPaymentWindowsLoaded] = React.useState(false);
+  const [partnerProfile, setPartnerProfile] = React.useState<any>(null);
 
   React.useEffect(() => {
     if (!paymentWindowsLoaded) {
       loadPaymentWindows();
     }
+    loadPartnerProfile();
   }, []);
+
+  const loadPartnerProfile = async () => {
+    const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', partnerId)
+        .maybeSingle();
+      if (data) setPartnerProfile(data);
+    } catch (error) {
+      console.error('Failed to load partner profile:', error);
+    }
+  };
 
   const loadPaymentWindows = async () => {
     try {
@@ -261,8 +279,24 @@ export function OfferCard({
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex items-start space-x-4 mb-4">
+        <button
+          onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <UserAvatar
+            avatarUrl={partnerProfile?.avatar}
+            fullName={partnerProfile?.full_name}
+            size="md"
+          />
+        </button>
         <div className="flex-1">
+          <button
+            onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors mb-1 block"
+          >
+            {partnerProfile?.full_name || (userRole === 'influencer' ? 'Рекламодатель' : 'Инфлюенсер')}
+          </button>
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {offer.title}

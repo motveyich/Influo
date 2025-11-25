@@ -707,19 +707,11 @@ export function ChatPage() {
                   }`}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
-                      {conversation.participantAvatar ? (
-                        <img 
-                          src={conversation.participantAvatar} 
-                          alt={conversation.participantName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white font-semibold">
-                          {conversation.participantName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <UserAvatar
+                      avatarUrl={conversation.participantAvatar}
+                      fullName={conversation.participantName}
+                      size="lg"
+                    />
                     {conversation.isOnline && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                     )}
@@ -787,11 +779,11 @@ export function ChatPage() {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">
-                      {selectedConversation.participantName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <UserAvatar
+                    avatarUrl={selectedConversation.participantAvatar}
+                    fullName={selectedConversation.participantName}
+                    size="md"
+                  />
                   {selectedConversation.isOnline && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                   )}

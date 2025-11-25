@@ -9,6 +9,8 @@ import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { AutoCampaignApplicationModal } from './AutoCampaignApplicationModal';
 import { AutoCampaignCollaborationsModal } from './AutoCampaignCollaborationsModal';
+import { UserAvatar } from '../../../components/UserAvatar';
+import { supabase } from '../../../core/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -27,6 +29,7 @@ export function AutoCampaignsPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<AutoCampaign | null>(null);
   const [selectedAdvertiserId, setSelectedAdvertiserId] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<AutoCampaign | null>(null);
+  const [advertiserProfiles, setAdvertiserProfiles] = useState<Record<string, any>>({});
 
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -37,6 +40,31 @@ export function AutoCampaignsPage() {
       loadCampaigns();
     }
   }, [currentUserId, activeTab]);
+
+  useEffect(() => {
+    const campaigns = activeTab === 'all' ? allCampaigns : myCampaigns;
+    loadAdvertiserProfiles(campaigns);
+  }, [allCampaigns, myCampaigns, activeTab]);
+
+  const loadAdvertiserProfiles = async (campaigns: AutoCampaign[]) => {
+    const advertiserIds = [...new Set(campaigns.map(c => c.advertiserId))];
+    const profiles: Record<string, any> = {};
+
+    for (const advertiserId of advertiserIds) {
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('user_id, full_name, avatar')
+          .eq('user_id', advertiserId)
+          .maybeSingle();
+        if (data) profiles[advertiserId] = data;
+      } catch (error) {
+        console.error('Failed to load advertiser profile:', error);
+      }
+    }
+
+    setAdvertiserProfiles(profiles);
+  };
 
   const getPlatformIcon = (platform: string) => {
     const platformLower = platform.toLowerCase();
@@ -295,10 +323,31 @@ export function AutoCampaignsPage() {
                   onClick={() => handleViewDetails(campaign)}
                 >
                   <div className="flex items-start space-x-4 pr-20">
-                    <div className="flex-shrink-0 w-14 h-14 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                      <Target className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAdvertiserId(campaign.advertiserId);
+                        setShowProfileModal(true);
+                      }}
+                      className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <UserAvatar
+                        avatarUrl={advertiserProfiles[campaign.advertiserId]?.avatar}
+                        fullName={advertiserProfiles[campaign.advertiserId]?.full_name}
+                        size="lg"
+                      />
+                    </button>
                     <div className="flex-1 min-w-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAdvertiserId(campaign.advertiserId);
+                          setShowProfileModal(true);
+                        }}
+                        className="text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-1 block"
+                      >
+                        {advertiserProfiles[campaign.advertiserId]?.full_name || 'Рекламодатель'}
+                      </button>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {campaign.title}
                       </h3>

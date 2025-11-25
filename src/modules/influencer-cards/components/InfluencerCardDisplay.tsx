@@ -10,6 +10,7 @@ import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
 import { IntegrationDetailsModal } from './IntegrationDetailsModal';
+import { UserAvatar } from '../../../components/UserAvatar';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -38,16 +39,31 @@ export function InfluencerCardDisplay({
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [showIntegrationModal, setShowIntegrationModal] = React.useState(false);
   const [showProfileModal, setShowProfileModal] = React.useState(false);
-  
+  const [userProfile, setUserProfile] = React.useState<any>(null);
+
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
 
   React.useEffect(() => {
+    loadUserProfile();
     if (currentUserId && !showActions && !isOwnCard) {
       checkFavoriteStatus();
       trackCardView();
     }
   }, [currentUserId, card.id, isOwnCard]);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', card.userId)
+        .maybeSingle();
+      if (data) setUserProfile(data);
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  };
 
   const checkFavoriteStatus = async () => {
     try {
@@ -233,8 +249,29 @@ export function InfluencerCardDisplay({
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 p-6 border ${
       !card.isActive || (card as any).isDeleted ? 'opacity-60 border-gray-300' : 'border-gray-200'
     }`}>
+      {/* User Avatar and Header */}
+      <div className="flex items-start space-x-4 mb-4">
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <UserAvatar
+            avatarUrl={userProfile?.avatar}
+            fullName={userProfile?.full_name}
+            size="lg"
+          />
+        </button>
+
+        <div className="flex-1">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors mb-2 block"
+          >
+            {userProfile?.full_name || 'Пользователь'}
+          </button>
+
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start">
         <div className="flex items-center space-x-3">
           <span className={`px-3 py-1 text-sm font-medium rounded-full border capitalize ${getPlatformColor(card.platform)}`}>
             {card.platform}
@@ -280,6 +317,8 @@ export function InfluencerCardDisplay({
             </button>
           </div>
         )}
+      </div>
+        </div>
       </div>
 
       {/* Metrics */}
