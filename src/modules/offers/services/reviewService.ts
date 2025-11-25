@@ -65,7 +65,19 @@ export class ReviewService {
       const { data, error } = await supabase
         .from('reviews')
         .select(`
-          *,
+          id,
+          deal_id,
+          reviewer_id,
+          reviewee_id,
+          rating,
+          title,
+          comment,
+          collaboration_type,
+          is_public,
+          helpful_votes,
+          metadata,
+          created_at,
+          updated_at,
           reviewer:user_profiles!reviews_reviewer_id_fkey(full_name, avatar),
           reviewee:user_profiles!reviews_reviewee_id_fkey(full_name, avatar)
         `)
@@ -84,11 +96,23 @@ export class ReviewService {
   async getUserReviews(userId: string, type: 'given' | 'received'): Promise<CollaborationReview[]> {
     try {
       const column = type === 'given' ? 'reviewer_id' : 'reviewee_id';
-      
+
       const { data, error } = await supabase
         .from('reviews')
         .select(`
-          *,
+          id,
+          deal_id,
+          reviewer_id,
+          reviewee_id,
+          rating,
+          title,
+          comment,
+          collaboration_type,
+          is_public,
+          helpful_votes,
+          metadata,
+          created_at,
+          updated_at,
           reviewer:user_profiles!reviews_reviewer_id_fkey(full_name, avatar),
           reviewee:user_profiles!reviews_reviewee_id_fkey(full_name, avatar)
         `)
