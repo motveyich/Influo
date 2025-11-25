@@ -24,7 +24,7 @@ export class ReviewService {
       const { data, error } = await supabase
         .from('reviews')
         .insert([newReview])
-        .select()
+        .select('id, deal_id, reviewer_id, reviewee_id, rating, title, comment, collaboration_type, is_public, helpful_votes, metadata, created_at, updated_at')
         .single();
 
       if (error) throw error;
