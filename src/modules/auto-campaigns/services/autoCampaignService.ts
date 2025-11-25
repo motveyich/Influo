@@ -154,7 +154,7 @@ export class AutoCampaignService {
     const { data, error } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .select('*')
-      .in('status', ['active', 'in_progress'])
+      .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

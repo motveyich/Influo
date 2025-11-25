@@ -3,11 +3,12 @@ import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play } from 'lucide-react';
+import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play, Briefcase } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { AutoCampaignApplicationModal } from './AutoCampaignApplicationModal';
+import { AutoCampaignCollaborationsModal } from './AutoCampaignCollaborationsModal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -22,6 +23,7 @@ export function AutoCampaignsPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showCollaborationsModal, setShowCollaborationsModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<AutoCampaign | null>(null);
   const [selectedAdvertiserId, setSelectedAdvertiserId] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<AutoCampaign | null>(null);
@@ -138,6 +140,11 @@ export function AutoCampaignsPage() {
   const handleApplyToCampaign = (campaign: AutoCampaign) => {
     setSelectedCampaign(campaign);
     setShowApplicationModal(true);
+  };
+
+  const handleViewCollaborations = (campaign: AutoCampaign) => {
+    setSelectedCampaign(campaign);
+    setShowCollaborationsModal(true);
   };
 
   const handleViewAdvertiserProfile = (campaign: AutoCampaign) => {
@@ -409,44 +416,72 @@ export function AutoCampaignsPage() {
                           </button>
                         </div>
                       ) : campaign.status === 'paused' ? (
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleResumeCampaign(campaign);
+                              handleViewCollaborations(campaign);
                             }}
-                            className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+                            className="w-full flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                           >
-                            <Play className="w-4 h-4" />
-                            <span>Возобновить</span>
+                            <Briefcase className="w-4 h-4" />
+                            <span>Мои сотрудничества</span>
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCampaign(campaign);
-                            }}
-                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
-                          >
-                            Удалить
-                          </button>
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleResumeCampaign(campaign);
+                              }}
+                              className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+                            >
+                              <Play className="w-4 h-4" />
+                              <span>Возобновить</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCampaign(campaign);
+                              }}
+                              className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                            >
+                              Удалить
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                            {campaign.status === 'active' && '⚡ Идёт набор'}
-                            {campaign.status === 'in_progress' && '⚙️ В работе'}
-                            {campaign.status === 'closed' && '✓ Набор завершён'}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePauseCampaign(campaign);
-                            }}
-                            className="flex items-center space-x-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 text-sm font-medium transition-colors"
-                          >
-                            <Pause className="w-4 h-4" />
-                            <span>Приостановить</span>
-                          </button>
+                        <div className="space-y-2">
+                          {(campaign.status === 'in_progress' || campaign.status === 'closed') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewCollaborations(campaign);
+                              }}
+                              className="w-full flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              <Briefcase className="w-4 h-4" />
+                              <span>Мои сотрудничества</span>
+                            </button>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                              {campaign.status === 'active' && '⚡ Идёт набор'}
+                              {campaign.status === 'in_progress' && '⚙️ В работе'}
+                              {campaign.status === 'closed' && '✓ Набор завершён'}
+                            </span>
+                            {(campaign.status === 'active' || campaign.status === 'in_progress') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePauseCampaign(campaign);
+                                }}
+                                className="flex items-center space-x-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 text-sm font-medium transition-colors"
+                              >
+                                <Pause className="w-4 h-4" />
+                                <span>Приостановить</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </>
@@ -542,6 +577,17 @@ export function AutoCampaignsPage() {
             onSuccess={() => {
               loadCampaigns();
             }}
+          />
+        )}
+
+        {showCollaborationsModal && selectedCampaign && (
+          <AutoCampaignCollaborationsModal
+            isOpen={showCollaborationsModal}
+            onClose={() => {
+              setShowCollaborationsModal(false);
+              setSelectedCampaign(null);
+            }}
+            campaign={selectedCampaign}
           />
         )}
       </div>

@@ -317,6 +317,40 @@ export class OfferService {
     }
   }
 
+  async getOffersByCampaign(campaignId: string): Promise<CollaborationOffer[]> {
+    try {
+      const { data, error } = await supabase
+        .from('offers')
+        .select('*')
+        .eq('auto_campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data.map(offer => this.transformFromDatabase(offer));
+    } catch (error) {
+      console.error('Failed to get offers by campaign:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile(userId: string): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_id, username, full_name, avatar')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get user profile:', error);
+      return null;
+    }
+  }
+
   async getOfferHistory(offerId: string): Promise<any[]> {
     try {
       const { data, error } = await supabase
