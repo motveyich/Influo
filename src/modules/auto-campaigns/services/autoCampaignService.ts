@@ -968,6 +968,37 @@ export class AutoCampaignService {
       console.error('Failed to update campaign status:', error);
       throw error;
     }
+
+    // Автоматически отменяем pending офферы при завершении/отмене кампании
+    if (status === 'completed' || status === 'cancelled') {
+      await this.cancelPendingOffers(campaignId);
+    }
+  }
+
+  private async cancelPendingOffers(campaignId: string): Promise<void> {
+    const { data: pendingOffers } = await supabase
+      .from(TABLES.OFFERS)
+      .select('offer_id')
+      .eq('auto_campaign_id', campaignId)
+      .eq('status', 'pending');
+
+    if (!pendingOffers || pendingOffers.length === 0) return;
+
+    const expiredAt = new Date().toISOString();
+
+    for (const offer of pendingOffers) {
+      const { error } = await supabase
+        .from(TABLES.OFFERS)
+        .update({
+          status: 'expired',
+          updated_at: expiredAt
+        })
+        .eq('offer_id', offer.offer_id);
+
+      if (error) {
+        console.error(`Failed to expire offer ${offer.offer_id}:`, error);
+      }
+    }
   }
 
 }

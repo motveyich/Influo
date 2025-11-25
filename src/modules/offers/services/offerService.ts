@@ -174,6 +174,11 @@ export class OfferService {
         throw new Error('Offer not found');
       }
 
+      // Проверяем статус автокампании перед принятием оффера
+      if (newStatus === 'accepted' && currentOffer.autoCampaignId) {
+        await this.validateCampaignStatus(currentOffer.autoCampaignId);
+      }
+
       // Validate permission to update status
       this.validateStatusChangePermission(currentOffer, newStatus, userId);
 
@@ -360,10 +365,12 @@ export class OfferService {
       }
     }
 
-    // Инициатор может отменить предложение до принятия
+    // Инициатор или инфлюенсер может отменить предложение до принятия
     if (newStatus === 'cancelled' && offer.status === 'pending') {
-      if (userId !== (offer as any).initiated_by) {
-        throw new Error('Only the initiator can cancel pending offers');
+      const initiatedBy = (offer as any).initiated_by;
+      // Разрешаем отмену инициатору или инфлюенсеру (для автоофферов)
+      if (userId !== initiatedBy && userId !== offer.influencerId) {
+        throw new Error('Only the initiator or influencer can cancel pending offers');
       }
     }
 
@@ -651,6 +658,31 @@ export class OfferService {
     } catch (error) {
       console.error('Failed to create auto-campaign offer:', error);
       throw error;
+    }
+  }
+
+  private async validateCampaignStatus(campaignId: string): Promise<void> {
+    const { data: campaign, error } = await supabase
+      .from('auto_campaigns')
+      .select('status')
+      .eq('id', campaignId)
+      .single();
+
+    if (error) {
+      console.error('Failed to fetch campaign status:', error);
+      throw new Error('Не удалось проверить статус кампании');
+    }
+
+    if (!campaign) {
+      throw new Error('Кампания не найдена');
+    }
+
+    if (campaign.status === 'completed' || campaign.status === 'cancelled') {
+      throw new Error('Этот оффер больше недействителен. Кампания завершена.');
+    }
+
+    if (campaign.status === 'in_progress') {
+      throw new Error('Набор участников для этой кампании завершен.');
     }
   }
 }
