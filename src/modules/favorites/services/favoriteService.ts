@@ -225,12 +225,23 @@ export class FavoriteService {
     }
   }
 
-  async sendBulkApplications(userId: string, favoriteIds: string[], applicationData: any): Promise<void> {
+  async sendBulkApplications(userId: string, favoriteIds: string[], applicationData: any): Promise<{
+    total: number;
+    sent: number;
+    skipped: number;
+    failed: number;
+    errors: Array<{ cardId: string; reason: string }>;
+  }> {
     try {
       // Get user's favorites for influencer cards
       const favorites = await this.getUserFavorites(userId, 'influencer_card');
       const targetFavorites = favorites.filter(fav => favoriteIds.includes(fav.targetId));
-      
+
+      let sent = 0;
+      let skipped = 0;
+      let failed = 0;
+      const errors: Array<{ cardId: string; reason: string }> = [];
+
       for (const favorite of targetFavorites) {
         try {
           // Get the influencer card to retrieve the user_id
@@ -242,6 +253,8 @@ export class FavoriteService {
 
           if (cardError || !influencerCard) {
             console.error(`Failed to get influencer card ${favorite.targetId}:`, cardError);
+            failed++;
+            errors.push({ cardId: favorite.targetId, reason: 'Не удалось найти карточку' });
             continue;
           }
 
@@ -258,12 +271,14 @@ export class FavoriteService {
 
           if (recentApplication) {
             console.log(`Skipping - recent application to card ${favorite.targetId} within last hour`);
+            skipped++;
+            errors.push({ cardId: favorite.targetId, reason: 'Недавно уже отправляли заявку' });
             continue;
           }
 
           // Create application for each favorite
           const { applicationService } = await import('../../applications/services/applicationService');
-          
+
           await applicationService.createApplication({
             applicantId: userId,
             targetId: influencerCard.user_id, // Use the user_id from the card
@@ -276,17 +291,34 @@ export class FavoriteService {
               deliverables: applicationData.deliverables || ['Пост в Instagram']
             }
           });
-        } catch (error) {
+          sent++;
+        } catch (error: any) {
           console.error(`Failed to create application for favorite ${favorite.id}:`, error);
+          failed++;
+          errors.push({
+            cardId: favorite.targetId,
+            reason: error.message || 'Неизвестная ошибка'
+          });
         }
       }
 
-      // Track bulk application
+      // Track bulk application with actual sent count
       analytics.track('bulk_applications_sent', {
         user_id: userId,
-        count: targetFavorites.length,
+        total: targetFavorites.length,
+        sent,
+        skipped,
+        failed,
         target_types: ['influencer_card']
       });
+
+      return {
+        total: targetFavorites.length,
+        sent,
+        skipped,
+        failed,
+        errors
+      };
     } catch (error) {
       console.error('Failed to send bulk applications:', error);
       throw error;

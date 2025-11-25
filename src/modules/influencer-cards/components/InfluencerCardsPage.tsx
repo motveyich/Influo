@@ -345,11 +345,28 @@ export function InfluencerCardsPage() {
   const handleBulkApplications = async () => {
     try {
       const favoriteIds = favoriteCards.map(card => card.id);
-      await favoriteService.sendBulkApplications(currentUserId, favoriteIds, {
+      const result = await favoriteService.sendBulkApplications(currentUserId, favoriteIds, {
         message: 'Заинтересован в сотрудничестве с вашей карточкой',
         proposedRate: 1000
       });
-      toast.success(`Заявки отправлены ${favoriteCards.length} инфлюенсерам!`);
+
+      if (result.sent === 0) {
+        if (result.skipped > 0) {
+          toast.error('Все заявки были пропущены (вы недавно уже отправляли заявки этим пользователям)');
+        } else if (result.failed > 0) {
+          toast.error(`Не удалось отправить заявки. Ошибок: ${result.failed}`);
+        } else {
+          toast.error('Не удалось отправить заявки');
+        }
+      } else if (result.sent === result.total) {
+        toast.success(`Заявки успешно отправлены ${result.sent} инфлюенсерам!`);
+      } else {
+        const parts = [];
+        if (result.sent > 0) parts.push(`отправлено: ${result.sent}`);
+        if (result.skipped > 0) parts.push(`пропущено: ${result.skipped}`);
+        if (result.failed > 0) parts.push(`ошибок: ${result.failed}`);
+        toast.success(`Результат: ${parts.join(', ')}`);
+      }
     } catch (error: any) {
       console.error('Failed to send bulk applications:', error);
       toast.error('Не удалось отправить массовые заявки');
