@@ -704,7 +704,7 @@ export interface AutoCampaign {
   advertiserId: string;
   title: string;
   description?: string;
-  status: 'draft' | 'active' | 'in_progress' | 'closed' | 'completed';
+  status: 'draft' | 'active' | 'in_progress' | 'paused' | 'closed' | 'completed';
   budgetMin: number;
   budgetMax: number;
   audienceMin: number;

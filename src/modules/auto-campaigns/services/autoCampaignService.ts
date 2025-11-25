@@ -154,7 +154,7 @@ export class AutoCampaignService {
     const { data, error } = await supabase
       .from(TABLES.AUTO_CAMPAIGNS)
       .select('*')
-      .eq('status', 'active')
+      .in('status', ['active', 'in_progress'])
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -1014,6 +1014,25 @@ export class AutoCampaignService {
     if (status === 'completed' || status === 'cancelled') {
       await this.cancelPendingOffers(campaignId);
     }
+  }
+
+  async pauseCampaign(campaignId: string): Promise<void> {
+    await this.updateCampaignStatus(campaignId, 'paused');
+    analytics.track('auto_campaign_paused', { campaignId });
+  }
+
+  async resumeCampaign(campaignId: string): Promise<void> {
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign) {
+      throw new Error('Кампания не найдена');
+    }
+
+    const newStatus = campaign.acceptedOffersCount >= campaign.targetInfluencersCount
+      ? 'in_progress'
+      : 'active';
+
+    await this.updateCampaignStatus(campaignId, newStatus);
+    analytics.track('auto_campaign_resumed', { campaignId, newStatus });
   }
 
   private async cancelPendingOffers(campaignId: string): Promise<void> {

@@ -3,7 +3,7 @@ import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User } from 'lucide-react';
+import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
@@ -95,6 +95,36 @@ export function AutoCampaignsPage() {
     }
   };
 
+  const handlePauseCampaign = async (campaign: AutoCampaign) => {
+    if (!confirm(`Приостановить автокампанию "${campaign.title}"? Инфлюенсеры не смогут принимать предложения, пока кампания приостановлена.`)) {
+      return;
+    }
+
+    try {
+      await autoCampaignService.pauseCampaign(campaign.id);
+      toast.success('Автокампания приостановлена');
+      loadCampaigns();
+    } catch (error) {
+      console.error('Failed to pause campaign:', error);
+      toast.error('Не удалось приостановить автокампанию');
+    }
+  };
+
+  const handleResumeCampaign = async (campaign: AutoCampaign) => {
+    if (!confirm(`Возобновить автокампанию "${campaign.title}"?`)) {
+      return;
+    }
+
+    try {
+      await autoCampaignService.resumeCampaign(campaign.id);
+      toast.success('Автокампания возобновлена');
+      loadCampaigns();
+    } catch (error) {
+      console.error('Failed to resume campaign:', error);
+      toast.error('Не удалось возобновить автокампанию');
+    }
+  };
+
   const handleViewDetails = (campaign: AutoCampaign) => {
     setSelectedCampaign(campaign);
     setShowDetailsModal(true);
@@ -120,6 +150,7 @@ export function AutoCampaignsPage() {
       draft: { text: 'Черновик', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
       active: { text: 'Активна', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
       in_progress: { text: 'В работе', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
+      paused: { text: 'Приостановлена', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
       closed: { text: 'Набор завершён', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
       completed: { text: 'Завершена', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
     };
@@ -362,12 +393,10 @@ export function AutoCampaignsPage() {
                             </button>
                           </div>
                         </div>
-                      ) : (
+                      ) : campaign.status === 'completed' ? (
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                            {campaign.status === 'active' && '⚡ Идёт набор'}
-                            {campaign.status === 'closed' && '✓ Набор завершён'}
-                            {campaign.status === 'completed' && '✓ Завершена'}
+                            ✓ Завершена
                           </span>
                           <button
                             onClick={(e) => {
@@ -377,6 +406,46 @@ export function AutoCampaignsPage() {
                             className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
                           >
                             Удалить
+                          </button>
+                        </div>
+                      ) : campaign.status === 'paused' ? (
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleResumeCampaign(campaign);
+                            }}
+                            className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+                          >
+                            <Play className="w-4 h-4" />
+                            <span>Возобновить</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCampaign(campaign);
+                            }}
+                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                            {campaign.status === 'active' && '⚡ Идёт набор'}
+                            {campaign.status === 'in_progress' && '⚙️ В работе'}
+                            {campaign.status === 'closed' && '✓ Набор завершён'}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePauseCampaign(campaign);
+                            }}
+                            className="flex items-center space-x-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 text-sm font-medium transition-colors"
+                          >
+                            <Pause className="w-4 h-4" />
+                            <span>Приостановить</span>
                           </button>
                         </div>
                       )}

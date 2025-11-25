@@ -31,6 +31,11 @@ export function AutoCampaignApplicationModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (campaign.status === 'paused') {
+      toast.error('Эта кампания приостановлена. Откликнуться невозможно.');
+      return;
+    }
+
     if (!formData.message.trim()) {
       toast.error('Пожалуйста, добавьте сообщение');
       return;
