@@ -125,9 +125,14 @@ class RateLimitService {
       if (isLimited) {
         const remainingMinutes = await this.getRemainingTime(userId, targetUserId);
 
-        const message = interactionType === 'favorite'
-          ? `Вы недавно добавили эту карточку в избранное. Попробуйте через ${remainingMinutes} мин.`
-          : `Вы недавно взаимодействовали с этим пользователем. Попробуйте через ${remainingMinutes} мин.`;
+        let message: string;
+        if (interactionType === 'favorite') {
+          message = `Вы недавно добавили эту карточку в избранное. Попробуйте через ${remainingMinutes} мин.`;
+        } else if (interactionType === 'application') {
+          message = `Вы недавно отправили заявку на эту карточку. Попробуйте через ${remainingMinutes} мин.`;
+        } else {
+          message = `Вы недавно взаимодействовали с этим пользователем. Попробуйте через ${remainingMinutes} мин.`;
+        }
 
         return {
           allowed: false,
