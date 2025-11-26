@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, DollarSign, Calendar, Package, Info } from 'lucide-react';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 interface OfferViewModalProps {
@@ -9,6 +10,8 @@ interface OfferViewModalProps {
 }
 
 export function OfferViewModal({ isOpen, onClose, offer }: OfferViewModalProps) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen || !offer) return null;
 
   const integrationDetails = offer.metadata?.integrationDetails;

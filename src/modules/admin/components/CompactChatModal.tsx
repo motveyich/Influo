@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Send } from 'lucide-react';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -33,6 +34,8 @@ export function CompactChatModal({
   influencer,
   advertiser
 }: CompactChatModalProps) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   const getParticipantName = (senderId: string) => {

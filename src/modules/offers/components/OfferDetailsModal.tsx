@@ -3,6 +3,7 @@ import { CollaborationOffer, PaymentRequest, CollaborationReview, OfferStatus } 
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { reviewService } from '../services/reviewService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
 import { ReportModal } from '../../../components/ReportModal';
@@ -28,6 +29,8 @@ export function OfferDetailsModal({
   onOfferUpdated 
 }: OfferDetailsModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  useBodyScrollLock(isOpen);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [reviews, setReviews] = useState<CollaborationReview[]>([]);
   const [offerHistory, setOfferHistory] = useState<any[]>([]);

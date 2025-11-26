@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CollaborationForm } from '../../../core/types';
 import { collaborationService } from '../services/collaborationService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Check, XCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,6 +20,8 @@ export function CollaborationResponseModal({
 }: CollaborationResponseModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [responseType, setResponseType] = useState<'accepted' | 'declined' | null>(null);
+
+  useBodyScrollLock(isOpen);
   const [counterOffer, setCounterOffer] = useState({
     proposedRate: collaborationRequest.formFields?.proposedRate || 0,
     timeline: collaborationRequest.formFields?.timeline || '',

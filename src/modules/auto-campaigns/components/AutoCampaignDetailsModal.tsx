@@ -1,5 +1,6 @@
 import React from 'react';
 import { AutoCampaign } from '../../../core/types';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -12,6 +13,8 @@ interface AutoCampaignDetailsModalProps {
 }
 
 export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCampaignDetailsModalProps) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   const getStatusBadge = () => {

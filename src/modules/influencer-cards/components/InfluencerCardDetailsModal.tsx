@@ -2,6 +2,7 @@ import React from 'react';
 import { X, MapPin, Star, Users, TrendingUp, DollarSign, Calendar, Package, ShieldBan } from 'lucide-react';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 interface InfluencerCardDetailsModalProps {
   card: InfluencerCard;
@@ -10,6 +11,8 @@ interface InfluencerCardDetailsModalProps {
 
 export function InfluencerCardDetailsModal({ card, onClose }: InfluencerCardDetailsModalProps) {
   const { t } = useTranslation();
+
+  useBodyScrollLock(true);
 
   const platformName = {
     instagram: 'Instagram',

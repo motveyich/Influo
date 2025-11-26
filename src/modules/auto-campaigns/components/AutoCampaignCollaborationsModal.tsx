@@ -5,6 +5,7 @@ import { offerService } from '../../offers/services/offerService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { OfferDetailsModal } from '../../offers/components/OfferDetailsModal';
 import { useAuth } from '../../../hooks/useAuth';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -41,6 +42,8 @@ export function AutoCampaignCollaborationsModal({
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {
