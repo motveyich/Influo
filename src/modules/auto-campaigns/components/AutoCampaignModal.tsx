@@ -3,6 +3,7 @@ import { AutoCampaign, AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface AutoCampaignModalProps {
@@ -33,7 +34,10 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (editingCampaign) {
@@ -59,43 +63,54 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
 
   if (!isOpen) return null;
 
+  const validateField = (name: string, value: any): string => {
+    switch (name) {
+      case 'title':
+        return !value.trim() ? 'Введите название кампании' : '';
+      case 'budgetMin':
+        return value <= 0 ? 'Минимальный бюджет должен быть больше 0' : '';
+      case 'budgetMax':
+        return value < formData.budgetMin ? 'Максимальный бюджет должен быть >= минимального' : '';
+      case 'audienceMin':
+        return value <= 0 ? 'Минимальная аудитория должна быть больше 0' : '';
+      case 'audienceMax':
+        return value < formData.audienceMin ? 'Максимальная аудитория должна быть >= минимальной' : '';
+      case 'targetInfluencersCount':
+        return value <= 0 ? 'Целевое количество должно быть больше 0' : '';
+      case 'contentTypes':
+        return value.length === 0 ? 'Выберите хотя бы один тип контента' : '';
+      case 'platforms':
+        return value.length === 0 ? 'Выберите хотя бы одну платформу' : '';
+      default:
+        return '';
+    }
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'Введите название кампании';
-    }
-
-    if (formData.budgetMin <= 0) {
-      newErrors.budgetMin = 'Минимальный бюджет должен быть больше 0';
-    }
-
-    if (formData.budgetMax < formData.budgetMin) {
-      newErrors.budgetMax = 'Максимальный бюджет должен быть >= минимального';
-    }
-
-    if (formData.audienceMin <= 0) {
-      newErrors.audienceMin = 'Минимальная аудитория должна быть больше 0';
-    }
-
-    if (formData.audienceMax < formData.audienceMin) {
-      newErrors.audienceMax = 'Максимальная аудитория должна быть >= минимальной';
-    }
-
-    if (formData.targetInfluencersCount <= 0) {
-      newErrors.targetInfluencersCount = 'Целевое количество должно быть больше 0';
-    }
-
-    if (formData.contentTypes.length === 0) {
-      newErrors.contentTypes = 'Выберите хотя бы один тип контента';
-    }
-
-    if (formData.platforms.length === 0) {
-      newErrors.platforms = 'Выберите хотя бы одну платформу';
-    }
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, (formData as any)[key]);
+      if (error) newErrors[key] = error;
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFieldChange = (name: string, value: any) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  const handleBlur = (name: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, (formData as any)[name]);
+    setErrors(prev => ({ ...prev, [name]: error }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,13 +214,14 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
             <input
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => handleFieldChange('title', e.target.value)}
+              onBlur={() => handleBlur('title')}
               className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${
                 errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Например: Продвижение нового продукта"
             />
-            {errors.title && (
+            {touched.title && errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
           </div>
@@ -217,7 +233,8 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => handleFieldChange('description', e.target.value)}
+              onBlur={() => handleBlur('description')}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               placeholder="Опишите задачу для инфлюенсеров..."
@@ -235,13 +252,14 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
                 <input
                   type="number"
                   value={formData.budgetMin}
-                  onChange={(e) => setFormData({ ...formData, budgetMin: Number(e.target.value) })}
+                  onChange={(e) => handleFieldChange('budgetMin', Number(e.target.value))}
+                  onBlur={() => handleBlur('budgetMin')}
                   className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${
                     errors.budgetMin ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Мин"
                 />
-                {errors.budgetMin && (
+                {touched.budgetMin && errors.budgetMin && (
                   <p className="mt-1 text-sm text-red-600">{errors.budgetMin}</p>
                 )}
               </div>
@@ -249,13 +267,14 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
                 <input
                   type="number"
                   value={formData.budgetMax}
-                  onChange={(e) => setFormData({ ...formData, budgetMax: Number(e.target.value) })}
+                  onChange={(e) => handleFieldChange('budgetMax', Number(e.target.value))}
+                  onBlur={() => handleBlur('budgetMax')}
                   className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${
                     errors.budgetMax ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Макс"
                 />
-                {errors.budgetMax && (
+                {touched.budgetMax && errors.budgetMax && (
                   <p className="mt-1 text-sm text-red-600">{errors.budgetMax}</p>
                 )}
               </div>
@@ -273,7 +292,8 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
                 <input
                   type="number"
                   value={formData.audienceMin}
-                  onChange={(e) => setFormData({ ...formData, audienceMin: Number(e.target.value) })}
+                  onChange={(e) => handleFieldChange('audienceMin', Number(e.target.value))}
+                  onBlur={() => handleBlur('audienceMin')}
                   className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${
                     errors.audienceMin ? 'border-red-300' : 'border-gray-300'
                   }`}
