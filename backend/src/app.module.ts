@@ -6,6 +6,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './shared/supabase/supabase.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
+import { InfluencerCardsModule } from './modules/influencer-cards/influencer-cards.module';
+import { AdvertiserCardsModule } from './modules/advertiser-cards/advertiser-cards.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -25,6 +28,9 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ]),
     SupabaseModule,
     AuthModule,
+    ProfilesModule,
+    InfluencerCardsModule,
+    AdvertiserCardsModule,
   ],
   controllers: [AppController],
   providers: [
