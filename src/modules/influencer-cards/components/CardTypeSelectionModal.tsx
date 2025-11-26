@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Users, Target, Instagram, Briefcase } from 'lucide-react';
 import { UserProfile } from '../../../core/types';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 interface CardTypeSelectionModalProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ interface CardTypeSelectionModalProps {
 export function CardTypeSelectionModal({ isOpen, onClose, onSelectType, profile }: CardTypeSelectionModalProps) {
   const canCreateInfluencerCard = profile?.profileCompletion.basicInfo && profile?.profileCompletion.influencerSetup;
   const canCreateAdvertiserCard = profile?.profileCompletion.basicInfo && profile?.profileCompletion.advertiserSetup;
+
+  useBodyScrollLock(isOpen);
 
   const handleSelectInfluencer = () => {
     if (!canCreateInfluencerCard) {

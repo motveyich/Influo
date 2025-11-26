@@ -3,6 +3,7 @@ import { X, AlertTriangle, Send, Flag } from 'lucide-react';
 import { ReportType } from '../core/types';
 import { reportService } from '../services/reportService';
 import { useAuth } from '../hooks/useAuth';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface ReportModalProps {
@@ -25,8 +26,11 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetTitle
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const { user } = useAuth();
+
+  useBodyScrollLock(isOpen);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

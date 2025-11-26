@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
 import { profileService } from '../services/profileService';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import {
   X,
   User,
@@ -31,6 +32,8 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+
+  useBodyScrollLock(isOpen);
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({

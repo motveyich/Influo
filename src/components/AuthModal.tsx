@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { profileService } from '../modules/profiles/services/profileService';
 import toast from 'react-hot-toast';
 
@@ -20,29 +21,60 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const { signIn, signUp } = useAuth();
   const { t } = useTranslation();
 
+  useBodyScrollLock(isOpen);
+
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'email':
+        if (!value.trim()) return t('profile.validation.emailRequired');
+        if (!/\S+@\S+\.\S+/.test(value)) return t('profile.validation.emailInvalid');
+        return '';
+      case 'password':
+        if (!value.trim()) return 'Пароль обязателен';
+        if (value.length < 6) return t('auth.passwordTooShort');
+        return '';
+      case 'confirmPassword':
+        if (mode === 'signup' && value !== password) return 'Пароли не совпадают';
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleFieldChange = (name: string, value: string) => {
+    if (name === 'email') setEmail(value);
+    else if (name === 'password') setPassword(value);
+    else if (name === 'confirmPassword') setConfirmPassword(value);
+
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  const handleBlur = (name: string, value: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const newTouched: Record<string, boolean> = {};
 
-    if (!email.trim()) {
-      newErrors.email = t('profile.validation.emailRequired');
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = t('profile.validation.emailInvalid');
-    }
+    ['email', 'password', mode === 'signup' ? 'confirmPassword' : ''].filter(Boolean).forEach(field => {
+      newTouched[field] = true;
+      const value = field === 'email' ? email : field === 'password' ? password : confirmPassword;
+      const error = validateField(field, value);
+      if (error) newErrors[field] = error;
+    });
 
-    if (!password.trim()) {
-      newErrors.password = 'Пароль обязателен';
-    } else if (password.length < 6) {
-      newErrors.password = t('auth.passwordTooShort');
-    }
-
-    if (mode === 'signup' && password !== confirmPassword) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
-    }
-
+    setTouched(newTouched);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -151,14 +183,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                onBlur={(e) => handleBlur('email', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder={t('profile.placeholders.email')}
               />
             </div>
-            {errors.email && (
+            {touched.email && errors.email && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.email}
@@ -175,14 +208,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handleFieldChange('password', e.target.value)}
+                onBlur={(e) => handleBlur('password', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.password ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Введите ваш пароль"
               />
             </div>
-            {errors.password && (
+            {touched.password && errors.password && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.password}
@@ -200,14 +234,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                 <input
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+                  onBlur={(e) => handleBlur('confirmPassword', e.target.value)}
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Подтвердите ваш пароль"
                 />
               </div>
-              {errors.confirmPassword && (
+              {touched.confirmPassword && errors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.confirmPassword}

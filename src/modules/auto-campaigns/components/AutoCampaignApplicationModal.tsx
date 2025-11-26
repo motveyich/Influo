@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, DollarSign, Calendar, FileText, Loader2 } from 'lucide-react';
 import { AutoCampaign } from '../../../core/types';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface AutoCampaignApplicationModalProps {
@@ -19,6 +20,9 @@ export function AutoCampaignApplicationModal({
   onSuccess
 }: AutoCampaignApplicationModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useBodyScrollLock(isOpen);
+
   const [formData, setFormData] = useState({
     proposedRate: Math.floor((campaign.budgetMin + campaign.budgetMax) / 2),
     message: '',

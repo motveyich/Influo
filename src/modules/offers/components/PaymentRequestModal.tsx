@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PaymentRequest } from '../../../core/types';
 import { paymentRequestService } from '../services/paymentRequestService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, CreditCard, Building, Mail, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,6 +31,8 @@ export function PaymentRequestModal({
 }: PaymentRequestModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     amount: 0,

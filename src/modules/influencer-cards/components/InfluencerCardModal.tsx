@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { influencerCardService } from '../services/influencerCardService';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { PRODUCT_CATEGORIES, CONTENT_TYPES, AUDIENCE_INTERESTS } from '../../../core/constants';
 import { X, Save, AlertCircle, Plus, Trash2, Instagram, Youtube, Twitter, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -60,6 +61,8 @@ export function InfluencerCardModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+
+  useBodyScrollLock(isOpen);
 
   // Form state
   const [formData, setFormData] = useState({

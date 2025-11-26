@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Application } from '../../../core/types';
 import { applicationService } from '../services/applicationService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Send, AlertCircle, DollarSign, Calendar, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -29,6 +30,8 @@ export function ApplicationModal({
 }: ApplicationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     message: '',

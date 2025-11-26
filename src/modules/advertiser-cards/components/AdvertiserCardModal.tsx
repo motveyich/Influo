@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdvertiserCard } from '../../../core/types';
 import { advertiserCardService } from '../services/advertiserCardService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, Calendar, DollarSign, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CONTENT_TYPES } from '../../../core/constants';
@@ -100,6 +101,8 @@ export function AdvertiserCardModal({
 }: AdvertiserCardModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   // Form state
   const [formData, setFormData] = useState({

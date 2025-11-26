@@ -3,6 +3,7 @@ import { X, MapPin, Globe, Briefcase, Users, Instagram, Youtube, Twitter, Mail, 
 import { UserProfile, UserSettings } from '../../../core/types';
 import { profileService } from '../services/profileService';
 import { userSettingsService } from '../../../services/userSettingsService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface UserPublicProfileModalProps {
@@ -17,6 +18,8 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
   const [isLoading, setIsLoading] = useState(true);
 
   const isOwnProfile = currentUserId === userId;
+
+  useBodyScrollLock(true);
 
   useEffect(() => {
     loadProfileData();

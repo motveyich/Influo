@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Info } from 'lucide-react';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface IntegrationDetails {
@@ -48,6 +49,8 @@ export function IntegrationDetailsModal({
     productDescription: '',
     integrationParameters: ''
   });
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (existingDetails) {

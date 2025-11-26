@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CollaborationReview } from '../../../core/types';
 import { reviewService } from '../services/reviewService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ export function ReviewModal({
 }: ReviewModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     rating: 0,
