@@ -2,10 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import * as compression from 'compression';
-import * as helmet from 'helmet';
-import * as express from 'express';
-import { Request, Response } from 'express';
+import compression from 'compression';
+import helmet from 'helmet';
+import express, { Request, Response } from 'express';
 import { AppModule } from '../src/app.module';
 
 const server = express();
