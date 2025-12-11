@@ -1,10 +1,19 @@
-# ✅ Архитектура исправлена и готова к production
+# ✅ Архитектура ПОЛНОСТЬЮ исправлена
 
 ## Проблема решена
 
 **Было:** Frontend делал запросы на `localhost:3001` в production → Failed to fetch
 
-**Стало:** Frontend использует backend на Vercel через environment variable
+**Стало:** Frontend по умолчанию использует Vercel backend `https://backend-ten-bice-31.vercel.app`
+
+## ⚡ КРИТИЧЕСКИ ВАЖНО
+
+**localhost:3001 ПОЛНОСТЬЮ УДАЛЕН из кода!**
+
+По умолчанию frontend ВСЕГДА использует Vercel backend, в любом окружении:
+- ✅ Production → Vercel backend
+- ✅ Development → Vercel backend (по умолчанию)
+- ✅ Local backend → только если явно задан `VITE_API_BASE_URL` в `.env.local`
 
 ## Что изменено
 

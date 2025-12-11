@@ -1,20 +1,11 @@
 const getApiBaseUrl = (): string => {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:3001/api';
-  }
-
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
   if (envUrl) {
     return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
 
-  if (import.meta.env.PROD) {
-    console.error('⚠️ VITE_API_BASE_URL not set in production! API calls will fail.');
-    return '';
-  }
-
-  return 'http://localhost:3001/api';
+  return 'https://backend-ten-bice-31.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
