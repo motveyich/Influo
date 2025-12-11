@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { apiClient } from './api';
 
 export interface User {
   id: string;
@@ -18,77 +18,35 @@ export interface AuthState {
 
 export interface AuthResponse {
   user: User;
+  accessToken: string;
+  refreshToken: string;
 }
 
 class AuthService {
   private listeners: ((state: AuthState) => void)[] = [];
   private currentState: AuthState = { user: null, loading: true };
-  private initialized = false;
 
   constructor() {
     this.initialize();
   }
 
   private async initialize() {
-    if (this.initialized) return;
-    this.initialized = true;
+    const token = apiClient.getAccessToken();
 
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session?.user) {
-      await this.loadUserProfile(session.user.id);
+    if (token) {
+      try {
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
+      } catch (error) {
+        console.error('Failed to get current user:', error);
+        apiClient.setAccessToken(null);
+        this.currentState = { user: null, loading: false };
+      }
     } else {
       this.currentState = { user: null, loading: false };
-      this.notifyListeners();
     }
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      (async () => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          await this.loadUserProfile(session.user.id);
-        } else if (event === 'SIGNED_OUT') {
-          this.currentState = { user: null, loading: false };
-          this.notifyListeners();
-        }
-      })();
-    });
-  }
-
-  private async loadUserProfile(userId: string) {
-    try {
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (profile?.is_deleted) {
-        await supabase.auth.signOut();
-        this.currentState = { user: null, loading: false };
-        this.notifyListeners();
-        return;
-      }
-
-      const user: User = {
-        id: userId,
-        email: profile?.email || '',
-        userType: profile?.user_type,
-        username: profile?.username,
-        fullName: profile?.full_name,
-        avatarUrl: profile?.avatar_url,
-        isDeleted: profile?.is_deleted,
-        deletedAt: profile?.deleted_at,
-      };
-
-      this.currentState = { user, loading: false };
-      this.notifyListeners();
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
-      this.currentState = { user: null, loading: false };
-      this.notifyListeners();
-    }
+    this.notifyListeners();
   }
 
   subscribe(callback: (state: AuthState) => void) {
@@ -106,29 +64,19 @@ class AuthService {
 
   async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const response = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
+        userType,
       });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('Registration failed');
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: data.user.id,
-          email: email,
-          user_type: userType,
-        });
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
 
-      if (profileError) {
-        console.error('Failed to create profile:', profileError);
-      }
-
-      await this.loadUserProfile(data.user.id);
-
-      return { data: { user: this.currentState.user }, error: null };
+      return { data: response, error: null };
     } catch (error: any) {
       return {
         data: null,
@@ -142,22 +90,12 @@ class AuthService {
 
   async signIn(email: string, password: string) {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const response = await apiClient.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('Login failed');
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('is_deleted')
-        .eq('user_id', data.user.id)
-        .maybeSingle();
-
-      if (profile?.is_deleted) {
-        await supabase.auth.signOut();
+      if (response.user.isDeleted) {
         return {
           data: null,
           error: {
@@ -167,14 +105,13 @@ class AuthService {
         };
       }
 
-      await supabase
-        .from('user_profiles')
-        .update({ last_active: new Date().toISOString() })
-        .eq('user_id', data.user.id);
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      await this.loadUserProfile(data.user.id);
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
 
-      return { data: { user: this.currentState.user }, error: null };
+      return { data: response, error: null };
     } catch (error: any) {
       return {
         data: null,
@@ -188,10 +125,12 @@ class AuthService {
 
   async signOut() {
     try {
-      await supabase.auth.signOut();
+      await apiClient.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      apiClient.setAccessToken(null);
+      localStorage.removeItem('refreshToken');
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
     }
@@ -212,10 +151,16 @@ class AuthService {
   }
 
   async refreshUser() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const token = apiClient.getAccessToken();
 
-    if (session?.user) {
-      await this.loadUserProfile(session.user.id);
+    if (token) {
+      try {
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
+        this.notifyListeners();
+      } catch (error) {
+        console.error('Failed to refresh user:', error);
+      }
     }
   }
 }

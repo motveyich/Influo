@@ -582,7 +582,6 @@ export const ru: TranslationKeys = {
     inProgress: 'В работе',
     income: 'Общий доход',
     howToCreateOffers: 'Как создавать предложения?',
-    offersCreatedAutomatically: 'Предложения создаются при согласовании сотрудничества через карточки инфлюенсеров/рекламодателей.',
     offersCreatedManually: 'Предложения создаются при откликах на карточки и кампании',
     allStatuses: 'Все статусы',
     searchOffers: 'Поиск предложений...',

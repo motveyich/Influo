@@ -1,55 +1,29 @@
-import { supabase } from '../../../core/supabase';
+import { apiClient } from '../../../core/api';
 import { CollaborationReview } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class ReviewService {
-  private transformReview(data: any): CollaborationReview {
-    return {
-      id: data.id,
-      offerId: data.offer_id,
-      reviewerId: data.reviewer_id,
-      revieweeId: data.reviewee_id,
-      rating: data.rating,
-      title: data.title,
-      comment: data.comment,
-      isPublic: data.is_public,
-      metadata: data.metadata,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
-  }
-
   async createReview(reviewData: Partial<CollaborationReview>): Promise<CollaborationReview> {
     try {
       this.validateReviewData(reviewData);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const payload = {
+        offerId: reviewData.offerId,
+        revieweeId: reviewData.revieweeId,
+        rating: reviewData.rating,
+        title: reviewData.title,
+        comment: reviewData.comment,
+        isPublic: reviewData.isPublic ?? true,
+        metadata: reviewData.metadata || {},
+      };
 
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert({
-          offer_id: reviewData.offerId,
-          reviewer_id: user.id,
-          reviewee_id: reviewData.revieweeId,
-          rating: reviewData.rating,
-          title: reviewData.title,
-          comment: reviewData.comment,
-          is_public: reviewData.isPublic ?? true,
-          metadata: reviewData.metadata || {},
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const review = this.transformReview(data);
+      const review = await apiClient.post<CollaborationReview>('/reviews', payload);
 
       analytics.track('collaboration_review_created', {
         review_id: review.id,
         deal_id: reviewData.offerId,
         rating: reviewData.rating,
-        reviewer_id: user.id
+        reviewer_id: reviewData.reviewerId
       });
 
       return review;
@@ -61,16 +35,7 @@ export class ReviewService {
 
   async getReviews(userId: string): Promise<CollaborationReview[]> {
     try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('reviewee_id', userId)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return (data || []).map(item => this.transformReview(item));
+      return await apiClient.get<CollaborationReview[]>(`/reviews?userId=${userId}`);
     } catch (error) {
       console.error('Failed to get reviews:', error);
       throw error;
@@ -79,15 +44,7 @@ export class ReviewService {
 
   async getReview(reviewId: string): Promise<CollaborationReview> {
     try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('id', reviewId)
-        .single();
-
-      if (error) throw error;
-
-      return this.transformReview(data);
+      return await apiClient.get<CollaborationReview>(`/reviews/${reviewId}`);
     } catch (error) {
       console.error('Failed to get review:', error);
       throw error;
@@ -96,25 +53,10 @@ export class ReviewService {
 
   async canReview(offerId: string, userId: string): Promise<boolean> {
     try {
-      const { data: offer } = await supabase
-        .from('offers')
-        .select('status, influencer_id, advertiser_id')
-        .eq('id', offerId)
-        .maybeSingle();
-
-      if (!offer || offer.status !== 'completed') return false;
-
-      const isParticipant = offer.influencer_id === userId || offer.advertiser_id === userId;
-      if (!isParticipant) return false;
-
-      const { data: existingReview } = await supabase
-        .from('reviews')
-        .select('id')
-        .eq('offer_id', offerId)
-        .eq('reviewer_id', userId)
-        .maybeSingle();
-
-      return !existingReview;
+      const response = await apiClient.get<{ canReview: boolean }>(
+        `/reviews/can-review?offerId=${offerId}&userId=${userId}`
+      );
+      return response.canReview;
     } catch (error) {
       console.error('Failed to check review permission:', error);
       return false;
