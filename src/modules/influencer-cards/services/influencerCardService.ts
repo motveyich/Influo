@@ -119,7 +119,7 @@ export class InfluencerCardService {
     try {
       const { data, error } = await supabase
         .from('influencer_cards')
-        .select(`*, user_profiles(user_id, full_name, avatar_url, email, rating, reviews_count)`)
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -132,11 +132,15 @@ export class InfluencerCardService {
     }
   }
 
+  async getUserCards(userId: string): Promise<InfluencerCard[]> {
+    return this.getMyCards(userId);
+  }
+
   async getCards(filters?: any): Promise<InfluencerCard[]> {
     try {
       let query = supabase
         .from('influencer_cards')
-        .select(`*, user_profiles(user_id, full_name, avatar_url, email, rating, reviews_count)`)
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`)
         .eq('is_active', true);
 
       if (filters?.platform) {
@@ -152,6 +156,71 @@ export class InfluencerCardService {
       return (data || []).map(item => this.transformCard(item));
     } catch (error) {
       console.error('Failed to get cards:', error);
+      throw error;
+    }
+  }
+
+  async getAllCards(filters?: {
+    platform?: string;
+    minFollowers?: number;
+    maxFollowers?: number;
+    countries?: string[];
+    searchQuery?: string;
+    isActive?: boolean;
+  }): Promise<InfluencerCard[]> {
+    try {
+      let query = supabase
+        .from('influencer_cards')
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`);
+
+      if (filters?.isActive !== undefined) {
+        query = query.eq('is_active', filters.isActive);
+      }
+
+      if (filters?.platform) {
+        query = query.eq('platform', filters.platform);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      let results = (data || []).map(item => this.transformCard(item));
+
+      if (filters?.minFollowers) {
+        results = results.filter(card =>
+          card.reach?.followers && card.reach.followers >= filters.minFollowers!
+        );
+      }
+
+      if (filters?.maxFollowers) {
+        results = results.filter(card =>
+          card.reach?.followers && card.reach.followers <= filters.maxFollowers!
+        );
+      }
+
+      if (filters?.countries && filters.countries.length > 0) {
+        results = results.filter(card =>
+          card.audienceDemographics?.countries?.some(country =>
+            filters.countries!.includes(country)
+          )
+        );
+      }
+
+      if (filters?.searchQuery) {
+        const searchLower = filters.searchQuery.toLowerCase();
+        results = results.filter(card =>
+          card.serviceDetails?.description?.toLowerCase().includes(searchLower) ||
+          card.serviceDetails?.contentTypes?.some(type => type.toLowerCase().includes(searchLower)) ||
+          card.audienceDemographics?.interests?.some(interest => interest.toLowerCase().includes(searchLower))
+        );
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Failed to get all cards:', error);
       throw error;
     }
   }

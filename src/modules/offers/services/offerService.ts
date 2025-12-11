@@ -4,33 +4,35 @@ import { analytics } from '../../../core/analytics';
 
 export class OfferService {
   private transformOffer(data: any): CollaborationOffer {
+    const details = data.details || {};
     return {
-      id: data.id,
+      id: data.offer_id,
       influencerId: data.influencer_id,
       advertiserId: data.advertiser_id,
-      influencerCardId: data.influencer_card_id,
+      influencerCardId: details.influencer_card_id,
       campaignId: data.campaign_id,
-      initiatedBy: data.initiated_by,
-      title: data.title,
-      description: data.description,
-      proposedRate: data.proposed_rate,
-      currency: data.currency,
+      initiatedBy: details.initiated_by || data.advertiser_id,
+      title: details.title || 'Предложение о сотрудничестве',
+      description: details.description || '',
+      proposedRate: details.proposed_rate || 0,
+      acceptedRate: details.accepted_rate,
+      currency: details.currency || 'USD',
       status: data.status,
-      deliverables: data.deliverables,
-      timeline: data.timeline,
-      metadata: data.metadata,
+      deliverables: details.deliverables || [],
+      timeline: data.timeline || {},
+      metadata: data.metadata || {},
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       advertiser: data.advertiser_profile ? {
         id: data.advertiser_profile.user_id,
         fullName: data.advertiser_profile.full_name,
-        avatar: data.advertiser_profile.avatar_url,
+        avatar: data.advertiser_profile.avatar,
         email: data.advertiser_profile.email,
       } : undefined,
       influencer: data.influencer_profile ? {
         id: data.influencer_profile.user_id,
         fullName: data.influencer_profile.full_name,
-        avatar: data.influencer_profile.avatar_url,
+        avatar: data.influencer_profile.avatar,
         email: data.influencer_profile.email,
       } : undefined,
     };
@@ -40,27 +42,31 @@ export class OfferService {
     try {
       this.validateOfferData(offerData);
 
+      const details = {
+        influencer_card_id: offerData.influencerCardId || null,
+        initiated_by: offerData.initiatedBy || offerData.advertiserId,
+        title: offerData.title,
+        description: offerData.description,
+        proposed_rate: offerData.proposedRate,
+        currency: offerData.currency || 'USD',
+        deliverables: offerData.deliverables || [],
+      };
+
       const { data, error } = await supabase
         .from('offers')
         .insert({
           influencer_id: offerData.influencerId,
           advertiser_id: offerData.advertiserId,
-          influencer_card_id: offerData.influencerCardId || null,
           campaign_id: offerData.campaignId || null,
-          initiated_by: offerData.initiatedBy || offerData.influencerId,
-          title: offerData.title,
-          description: offerData.description,
-          proposed_rate: offerData.proposedRate,
-          currency: offerData.currency || 'USD',
-          deliverables: offerData.deliverables || [],
-          timeline: offerData.timeline,
+          details,
+          timeline: offerData.timeline || {},
           metadata: offerData.metadata || {},
           status: 'pending',
         })
         .select(`
           *,
-          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
-          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
         `)
         .single();
 
@@ -91,8 +97,8 @@ export class OfferService {
         .from('offers')
         .select(`
           *,
-          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
-          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
         `);
 
       if (params?.asInfluencer) {
@@ -118,16 +124,37 @@ export class OfferService {
     }
   }
 
+  async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
+    try {
+      const { data, error } = await supabase
+        .from('offers')
+        .select(`
+          *,
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
+        `)
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(item => this.transformOffer(item));
+    } catch (error) {
+      console.error('Failed to get offers by participant:', error);
+      throw error;
+    }
+  }
+
   async getOffer(offerId: string): Promise<CollaborationOffer> {
     try {
       const { data, error } = await supabase
         .from('offers')
         .select(`
           *,
-          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
-          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
         `)
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .single();
 
       if (error) throw error;
@@ -141,24 +168,39 @@ export class OfferService {
 
   async updateOffer(offerId: string, updates: Partial<CollaborationOffer>): Promise<CollaborationOffer> {
     try {
-      const payload: any = { updated_at: new Date().toISOString() };
+      const { data: existing, error: fetchError } = await supabase
+        .from('offers')
+        .select('details')
+        .eq('offer_id', offerId)
+        .single();
 
-      if (updates.title !== undefined) payload.title = updates.title;
-      if (updates.description !== undefined) payload.description = updates.description;
-      if (updates.proposedRate !== undefined) payload.proposed_rate = updates.proposedRate;
-      if (updates.currency !== undefined) payload.currency = updates.currency;
-      if (updates.deliverables !== undefined) payload.deliverables = updates.deliverables;
+      if (fetchError) throw fetchError;
+
+      const currentDetails = existing?.details || {};
+      const newDetails = { ...currentDetails };
+
+      if (updates.title !== undefined) newDetails.title = updates.title;
+      if (updates.description !== undefined) newDetails.description = updates.description;
+      if (updates.proposedRate !== undefined) newDetails.proposed_rate = updates.proposedRate;
+      if (updates.currency !== undefined) newDetails.currency = updates.currency;
+      if (updates.deliverables !== undefined) newDetails.deliverables = updates.deliverables;
+
+      const payload: any = {
+        details: newDetails,
+        updated_at: new Date().toISOString()
+      };
+
       if (updates.timeline !== undefined) payload.timeline = updates.timeline;
       if (updates.metadata !== undefined) payload.metadata = updates.metadata;
 
       const { data, error } = await supabase
         .from('offers')
         .update(payload)
-        .eq('id', offerId)
+        .eq('offer_id', offerId)
         .select(`
           *,
-          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
-          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
         `)
         .single();
 
@@ -175,11 +217,11 @@ export class OfferService {
     const { data, error } = await supabase
       .from('offers')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', offerId)
+      .eq('offer_id', offerId)
       .select(`
         *,
-        advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
-        influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+        advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar, email),
+        influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar, email)
       `)
       .single();
 

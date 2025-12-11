@@ -141,7 +141,7 @@ export class AdvertiserCardService {
     try {
       const { data, error } = await supabase
         .from('advertiser_cards')
-        .select(`*, user_profiles(user_id, full_name, avatar_url, email, rating, reviews_count)`)
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -154,11 +154,15 @@ export class AdvertiserCardService {
     }
   }
 
+  async getUserCards(userId: string): Promise<AdvertiserCard[]> {
+    return this.getMyCards(userId);
+  }
+
   async getCards(filters?: any): Promise<AdvertiserCard[]> {
     try {
       let query = supabase
         .from('advertiser_cards')
-        .select(`*, user_profiles(user_id, full_name, avatar_url, email, rating, reviews_count)`)
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`)
         .eq('is_active', true);
 
       if (filters?.platform) {
@@ -174,6 +178,82 @@ export class AdvertiserCardService {
       return (data || []).map(item => this.transformCard(item));
     } catch (error) {
       console.error('Failed to get cards:', error);
+      throw error;
+    }
+  }
+
+  async getAllCards(filters?: {
+    platform?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    productCategories?: string[];
+    serviceFormats?: string[];
+    searchQuery?: string;
+    isActive?: boolean;
+  }): Promise<AdvertiserCard[]> {
+    try {
+      let query = supabase
+        .from('advertiser_cards')
+        .select(`*, user_profiles(user_id, full_name, avatar_url, email)`);
+
+      if (filters?.isActive !== undefined) {
+        query = query.eq('is_active', filters.isActive);
+      }
+
+      if (filters?.platform) {
+        query = query.eq('platform', filters.platform);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      let results = (data || []).map(item => this.transformCard(item));
+
+      if (filters?.minBudget) {
+        results = results.filter(card =>
+          card.budget?.max && card.budget.max >= filters.minBudget!
+        );
+      }
+
+      if (filters?.maxBudget) {
+        results = results.filter(card =>
+          card.budget?.min && card.budget.min <= filters.maxBudget!
+        );
+      }
+
+      if (filters?.productCategories && filters.productCategories.length > 0) {
+        results = results.filter(card =>
+          card.productCategories?.some(category =>
+            filters.productCategories!.includes(category)
+          )
+        );
+      }
+
+      if (filters?.serviceFormats && filters.serviceFormats.length > 0) {
+        results = results.filter(card =>
+          card.serviceFormat?.some(format =>
+            filters.serviceFormats!.includes(format)
+          )
+        );
+      }
+
+      if (filters?.searchQuery) {
+        const searchLower = filters.searchQuery.toLowerCase();
+        results = results.filter(card =>
+          card.campaignTitle?.toLowerCase().includes(searchLower) ||
+          card.companyName?.toLowerCase().includes(searchLower) ||
+          card.campaignDescription?.toLowerCase().includes(searchLower) ||
+          card.productCategories?.some(cat => cat.toLowerCase().includes(searchLower)) ||
+          card.serviceFormat?.some(format => format.toLowerCase().includes(searchLower))
+        );
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Failed to get all cards:', error);
       throw error;
     }
   }
