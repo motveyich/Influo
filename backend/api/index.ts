@@ -1,13 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { ConfigService } from '@nestjs/config';
 import compression from 'compression';
 import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import { AppModule } from '../src/app.module';
 
-const server = express();
 let cachedApp: any = null;
 
 async function bootstrapServer() {
@@ -22,22 +20,21 @@ async function bootstrapServer() {
     { logger: ['error', 'warn', 'log'] }
   );
 
-  const configService = app.get(ConfigService);
-  const apiPrefix = configService.get('API_PREFIX') || 'api';
-  const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:5173';
+  const apiPrefix = process.env.API_PREFIX || 'api';
+  const frontendOrigin = process.env.FRONTEND_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173';
 
   app.setGlobalPrefix(apiPrefix);
 
   app.enableCors({
     origin: [
-      frontendUrl,
+      frontendOrigin,
       'http://localhost:5173',
       'http://localhost:3000',
       /\.vercel\.app$/,
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'apikey'],
   });
 
   app.use(helmet({
@@ -61,11 +58,21 @@ async function bootstrapServer() {
   cachedApp = expressApp;
 
   console.log('✅ NestJS application initialized for Vercel');
+  console.log(`🔧 API Prefix: ${apiPrefix}`);
+  console.log(`🌐 CORS Origin: ${frontendOrigin}`);
 
   return expressApp;
 }
 
 export default async (req: Request, res: Response) => {
-  const app = await bootstrapServer();
-  return app(req, res);
+  try {
+    const app = await bootstrapServer();
+    return app(req, res);
+  } catch (error) {
+    console.error('❌ Error initializing app:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 };

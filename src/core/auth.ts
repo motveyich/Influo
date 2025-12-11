@@ -1,10 +1,25 @@
-import { supabase } from './supabase';
-import { isSupabaseConfigured } from './supabase';
-import { User } from '@supabase/supabase-js';
+import { apiClient } from './api';
+
+export interface User {
+  id: string;
+  email: string;
+  userType?: string;
+  username?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
+}
 
 export interface AuthState {
   user: User | null;
   loading: boolean;
+}
+
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
 }
 
 class AuthService {
@@ -16,23 +31,22 @@ class AuthService {
   }
 
   private async initialize() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const token = apiClient.getAccessToken();
 
-    if (!session && isSupabaseConfigured()) {
+    if (token) {
       try {
-        await supabase.auth.signOut();
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
       } catch (error) {
-        console.log('Cleared stale session data');
+        console.error('Failed to get current user:', error);
+        apiClient.setAccessToken(null);
+        this.currentState = { user: null, loading: false };
       }
+    } else {
+      this.currentState = { user: null, loading: false };
     }
 
-    this.currentState = { user: session?.user || null, loading: false };
     this.notifyListeners();
-
-    supabase.auth.onAuthStateChange((event, session) => {
-      this.currentState = { user: session?.user || null, loading: false };
-      this.notifyListeners();
-    });
   }
 
   subscribe(callback: (state: AuthState) => void) {
@@ -48,90 +62,80 @@ class AuthService {
     this.listeners.forEach(listener => listener(this.currentState));
   }
 
-  async signUp(email: string, password: string) {
-    if (!isSupabaseConfigured()) {
+  async signUp(email: string, password: string, userType: string = 'influencer') {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/signup', {
+        email,
+        password,
+        userType,
+      });
+
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
+
+      return { data: response, error: null };
+    } catch (error: any) {
       return {
         data: null,
         error: {
-          message: 'Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.',
-          name: 'ConfigurationError'
+          message: error.message || 'Failed to sign up',
+          name: 'SignUpError'
         }
       };
     }
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { data, error };
   }
 
   async signIn(email: string, password: string) {
-    if (!isSupabaseConfigured()) {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/login', {
+        email,
+        password,
+      });
+
+      if (response.user.isDeleted) {
+        return {
+          data: null,
+          error: {
+            message: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для получения дополнительной информации.',
+            name: 'AccountBlockedError'
+          }
+        };
+      }
+
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
+
+      return { data: response, error: null };
+    } catch (error: any) {
       return {
         data: null,
         error: {
-          message: 'Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection.',
-          name: 'ConfigurationError'
+          message: error.message || 'Failed to sign in',
+          name: 'SignInError'
         }
       };
     }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (data.user) {
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('is_deleted, deleted_at')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error('Failed to check user profile:', profileError);
-          return { data, error };
-        }
-
-        if (profile && profile.is_deleted === true) {
-          await supabase.auth.signOut();
-          return {
-            data: null,
-            error: {
-              message: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для получения дополнительной информации.',
-              name: 'AccountBlockedError'
-            }
-          };
-        }
-      } catch (profileError) {
-        console.error('Exception while checking user status:', profileError);
-      }
-    }
-
-    return { data, error };
   }
 
   async signOut() {
     try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error && (error as any).status === 403 &&
-          error.message?.includes('session_id claim') &&
-          error.message?.includes('not exist')) {
-        return { error: null };
-      }
-
-      return { error };
-    } catch (error: any) {
-      if ((error.status === 403 || error.code === 'session_not_found') &&
-          error.message?.includes('session_id claim') &&
-          error.message?.includes('not exist')) {
-        return { error: null };
-      }
-      return { error };
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      apiClient.setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      this.currentState = { user: null, loading: false };
+      this.notifyListeners();
     }
+
+    return { error: null };
   }
 
   getCurrentUser() {
@@ -144,6 +148,20 @@ class AuthService {
 
   isLoading() {
     return this.currentState.loading;
+  }
+
+  async refreshUser() {
+    const token = apiClient.getAccessToken();
+
+    if (token) {
+      try {
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
+        this.notifyListeners();
+      } catch (error) {
+        console.error('Failed to refresh user:', error);
+      }
+    }
   }
 }
 
