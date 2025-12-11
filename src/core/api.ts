@@ -5,6 +5,11 @@ const getApiBaseUrl = (): string => {
     return envUrl;
   }
 
+  // In development, use proxy; in production, use direct URL
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
   return 'https://influo-seven.vercel.app';
 };
 
@@ -54,6 +59,8 @@ class ApiClient {
     const config: RequestInit = {
       method: options.method || 'GET',
       headers,
+      mode: 'cors',
+      credentials: 'omit',
     };
 
     if (options.body) {
@@ -129,6 +136,8 @@ class ApiClient {
         method: 'POST',
         headers,
         body: formData,
+        mode: 'cors',
+        credentials: 'omit',
       });
 
       if (response.status === 401) {
