@@ -4,13 +4,7 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": ".",
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node@3",
-      "maxDuration": 30,
-      "includeFiles": "dist/**"
-    }
-  },
+  "functions": {},
   "rewrites": [
     {
       "source": "/api/(.*)",
