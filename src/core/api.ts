@@ -2,10 +2,15 @@ const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
   if (envUrl) {
-    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+    return envUrl;
   }
 
-  return 'https://beckend-git-main-matveys-projects-0d62e667.vercel.app/api';
+  // In development, use proxy; in production, use direct URL
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
+  return 'https://influo-seven.vercel.app';
 };
 
 const API_URL = getApiBaseUrl();
@@ -54,6 +59,8 @@ class ApiClient {
     const config: RequestInit = {
       method: options.method || 'GET',
       headers,
+      mode: 'cors',
+      credentials: 'omit',
     };
 
     if (options.body) {
@@ -129,6 +136,8 @@ class ApiClient {
         method: 'POST',
         headers,
         body: formData,
+        mode: 'cors',
+        credentials: 'omit',
       });
 
       if (response.status === 401) {

@@ -17,10 +17,10 @@ async function bootstrap() {
   app.setGlobalPrefix(apiPrefix);
 
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:5173', 'http://localhost:3000'],
-    credentials: true,
+    origin: [frontendUrl, 'http://localhost:5173', 'http://localhost:3000', /\.vercel\.app$/],
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Client-Info', 'apikey'],
   });
 
   app.use(helmet({
