@@ -20,10 +20,9 @@ async function bootstrapServer() {
     { logger: ['error', 'warn', 'log'] }
   );
 
-  const apiPrefix = process.env.API_PREFIX || 'api';
   const frontendOrigin = process.env.FRONTEND_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173';
 
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix('api');
 
   app.enableCors({
     origin: [
@@ -58,8 +57,9 @@ async function bootstrapServer() {
   cachedApp = expressApp;
 
   console.log('✅ NestJS application initialized for Vercel');
-  console.log(`🔧 API Prefix: ${apiPrefix}`);
   console.log(`🌐 CORS Origin: ${frontendOrigin}`);
+  console.log(`📍 Global Prefix: /api`);
+  console.log(`📍 Example: POST /api/auth/login`);
 
   return expressApp;
 }
