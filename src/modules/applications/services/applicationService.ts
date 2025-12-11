@@ -1,20 +1,45 @@
-import { apiClient } from '../../../core/api';
+import { supabase } from '../../../core/supabase';
 import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class ApplicationService {
+  private transformApplication(data: any): Application {
+    return {
+      id: data.id,
+      applicantId: data.applicant_id,
+      targetId: data.card_id,
+      targetType: data.card_type,
+      targetReferenceId: data.campaign_id,
+      applicationData: data.application_data,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
   async createApplication(applicationData: Partial<Application>): Promise<Application> {
     try {
       this.validateApplicationData(applicationData);
 
-      const payload = {
-        targetId: applicationData.targetId,
-        targetType: applicationData.targetType,
-        targetReferenceId: applicationData.targetReferenceId,
-        applicationData: applicationData.applicationData,
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      const application = await apiClient.post<Application>('/applications', payload);
+      const { data, error } = await supabase
+        .from('applications')
+        .insert({
+          applicant_id: user.id,
+          card_id: applicationData.targetId,
+          card_type: applicationData.targetType,
+          campaign_id: applicationData.targetReferenceId || null,
+          application_data: applicationData.applicationData,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const application = this.transformApplication(data);
 
       analytics.track('application_created', {
         application_id: application.id,
@@ -31,11 +56,25 @@ export class ApplicationService {
 
   async getApplications(params?: { status?: string }): Promise<Application[]> {
     try {
-      let queryString = '';
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      let query = supabase
+        .from('applications')
+        .select('*')
+        .eq('applicant_id', user.id);
+
       if (params?.status) {
-        queryString = `?status=${params.status}`;
+        query = query.eq('status', params.status);
       }
-      return await apiClient.get<Application[]>(`/applications${queryString}`);
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(item => this.transformApplication(item));
     } catch (error) {
       console.error('Failed to get applications:', error);
       throw error;
@@ -44,7 +83,15 @@ export class ApplicationService {
 
   async getApplication(applicationId: string): Promise<Application> {
     try {
-      return await apiClient.get<Application>(`/applications/${applicationId}`);
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('id', applicationId)
+        .single();
+
+      if (error) throw error;
+
+      return this.transformApplication(data);
     } catch (error) {
       console.error('Failed to get application:', error);
       throw error;
@@ -53,7 +100,16 @@ export class ApplicationService {
 
   async acceptApplication(applicationId: string): Promise<Application> {
     try {
-      return await apiClient.post<Application>(`/applications/${applicationId}/accept`);
+      const { data, error } = await supabase
+        .from('applications')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', applicationId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return this.transformApplication(data);
     } catch (error) {
       console.error('Failed to accept application:', error);
       throw error;
@@ -62,7 +118,16 @@ export class ApplicationService {
 
   async rejectApplication(applicationId: string): Promise<Application> {
     try {
-      return await apiClient.post<Application>(`/applications/${applicationId}/reject`);
+      const { data, error } = await supabase
+        .from('applications')
+        .update({ status: 'rejected', updated_at: new Date().toISOString() })
+        .eq('id', applicationId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return this.transformApplication(data);
     } catch (error) {
       console.error('Failed to reject application:', error);
       throw error;

@@ -1,29 +1,64 @@
-import { apiClient } from '../../../core/api';
+import { supabase } from '../../../core/supabase';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class ProfileService {
+  private transformToUserProfile(data: any): UserProfile {
+    return {
+      id: data.id,
+      oderedAt: data.ordered_at,
+      userId: data.user_id,
+      email: data.email,
+      fullName: data.full_name,
+      username: data.username,
+      phone: data.phone,
+      bio: data.bio,
+      location: data.location,
+      website: data.website,
+      avatar: data.avatar_url,
+      userType: data.user_type,
+      influencerData: data.influencer_data,
+      advertiserData: data.advertiser_data,
+      profileCompletion: data.profile_completion,
+      rating: data.rating,
+      reviewsCount: data.reviews_count,
+      isVerified: data.is_verified,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
       const userType = this.determineUserType(profileData);
       const completion = this.calculateProfileCompletion(profileData);
 
-      const payload = {
-        email: profileData.email,
-        fullName: profileData.fullName,
-        username: profileData.username || null,
-        phone: profileData.phone || null,
-        bio: profileData.bio,
-        location: profileData.location,
-        website: profileData.website,
-        avatar: profileData.avatar,
-        influencerData: this.hasInfluencerContent(profileData.influencerData) ? profileData.influencerData : null,
-        advertiserData: this.hasAdvertiserContent(profileData.advertiserData) ? profileData.advertiserData : null,
-        userType,
-        profileCompletion: completion,
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      const profile = await apiClient.post<UserProfile>('/profiles', payload);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: user.id,
+          email: profileData.email,
+          full_name: profileData.fullName,
+          username: profileData.username || null,
+          phone: profileData.phone || null,
+          bio: profileData.bio,
+          location: profileData.location,
+          website: profileData.website,
+          avatar_url: profileData.avatar,
+          influencer_data: this.hasInfluencerContent(profileData.influencerData) ? profileData.influencerData : null,
+          advertiser_data: this.hasAdvertiserContent(profileData.advertiserData) ? profileData.advertiserData : null,
+          user_type: userType,
+          profile_completion: completion,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const profile = this.transformToUserProfile(data);
 
       analytics.track('profile_created', {
         user_id: profile.userId,
@@ -49,27 +84,37 @@ export class ProfileService {
       const completion = this.calculateProfileCompletion(mergedProfile);
 
       const payload: any = {
-        userType,
-        profileCompletion: completion,
+        user_type: userType,
+        profile_completion: completion,
+        updated_at: new Date().toISOString(),
       };
 
-      if (updates.fullName !== undefined) payload.fullName = updates.fullName;
+      if (updates.fullName !== undefined) payload.full_name = updates.fullName;
       if (updates.email !== undefined) payload.email = updates.email;
       if (updates.username !== undefined) payload.username = updates.username || null;
       if (updates.phone !== undefined) payload.phone = updates.phone || null;
       if (updates.bio !== undefined) payload.bio = updates.bio || null;
       if (updates.location !== undefined) payload.location = updates.location || null;
       if (updates.website !== undefined) payload.website = updates.website || null;
-      if (updates.avatar !== undefined) payload.avatar = updates.avatar || null;
+      if (updates.avatar !== undefined) payload.avatar_url = updates.avatar || null;
 
       if (updates.influencerData !== undefined) {
-        payload.influencerData = this.hasInfluencerContent(updates.influencerData) ? updates.influencerData : null;
+        payload.influencer_data = this.hasInfluencerContent(updates.influencerData) ? updates.influencerData : null;
       }
       if (updates.advertiserData !== undefined) {
-        payload.advertiserData = this.hasAdvertiserContent(updates.advertiserData) ? updates.advertiserData : null;
+        payload.advertiser_data = this.hasAdvertiserContent(updates.advertiserData) ? updates.advertiserData : null;
       }
 
-      const profile = await apiClient.patch<UserProfile>(`/profiles/${userId}`, payload);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(payload)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const profile = this.transformToUserProfile(data);
 
       analytics.track('profile_updated', {
         user_id: userId,
@@ -86,7 +131,16 @@ export class ProfileService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
-      return await apiClient.get<UserProfile>(`/profiles/${userId}`);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      return this.transformToUserProfile(data);
     } catch (error) {
       console.error('Failed to get profile:', error);
       return null;
@@ -95,7 +149,28 @@ export class ProfileService {
 
   async uploadAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
     try {
-      return await apiClient.uploadFile<{ avatarUrl: string }>(`/profiles/${userId}/avatar`, file, 'file');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = urlData.publicUrl;
+
+      await supabase
+        .from('user_profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('user_id', userId);
+
+      return { avatarUrl };
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       throw error;

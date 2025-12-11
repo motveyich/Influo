@@ -1,28 +1,72 @@
-import { apiClient } from '../../../core/api';
+import { supabase } from '../../../core/supabase';
 import { CollaborationOffer, OfferStatus, CollaborationStage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class OfferService {
+  private transformOffer(data: any): CollaborationOffer {
+    return {
+      id: data.id,
+      influencerId: data.influencer_id,
+      advertiserId: data.advertiser_id,
+      influencerCardId: data.influencer_card_id,
+      campaignId: data.campaign_id,
+      initiatedBy: data.initiated_by,
+      title: data.title,
+      description: data.description,
+      proposedRate: data.proposed_rate,
+      currency: data.currency,
+      status: data.status,
+      deliverables: data.deliverables,
+      timeline: data.timeline,
+      metadata: data.metadata,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      advertiser: data.advertiser_profile ? {
+        id: data.advertiser_profile.user_id,
+        fullName: data.advertiser_profile.full_name,
+        avatar: data.advertiser_profile.avatar_url,
+        email: data.advertiser_profile.email,
+      } : undefined,
+      influencer: data.influencer_profile ? {
+        id: data.influencer_profile.user_id,
+        fullName: data.influencer_profile.full_name,
+        avatar: data.influencer_profile.avatar_url,
+        email: data.influencer_profile.email,
+      } : undefined,
+    };
+  }
+
   async createOffer(offerData: Partial<CollaborationOffer>): Promise<CollaborationOffer> {
     try {
       this.validateOfferData(offerData);
 
-      const payload = {
-        influencerId: offerData.influencerId,
-        advertiserId: offerData.advertiserId,
-        influencerCardId: offerData.influencerCardId || null,
-        campaignId: offerData.campaignId || null,
-        initiatedBy: offerData.initiatedBy || offerData.influencerId,
-        title: offerData.title,
-        description: offerData.description,
-        proposedRate: offerData.proposedRate,
-        currency: offerData.currency || 'USD',
-        deliverables: offerData.deliverables || [],
-        timeline: offerData.timeline,
-        metadata: offerData.metadata || {},
-      };
+      const { data, error } = await supabase
+        .from('offers')
+        .insert({
+          influencer_id: offerData.influencerId,
+          advertiser_id: offerData.advertiserId,
+          influencer_card_id: offerData.influencerCardId || null,
+          campaign_id: offerData.campaignId || null,
+          initiated_by: offerData.initiatedBy || offerData.influencerId,
+          title: offerData.title,
+          description: offerData.description,
+          proposed_rate: offerData.proposedRate,
+          currency: offerData.currency || 'USD',
+          deliverables: offerData.deliverables || [],
+          timeline: offerData.timeline,
+          metadata: offerData.metadata || {},
+          status: 'pending',
+        })
+        .select(`
+          *,
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+        `)
+        .single();
 
-      const offer = await apiClient.post<CollaborationOffer>('/offers', payload);
+      if (error) throw error;
+
+      const offer = this.transformOffer(data);
 
       analytics.track('collaboration_offer_created', {
         offer_id: offer.id,
@@ -40,15 +84,34 @@ export class OfferService {
 
   async getOffers(params?: { status?: string; asInfluencer?: boolean }): Promise<CollaborationOffer[]> {
     try {
-      let queryString = '';
-      if (params) {
-        const queryParams = new URLSearchParams();
-        if (params.status) queryParams.append('status', params.status);
-        if (params.asInfluencer !== undefined) queryParams.append('asInfluencer', String(params.asInfluencer));
-        queryString = `?${queryParams.toString()}`;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let query = supabase
+        .from('offers')
+        .select(`
+          *,
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+        `);
+
+      if (params?.asInfluencer) {
+        query = query.eq('influencer_id', user.id);
+      } else {
+        query = query.eq('advertiser_id', user.id);
       }
 
-      return await apiClient.get<CollaborationOffer[]>(`/offers${queryString}`);
+      if (params?.status) {
+        query = query.eq('status', params.status);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(item => this.transformOffer(item));
     } catch (error) {
       console.error('Failed to get offers:', error);
       throw error;
@@ -57,7 +120,19 @@ export class OfferService {
 
   async getOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.get<CollaborationOffer>(`/offers/${offerId}`);
+      const { data, error } = await supabase
+        .from('offers')
+        .select(`
+          *,
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+        `)
+        .eq('id', offerId)
+        .single();
+
+      if (error) throw error;
+
+      return this.transformOffer(data);
     } catch (error) {
       console.error('Failed to get offer:', error);
       throw error;
@@ -66,16 +141,56 @@ export class OfferService {
 
   async updateOffer(offerId: string, updates: Partial<CollaborationOffer>): Promise<CollaborationOffer> {
     try {
-      return await apiClient.patch<CollaborationOffer>(`/offers/${offerId}`, updates);
+      const payload: any = { updated_at: new Date().toISOString() };
+
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.description !== undefined) payload.description = updates.description;
+      if (updates.proposedRate !== undefined) payload.proposed_rate = updates.proposedRate;
+      if (updates.currency !== undefined) payload.currency = updates.currency;
+      if (updates.deliverables !== undefined) payload.deliverables = updates.deliverables;
+      if (updates.timeline !== undefined) payload.timeline = updates.timeline;
+      if (updates.metadata !== undefined) payload.metadata = updates.metadata;
+
+      const { data, error } = await supabase
+        .from('offers')
+        .update(payload)
+        .eq('id', offerId)
+        .select(`
+          *,
+          advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
+          influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      return this.transformOffer(data);
     } catch (error) {
       console.error('Failed to update offer:', error);
       throw error;
     }
   }
 
+  private async updateStatus(offerId: string, status: string): Promise<CollaborationOffer> {
+    const { data, error } = await supabase
+      .from('offers')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', offerId)
+      .select(`
+        *,
+        advertiser_profile:user_profiles!offers_advertiser_id_fkey(user_id, full_name, avatar_url, email),
+        influencer_profile:user_profiles!offers_influencer_id_fkey(user_id, full_name, avatar_url, email)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    return this.transformOffer(data);
+  }
+
   async acceptOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/accept`);
+      return await this.updateStatus(offerId, 'accepted');
     } catch (error) {
       console.error('Failed to accept offer:', error);
       throw error;
@@ -84,7 +199,7 @@ export class OfferService {
 
   async declineOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/decline`);
+      return await this.updateStatus(offerId, 'declined');
     } catch (error) {
       console.error('Failed to decline offer:', error);
       throw error;
@@ -93,7 +208,7 @@ export class OfferService {
 
   async markInProgress(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/in-progress`);
+      return await this.updateStatus(offerId, 'in_progress');
     } catch (error) {
       console.error('Failed to mark offer in progress:', error);
       throw error;
@@ -102,7 +217,7 @@ export class OfferService {
 
   async markCompleted(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/complete`);
+      return await this.updateStatus(offerId, 'completed');
     } catch (error) {
       console.error('Failed to mark offer completed:', error);
       throw error;
@@ -111,7 +226,7 @@ export class OfferService {
 
   async cancelOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/cancel`);
+      return await this.updateStatus(offerId, 'cancelled');
     } catch (error) {
       console.error('Failed to cancel offer:', error);
       throw error;
