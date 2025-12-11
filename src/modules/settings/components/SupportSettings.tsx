@@ -1,23 +1,30 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { 
-  HelpCircle, 
-  Mail, 
-  MessageCircle, 
-  FileText, 
+import { useTranslation } from '../../../hooks/useTranslation';
+import { supportService, SupportTicket, TicketWithMessages } from '../../../services/supportService';
+import {
+  HelpCircle,
+  Mail,
+  MessageCircle,
+  FileText,
   ExternalLink,
   Send,
   CheckCircle,
   Clock,
-  User
+  User,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function SupportSettings() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showContactForm, setShowContactForm] = useState(false);
-  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [supportTickets, setSupportTickets] = useState<TicketWithMessages[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithMessages | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [contactForm, setContactForm] = useState({
     subject: '',
     category: 'general',
@@ -32,37 +39,65 @@ export function SupportSettings() {
     }
   }, [user?.id]);
 
+  React.useEffect(() => {
+    if (selectedTicket) {
+      loadTicketDetails(selectedTicket.id);
+    }
+  }, [selectedTicket?.id]);
+
   const loadSupportTickets = async () => {
+    if (!user?.id) return;
+
     try {
       setIsLoadingTickets(true);
-      // Mock support tickets for now - will be replaced with actual API
-      const mockTickets = [
-        {
-          id: '1',
-          subject: 'Проблема с загрузкой профиля',
-          category: 'technical',
-          status: 'open',
-          priority: 'normal',
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 3
-        },
-        {
-          id: '2',
-          subject: 'Вопрос по оплате',
-          category: 'billing',
-          status: 'resolved',
-          priority: 'high',
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          lastResponse: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          responseCount: 5
-        }
-      ];
-      setSupportTickets(mockTickets);
+      const tickets = await supportService.getUserTickets(user.id);
+      setSupportTickets(tickets);
     } catch (error) {
       console.error('Failed to load support tickets:', error);
+      toast.error('Не удалось загрузить обращения');
     } finally {
       setIsLoadingTickets(false);
+    }
+  };
+
+  const loadTicketDetails = async (ticketId: string) => {
+    try {
+      const ticketDetails = await supportService.getTicketById(ticketId);
+      if (ticketDetails) {
+        setSelectedTicket(ticketDetails);
+      }
+    } catch (error) {
+      console.error('Failed to load ticket details:', error);
+      toast.error('Не удалось загрузить детали обращения');
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !selectedTicket || !user?.id) return;
+
+    setIsSendingReply(true);
+    try {
+      await supportService.addMessage(selectedTicket.id, user.id, replyMessage, false);
+      setReplyMessage('');
+      await loadTicketDetails(selectedTicket.id);
+      toast.success('Сообщение отправлено');
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+      toast.error('Не удалось отправить сообщение');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const handleCloseTicket = async (ticketId: string) => {
+    try {
+      await supportService.closeTicket(ticketId);
+      toast.success('Обращение закрыто');
+      setSelectedTicket(null);
+      await loadSupportTickets();
+    } catch (error) {
+      console.error('Failed to close ticket:', error);
+      toast.error('Не удалось закрыть обращение');
     }
   };
   const handleSubmitSupport = async () => {
@@ -71,24 +106,15 @@ export function SupportSettings() {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('Необходима авторизация');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Simulate support ticket submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Add new ticket to the list
-      const newTicket = {
-        id: Date.now().toString(),
-        subject: contactForm.subject,
-        category: contactForm.category,
-        status: 'open',
-        priority: contactForm.priority,
-        createdAt: new Date().toISOString(),
-        lastResponse: new Date().toISOString(),
-        responseCount: 1
-      };
-      setSupportTickets(prev => [newTicket, ...prev]);
-      
+      await supportService.createTicket(user.id, contactForm);
+
       toast.success('Обращение отправлено! Мы ответим в течение 24 часов.');
       setContactForm({
         subject: '',
@@ -97,7 +123,10 @@ export function SupportSettings() {
         priority: 'normal'
       });
       setShowContactForm(false);
+
+      await loadSupportTickets();
     } catch (error) {
+      console.error('Failed to submit support ticket:', error);
       toast.error('Не удалось отправить обращение');
     } finally {
       setIsSubmitting(false);
@@ -160,7 +189,7 @@ export function SupportSettings() {
       <div className="bg-gray-50 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <MessageCircle className="w-5 h-5 text-purple-600" />
+            <MessageCircle className="w-5 h-5 text-blue-600" />
             <div>
               <h3 className="text-md font-medium text-gray-900">{t('settings.myTickets')}</h3>
               <p className="text-sm text-gray-600">
@@ -170,7 +199,7 @@ export function SupportSettings() {
           </div>
           <button
             onClick={() => loadSupportTickets()}
-            className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
           >
             {t('settings.refresh')}
           </button>
@@ -178,7 +207,7 @@ export function SupportSettings() {
 
         {isLoadingTickets ? (
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка обращений...</p>
           </div>
         ) : supportTickets.length === 0 ? (
@@ -188,7 +217,7 @@ export function SupportSettings() {
             <p className="text-gray-600 mb-4">{t('settings.noTicketsDescription')}</p>
             <button
               onClick={() => setShowContactForm(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
               {t('settings.createFirstTicket')}
             </button>
@@ -213,21 +242,18 @@ export function SupportSettings() {
                     <div className="flex items-center space-x-4 text-xs text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{t('settings.created')}: {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>{t('settings.created')}: {new Date(ticket.created_at).toLocaleDateString('ru-RU')}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MessageCircle className="w-3 h-3" />
-                        <span>{ticket.responseCount} {t('settings.messages')}</span>
+                        <span>{ticket.message_count} {t('settings.messages')}</span>
                       </div>
-                      <span>{t('settings.lastResponse')}: {new Date(ticket.lastResponse).toLocaleDateString('ru-RU')}</span>
+                      <span>{t('settings.lastResponse')}: {new Date(ticket.updated_at).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      // Navigate to support chat - will be implemented with support system
-                      toast.info('Чат поддержки будет доступен в следующем обновлении');
-                    }}
-                    className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   >
                     {t('settings.openChat')}
                   </button>
@@ -275,7 +301,7 @@ export function SupportSettings() {
             href="#"
             className="flex items-center space-x-3 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <FileText className="w-5 h-5 text-purple-600" />
+            <FileText className="w-5 h-5 text-blue-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">Руководство пользователя</p>
               <p className="text-xs text-gray-600">Полное руководство по использованию платформы</p>
@@ -431,6 +457,104 @@ export function SupportSettings() {
                 <span>{isSubmitting ? 'Отправка...' : 'Отправить обращение'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ticket Chat Modal */}
+      {selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedTicket.subject}</h3>
+                <div className="flex items-center space-x-3 mt-2">
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(selectedTicket.status)}`}>
+                    {getStatusLabel(selectedTicket.status)}
+                  </span>
+                  <span className={`text-sm font-medium ${getPriorityColor(selectedTicket.priority)}`}>
+                    {selectedTicket.priority === 'urgent' ? 'Срочно' :
+                     selectedTicket.priority === 'high' ? 'Высокий' :
+                     selectedTicket.priority === 'normal' ? 'Обычный' : 'Низкий'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {selectedTicket.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`p-4 rounded-lg ${
+                    message.is_staff_response
+                      ? 'bg-blue-50 border border-blue-200 ml-8'
+                      : 'bg-gray-100 border border-gray-200 mr-8'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <User className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {message.is_staff_response ? 'Служба поддержки' : 'Вы'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(message.created_at).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{message.message}</p>
+                </div>
+              ))}
+            </div>
+
+            {selectedTicket.status !== 'closed' && (
+              <div className="border-t border-gray-200 p-6">
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  placeholder="Введите ваше сообщение..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => handleCloseTicket(selectedTicket.id)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                  >
+                    Закрыть обращение
+                  </button>
+                  <button
+                    onClick={handleSendReply}
+                    disabled={!replyMessage.trim() || isSendingReply}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{isSendingReply ? 'Отправка...' : 'Отправить'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedTicket.status === 'closed' && (
+              <div className="border-t border-gray-200 p-6">
+                <div className="bg-gray-100 rounded-lg p-4 text-center">
+                  <CheckCircle className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-700 font-medium">Это обращение закрыто</p>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Если у вас есть новые вопросы, создайте новое обращение
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

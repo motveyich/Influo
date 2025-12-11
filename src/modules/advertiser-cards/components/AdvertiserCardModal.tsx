@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AdvertiserCard } from '../../../core/types';
 import { advertiserCardService } from '../services/advertiserCardService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, Calendar, DollarSign, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CONTENT_TYPES } from '../../../core/constants';
 
 interface AdvertiserCardModalProps {
   isOpen: boolean;
@@ -25,13 +27,6 @@ const PLATFORMS = [
   { value: 'rutube', label: 'RuTube' },
   { value: 'yandex_zen', label: 'Яндекс.Дзен' },
   { value: 'likee', label: 'Likee' }
-];
-
-const SERVICE_FORMATS = [
-  'Пост',
-  'Видео', 
-  'Рилс',
-  'Упоминание в видео'
 ];
 
 const PRODUCT_CATEGORIES = [
@@ -106,6 +101,8 @@ export function AdvertiserCardModal({
 }: AdvertiserCardModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -308,7 +305,7 @@ export function AdvertiserCardModal({
                     type="text"
                     value={formData.companyName}
                     onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.companyName ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Введите название компании"
@@ -330,7 +327,7 @@ export function AdvertiserCardModal({
                   type="text"
                   value={formData.campaignTitle}
                   onChange={(e) => setFormData(prev => ({ ...prev, campaignTitle: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.campaignTitle ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Введите название кампании"
@@ -352,7 +349,7 @@ export function AdvertiserCardModal({
                 value={formData.campaignDescription}
                 onChange={(e) => setFormData(prev => ({ ...prev, campaignDescription: e.target.value }))}
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.campaignDescription ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Опишите задачу, цели кампании, требования к контенту..."
@@ -379,7 +376,7 @@ export function AdvertiserCardModal({
                   onClick={() => setFormData(prev => ({ ...prev, platform: platform.value as any }))}
                   className={`p-3 border rounded-lg flex items-center justify-center transition-colors ${
                     formData.platform === platform.value
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
@@ -406,7 +403,7 @@ export function AdvertiserCardModal({
                   )}
                   className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
                     formData.productCategories.includes(category)
-                      ? 'bg-purple-100 border-purple-300 text-purple-700'
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -458,7 +455,7 @@ export function AdvertiserCardModal({
               Формат услуги *
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {SERVICE_FORMATS.map((format) => (
+              {CONTENT_TYPES.map((format) => (
                 <button
                   key={format}
                   type="button"
@@ -502,7 +499,7 @@ export function AdvertiserCardModal({
                       ...prev,
                       budget: { ...prev.budget, amount: parseInt(e.target.value) || 0 }
                     }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.budget ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="50000"
@@ -525,7 +522,7 @@ export function AdvertiserCardModal({
                     ...prev,
                     budget: { ...prev.budget, currency: e.target.value }
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="RUB">₽ Рубли</option>
                   <option value="USD">$ Доллары</option>
@@ -552,7 +549,7 @@ export function AdvertiserCardModal({
                       ...prev,
                       campaignDuration: { ...prev.campaignDuration, startDate: e.target.value }
                     }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.startDate ? 'border-red-300' : 'border-gray-300'
                     }`}
                   />
@@ -578,7 +575,7 @@ export function AdvertiserCardModal({
                       ...prev,
                       campaignDuration: { ...prev.campaignDuration, endDate: e.target.value }
                     }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.endDate ? 'border-red-300' : 'border-gray-300'
                     }`}
                   />
@@ -614,7 +611,7 @@ export function AdvertiserCardModal({
                     ...prev,
                     influencerRequirements: { ...prev.influencerRequirements, minFollowers: parseInt(e.target.value) || 0 }
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="10000"
                 />
               </div>
@@ -630,7 +627,7 @@ export function AdvertiserCardModal({
                     ...prev,
                     influencerRequirements: { ...prev.influencerRequirements, maxFollowers: parseInt(e.target.value) || 0 }
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="1000000"
                 />
               </div>
@@ -646,7 +643,7 @@ export function AdvertiserCardModal({
                     ...prev,
                     contactInfo: { ...prev.contactInfo, website: e.target.value }
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="https://company.com"
                 />
               </div>
@@ -665,7 +662,7 @@ export function AdvertiserCardModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Сохранение...' : 'Сохранить карточку'}</span>

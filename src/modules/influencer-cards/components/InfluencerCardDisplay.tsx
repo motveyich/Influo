@@ -1,12 +1,16 @@
 import React from 'react';
 import { InfluencerCard } from '../../../core/types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag } from 'lucide-react';
+import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Heart, MessageCircle, Send, BarChart3, Flag, UserCircle } from 'lucide-react';
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import { supabase } from '../../../core/supabase';
 import { ReportModal } from '../../../components/ReportModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
+import { IntegrationDetailsModal } from './IntegrationDetailsModal';
+import { UserAvatar } from '../../../components/UserAvatar';
 import toast from 'react-hot-toast';
 
 interface InfluencerCardDisplayProps {
@@ -19,12 +23,12 @@ interface InfluencerCardDisplayProps {
   onViewAnalytics?: (cardId: string) => void;
 }
 
-export function InfluencerCardDisplay({ 
-  card, 
-  showActions = false, 
+export function InfluencerCardDisplay({
+  card,
+  showActions = false,
   currentUserId,
-  onEdit, 
-  onDelete, 
+  onEdit,
+  onDelete,
   onToggleStatus,
   onViewAnalytics
 }: InfluencerCardDisplayProps) {
@@ -32,16 +36,34 @@ export function InfluencerCardDisplay({
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showReportModal, setShowReportModal] = React.useState(false);
-  
+  const [showDetailsModal, setShowDetailsModal] = React.useState(false);
+  const [showIntegrationModal, setShowIntegrationModal] = React.useState(false);
+  const [showProfileModal, setShowProfileModal] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState<any>(null);
+
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
 
   React.useEffect(() => {
+    loadUserProfile();
     if (currentUserId && !showActions && !isOwnCard) {
       checkFavoriteStatus();
       trackCardView();
     }
   }, [currentUserId, card.id, isOwnCard]);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', card.userId)
+        .maybeSingle();
+      if (data) setUserProfile(data);
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  };
 
   const checkFavoriteStatus = async () => {
     try {
@@ -61,13 +83,16 @@ export function InfluencerCardDisplay({
   };
 
   const handleApply = async () => {
+    if (!currentUserId) {
+      toast.error('Необходимо войти в систему');
+      return;
+    }
+    setShowIntegrationModal(true);
+  };
+
+  const handleIntegrationSubmit = async (integrationDetails: any) => {
     setIsLoading(true);
     try {
-      if (!currentUserId) {
-        toast.error('Необходимо войти в систему');
-        setIsLoading(false);
-        return;
-      }
 
       // Check for existing application to this user
       const { data: existingApplication } = await supabase
@@ -94,7 +119,12 @@ export function InfluencerCardDisplay({
           message: `Заинтересован в сотрудничестве с вашей карточкой на платформе ${card.platform}`,
           proposedRate: card.serviceDetails.pricing.post || 1000,
           timeline: '2 недели',
-          deliverables: ['Пост в Instagram']
+          deliverables: ['Пост в Instagram'],
+          integrationDetails: {
+            niche: integrationDetails.niche,
+            productDescription: integrationDetails.productDescription,
+            integrationParameters: integrationDetails.integrationParameters
+          }
         }
       });
 
@@ -102,11 +132,7 @@ export function InfluencerCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      if (error.message.includes('уже отправили заявку')) {
-        toast.error('Вы уже отправили заявку этому инфлюенсеру');
-      } else {
-        toast.error(error.message || 'Не удалось отправить заявку');
-      }
+      toast.error(error.message || 'Не удалось отправить заявку');
     } finally {
       setIsLoading(false);
     }
@@ -173,9 +199,9 @@ export function InfluencerCardDisplay({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'RUB',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -192,7 +218,7 @@ export function InfluencerCardDisplay({
       case 'facebook':
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'twitch':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'rutube':
         return 'bg-red-100 text-red-700 border-red-200';
       case 'yandex_zen':
@@ -208,7 +234,7 @@ export function InfluencerCardDisplay({
       case 'tiktok':
         return 'bg-gray-100 text-gray-700 border-gray-200';
       case 'multi':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -221,22 +247,48 @@ export function InfluencerCardDisplay({
 
   return (
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 p-6 border ${
-      !card.isActive ? 'opacity-60 border-gray-300' : 'border-gray-200'
+      !card.isActive || (card as any).isDeleted ? 'opacity-60 border-gray-300' : 'border-gray-200'
     }`}>
+      {/* User Avatar and Header */}
+      <div className="flex items-start space-x-4 mb-4">
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <UserAvatar
+            avatarUrl={userProfile?.avatar}
+            fullName={userProfile?.full_name}
+            size="lg"
+          />
+        </button>
+
+        <div className="flex-1">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors mb-2 block"
+          >
+            {userProfile?.full_name || 'Пользователь'}
+          </button>
+
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start">
         <div className="flex items-center space-x-3">
           <span className={`px-3 py-1 text-sm font-medium rounded-full border capitalize ${getPlatformColor(card.platform)}`}>
             {card.platform}
           </span>
-          {!card.isActive && (
+          {(card as any).isDeleted && (
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 border border-red-200">
+              Удалена администратором
+            </span>
+          )}
+          {!card.isActive && !(card as any).isDeleted && (
             <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
               {t('common.inactive')}
             </span>
           )}
         </div>
         
-        {showActions && (
+        {showActions && !(card as any).isDeleted && (
           <div className="flex items-center space-x-2">
             <button
               onClick={() => onToggleStatus?.(card.id, !card.isActive)}
@@ -266,12 +318,14 @@ export function InfluencerCardDisplay({
           </div>
         )}
       </div>
+        </div>
+      </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="text-center">
           <div className="flex items-center justify-center space-x-1 mb-1">
-            <Users className="w-4 h-4 text-purple-600" />
+            <Users className="w-4 h-4 text-blue-600" />
             <span className="text-lg font-semibold text-gray-900">
               {formatNumber(card.reach.followers)}
             </span>
@@ -322,9 +376,16 @@ export function InfluencerCardDisplay({
         <div className="flex items-center space-x-2">
           <MapPin className="w-4 h-4 text-gray-400" />
           <span className="text-sm text-gray-600">
-            {card.audienceDemographics.topCountries.slice(0, 3).join(', ')}
-            {card.audienceDemographics.topCountries.length > 3 && 
-              ` +${card.audienceDemographics.topCountries.length - 3} more`
+            {Array.isArray(card.audienceDemographics.topCountries)
+              ? card.audienceDemographics.topCountries.slice(0, 3).join(', ')
+              : Object.keys(card.audienceDemographics.topCountries).slice(0, 3).join(', ')
+            }
+            {(Array.isArray(card.audienceDemographics.topCountries)
+              ? card.audienceDemographics.topCountries.length
+              : Object.keys(card.audienceDemographics.topCountries).length) > 3 &&
+              ` +${(Array.isArray(card.audienceDemographics.topCountries)
+                ? card.audienceDemographics.topCountries.length
+                : Object.keys(card.audienceDemographics.topCountries).length) - 3} more`
             }
           </span>
         </div>
@@ -377,7 +438,7 @@ export function InfluencerCardDisplay({
         </div>
 
         {/* Action Button */}
-        {!showActions && currentUserId && !isOwnCard && (
+        {!showActions && currentUserId && !isOwnCard && !(card as any).isDeleted && (
           <div className="mt-4 space-y-2">
             {/* Primary Actions */}
             <div className="flex space-x-2">
@@ -386,7 +447,7 @@ export function InfluencerCardDisplay({
                 disabled={isLoading || !card.isActive}
                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
                   card.isActive && !isLoading
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
@@ -416,18 +477,26 @@ export function InfluencerCardDisplay({
                 <MessageCircle className="w-4 h-4" />
                 <span>{t('influencerCards.sendMessage')}</span>
               </button>
-              
+
               <button
-                onClick={() => onViewAnalytics?.(card.id)}
+                onClick={() => setShowDetailsModal(true)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span>{t('influencerCards.moreDetails')}</span>
               </button>
-              
+
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                title="Профиль"
+              >
+                <UserCircle className="w-4 h-4" />
+              </button>
+
               <button
                 onClick={() => setShowReportModal(true)}
-                className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50 rounded-md text-sm font-medium transition-colors flex items-center"
                 title={t('influencerCards.report')}
               >
                 <Flag className="w-4 h-4" />
@@ -483,7 +552,7 @@ export function InfluencerCardDisplay({
 
             <div className="flex space-x-2">
               <button
-                onClick={() => onViewAnalytics?.(card.id)}
+                onClick={() => setShowDetailsModal(true)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
               >
                 <BarChart3 className="w-4 h-4" />
@@ -511,6 +580,30 @@ export function InfluencerCardDisplay({
         targetId={card.id}
         targetTitle={`Карточка инфлюенсера на ${card.platform}`}
       />
+
+      {/* Details Modal */}
+      {showDetailsModal && (
+        <InfluencerCardDetailsModal
+          card={card}
+          onClose={() => setShowDetailsModal(false)}
+        />
+      )}
+
+      {/* Integration Details Modal */}
+      <IntegrationDetailsModal
+        isOpen={showIntegrationModal}
+        onClose={() => setShowIntegrationModal(false)}
+        onSubmit={handleIntegrationSubmit}
+      />
+
+      {/* Public Profile Modal */}
+      {showProfileModal && (
+        <UserPublicProfileModal
+          userId={card.userId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }

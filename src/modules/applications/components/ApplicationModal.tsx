@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Application } from '../../../core/types';
 import { applicationService } from '../services/applicationService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Send, AlertCircle, DollarSign, Calendar, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -29,6 +30,8 @@ export function ApplicationModal({
 }: ApplicationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     message: '',
@@ -137,7 +140,7 @@ export function ApplicationModal({
               value={formData.message}
               onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.message ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Расскажите о себе, своем опыте и почему вы заинтересованы в сотрудничестве..."
@@ -167,7 +170,7 @@ export function ApplicationModal({
                   type="number"
                   value={formData.proposedRate}
                   onChange={(e) => setFormData(prev => ({ ...prev, proposedRate: parseInt(e.target.value) || 0 }))}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.proposedRate ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="1000"
@@ -193,7 +196,7 @@ export function ApplicationModal({
                 type="text"
                 value={formData.timeline}
                 onChange={(e) => setFormData(prev => ({ ...prev, timeline: e.target.value }))}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.timeline ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="например, 2 недели с момента принятия, до 15 марта"
@@ -220,13 +223,13 @@ export function ApplicationModal({
                 value={newDeliverable}
                 onChange={(e) => setNewDeliverable(e.target.value)}
                 placeholder="например, 1 пост в Instagram, 3 слайда в Stories"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && addDeliverable()}
               />
               <button
                 type="button"
                 onClick={addDeliverable}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Добавить
               </button>
@@ -237,7 +240,7 @@ export function ApplicationModal({
               {formData.deliverables.map((deliverable, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                   <div className="flex items-center space-x-2">
-                    <Package className="w-4 h-4 text-purple-600" />
+                    <Package className="w-4 h-4 text-blue-600" />
                     <span className="text-sm text-gray-900">{deliverable}</span>
                   </div>
                   <button
@@ -260,7 +263,7 @@ export function ApplicationModal({
               value={formData.additionalInfo}
               onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Любая дополнительная информация, портфолио, опыт работы..."
             />
           </div>
@@ -277,7 +280,7 @@ export function ApplicationModal({
           <button
             onClick={handleSendApplication}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
             <span>{isLoading ? 'Отправка...' : 'Отправить заявку'}</span>

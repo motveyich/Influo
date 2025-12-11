@@ -1,13 +1,14 @@
 import React from 'react';
 import { AdvertiserCard } from '../../../core/types';
-import { Star, MapPin, Clock, Users, DollarSign, Calendar, Building, Target, Heart, MessageCircle, Send, Edit, Trash2, ToggleLeft, ToggleRight, BarChart3 } from 'lucide-react';
+import { Star, MapPin, Clock, Users, DollarSign, Calendar, Building, Target, Heart, MessageCircle, Send, Edit, Trash2, ToggleLeft, ToggleRight, BarChart3, UserCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import toast from 'react-hot-toast';
-
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { supabase } from '../../../core/supabase';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AdvertiserCardDisplayProps {
   card: AdvertiserCard;
@@ -19,18 +20,20 @@ interface AdvertiserCardDisplayProps {
   currentUserId?: string;
 }
 
-export function AdvertiserCardDisplay({ 
-  card, 
-  showActions = false, 
-  onEdit, 
-  onDelete, 
+export function AdvertiserCardDisplay({
+  card,
+  showActions = false,
+  onEdit,
+  onDelete,
   onToggleStatus,
   onViewAnalytics,
   currentUserId
 }: AdvertiserCardDisplayProps) {
+  const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
-  
+  const [showProfileModal, setShowProfileModal] = React.useState(false);
+
   // Check if this is user's own card
   const isOwnCard = currentUserId === card.userId;
 
@@ -67,22 +70,6 @@ export function AdvertiserCardDisplay({
         return;
       }
 
-      // Check for existing application to this user
-      const { data: existingApplication } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('applicant_id', currentUserId)
-        .eq('target_reference_id', card.id)
-        .eq('target_type', 'advertiser_card')
-        .not('status', 'in', '(cancelled,withdrawn)')
-        .maybeSingle();
-
-      if (existingApplication) {
-        toast.error('Вы уже отправили заявку на эту карточку');
-        setIsLoading(false);
-        return;
-      }
-
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,
@@ -100,11 +87,7 @@ export function AdvertiserCardDisplay({
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);
-      if (error.message.includes('уже отправили заявку')) {
-        toast.error('Вы уже отправили заявку этому рекламодателю');
-      } else {
-        toast.error(error.message || 'Не удалось отправить заявку');
-      }
+      toast.error(error.message || 'Не удалось отправить заявку');
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +175,7 @@ export function AdvertiserCardDisplay({
       case 'facebook':
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'twitch':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'rutube':
         return 'bg-red-100 text-red-700 border-red-200';
       case 'yandex_zen':
@@ -208,7 +191,7 @@ export function AdvertiserCardDisplay({
       case 'tiktok':
         return 'bg-gray-100 text-gray-700 border-gray-200';
       default:
-        return 'bg-purple-100 text-purple-700 border-purple-200';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
     }
   };
 
@@ -459,7 +442,7 @@ export function AdvertiserCardDisplay({
               disabled={!card.isActive || isLoading}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
                 card.isActive && !isLoading
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -489,13 +472,21 @@ export function AdvertiserCardDisplay({
               <MessageCircle className="w-4 h-4" />
               <span>{t('influencerCards.sendMessage')}</span>
             </button>
-            
+
             <button
               onClick={() => onViewAnalytics?.(card.id)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
             >
               <BarChart3 className="w-4 h-4" />
               <span>{t('influencerCards.viewAnalytics')}</span>
+            </button>
+
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+              title="Профиль"
+            >
+              <UserCircle className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -514,6 +505,22 @@ export function AdvertiserCardDisplay({
             {t('influencerCards.goToMyCards')}
           </p>
         </div>
+      )}
+
+      {/* Disclaimer */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500 leading-relaxed">
+          Все данные указываются создателями карточек. В случае несоответствия информации убедительно просим оставить обращение в службу поддержки для проверки и возможных санкций в отношении пользователя, нарушившего правила платформы.
+        </p>
+      </div>
+
+      {/* Public Profile Modal */}
+      {showProfileModal && (
+        <UserPublicProfileModal
+          userId={card.userId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
       )}
     </div>
   );

@@ -85,6 +85,9 @@ export interface UserProfile {
     joinedAt: string;
     lastActive: string;
     accountType: 'influencer' | 'advertiser' | 'both';
+    completedDeals?: number;
+    totalReviews?: number;
+    averageRating?: number;
   };
   createdAt: string;
   updatedAt: string;
@@ -102,14 +105,13 @@ export interface InfluencerCard {
   audienceDemographics: {
     ageGroups: Record<string, number>;
     genderSplit: Record<string, number>;
-    topCountries: string[];
+    topCountries: Record<string, number> | string[];
     interests: string[];
   };
   serviceDetails: {
     contentTypes: string[];
     pricing: Record<string, number>;
     currency: string;
-    blacklistedProductCategories: string[];
     blacklistedProductCategories: string[];
   };
   rating: number;
@@ -185,7 +187,8 @@ export interface Campaign {
       countries: string[];
     };
   };
-  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled' | 'in_progress';
+  enableChat?: boolean;
   timeline: {
     startDate: string;
     endDate: string;
@@ -488,12 +491,14 @@ export type PaymentRequestStatus = 'draft' | 'pending' | 'paying' | 'paid' | 'co
 export type CollaborationStage = 'pre_payment' | 'work_in_progress' | 'post_payment' | 'completed';
 
 export interface CollaborationOffer {
-  id: string;
+  offer_id: string; // Primary key в таблице offers
+  id?: string; // Deprecated alias для обратной совместимости
   influencerId: string;
   advertiserId: string;
   campaignId?: string;
   influencerCardId?: string;
-  
+  initiatedBy?: string;
+
   // Offer details
   title: string;
   description: string;
@@ -501,28 +506,36 @@ export interface CollaborationOffer {
   currency: string;
   deliverables: string[];
   timeline: string;
-  
+  platform?: string;
+  integrationType?: string;
+  contentType?: string;
+  suggestedBudget?: number;
+
   // Status and stages
   status: OfferStatus;
-  currentStage: CollaborationStage;
-  
+  currentStage: 'negotiation' | 'payment' | 'work' | 'completion' | 'review';
+
+  // Response tracking
+  influencerResponse: 'pending' | 'accepted' | 'declined' | 'counter';
+  advertiserResponse: 'pending' | 'accepted' | 'declined' | 'counter';
+
   // Acceptance details
   acceptedAt?: string;
   acceptedRate?: number;
   finalTerms?: Record<string, any>;
-  
+
   // Completion details
   completedAt?: string;
   terminatedAt?: string;
   terminationReason?: string;
-  
+
   // Reviews
   influencerReviewed: boolean;
   advertiserReviewed: boolean;
-  
+
   // Metadata
   metadata: Record<string, any>;
-  
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -680,7 +693,56 @@ export interface UserSettings {
     deactivatedAt?: string;
     deactivationReason?: string;
   };
-  
+
   createdAt: string;
   updatedAt: string;
+}
+
+// Auto-campaigns
+export interface AutoCampaign {
+  id: string;
+  advertiserId: string;
+  title: string;
+  description?: string;
+  status: 'draft' | 'active' | 'in_progress' | 'paused' | 'closed' | 'completed';
+  budgetMin: number;
+  budgetMax: number;
+  audienceMin: number;
+  audienceMax: number;
+  targetInfluencersCount: number;
+  contentTypes: string[];
+  platforms: string[];
+  targetCountries: string[];
+  targetAgeGroups: string[];
+  targetGenders: string[];
+  targetAudienceInterests: string[];
+  productCategories: string[];
+  enableChat: boolean;
+  startDate?: string;
+  endDate?: string;
+  targetPricePerFollower?: number;
+  sentOffersCount: number;
+  acceptedOffersCount: number;
+  completedOffersCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isParticipating?: boolean;
+}
+
+export interface AutoCampaignFormData {
+  title: string;
+  description?: string;
+  budgetMin: number;
+  budgetMax: number;
+  audienceMin: number;
+  audienceMax: number;
+  targetInfluencersCount: number;
+  contentTypes: string[];
+  platforms: string[];
+  targetCountries: string[];
+  targetAudienceInterests: string[];
+  productCategories: string[];
+  enableChat: boolean;
+  startDate?: string;
+  endDate?: string;
 }

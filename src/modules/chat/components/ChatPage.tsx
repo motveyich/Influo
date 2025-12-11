@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../../../core/types';
-import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield } from 'lucide-react';
+import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
-import { CollaborationRequestModal } from './CollaborationRequestModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { AIChatPanel } from './AIChatPanel';
 import { MessageBubble } from './MessageBubble';
 import { useAuth } from '../../../hooks/useAuth';
@@ -12,6 +12,7 @@ import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion'
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { supabase } from '../../../core/supabase';
+import { UserAvatar } from '../../../components/UserAvatar';
 import toast from 'react-hot-toast';
 
 interface Conversation {
@@ -40,7 +41,7 @@ export function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ChatTab>('main');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showCollaborationModal, setShowCollaborationModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
@@ -59,12 +60,15 @@ export function ChatPage() {
     if (userIdParam) {
       setTargetUserId(userIdParam);
       // Clear the URL parameter
-      window.history.replaceState({}, '', '/chat');
+      window.history.replaceState({}, '', '/app/chat');
     }
     
     if (currentUserId && !loading) {
-      loadConversations();
-      loadBlockedUsers();
+      const initializeChat = async () => {
+        await loadBlockedUsers(); // Load blocked users first
+        await loadConversations(); // Then load conversations with correct blocked status
+      };
+      initializeChat();
     }
     
     // Subscribe to real-time chat messages
@@ -94,12 +98,11 @@ export function ChatPage() {
 
   const loadBlockedUsers = async () => {
     try {
-      // Load blocked users from user profile or separate table
-      // For now, using localStorage as a simple implementation
-      const blocked = localStorage.getItem(`blocked_users_${currentUserId}`);
-      if (blocked) {
-        setBlockedUsers(new Set(JSON.parse(blocked)));
-      }
+      // Load blocked users from blacklist service
+      const { blacklistService } = await import('../../../services/blacklistService');
+      const blacklist = await blacklistService.getMyBlacklist();
+      const blockedIds = new Set(blacklist.map(entry => entry.blockedId));
+      setBlockedUsers(blockedIds);
     } catch (error) {
       console.error('Failed to load blocked users:', error);
     }
@@ -151,6 +154,7 @@ export function ChatPage() {
         const existingConversation = enhancedConversations.find(conv => conv.participantId === targetUserId);
         if (existingConversation) {
           setSelectedConversation(existingConversation);
+          setActiveTab(existingConversation.chatType); // Switch to appropriate tab
         } else {
           // Create a new conversation entry for the target user
           await createNewConversation(targetUserId);
@@ -197,6 +201,7 @@ export function ChatPage() {
         
         setConversations(prev => [newConversation, ...prev]);
         setSelectedConversation(newConversation);
+        setActiveTab('new'); // Switch to "new" tab for new conversations
       }
     } catch (error) {
       console.error('Failed to create new conversation:', error);
@@ -251,20 +256,6 @@ export function ChatPage() {
       if (transformedMessage.receiverId === currentUserId) {
         // Current user received a message, check if this should move chat to main
         updateConversationStatus(transformedMessage.senderId);
-      }
-      
-      // Trigger AI analysis for new messages
-      if (selectedConversation && transformedMessage.senderId === selectedConversation.participantId) {
-        // Update messages state and trigger analysis
-        setTimeout(() => {
-          const updatedMessages = [...messages, transformedMessage];
-          if (updatedMessages.length >= 2) {
-            // Trigger AI analysis through the AI panel
-            window.dispatchEvent(new CustomEvent('triggerAIAnalysis', { 
-              detail: { messages: updatedMessages } 
-            }));
-          }
-        }, 500);
       }
     }
   };
@@ -451,19 +442,26 @@ export function ChatPage() {
 
   const handleBlockUser = async (userId: string) => {
     try {
+      // Add to blacklist via service
+      const { blacklistService } = await import('../../../services/blacklistService');
+
+      if (!confirm('Вы уверены, что хотите заблокировать этого пользователя?')) {
+        return;
+      }
+
+      const reason = prompt('Укажите причину блокировки (необязательно):');
+      await blacklistService.addToBlacklist(userId, reason || undefined);
+
       const newBlockedUsers = new Set(blockedUsers);
       newBlockedUsers.add(userId);
       setBlockedUsers(newBlockedUsers);
-      
-      // Save to localStorage
-      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
-      
-      // Update conversation status
+
+      // Update conversation status - must set chatType to 'restricted'
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === userId) {
           return {
             ...conv,
-            chatType: 'restricted',
+            chatType: 'restricted' as 'restricted',
             canSendMessage: false,
             isBlocked: true
           };
@@ -476,22 +474,23 @@ export function ChatPage() {
         setSelectedConversation(null);
       }
 
-      toast.success('Пользователь заблокирован');
-    } catch (error) {
+      toast.success('Пользователь заблокирован и перемещён в "Ограниченные"');
+    } catch (error: any) {
       console.error('Failed to block user:', error);
-      toast.error('Не удалось заблокировать пользователя');
+      toast.error(error.message || 'Не удалось заблокировать пользователя');
     }
   };
 
   const handleUnblockUser = async (userId: string) => {
     try {
+      // Remove from blacklist via service
+      const { blacklistService } = await import('../../../services/blacklistService');
+      await blacklistService.removeFromBlacklist(userId);
+
       const newBlockedUsers = new Set(blockedUsers);
       newBlockedUsers.delete(userId);
       setBlockedUsers(newBlockedUsers);
-      
-      // Save to localStorage
-      localStorage.setItem(`blocked_users_${currentUserId}`, JSON.stringify([...newBlockedUsers]));
-      
+
       // Update conversation status
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === userId) {
@@ -505,10 +504,10 @@ export function ChatPage() {
         return conv;
       }));
 
-      toast.success('Пользователь разблокирован');
-    } catch (error) {
+      toast.success('Пользователь разблокирован и возвращён в обычный список');
+    } catch (error: any) {
       console.error('Failed to unblock user:', error);
-      toast.error('Не удалось разблокировать пользователя');
+      toast.error(error.message || 'Не удалось разблокировать пользователя');
     }
   };
 
@@ -629,7 +628,7 @@ export function ChatPage() {
                 }}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === tab
-                    ? 'text-purple-600 border-purple-600 bg-purple-50'
+                    ? 'text-blue-600 border-blue-600 bg-blue-50'
                     : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -641,7 +640,7 @@ export function ChatPage() {
                   {tabCounts[tab] > 0 && (
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       activeTab === tab
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-600'
                     }`}>
                       {tabCounts[tab]}
@@ -662,7 +661,7 @@ export function ChatPage() {
               placeholder={t('chat.searchConversations')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
         </div>
@@ -705,23 +704,15 @@ export function ChatPage() {
                   key={conversation.id}
                   onClick={() => setSelectedConversation(conversation)}
                   className={`flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors relative ${
-                    selectedConversation?.id === conversation.id ? 'bg-purple-50 border-r-2 border-purple-500' : ''
+                    selectedConversation?.id === conversation.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                   }`}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
-                      {conversation.participantAvatar ? (
-                        <img 
-                          src={conversation.participantAvatar} 
-                          alt={conversation.participantName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white font-semibold">
-                          {conversation.participantName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <UserAvatar
+                      avatarUrl={conversation.participantAvatar}
+                      fullName={conversation.participantName}
+                      size="lg"
+                    />
                     {conversation.isOnline && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                     )}
@@ -768,7 +759,7 @@ export function ChatPage() {
                   </div>
                   
                   {conversation.unreadCount > 0 && (
-                    <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
                       <span className="text-xs text-white font-medium">
                         {conversation.unreadCount}
                       </span>
@@ -789,11 +780,11 @@ export function ChatPage() {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">
-                      {selectedConversation.participantName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <UserAvatar
+                    avatarUrl={selectedConversation.participantAvatar}
+                    fullName={selectedConversation.participantName}
+                    size="md"
+                  />
                   {selectedConversation.isOnline && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                   )}
@@ -821,10 +812,18 @@ export function ChatPage() {
               </div>
               
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="p-2 text-gray-400 hover:text-blue-600 rounded-md hover:bg-gray-100"
+                  title="Посмотреть профиль"
+                >
+                  <UserCircle className="w-5 h-5" />
+                </button>
+
                 {selectedConversation.chatType !== 'restricted' && (
                   <button
                     onClick={handleSendCollaborationRequest}
-                    className="p-2 text-gray-400 hover:text-purple-600 rounded-md hover:bg-gray-100"
+                    className="p-2 text-gray-400 hover:text-blue-600 rounded-md hover:bg-gray-100"
                     title="Отправить запрос на сотрудничество"
                   >
                     <Handshake className="w-5 h-5" />
@@ -920,12 +919,12 @@ export function ChatPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim()}
-                    className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="w-5 h-5" />
                   </button>
@@ -982,14 +981,14 @@ export function ChatPage() {
         />
       )}
 
-      {/* Collaboration Request Modal */}
-      <CollaborationRequestModal
-        isOpen={showCollaborationModal}
-        onClose={() => setShowCollaborationModal(false)}
-        receiverId={selectedConversation?.participantId || ''}
-        senderId={currentUserId}
-        onRequestSent={handleCollaborationRequestSent}
-      />
+      {/* Public Profile Modal */}
+      {showProfileModal && selectedConversation && (
+        <UserPublicProfileModal
+          userId={selectedConversation.participantId}
+          currentUserId={currentUserId}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 }

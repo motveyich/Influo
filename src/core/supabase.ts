@@ -9,7 +9,7 @@ export const isSupabaseConfigured = () => {
   return supabaseUrl && 
          supabaseAnonKey &&
          supabaseUrl.startsWith('https://') &&
-         supabaseUrl.includes('.supabase.co') &&
+         (supabaseUrl.includes('.supabase.co') || supabaseUrl.includes('.supabase.com')) &&
          supabaseAnonKey.startsWith('eyJ') &&
          supabaseAnonKey.length > 100; // Supabase anon keys are JWT tokens starting with 'eyJ' and longer than 100 chars
 };
@@ -88,6 +88,8 @@ export const TABLES = {
   COLLABORATION_REVIEWS: 'collaboration_reviews',
   OFFER_STATUS_HISTORY: 'offer_status_history',
   PAYMENT_STATUS_HISTORY: 'payment_status_history',
-  COLLABORATION_OFFERS: 'offers',
+  OFFERS: 'offers', // Унифицированная таблица предложений
+  COLLABORATION_OFFERS: 'collaboration_offers', // Deprecated - используйте OFFERS
   USER_SETTINGS: 'user_settings',
+  AUTO_CAMPAIGNS: 'auto_campaigns',
 } as const;

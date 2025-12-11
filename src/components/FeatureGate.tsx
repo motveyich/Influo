@@ -131,7 +131,7 @@ export function FeatureGate({
       {onCompleteProfile && (
         <button
           onClick={onCompleteProfile}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
         >
           Перейти к настройкам профиля
         </button>

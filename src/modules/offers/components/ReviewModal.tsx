@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CollaborationReview } from '../../../core/types';
 import { reviewService } from '../services/reviewService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ export function ReviewModal({
 }: ReviewModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     rating: 0,
@@ -152,7 +155,7 @@ export function ReviewModal({
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Отличное сотрудничество"
@@ -174,7 +177,7 @@ export function ReviewModal({
               value={formData.comment}
               onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.comment ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Опишите ваш опыт сотрудничества..."
@@ -199,7 +202,7 @@ export function ReviewModal({
                 type="checkbox"
                 checked={formData.isPublic}
                 onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
-                className="mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-700">
                 Публичный отзыв (будет виден всем пользователям)
@@ -219,7 +222,7 @@ export function ReviewModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Сохранение...' : 'Отправить отзыв'}</span>

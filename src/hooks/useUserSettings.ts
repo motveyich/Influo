@@ -63,37 +63,6 @@ export function useUserSettings(userId: string) {
     }
   };
 
-  const enableTwoFactor = async () => {
-    try {
-      const result = await userSettingsService.enableTwoFactor(userId);
-      await loadSettings(); // Reload settings
-      return result;
-    } catch (err: any) {
-      console.error('Failed to enable 2FA:', err);
-      throw err;
-    }
-  };
-
-  const disableTwoFactor = async (verificationCode: string) => {
-    try {
-      await userSettingsService.disableTwoFactor(userId, verificationCode);
-      await loadSettings(); // Reload settings
-    } catch (err: any) {
-      console.error('Failed to disable 2FA:', err);
-      throw err;
-    }
-  };
-
-  const signOutAllDevices = async () => {
-    try {
-      await userSettingsService.signOutAllDevices(userId);
-      // User will be signed out, so no need to reload settings
-    } catch (err: any) {
-      console.error('Failed to sign out all devices:', err);
-      throw err;
-    }
-  };
-
   const deactivateAccount = async (reason?: string) => {
     try {
       await userSettingsService.deactivateAccount(userId, reason);
@@ -120,9 +89,6 @@ export function useUserSettings(userId: string) {
     error,
     updateSettings,
     changePassword,
-    enableTwoFactor,
-    disableTwoFactor,
-    signOutAllDevices,
     deactivateAccount,
     deleteAccount,
     refresh: loadSettings

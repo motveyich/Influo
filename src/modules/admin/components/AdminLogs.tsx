@@ -47,7 +47,7 @@ export function AdminLogs() {
       case 'role_removed':
         return <Shield className="w-4 h-4 text-blue-600" />;
       case 'content_moderated':
-        return <Eye className="w-4 h-4 text-purple-600" />;
+        return <Eye className="w-4 h-4 text-blue-600" />;
       case 'report_resolved':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       default:
@@ -99,7 +99,7 @@ export function AdminLogs() {
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">Все действия</option>
           <option value="user_deleted">Удаление пользователей</option>
@@ -116,7 +116,7 @@ export function AdminLogs() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Загрузка логов...</p>
           </div>
         ) : (

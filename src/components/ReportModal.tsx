@@ -3,6 +3,7 @@ import { X, AlertTriangle, Send, Flag } from 'lucide-react';
 import { ReportType } from '../core/types';
 import { reportService } from '../services/reportService';
 import { useAuth } from '../hooks/useAuth';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
 
 interface ReportModalProps {
@@ -14,11 +15,9 @@ interface ReportModalProps {
 }
 
 const REPORT_TYPES: Array<{ value: ReportType; label: string; description: string }> = [
-  { value: 'spam', label: 'Спам', description: 'Нежелательная реклама или повторяющиеся сообщения' },
-  { value: 'inappropriate', label: 'Неподходящий контент', description: 'Контент не соответствует правилам платформы' },
-  { value: 'fake', label: 'Поддельная информация', description: 'Ложные данные или мошенничество' },
+  { value: 'spam', label: 'Скам', description: 'Мошенничество или обман' },
+  { value: 'fake', label: 'Введение в заблуждение, неверная информация', description: 'Ложные данные или искажение фактов' },
   { value: 'harassment', label: 'Домогательства', description: 'Угрозы, оскорбления или преследование' },
-  { value: 'copyright', label: 'Нарушение авторских прав', description: 'Использование чужого контента без разрешения' },
   { value: 'other', label: 'Другое', description: 'Другие нарушения правил' }
 ];
 
@@ -27,8 +26,11 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetTitle
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const { user } = useAuth();
+
+  useBodyScrollLock(isOpen);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

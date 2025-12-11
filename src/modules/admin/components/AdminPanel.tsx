@@ -3,27 +3,31 @@ import { useAuth } from '../../../hooks/useAuth';
 import { AdminRoute } from '../../../components/AdminRoute';
 import { UsersManagement } from './UsersManagement';
 import { CampaignsManagement } from './CampaignsManagement';
+import { InfluencerCardsManagement } from './InfluencerCardsManagement';
 import { ModerationQueue } from './ModerationQueue';
 import { ReportsManagement } from './ReportsManagement';
 import { AdminLogs } from './AdminLogs';
 import { ContentManagement } from './ContentManagement';
-import { 
-  Users, 
-  Target, 
-  Flag, 
-  Shield, 
-  BarChart3, 
+import { SupportManagement } from './SupportManagement';
+import {
+  Users,
+  Target,
+  Flag,
+  Shield,
+  BarChart3,
   Settings,
   Bell,
   AlertTriangle,
   CheckCircle,
   Clock,
-  Eye
+  Eye,
+  MessageCircle,
+  Grid
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
-type AdminTab = 'users' | 'campaigns' | 'moderation' | 'reports' | 'logs' | 'content' | 'settings';
+type AdminTab = 'users' | 'campaigns' | 'cards' | 'moderation' | 'reports' | 'support' | 'logs' | 'content' | 'settings';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -78,8 +82,10 @@ export function AdminPanel() {
   const tabs = [
     { id: 'users', label: 'Пользователи', icon: Users, count: stats.totalUsers },
     { id: 'campaigns', label: 'Кампании', icon: Target, count: stats.totalCampaigns },
+    { id: 'cards', label: 'Карточки', icon: Grid, count: 0 },
     { id: 'moderation', label: 'Модерация', icon: Shield, count: stats.moderationQueue },
     { id: 'reports', label: 'Жалобы', icon: Flag, count: stats.pendingReports },
+    { id: 'support', label: 'Поддержка', icon: MessageCircle, count: 0 },
     { id: 'logs', label: 'Логи', icon: BarChart3, count: stats.todayActions },
     { id: 'content', label: 'Контент', icon: Bell, count: 0 },
     { id: 'settings', label: 'Настройки', icon: Settings, count: 0 }
@@ -93,7 +99,7 @@ export function AdminPanel() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-blue-600 rounded-lg flex items-center justify-center">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -150,7 +156,7 @@ export function AdminPanel() {
             
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
-                <BarChart3 className="w-5 h-5 text-purple-600" />
+                <BarChart3 className="w-5 h-5 text-blue-600" />
                 <span className="ml-2 text-sm font-medium text-gray-600">Действий сегодня</span>
               </div>
               <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.todayActions}</p>
@@ -169,7 +175,7 @@ export function AdminPanel() {
                       onClick={() => setActiveTab(tab.id as AdminTab)}
                       className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                         activeTab === tab.id
-                          ? 'border-purple-500 text-purple-600'
+                          ? 'border-blue-500 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                     >
@@ -178,7 +184,7 @@ export function AdminPanel() {
                       {tab.count > 0 && (
                         <span className={`px-2 py-1 text-xs rounded-full ${
                           activeTab === tab.id
-                            ? 'bg-purple-100 text-purple-600'
+                            ? 'bg-blue-100 text-blue-600'
                             : 'bg-gray-100 text-gray-600'
                         }`}>
                           {tab.count}
@@ -194,8 +200,10 @@ export function AdminPanel() {
             <div className="p-6">
               {activeTab === 'users' && <UsersManagement onStatsUpdate={loadStats} />}
               {activeTab === 'campaigns' && <CampaignsManagement onStatsUpdate={loadStats} />}
+              {activeTab === 'cards' && <InfluencerCardsManagement onStatsUpdate={loadStats} />}
               {activeTab === 'moderation' && <ModerationQueue onStatsUpdate={loadStats} />}
               {activeTab === 'reports' && <ReportsManagement onStatsUpdate={loadStats} />}
+              {activeTab === 'support' && <SupportManagement />}
               {activeTab === 'logs' && <AdminLogs />}
               {activeTab === 'content' && <ContentManagement onStatsUpdate={loadStats} />}
               {activeTab === 'settings' && (

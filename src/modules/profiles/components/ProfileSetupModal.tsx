@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, SocialMediaLink, InfluencerMetrics, AdvertiserPreferences } from '../../../core/types';
 import { profileService } from '../services/profileService';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { 
-  X, 
-  User, 
-  Briefcase, 
-  Instagram, 
-  Youtube, 
-  Twitter, 
-  Plus, 
-  Trash2, 
-  Save, 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
+import {
+  X,
+  User,
+  Briefcase,
+  Instagram,
+  Youtube,
+  Twitter,
+  Plus,
+  Trash2,
+  Save,
   AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AvatarUpload } from '../../../components/AvatarUpload';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface ProfileSetupModalProps {
   isOpen: boolean;
@@ -29,6 +32,8 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+
+  useBodyScrollLock(isOpen);
 
   // Basic info state
   const [basicInfo, setBasicInfo] = useState({
@@ -455,7 +460,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               onClick={() => setActiveTab('basic')}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'basic'
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -467,7 +472,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               onClick={() => setActiveTab('influencer')}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'influencer'
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -479,7 +484,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               onClick={() => setActiveTab('advertiser')}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'advertiser'
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -504,7 +509,18 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   Очистить раздел
                 </button>
               </div>
-              
+
+              <div className="mb-8">
+                <AvatarUpload
+                  userId={currentProfile?.userId || ''}
+                  currentAvatarUrl={basicInfo.avatar}
+                  fullName={basicInfo.fullName}
+                  onAvatarUpdate={(newAvatarUrl) => {
+                    setBasicInfo(prev => ({ ...prev, avatar: newAvatarUrl || '' }));
+                  }}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -514,7 +530,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="text"
                     value={basicInfo.fullName}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, fullName: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.fullName ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder={t('profile.placeholders.fullName')}
@@ -535,7 +551,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="email"
                     value={basicInfo.email}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.email ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder={t('profile.placeholders.email')}
@@ -556,7 +572,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="text"
                     value={basicInfo.location}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('profile.placeholders.location')}
                   />
                 </div>
@@ -569,7 +585,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="url"
                     value={basicInfo.website}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, website: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('profile.placeholders.website')}
                   />
                 </div>
@@ -583,7 +599,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   value={basicInfo.bio}
                   onChange={(e) => setBasicInfo(prev => ({ ...prev, bio: e.target.value }))}
                   rows={4}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.bio ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder={t('profile.placeholders.bio')}
@@ -627,7 +643,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     <select
                       value={newSocialLink.platform}
                       onChange={(e) => setNewSocialLink(prev => ({ ...prev, platform: e.target.value as any }))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="instagram">Instagram</option>
                       <option value="youtube">YouTube</option>
@@ -639,18 +655,18 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                       value={newSocialLink.username}
                       onChange={(e) => setNewSocialLink(prev => ({ ...prev, username: e.target.value }))}
                       placeholder={t('profile.placeholders.socialUsername')}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <input
                       type="url"
                       value={newSocialLink.url}
                       onChange={(e) => setNewSocialLink(prev => ({ ...prev, url: e.target.value }))}
                       placeholder={t('profile.placeholders.socialUrl')}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <button
                       onClick={addSocialMediaLink}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -694,7 +710,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                         ...prev,
                         metrics: { ...prev.metrics, totalFollowers: parseInt(e.target.value) || 0 }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="10000"
                     />
                   </div>
@@ -710,7 +726,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                         ...prev,
                         metrics: { ...prev.metrics, engagementRate: parseFloat(e.target.value) || 0 }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="3.5"
                     />
                   </div>
@@ -735,8 +751,8 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                         disabled={influencerData.contentCategories.includes(category)}
                         className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
                           influencerData.contentCategories.includes(category)
-                            ? 'bg-purple-100 border-purple-300 text-purple-700 cursor-not-allowed'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-purple-50 hover:border-purple-300'
+                            ? 'bg-blue-100 border-blue-300 text-blue-700 cursor-not-allowed'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300'
                         }`}
                       >
                         {category}
@@ -754,13 +770,13 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       placeholder={t('profile.placeholders.category')}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       onKeyPress={(e) => e.key === 'Enter' && addContentCategory()}
                     />
                     <button
                       type="button"
                       onClick={addContentCategory}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -771,13 +787,13 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   {influencerData.contentCategories.map((category, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                      className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
                     >
                       {category}
                       <button
                         type="button"
                         onClick={() => removeContentCategory(index)}
-                        className="ml-2 text-purple-600 hover:text-purple-800"
+                        className="ml-2 text-blue-600 hover:text-blue-800"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -811,7 +827,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="text"
                     value={advertiserData.companyName}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, companyName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('profile.placeholders.organizationName')}
                   />
                 </div>
@@ -823,7 +839,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   <select
                     value={advertiserData.industry}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Выберите отрасль</option>
                     <option value="fashion">{t('industries.fashion')}</option>
@@ -844,7 +860,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     type="url"
                     value={advertiserData.organizationWebsite || ''}
                     onChange={(e) => setAdvertiserData(prev => ({ ...prev, organizationWebsite: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('profile.placeholders.organizationWebsite')}
                   />
                 </div>
@@ -871,7 +887,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="1000"
                     />
                   </div>
@@ -892,7 +908,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="10000"
                     />
                   </div>
@@ -912,7 +928,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                           }
                         }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
@@ -936,7 +952,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           <button
             onClick={handleSaveProfile}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isLoading ? 'Сохранение...' : 'Сохранить профиль'}</span>

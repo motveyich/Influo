@@ -129,7 +129,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
         <div
           className={`px-4 py-2 rounded-lg ${
             isOwnMessage
-              ? 'bg-purple-600 text-white'
+              ? 'bg-blue-600 text-white'
               : isInteractive
               ? 'bg-white border border-gray-300'
               : 'bg-gray-100 text-gray-900'
@@ -146,7 +146,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
               {renderPaymentDetails()}
               
               <p className={`text-xs mt-1 ${
-                isOwnMessage ? 'text-purple-100' : 'text-gray-500'
+                isOwnMessage ? 'text-blue-100' : 'text-gray-500'
               }`}>
                 <div className="flex items-center space-x-1">
                   <span>{formatMessageTime(message.timestamp)}</span>
@@ -155,7 +155,7 @@ export function MessageBubble({ message, currentUserId, onInteraction }: Message
                       {message.isRead ? (
                         <CheckCheck className="w-3 h-3 text-blue-300" />
                       ) : (
-                        <Check className="w-3 h-3 text-purple-200" />
+                        <Check className="w-3 h-3 text-blue-200" />
                       )}
                     </>
                   )}

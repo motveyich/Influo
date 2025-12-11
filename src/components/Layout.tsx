@@ -20,6 +20,7 @@ import { useProfileCompletion } from '../modules/profiles/hooks/useProfileComple
 import { AuthModal } from './AuthModal';
 import { BlockedUserNotice } from './BlockedUserNotice';
 import { EngagementTracker } from '../modules/analytics/components/EngagementTracker';
+import { UserAvatar } from './UserAvatar';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -38,16 +39,16 @@ export function Layout({ children }: LayoutProps) {
   const { settings } = useUserSettings(currentUserId);
 
   const baseNavigation = [
-    { name: t('nav.home'), href: '/', icon: Zap },
-    { name: t('nav.profiles'), href: '/profiles', icon: Users },
-    { name: t('nav.automaticCampaigns'), href: '/campaigns', icon: Target },
-    { name: t('nav.influencerCards'), href: '/influencer-cards', icon: Grid },
-    { name: t('nav.offers'), href: '/offers', icon: MessageCircle },
-    { name: t('nav.chat'), href: '/chat', icon: MessageCircle },
+    { name: t('nav.home'), href: '/app', icon: Zap },
+    { name: t('nav.profiles'), href: '/app/profiles', icon: Users },
+    { name: t('nav.autoCampaigns'), href: '/app/auto-campaigns', icon: Target },
+    { name: t('nav.influencerCards'), href: '/app/influencer-cards', icon: Grid },
+    { name: t('nav.offers'), href: '/app/offers', icon: MessageCircle },
+    { name: t('nav.chat'), href: '/app/chat', icon: MessageCircle },
   ];
 
   const adminNavigation = [
-    { name: t('nav.adminPanel'), href: '/admin', icon: Shield }
+    { name: t('nav.adminPanel'), href: '/app/admin', icon: Shield }
   ];
 
   const navigation = [
@@ -83,7 +84,7 @@ export function Layout({ children }: LayoutProps) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
@@ -96,39 +97,15 @@ export function Layout({ children }: LayoutProps) {
     return <BlockedUserNotice />;
   }
   
-  // Show auth modal if not authenticated
+  // Redirect to demo if not authenticated
   if (!isAuthenticated) {
-    return (
-      <>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('auth.welcomeTitle')}</h1>
-            <p className="text-xl text-gray-600 mb-8">{t('auth.welcomeSubtitle')}</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-              <p className="text-sm text-blue-800">
-                <strong>Новый пользователь?</strong> {t('auth.newUserInfo')}
-              </p>
-              <p className="text-sm text-blue-800 mt-2">
-                <strong>Уже есть аккаунт?</strong> {t('auth.existingUserInfo')}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-md text-lg font-medium transition-colors"
-            >
-              {t('auth.getStarted')}
-            </button>
-          </div>
-        </div>
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      </>
-    );
+    window.location.href = '/';
+    return null;
   }
 
   const getCurrentFeature = () => {
     const path = location.pathname;
     if (path.startsWith('/analytics')) return 'analytics_dashboard';
-    if (path.startsWith('/campaigns')) return 'campaigns';
     if (path.startsWith('/chat')) return 'chat';
     if (path.startsWith('/offers')) return 'offers';
     if (path.startsWith('/profiles')) return 'profiles';
@@ -160,8 +137,8 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <Link to="/" className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                <Link to="/app" className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg flex items-center justify-center">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-xl font-bold text-gray-900">Influo</span>
@@ -172,8 +149,8 @@ export function Layout({ children }: LayoutProps) {
               <nav className="hidden md:flex space-x-8">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isActive = item.href === '/' 
-                    ? location.pathname === '/' 
+                  const isActive = item.href === '/app'
+                    ? location.pathname === '/app'
                     : location.pathname.startsWith(item.href);
                   return (
                     <Link
@@ -181,7 +158,7 @@ export function Layout({ children }: LayoutProps) {
                       to={item.href}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-purple-100 text-purple-700'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
@@ -194,6 +171,11 @@ export function Layout({ children }: LayoutProps) {
 
               {/* User info and mobile menu button */}
               <div className="flex items-center space-x-4">
+                <UserAvatar
+                  avatarUrl={currentUserProfile?.avatar}
+                  fullName={currentUserProfile?.fullName}
+                  size="sm"
+                />
                 <span className="text-sm text-gray-600">
                   {currentUserProfile?.fullName || user?.email}
                 </span>
@@ -231,7 +213,7 @@ export function Layout({ children }: LayoutProps) {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
                         isActive
-                          ? 'bg-purple-100 text-purple-700'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >

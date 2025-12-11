@@ -2,12 +2,14 @@ import React from 'react';
 import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
-import { 
-  Clock, 
-  DollarSign, 
-  Calendar, 
-  CheckCircle, 
-  XCircle, 
+import { UserAvatar } from '../../../components/UserAvatar';
+import { supabase } from '../../../core/supabase';
+import {
+  Clock,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Users,
   Eye,
@@ -17,9 +19,13 @@ import {
   Ban,
   CreditCard,
   FileText,
+  Target,
   User,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Zap,
+  Globe,
+  UserCircle
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -30,32 +36,51 @@ interface OfferCardProps {
   userRole: 'influencer' | 'advertiser';
   onOfferUpdated: (offer: CollaborationOffer) => void;
   onViewDetails: (offer: CollaborationOffer) => void;
+  onViewProfile?: (userId: string) => void;
 }
 
-export function OfferCard({ 
-  offer, 
-  currentUserId, 
-  userRole, 
-  onOfferUpdated, 
-  onViewDetails 
+export function OfferCard({
+  offer,
+  currentUserId,
+  userRole,
+  onOfferUpdated,
+  onViewDetails,
+  onViewProfile
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
   const [paymentRequests, setPaymentRequests] = React.useState<PaymentRequest[]>([]);
   const [paymentWindowsLoading, setPaymentWindowsLoading] = React.useState(false);
+  const [paymentWindowsLoaded, setPaymentWindowsLoaded] = React.useState(false);
+  const [partnerProfile, setPartnerProfile] = React.useState<any>(null);
 
-  // Загружаем окна оплаты при первом открытии
   React.useEffect(() => {
-    if (showPaymentWindows && paymentRequests.length === 0) {
+    if (!paymentWindowsLoaded) {
       loadPaymentWindows();
     }
-  }, [showPaymentWindows]);
+    loadPartnerProfile();
+  }, []);
+
+  const loadPartnerProfile = async () => {
+    const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', partnerId)
+        .maybeSingle();
+      if (data) setPartnerProfile(data);
+    } catch (error) {
+      console.error('Failed to load partner profile:', error);
+    }
+  };
 
   const loadPaymentWindows = async () => {
     try {
       setPaymentWindowsLoading(true);
       const payments = await paymentRequestService.getOfferPaymentRequests(offer.id);
       setPaymentRequests(payments);
+      setPaymentWindowsLoaded(true);
     } catch (error) {
       console.error('Failed to load payment windows:', error);
       toast.error('Не удалось загрузить окна оплаты');
@@ -71,7 +96,7 @@ export function OfferCard({
       case 'accepted':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in_progress':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'terminated':
@@ -197,15 +222,21 @@ export function OfferCard({
 
   const getAvailableActions = () => {
     const actions = [];
+    
+    // Определяем роль пользователя в предложении
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const isReceiver = !isInitiator && (currentUserId === offer.influencerId || currentUserId === offer.advertiserId);
 
     // Pending status actions
     if (offer.status === 'pending') {
-      if (userRole === 'advertiser') {
+      if (isReceiver) {
+        // Получатель может принять или отклонить
         actions.push(
           { label: 'Принять', action: 'accepted', style: 'success' },
           { label: 'Отклонить', action: 'declined', style: 'danger' }
         );
-      } else if (userRole === 'influencer') {
+      } else if (isInitiator) {
+        // Инициатор может только отменить
         actions.push(
           { label: 'Отменить', action: 'cancelled', style: 'neutral' }
         );
@@ -223,22 +254,23 @@ export function OfferCard({
     return actions;
   };
 
-  const getUserRoleLabel = () => {
-    return userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+  const getUserRoleInOffer = () => {
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const role = userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+    const roleType = isInitiator ? 'Отправитель' : 'Получатель';
+    return `${role} (${roleType})`;
   };
 
   const getPartnerInfo = () => {
-    if (userRole === 'influencer') {
-      return {
-        label: 'Рекламодатель',
-        id: offer.advertiserId
-      };
-    } else {
-      return {
-        label: 'Инфлюенсер', 
-        id: offer.influencerId
-      };
-    }
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const partnerId = currentUserId === offer.influencerId ? offer.advertiserId : offer.influencerId;
+    const partnerRole = currentUserId === offer.influencerId ? 'Рекламодатель' : 'Инфлюенсер';
+    const partnerType = isInitiator ? 'Получатель' : 'Отправитель';
+    
+    return {
+      label: `${partnerRole} (${partnerType})`,
+      id: partnerId
+    };
   };
 
   const availableActions = getAvailableActions();
@@ -247,12 +279,36 @@ export function OfferCard({
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex items-start space-x-4 mb-4">
+        <button
+          onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <UserAvatar
+            avatarUrl={partnerProfile?.avatar}
+            fullName={partnerProfile?.full_name}
+            size="md"
+          />
+        </button>
         <div className="flex-1">
+          <button
+            onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors mb-1 block"
+          >
+            {partnerProfile?.full_name || (userRole === 'influencer' ? 'Рекламодатель' : 'Инфлюенсер')}
+          </button>
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {offer.title}
             </h3>
+            {(offer as any).metadata?.isAutoCampaign && (
+              <span className="px-3 py-1 text-sm font-medium rounded-full border bg-blue-100 text-blue-800 border-blue-200">
+                <div className="flex items-center space-x-1">
+                  <Target className="w-3 h-3" />
+                  <span>Автокомпания</span>
+                </div>
+              </span>
+            )}
             <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(offer.status)}`}>
               <div className="flex items-center space-x-1">
                 {getStatusIcon(offer.status)}
@@ -264,7 +320,7 @@ export function OfferCard({
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
             <div className="flex items-center space-x-1">
               <User className="w-4 h-4" />
-              <span>Ваша роль: {getUserRoleLabel()}</span>
+              <span>Ваша роль: {getUserRoleInOffer()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Users className="w-4 h-4" />
@@ -279,19 +335,24 @@ export function OfferCard({
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
         <div className="flex items-center space-x-2">
           <DollarSign className="w-4 h-4 text-green-600" />
           <div>
             <p className="text-sm font-medium text-gray-900">
-              {formatCurrency(offer.acceptedRate || offer.proposedRate, offer.currency)}
+              {formatCurrency(
+                offer.acceptedRate || offer.suggestedBudget || offer.proposedRate,
+                offer.currency
+              )}
             </p>
             <p className="text-xs text-gray-600">
-              {offer.acceptedRate && offer.acceptedRate !== offer.proposedRate ? 'Принятая ставка' : 'Предложенная ставка'}
+              {offer.acceptedRate && offer.acceptedRate !== offer.proposedRate
+                ? 'Принятая ставка'
+                : 'Предложенная ставка'}
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-blue-600" />
           <div>
@@ -301,7 +362,19 @@ export function OfferCard({
             <p className="text-xs text-gray-600">Сроки</p>
           </div>
         </div>
-        
+
+        {offer.platform && (
+          <div className="flex items-center space-x-2">
+            <Globe className="w-4 h-4 text-purple-600" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {offer.platform}
+              </p>
+              <p className="text-xs text-gray-600">Платформа</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-gray-600" />
           <div>
@@ -313,35 +386,60 @@ export function OfferCard({
         </div>
       </div>
 
-      {/* Deliverables */}
+      {/* Content Type */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-gray-700 mb-2">Результаты:</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">Тип контента:</p>
         <div className="flex flex-wrap gap-1">
-          {offer.deliverables.slice(0, 3).map((deliverable, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
-            >
-              {deliverable}
-            </span>
-          ))}
-          {offer.deliverables.length > 3 && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-              +{offer.deliverables.length - 3} еще
-            </span>
-          )}
+          {(() => {
+            const isAutomatic = (offer as any).metadata?.isAutomatic;
+
+            if (offer.contentType) {
+              return (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                  {offer.contentType}
+                </span>
+              );
+            }
+
+            if (isAutomatic && offer.integrationType) {
+              return (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                  {offer.integrationType}
+                </span>
+              );
+            }
+
+            return (
+              <>
+                {offer.deliverables.slice(0, 3).map((deliverable, index) => {
+                  const displayText = typeof deliverable === 'string'
+                    ? deliverable
+                    : (deliverable as any).type || (deliverable as any).description || 'Результат';
+
+                  return (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
+                    >
+                      {displayText}
+                    </span>
+                  );
+                })}
+                {offer.deliverables.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                    +{offer.deliverables.length - 3} еще
+                  </span>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
 
       {/* Payment Windows Section */}
       <div className="border-t border-gray-200 pt-4 mb-4">
         <button
-          onClick={() => {
-            setShowPaymentWindows(!showPaymentWindows);
-            if (!showPaymentWindows && paymentRequests.length === 0) {
-              loadPaymentWindows();
-            }
-          }}
+          onClick={() => setShowPaymentWindows(!showPaymentWindows)}
           className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <div className="flex items-center space-x-2">
@@ -361,7 +459,7 @@ export function OfferCard({
           <div className="mt-3 space-y-2">
             {paymentWindowsLoading ? (
               <div className="flex items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 <span className="ml-2 text-sm text-gray-600">Загрузка окон оплаты...</span>
               </div>
             ) : paymentRequests.length === 0 ? (
@@ -432,13 +530,29 @@ export function OfferCard({
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-        <button
-          onClick={() => onViewDetails(offer)}
-          className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors flex items-center space-x-1"
-        >
-          <Eye className="w-4 h-4" />
-          <span>Подробнее</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => onViewDetails(offer)}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors flex items-center space-x-1"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Подробнее</span>
+          </button>
+
+          {onViewProfile && (
+            <button
+              onClick={() => {
+                const otherUserId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+                onViewProfile(otherUserId);
+              }}
+              className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors flex items-center space-x-1"
+              title="Просмотр профиля"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span>Профиль</span>
+            </button>
+          )}
+        </div>
 
         {availableActions.length > 0 && (
           <div className="flex space-x-2">

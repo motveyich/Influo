@@ -52,7 +52,7 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
     >
       {/* Header */}
       <div className="flex items-start space-x-4 mb-4">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-400 rounded-full flex items-center justify-center">
           {profile.avatar ? (
             <img 
               src={profile.avatar} 
@@ -112,7 +112,7 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
             {profile.influencerData.contentCategories.slice(0, 3).map((category, index) => (
               <span
                 key={index}
-                className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md"
+                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
               >
                 {category}
               </span>
@@ -202,7 +202,7 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${profile.profileCompletion.completionPercentage}%` }}
             ></div>
           </div>
@@ -232,7 +232,7 @@ export function ProfileCard({ profile, currentUserId }: ProfileCardProps) {
 
       {/* Action Button */}
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">
+        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">
           Просмотреть профиль
         </button>
       </div>

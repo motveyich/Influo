@@ -8,6 +8,7 @@ import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion'
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
+import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { 
   Search, 
   Filter,
@@ -31,11 +32,14 @@ export function OffersPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
   const [offers, setOffers] = useState<CollaborationOffer[]>([]);
+  const [allOffers, setAllOffers] = useState<CollaborationOffer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OfferStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const { user, loading } = useAuth();
   const currentUserId = user?.id || '';
@@ -50,31 +54,36 @@ export function OffersPage() {
   const loadOffers = async () => {
     try {
       setIsLoading(true);
-      
+
       // Загружаем все предложения, где пользователь является участником
-      const allOffers = await offerService.getOffersByParticipant(currentUserId);
-      
+      const loadedOffers = await offerService.getOffersByParticipant(currentUserId);
+      setAllOffers(loadedOffers);
+
       // Фильтруем по вкладке
-      const filteredByTab = allOffers.filter(offer => {
+      const filteredByTab = loadedOffers.filter(offer => {
         if (activeTab === 'active') {
           return ['pending', 'accepted', 'in_progress'].includes(offer.status);
         } else {
           return ['completed', 'declined', 'cancelled', 'terminated'].includes(offer.status);
         }
       });
-      
+
       setOffers(filteredByTab);
     } catch (error) {
       console.error('Failed to load offers:', error);
       toast.error('Не удалось загрузить предложения');
       setOffers([]);
+      setAllOffers([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
-    setOffers(prev => prev.map(offer => 
+    setOffers(prev => prev.map(offer =>
+      offer.id === updatedOffer.id ? updatedOffer : offer
+    ));
+    setAllOffers(prev => prev.map(offer =>
       offer.id === updatedOffer.id ? updatedOffer : offer
     ));
     if (selectedOffer?.id === updatedOffer.id) {
@@ -96,8 +105,23 @@ export function OffersPage() {
     setShowDetailsModal(true);
   };
 
+  const handleViewProfile = (userId: string) => {
+    setProfileUserId(userId);
+    setShowProfileModal(true);
+  };
+
   const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
     return offer.influencerId === currentUserId ? 'influencer' : 'advertiser';
+  };
+  
+  const getUserRoleInOffer = (offer: CollaborationOffer) => {
+    const isInitiator = currentUserId === offer.initiatedBy;
+    const baseRole = getUserRole(offer);
+    return {
+      baseRole,
+      isInitiator,
+      roleLabel: `${baseRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель'} (${isInitiator ? 'Отправитель' : 'Получатель'})`
+    };
   };
 
   const filteredOffers = offers.filter(offer => {
@@ -110,16 +134,16 @@ export function OffersPage() {
   });
 
   const getOfferStats = () => {
-    const activeOffers = offers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
-    const completedOffers = offers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
-    
+    const activeOffers = allOffers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
+    const completedOffers = allOffers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
+
     return {
-      total: offers.length,
-      pending: offers.filter(o => o.status === 'pending').length,
-      accepted: offers.filter(o => o.status === 'accepted').length,
-      inProgress: offers.filter(o => o.status === 'in_progress').length,
-      completed: offers.filter(o => o.status === 'completed').length,
-      totalValue: offers
+      total: allOffers.length,
+      pending: allOffers.filter(o => o.status === 'pending').length,
+      accepted: allOffers.filter(o => o.status === 'accepted').length,
+      inProgress: allOffers.filter(o => o.status === 'in_progress').length,
+      completed: allOffers.filter(o => o.status === 'completed').length,
+      totalValue: allOffers
         .filter(o => ['accepted', 'in_progress', 'completed'].includes(o.status))
         .reduce((sum, o) => sum + (o.acceptedRate || o.proposedRate), 0),
       activeCount: activeOffers.length,
@@ -211,7 +235,7 @@ export function OffersPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
-              <Target className="w-5 h-5 text-purple-600" />
+              <Target className="w-5 h-5 text-blue-600" />
               <span className="ml-2 text-sm font-medium text-gray-600">{t('offers.total')}</span>
             </div>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.total}</p>
@@ -270,7 +294,7 @@ export function OffersPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
                     activeTab === tab
-                      ? 'text-purple-600 border-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900'
+                      ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900'
                       : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -279,7 +303,7 @@ export function OffersPage() {
                     {((tab === 'active' && stats.activeCount > 0) || (tab === 'completed' && stats.completedCount > 0)) && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activeTab === tab
-                          ? 'bg-purple-600 text-white dark:bg-purple-500'
+                          ? 'bg-blue-600 text-white dark:bg-blue-500'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {tab === 'active' ? stats.activeCount : stats.completedCount}
@@ -301,7 +325,7 @@ export function OffersPage() {
                   placeholder={t('offers.searchOffers')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               
@@ -310,7 +334,7 @@ export function OffersPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as OfferStatus | 'all')}
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {getStatusFiltersForTab().map(filter => (
                     <option key={filter.value} value={filter.value}>
@@ -366,6 +390,7 @@ export function OffersPage() {
                     userRole={getUserRole(offer)}
                     onOfferUpdated={handleOfferUpdated}
                     onViewDetails={handleViewDetails}
+                    onViewProfile={handleViewProfile}
                   />
                 ))}
               </div>
@@ -384,6 +409,19 @@ export function OffersPage() {
             offer={selectedOffer}
             currentUserId={currentUserId}
             onOfferUpdated={handleOfferUpdated}
+          />
+        )}
+
+
+        {/* Public Profile Modal */}
+        {showProfileModal && profileUserId && (
+          <UserPublicProfileModal
+            userId={profileUserId}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setShowProfileModal(false);
+              setProfileUserId(null);
+            }}
           />
         )}
       </div>

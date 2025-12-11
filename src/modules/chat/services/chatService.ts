@@ -2,6 +2,7 @@ import { supabase, TABLES } from '../../../core/supabase';
 import { ChatMessage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
+import { emailNotificationService } from '../../../services/emailNotificationService';
 
 export class ChatService {
   private messageQueue: ChatMessage[] = [];
@@ -56,6 +57,28 @@ export class ChatService {
 
         // Track analytics
         analytics.trackChatMessage(messageData.senderId!, messageData.receiverId!);
+
+        // Send email notification
+        try {
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', messageData.senderId!)
+            .maybeSingle();
+
+          const senderName = senderProfile?.full_name || 'Пользователь';
+          const messagePreview = messageData.messageContent!.length > 100
+            ? messageData.messageContent!.substring(0, 100) + '...'
+            : messageData.messageContent!;
+
+          await emailNotificationService.sendNewMessageNotification(
+            messageData.receiverId!,
+            senderName,
+            messagePreview
+          );
+        } catch (error) {
+          console.error('Failed to send message notification email:', error);
+        }
 
         return transformedMessage;
       } catch (realtimeError) {
@@ -299,6 +322,31 @@ export class ChatService {
 
   private transformFromDatabase(dbData: any): ChatMessage {
     return this.transformMessageFromDatabase(dbData);
+  }
+
+  async getUserChats(userId: string): Promise<any[]> {
+    return this.getUserConversations(userId);
+  }
+
+  async getChatMessages(chatId: string): Promise<ChatMessage[]> {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(message => this.transformFromDatabase(message));
+    } catch (error) {
+      console.error('Failed to get chat messages:', error);
+      return [];
+    }
+  }
+
+  async getMessagesBetweenUsers(userId1: string, userId2: string): Promise<ChatMessage[]> {
+    return this.getConversation(userId1, userId2);
   }
 }
 

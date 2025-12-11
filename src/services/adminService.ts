@@ -165,12 +165,30 @@ export class AdminService {
     }
   }
 
+  async blockUser(userId: string, reason?: string): Promise<void> {
+    const deletedBy = (await supabase.auth.getUser()).data.user?.id;
+    if (!deletedBy) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: adminProfile } = await supabase
+      .from(TABLES.USER_PROFILES)
+      .select('role')
+      .eq('user_id', deletedBy)
+      .single();
+
+    const role = adminProfile?.role || 'user';
+    return this.deleteUser(userId, deletedBy, role);
+  }
+
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-      const hasPermission = await roleService.checkPermission(restoredBy, 'admin');
+      const hasPermission = await roleService.checkPermission(restoredBy, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
+
+      console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
 
       const { error } = await supabase
         .from(TABLES.USER_PROFILES)
@@ -181,7 +199,12 @@ export class AdminService {
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [AdminService] Failed to restore user:', error);
+        throw error;
+      }
+
+      console.log('✅ [AdminService] User restored successfully');
 
       // Log the action
       await this.logAction(restoredBy, 'user_restored', 'user_profile', userId);

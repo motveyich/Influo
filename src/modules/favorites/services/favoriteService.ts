@@ -1,65 +1,35 @@
-import { supabase, isSupabaseConfigured } from '../../../core/supabase';
+import { apiClient } from '../../../core/api';
 import { Favorite } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class FavoriteService {
   async addToFavorites(favoriteData: Partial<Favorite>): Promise<Favorite> {
     try {
-      // Check if already in favorites
-      const existing = await this.getFavorite(favoriteData.userId!, favoriteData.targetType!, favoriteData.targetId!);
-      if (existing) {
-        throw new Error('Already in favorites');
-      }
-
-      const newFavorite = {
-        user_id: favoriteData.userId,
-        target_type: favoriteData.targetType,
-        target_id: favoriteData.targetId,
-        metadata: {
-          addedAt: new Date().toISOString(),
-          ...favoriteData.metadata
-        },
-        created_at: new Date().toISOString()
+      const payload = {
+        targetId: favoriteData.targetId,
+        targetType: favoriteData.targetType,
       };
 
-      const { data, error } = await supabase
-        .from('favorites')
-        .insert([newFavorite])
-        .select()
-        .single();
+      const favorite = await apiClient.post<Favorite>('/favorites', payload);
 
-      if (error) throw error;
-
-      // Track analytics
       analytics.track('favorite_added', {
-        user_id: favoriteData.userId,
         target_type: favoriteData.targetType,
         target_id: favoriteData.targetId
       });
 
-      return this.transformFromDatabase(data);
+      return favorite;
     } catch (error) {
       console.error('Failed to add to favorites:', error);
       throw error;
     }
   }
 
-  async removeFromFavorites(userId: string, targetType: string, targetId: string): Promise<void> {
+  async removeFromFavorites(favoriteId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .eq('user_id', userId)
-        .eq('target_type', targetType)
-        .eq('target_id', targetId);
+      await apiClient.delete(`/favorites/${favoriteId}`);
 
-      if (error) throw error;
-
-      // Track analytics
       analytics.track('favorite_removed', {
-        user_id: userId,
-        target_type: targetType,
-        target_id: targetId
+        favorite_id: favoriteId
       });
     } catch (error) {
       console.error('Failed to remove from favorites:', error);
@@ -67,167 +37,27 @@ export class FavoriteService {
     }
   }
 
-  async getUserFavorites(userId: string, targetType?: string): Promise<Favorite[]> {
+  async getFavorites(params?: { targetType?: string }): Promise<Favorite[]> {
     try {
-      let query = supabase
-        .from('favorites')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (targetType) {
-        query = query.eq('target_type', targetType);
+      let queryString = '';
+      if (params?.targetType) {
+        queryString = `?targetType=${params.targetType}`;
       }
-
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(fav => this.transformFromDatabase(fav));
+      return await apiClient.get<Favorite[]>(`/favorites${queryString}`);
     } catch (error) {
-      console.error('Failed to get user favorites:', error);
+      console.error('Failed to get favorites:', error);
       throw error;
     }
   }
 
-  async getFavorite(userId: string, targetType: string, targetId: string): Promise<Favorite | null> {
+  async isFavorite(targetId: string, targetType: string): Promise<boolean> {
     try {
-      // Validate UUID format for targetId
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(targetId)) {
-        console.warn(`Invalid UUID format for targetId: ${targetId}`);
-        return null;
-      }
-
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('target_type', targetType)
-        .eq('target_id', targetId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return this.transformFromDatabase(data);
+      const favorites = await this.getFavorites({ targetType });
+      return favorites.some(fav => fav.targetId === targetId);
     } catch (error) {
-      console.error('Failed to get favorite:', error);
-      throw error;
-    }
-  }
-
-  async isFavorite(userId: string, targetType: string, targetId: string): Promise<boolean> {
-    try {
-      // Validate UUID format for targetId
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(targetId)) {
-        console.warn(`Invalid UUID format for targetId: ${targetId}`);
-        return false;
-      }
-
-      // Check if Supabase is configured before making any requests
-      if (!isSupabaseConfigured()) {
-        console.warn('Supabase not configured, returning false for favorite check');
-        return false;
-      }
-
-      // Проверяем, что таблица существует
-      const { error: tableError } = await supabase
-        .from('favorites')
-        .select('id')
-        .limit(1);
-      
-      if (tableError && tableError.code === '42P01') {
-        console.warn('Favorites table does not exist yet');
-        return false;
-      }
-
-      const favorite = await this.getFavorite(userId, targetType, targetId);
-      return !!favorite;
-    } catch (error) {
-      console.error('Failed to check if favorite:', error);
+      console.error('Failed to check favorite status:', error);
       return false;
     }
-  }
-
-  async sendBulkApplications(userId: string, favoriteIds: string[], applicationData: any): Promise<void> {
-    try {
-      // Get user's favorites for influencer cards
-      const favorites = await this.getUserFavorites(userId, 'influencer_card');
-      const targetFavorites = favorites.filter(fav => favoriteIds.includes(fav.targetId));
-      
-      for (const favorite of targetFavorites) {
-        try {
-          // Get the influencer card to retrieve the user_id
-          const { data: influencerCard, error: cardError } = await supabase
-            .from('influencer_cards')
-            .select('user_id')
-            .eq('id', favorite.targetId)
-            .single();
-
-          if (cardError || !influencerCard) {
-            console.error(`Failed to get influencer card ${favorite.targetId}:`, cardError);
-            continue;
-          }
-
-          // Check for existing application to this user
-          const { data: existingApplication } = await supabase
-            .from('applications')
-            .select('id')
-            .eq('applicant_id', userId)
-            .eq('target_id', influencerCard.user_id)
-            .eq('target_type', 'influencer_card')
-            .not('status', 'in', '(cancelled,withdrawn)')
-            .maybeSingle();
-
-          if (existingApplication) {
-            console.log(`Skipping duplicate application to user ${influencerCard.user_id}`);
-            continue;
-          }
-
-          // Create application for each favorite
-          const { applicationService } = await import('../../applications/services/applicationService');
-          
-          await applicationService.createApplication({
-            applicantId: userId,
-            targetId: influencerCard.user_id, // Use the user_id from the card
-            targetType: 'influencer_card',
-            targetReferenceId: favorite.targetId,
-            applicationData: {
-              message: applicationData.message || 'Заинтересован в сотрудничестве',
-              proposedRate: applicationData.proposedRate || 1000,
-              timeline: applicationData.timeline || '2 недели',
-              deliverables: applicationData.deliverables || ['Пост в Instagram']
-            }
-          });
-        } catch (error) {
-          console.error(`Failed to create application for favorite ${favorite.id}:`, error);
-        }
-      }
-
-      // Track bulk application
-      analytics.track('bulk_applications_sent', {
-        user_id: userId,
-        count: targetFavorites.length,
-        target_types: ['influencer_card']
-      });
-    } catch (error) {
-      console.error('Failed to send bulk applications:', error);
-      throw error;
-    }
-  }
-
-  private transformFromDatabase(dbData: any): Favorite {
-    return {
-      id: dbData.id,
-      userId: dbData.user_id,
-      targetType: dbData.target_type,
-      targetId: dbData.target_id,
-      metadata: dbData.metadata || {},
-      createdAt: dbData.created_at
-    };
   }
 }
 

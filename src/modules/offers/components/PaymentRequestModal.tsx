@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PaymentRequest } from '../../../core/types';
 import { paymentRequestService } from '../services/paymentRequestService';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, CreditCard, Building, Mail, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,6 +31,8 @@ export function PaymentRequestModal({
 }: PaymentRequestModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useBodyScrollLock(isOpen);
 
   const [formData, setFormData] = useState({
     amount: 0,
@@ -116,19 +119,31 @@ export function PaymentRequestModal({
 
     setIsLoading(true);
     try {
-      const requestData: Partial<PaymentRequest> = {
-        offerId,
-        createdBy,
-        ...formData
-      };
+      let savedRequest: PaymentRequest;
 
-      const createdRequest = await paymentRequestService.createPaymentRequest(requestData);
-      toast.success('Окно оплаты создано успешно!');
-      onPaymentRequestCreated(createdRequest);
+      if (existingRequest) {
+        // Update existing payment request
+        savedRequest = await paymentRequestService.updatePaymentRequest(
+          existingRequest.id,
+          formData
+        );
+        toast.success('Окно оплаты обновлено успешно!');
+      } else {
+        // Create new payment request
+        const requestData: Partial<PaymentRequest> = {
+          offerId,
+          createdBy,
+          ...formData
+        };
+        savedRequest = await paymentRequestService.createPaymentRequest(requestData);
+        toast.success('Окно оплаты создано успешно!');
+      }
+
+      onPaymentRequestCreated(savedRequest);
       onClose();
     } catch (error: any) {
-      console.error('Failed to create payment request:', error);
-      toast.error(error.message || 'Не удалось создать окно оплаты');
+      console.error('Failed to save payment request:', error);
+      toast.error(error.message || 'Не удалось сохранить окно оплаты');
     } finally {
       setIsLoading(false);
     }
@@ -152,7 +167,7 @@ export function PaymentRequestModal({
                   ...prev,
                   paymentDetails: { ...prev.paymentDetails, bankAccount: e.target.value }
                 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.bankAccount ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="1234567890123456"
@@ -176,7 +191,7 @@ export function PaymentRequestModal({
                   ...prev,
                   paymentDetails: { ...prev.paymentDetails, accountHolder: e.target.value }
                 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.accountHolder ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Иван Иванов"
@@ -200,7 +215,7 @@ export function PaymentRequestModal({
                   ...prev,
                   paymentDetails: { ...prev.paymentDetails, bankName: e.target.value }
                 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Сбербанк"
               />
             </div>
@@ -221,7 +236,7 @@ export function PaymentRequestModal({
                   ...prev,
                   paymentDetails: { ...prev.paymentDetails, cardNumber: e.target.value }
                 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.cardNumber ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="1234 5678 9012 3456"
@@ -245,7 +260,7 @@ export function PaymentRequestModal({
                   ...prev,
                   paymentDetails: { ...prev.paymentDetails, accountHolder: e.target.value }
                 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.accountHolder ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="IVAN IVANOV"
@@ -273,7 +288,7 @@ export function PaymentRequestModal({
                 ...prev,
                 paymentDetails: { ...prev.paymentDetails, paypalEmail: e.target.value }
               }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.paypalEmail ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="your.email@example.com"
@@ -300,7 +315,7 @@ export function PaymentRequestModal({
                 ...prev,
                 paymentDetails: { ...prev.paymentDetails, cryptoAddress: e.target.value }
               }))}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.cryptoAddress ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -349,7 +364,7 @@ export function PaymentRequestModal({
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.amount ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="1000"
@@ -369,7 +384,7 @@ export function PaymentRequestModal({
               <select
                 value={formData.currency}
                 onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
@@ -384,7 +399,7 @@ export function PaymentRequestModal({
               <select
                 value={formData.paymentType}
                 onChange={(e) => setFormData(prev => ({ ...prev, paymentType: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="full">Полная оплата</option>
                 <option value="prepay">Предоплата</option>
@@ -408,7 +423,7 @@ export function PaymentRequestModal({
                     onClick={() => setFormData(prev => ({ ...prev, paymentMethod: method.value }))}
                     className={`p-3 border rounded-lg transition-colors flex items-center space-x-2 ${
                       formData.paymentMethod === method.value
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -437,7 +452,7 @@ export function PaymentRequestModal({
               value={formData.instructions}
               onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Дополнительные инструкции по оплате, сроки, комментарии..."
             />
           </div>
@@ -454,10 +469,12 @@ export function PaymentRequestModal({
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Сохранение...' : 'Создать окно оплаты'}</span>
+            <span>
+              {isLoading ? 'Сохранение...' : (existingRequest ? 'Сохранить изменения' : 'Создать окно оплаты')}
+            </span>
           </button>
         </div>
       </div>
