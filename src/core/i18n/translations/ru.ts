@@ -583,6 +583,7 @@ export const ru: TranslationKeys = {
     income: 'Общий доход',
     howToCreateOffers: 'Как создавать предложения?',
     offersCreatedManually: 'Предложения создаются при откликах на карточки и кампании',
+    offersCreatedAutomatically: 'Предложения создаются автоматически при откликах на карточки и кампании',
     allStatuses: 'Все статусы',
     searchOffers: 'Поиск предложений...',
     noActiveOffers: 'Нет действующих предложений',
