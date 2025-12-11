@@ -2,10 +2,10 @@ const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
   if (envUrl) {
-    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+    return envUrl;
   }
 
-  return 'https://beckend-git-main-matveys-projects-0d62e667.vercel.app/api';
+  return 'https://influo-seven.vercel.app';
 };
 
 const API_URL = getApiBaseUrl();
