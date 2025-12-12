@@ -5,12 +5,11 @@ const getApiBaseUrl = (): string => {
     return envUrl;
   }
 
-  // In development, use proxy; in production, use direct URL
   if (import.meta.env.DEV) {
     return '/api';
   }
 
-  return 'https://influo-seven.vercel.app';
+  return 'https://influo-seven.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
@@ -55,6 +54,8 @@ class ApiClient {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+
+    console.log(`[API] ${options.method || 'GET'} ${url}`, { hasToken: !!token });
 
     const config: RequestInit = {
       method: options.method || 'GET',
