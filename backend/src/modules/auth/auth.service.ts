@@ -163,7 +163,7 @@ export class AuthService {
       refresh_token: refreshToken,
     });
 
-    if (error || !data.user) {
+    if (error || !data.user || !data.session) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -180,7 +180,15 @@ export class AuthService {
       userType: profile?.user_type || 'influencer',
     });
 
-    return tokens;
+    return {
+      ...tokens,
+      supabaseSession: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+      },
+    };
   }
 
   async getCurrentUser(userId: string) {

@@ -18,17 +18,15 @@ export interface AuthState {
 }
 
 export interface AuthResponse {
-  data: {
-      user: User;
-      accessToken: string;
-      refreshToken: string;
-      supabaseSession?: {
-        access_token: string;
-        refresh_token: string;
-        expires_at?: number;
-        expires_in?: number;
-      };
-  }
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  supabaseSession?: {
+    access_token: string;
+    refresh_token: string;
+    expires_at?: number;
+    expires_in?: number;
+  };
 }
 
 class AuthService {
@@ -62,12 +60,17 @@ class AuthService {
       if (refreshToken) {
         try {
           console.log('🔄 Attempting token refresh...');
-          const {data: response} = await apiClient.post<AuthResponse>('/auth/refresh', {
+          const response = await apiClient.post<AuthResponse>('/auth/refresh', {
             refreshToken
           });
 
           apiClient.setAccessToken(response.accessToken);
           localStorage.setItem('refreshToken', response.refreshToken);
+
+          // Set Supabase session if available
+          if (response.supabaseSession) {
+            await setSupabaseSession(response.supabaseSession);
+          }
 
           const user = await apiClient.get<User>('/auth/me');
           this.currentState = { user, loading: false };
@@ -103,7 +106,7 @@ class AuthService {
   async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
       console.log('📝 Attempting sign up for:', email);
-      const {data: response} = await apiClient.post<AuthResponse>('/auth/signup', {
+      const response = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
         userType,
@@ -150,7 +153,7 @@ class AuthService {
   async signIn(email: string, password: string) {
     try {
       console.log('🔐 Attempting sign in for:', email);
-      const {data: response} = await apiClient.post<AuthResponse>('/auth/login', {
+      const response = await apiClient.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
