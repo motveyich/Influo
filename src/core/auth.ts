@@ -147,11 +147,13 @@ class AuthService {
         password,
       });
 
-      console.log('📦 Login response received:', {
+      console.log('📦 Login response received (raw):', response);
+      console.log('📦 Login response details:', {
         hasUser: !!response.user,
         hasAccessToken: !!response.accessToken,
         hasRefreshToken: !!response.refreshToken,
         userId: response.user?.id,
+        responseKeys: Object.keys(response),
       });
 
       if (!response.accessToken || !response.refreshToken) {
