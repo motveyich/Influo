@@ -31,7 +31,7 @@ export class AuthService {
       throw new UnauthorizedException(authError.message);
     }
 
-    if (!authData.user) {
+    if (!authData.user || !authData.session) {
       throw new UnauthorizedException('Failed to create user');
     }
 
@@ -71,6 +71,12 @@ export class AuthService {
         fullName: signupDto.fullName,
         userType: signupDto.userType,
       },
+      supabaseSession: {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+        expires_at: authData.session.expires_at,
+        expires_in: authData.session.expires_in,
+      },
       ...tokens,
     };
   }
@@ -83,7 +89,7 @@ export class AuthService {
       password: loginDto.password,
     });
 
-    if (authError || !authData.user) {
+    if (authError || !authData.user || !authData.session) {
       this.logger.error(`Login failed: ${authError?.message}`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -127,6 +133,12 @@ export class AuthService {
         fullName: profile.full_name,
         userType: profile.user_type,
         avatar: profile.avatar,
+      },
+      supabaseSession: {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+        expires_at: authData.session.expires_at,
+        expires_in: authData.session.expires_in,
       },
       ...tokens,
     };

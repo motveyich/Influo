@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import { cleanSupabaseTokens } from '../utils/cleanStorage';
+import { setSupabaseSession, clearSupabaseSession } from './supabase';
 
 export interface User {
   id: string;
@@ -22,6 +22,12 @@ export interface AuthResponse {
       user: User;
       accessToken: string;
       refreshToken: string;
+      supabaseSession?: {
+        access_token: string;
+        refresh_token: string;
+        expires_at?: number;
+        expires_in?: number;
+      };
   }
 }
 
@@ -38,9 +44,6 @@ class AuthService {
     const refreshToken = localStorage.getItem('refreshToken');
 
     console.log('🔐 Auth initialize:', { hasToken: !!token, hasRefresh: !!refreshToken });
-
-    // Clean old Supabase tokens on startup
-    cleanSupabaseTokens();
 
     if (!token) {
       this.currentState = { user: null, loading: false };
@@ -110,6 +113,7 @@ class AuthService {
         hasUser: !!response.user,
         hasAccessToken: !!response.accessToken,
         hasRefreshToken: !!response.refreshToken,
+        hasSupabaseSession: !!response.supabaseSession,
       });
 
       if (!response.accessToken || !response.refreshToken) {
@@ -117,12 +121,14 @@ class AuthService {
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set tokens
+      // Set backend tokens
       apiClient.setAccessToken(response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
-      // Clean old Supabase tokens
-      cleanSupabaseTokens();
+      // Set Supabase session
+      if (response.supabaseSession) {
+        await setSupabaseSession(response.supabaseSession);
+      }
 
       this.currentState = { user: response.user, loading: false };
       this.notifyListeners();
@@ -154,6 +160,7 @@ class AuthService {
         hasUser: !!response.user,
         hasAccessToken: !!response.accessToken,
         hasRefreshToken: !!response.refreshToken,
+        hasSupabaseSession: !!response.supabaseSession,
         userId: response.user?.id,
         responseKeys: Object.keys(response),
       });
@@ -163,12 +170,14 @@ class AuthService {
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set tokens
+      // Set backend tokens
       apiClient.setAccessToken(response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
-      // Clean old Supabase tokens
-      cleanSupabaseTokens();
+      // Set Supabase session
+      if (response.supabaseSession) {
+        await setSupabaseSession(response.supabaseSession);
+      }
 
       this.currentState = { user: response.user, loading: false };
       this.notifyListeners();
@@ -195,6 +204,7 @@ class AuthService {
     } finally {
       apiClient.setAccessToken(null);
       localStorage.removeItem('refreshToken');
+      await clearSupabaseSession();
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
     }
