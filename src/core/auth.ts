@@ -18,9 +18,11 @@ export interface AuthState {
 }
 
 export interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
+  data: {
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+  }
 }
 
 class AuthService {
@@ -57,7 +59,7 @@ class AuthService {
       if (refreshToken) {
         try {
           console.log('🔄 Attempting token refresh...');
-          const response = await apiClient.post<AuthResponse>('/auth/refresh', {
+          const {data: response} = await apiClient.post<AuthResponse>('/auth/refresh', {
             refreshToken
           });
 
@@ -98,7 +100,7 @@ class AuthService {
   async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
       console.log('📝 Attempting sign up for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/signup', {
+      const {data: response} = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
         userType,
@@ -142,7 +144,7 @@ class AuthService {
   async signIn(email: string, password: string) {
     try {
       console.log('🔐 Attempting sign in for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/login', {
+      const {data: response} = await apiClient.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
