@@ -95,16 +95,6 @@ class AuthService {
         password,
       });
 
-      if (response.user.isDeleted) {
-        return {
-          data: null,
-          error: {
-            message: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для получения дополнительной информации.',
-            name: 'AccountBlockedError'
-          }
-        };
-      }
-
       apiClient.setAccessToken(response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
