@@ -21,7 +21,7 @@ import { AutoCampaignsService } from './auto-campaigns.service';
 import { CreateAutoCampaignDto, UpdateAutoCampaignDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 
 @ApiTags('auto-campaigns')
 @Controller('auto-campaigns')
@@ -44,6 +44,7 @@ export class AutoCampaignsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all auto campaigns with filters' })
   @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
@@ -62,6 +63,7 @@ export class AutoCampaignsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get auto campaign by ID' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign found' })

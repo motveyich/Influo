@@ -22,7 +22,7 @@ import { InfluencerCardsService } from './influencer-cards.service';
 import { CreateInfluencerCardDto, UpdateInfluencerCardDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 
 @ApiTags('influencer-cards')
 @Controller('influencer-cards')
@@ -44,6 +44,7 @@ export class InfluencerCardsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all influencer cards with filters' })
   @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'minFollowers', required: false, description: 'Minimum followers' })
@@ -65,6 +66,7 @@ export class InfluencerCardsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get influencer card by ID' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card found' })
