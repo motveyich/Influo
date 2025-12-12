@@ -36,8 +36,10 @@ const safeSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX
 
 export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storage: undefined,
   },
   realtime: {
     params: {
