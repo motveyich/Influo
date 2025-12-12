@@ -6,12 +6,11 @@ import { roleService } from './roleService';
 
 export class ModerationService {
   private contentFilters: ContentFilter[] = [];
+  private filtersLoaded: boolean = false;
 
   constructor() {
-    // Only load filters if Supabase is configured
-    if (isSupabaseConfigured()) {
-      this.loadContentFilters();
-    }
+    // Don't load filters automatically - they will be loaded on-demand
+    // This prevents errors during app initialization when the table doesn't exist
   }
 
   async loadContentFilters(): Promise<void> {
@@ -295,6 +294,12 @@ export class ModerationService {
     shouldFlag: boolean;
   }> {
     try {
+      // Load filters on first use if not already loaded
+      if (!this.filtersLoaded && isSupabaseConfigured()) {
+        await this.loadContentFilters();
+        this.filtersLoaded = true;
+      }
+
       const matches: Array<{ filter: string; match: string; severity: number }> = [];
       let maxSeverity = 0;
 
