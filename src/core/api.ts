@@ -9,7 +9,7 @@ const getApiBaseUrl = (): string => {
     return '/api';
   }
 
-  return 'https://influo-seven.vercel.app/api';
+  return 'https://backend-a92zq9x4c-matveys-projects-0d62e667.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
