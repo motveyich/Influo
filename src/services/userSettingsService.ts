@@ -11,11 +11,11 @@ export class UserSettingsService {
         return this.settingsCache.get(userId)!;
       }
 
-      const settings = await apiClient.get<UserSettings>('/settings');
+      const settings = await apiClient.get<{data: UserSettings}>('/settings');
 
-      if (settings) {
-        this.settingsCache.set(userId, settings);
-        return settings;
+      if (settings.data) {
+        this.settingsCache.set(userId, settings.data);
+        return settings.data;
       }
 
       return this.getDefaultSettings(userId);
