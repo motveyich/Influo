@@ -224,15 +224,24 @@ export class AuthService {
   }
 
   private async generateTokens(payload: JwtPayload) {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    this.logger.debug(`Generating tokens for user: ${payload.email}`);
+    this.logger.debug(`JWT_SECRET configured: ${!!jwtSecret}`);
+    this.logger.debug(`JWT_REFRESH_SECRET configured: ${!!jwtRefreshSecret}`);
+
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: jwtSecret,
       expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      secret: jwtRefreshSecret,
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
     });
+
+    this.logger.debug(`Tokens generated successfully for user: ${payload.email}`);
 
     return {
       accessToken,
