@@ -63,6 +63,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     this.logger.debug(`User validated: ${user.email}`);
 
     return {
+      id: user.user_id,
       userId: user.user_id,
       email: user.email,
       fullName: user.full_name,

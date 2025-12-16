@@ -1,5 +1,4 @@
 import { apiClient } from './api';
-import { setSupabaseSession, clearSupabaseSession } from './supabase';
 
 export interface User {
   id: string;
@@ -77,11 +76,6 @@ class AuthService {
             apiClient.setAccessToken(authData.accessToken);
             localStorage.setItem('refreshToken', authData.refreshToken);
 
-            // Set Supabase session if available
-            if (authData.supabaseSession) {
-              await setSupabaseSession(authData.supabaseSession);
-            }
-
             const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
             const user = meResponse.data || meResponse as unknown as User;
             this.currentState = { user, loading: false };
@@ -140,14 +134,8 @@ class AuthService {
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set backend tokens
       apiClient.setAccessToken(authData.accessToken);
       localStorage.setItem('refreshToken', authData.refreshToken);
-
-      // Set Supabase session
-      if (authData.supabaseSession) {
-        await setSupabaseSession(authData.supabaseSession);
-      }
 
       this.currentState = { user: authData.user, loading: false };
       this.notifyListeners();
@@ -190,14 +178,8 @@ class AuthService {
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set backend tokens
       apiClient.setAccessToken(authData.accessToken);
       localStorage.setItem('refreshToken', authData.refreshToken);
-
-      // Set Supabase session
-      if (authData.supabaseSession) {
-        await setSupabaseSession(authData.supabaseSession);
-      }
 
       this.currentState = { user: authData.user, loading: false };
       this.notifyListeners();
@@ -224,7 +206,6 @@ class AuthService {
     } finally {
       apiClient.setAccessToken(null);
       localStorage.removeItem('refreshToken');
-      await clearSupabaseSession();
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
     }

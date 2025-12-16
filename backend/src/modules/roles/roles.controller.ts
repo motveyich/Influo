@@ -45,7 +45,7 @@ export class RolesController {
   @ApiResponse({ status: 200, description: 'Role assigned successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' }}
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   async assignRole(
     @CurrentUser('userId') assignerId: string,
     @Param('userId') userId: string,
