@@ -11,8 +11,8 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
-import { supabase } from '../../../core/supabase';
 import { UserAvatar } from '../../../components/UserAvatar';
+import { profileService } from '../../profiles/services/profileService';
 import toast from 'react-hot-toast';
 
 interface Conversation {
@@ -177,31 +177,26 @@ export function ChatPage() {
 
   const createNewConversation = async (userId: string) => {
     try {
-      // Get user profile to create conversation entry
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name, avatar')
-        .eq('user_id', userId)
-        .single();
-      
+      const userProfile = await profileService.getProfile(userId);
+
       if (userProfile) {
         const newConversation: Conversation = {
           id: userId,
           participantId: userId,
-          participantName: userProfile.full_name || 'Пользователь',
+          participantName: userProfile.fullName || 'Пользователь',
           participantAvatar: userProfile.avatar,
           unreadCount: 0,
           isOnline: false,
           chatType: 'new',
-          canSendMessage: true, // Can send initial message
+          canSendMessage: true,
           isBlocked: false,
           initiatedBy: currentUserId,
           hasReceiverResponded: false
         };
-        
+
         setConversations(prev => [newConversation, ...prev]);
         setSelectedConversation(newConversation);
-        setActiveTab('new'); // Switch to "new" tab for new conversations
+        setActiveTab('new');
       }
     } catch (error) {
       console.error('Failed to create new conversation:', error);

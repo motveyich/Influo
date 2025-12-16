@@ -22,8 +22,8 @@ export function FeatureGate({
 
   // Check access based on required section
   const hasAccess = () => {
-    if (!profile) return false;
-    
+    if (!profile?.profileCompletion) return false;
+
     switch (requiredSection) {
       case 'basic':
         return profile.profileCompletion.basicInfo;
@@ -32,7 +32,7 @@ export function FeatureGate({
       case 'advertiser':
         return profile.profileCompletion.basicInfo && profile.profileCompletion.advertiserSetup;
       case 'any':
-        return profile.profileCompletion.basicInfo && 
+        return profile.profileCompletion.basicInfo &&
                (profile.profileCompletion.influencerSetup || profile.profileCompletion.advertiserSetup);
       default:
         return false;
@@ -95,7 +95,7 @@ export function FeatureGate({
         {sectionInfo.description}
       </p>
 
-      {profile && (
+      {profile?.profileCompletion && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -104,7 +104,7 @@ export function FeatureGate({
                 Текущий прогресс заполнения: {profile.profileCompletion.completionPercentage}%
               </h4>
               <div className="w-full bg-blue-200 rounded-full h-2 mb-3">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${profile.profileCompletion.completionPercentage}%` }}
                 ></div>
