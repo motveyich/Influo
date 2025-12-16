@@ -28,11 +28,6 @@ export interface AuthData {
   };
 }
 
-export interface AuthResponse {
-  success: boolean;
-  data: AuthData;
-  timestamp: string;
-}
 
 class AuthService {
   private listeners: ((state: AuthState) => void)[] = [];
@@ -55,8 +50,7 @@ class AuthService {
     }
 
     try {
-      const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-      const user = meResponse.data || meResponse as unknown as User;
+      const user = await apiClient.get<User>('/auth/me');
       this.currentState = { user, loading: false };
       console.log('✅ User authenticated:', user.email);
     } catch (error) {
@@ -66,18 +60,15 @@ class AuthService {
       if (refreshToken) {
         try {
           console.log('🔄 Attempting token refresh...');
-          const response = await apiClient.post<AuthResponse>('/auth/refresh', {
+          const authData = await apiClient.post<AuthData>('/auth/refresh', {
             refreshToken
           });
-
-          const authData = response.data;
 
           if (authData?.accessToken) {
             apiClient.setAccessToken(authData.accessToken);
             localStorage.setItem('refreshToken', authData.refreshToken);
 
-            const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-            const user = meResponse.data || meResponse as unknown as User;
+            const user = await apiClient.get<User>('/auth/me');
             this.currentState = { user, loading: false };
             console.log('✅ Token refreshed successfully');
           } else {
@@ -114,13 +105,11 @@ class AuthService {
   async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
       console.log('📝 Attempting sign up for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/signup', {
+      const authData = await apiClient.post<AuthData>('/auth/signup', {
         email,
         password,
         userType,
       });
-
-      const authData = response.data;
 
       console.log('📦 Signup response received:', {
         hasUser: !!authData?.user,
@@ -130,7 +119,7 @@ class AuthService {
       });
 
       if (!authData?.accessToken || !authData?.refreshToken) {
-        console.error('❌ Invalid response format:', response);
+        console.error('❌ Invalid response format:', authData);
         throw new Error('Invalid auth response: missing tokens');
       }
 
@@ -157,15 +146,12 @@ class AuthService {
   async signIn(email: string, password: string) {
     try {
       console.log('🔐 Attempting sign in for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/login', {
+      const authData = await apiClient.post<AuthData>('/auth/login', {
         email,
         password,
       });
 
-      const authData = response.data;
-
-      console.log('📦 Login response received (raw):', response);
-      console.log('📦 Login response details:', {
+      console.log('📦 Login response received:', {
         hasUser: !!authData?.user,
         hasAccessToken: !!authData?.accessToken,
         hasRefreshToken: !!authData?.refreshToken,
@@ -174,7 +160,7 @@ class AuthService {
       });
 
       if (!authData?.accessToken || !authData?.refreshToken) {
-        console.error('❌ Invalid response format:', response);
+        console.error('❌ Invalid response format:', authData);
         throw new Error('Invalid auth response: missing tokens');
       }
 
@@ -230,8 +216,7 @@ class AuthService {
 
     if (token) {
       try {
-        const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-        const user = meResponse.data || meResponse as unknown as User;
+        const user = await apiClient.get<User>('/auth/me');
         this.currentState = { user, loading: false };
         this.notifyListeners();
       } catch (error) {

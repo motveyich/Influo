@@ -9,7 +9,7 @@ const getApiBaseUrl = (): string => {
     return '/api';
   }
 
-  return 'https://influo-seven.vercel.app/';
+  return 'https://influo-seven.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
@@ -18,6 +18,22 @@ interface RequestOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+function isApiResponse<T>(response: any): response is ApiResponse<T> {
+  return (
+    response &&
+    typeof response === 'object' &&
+    'success' in response &&
+    'data' in response &&
+    typeof response.success === 'boolean'
+  );
 }
 
 class ApiClient {
@@ -85,7 +101,13 @@ class ApiClient {
         return {} as T;
       }
 
-      return await response.json();
+      const json = await response.json();
+
+      if (isApiResponse<T>(json)) {
+        return json.data;
+      }
+
+      return json;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -151,7 +173,13 @@ class ApiClient {
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
-      return await response.json();
+      const json = await response.json();
+
+      if (isApiResponse<T>(json)) {
+        return json.data;
+      }
+
+      return json;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
