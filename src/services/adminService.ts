@@ -16,8 +16,8 @@ export class AdminService {
       const queryString = params.toString();
       const url = `/admin/users${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiClient.get<{ success: boolean; data: any[] }>(url);
-      return response.data.map(user => this.transformUser(user));
+      const users = await apiClient.get<any[]>(url);
+      return users.map(user => this.transformUser(user));
     } catch (error) {
       console.error('Failed to get all users:', error);
       throw error;
@@ -46,10 +46,9 @@ export class AdminService {
 
   async getAdminLogs(limit = 100, offset = 0): Promise<any[]> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: any[] }>(
+      return await apiClient.get<any[]>(
         `/admin/logs?limit=${limit}&offset=${offset}`
       );
-      return response.data;
     } catch (error) {
       console.error('Failed to get admin logs:', error);
       throw error;
@@ -63,8 +62,12 @@ export class AdminService {
     totalCampaigns: number;
   }> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: any }>('/admin/stats');
-      return response.data;
+      return await apiClient.get<{
+        totalUsers: number;
+        totalCards: number;
+        totalOffers: number;
+        totalCampaigns: number;
+      }>('/admin/stats');
     } catch (error) {
       console.error('Failed to get platform stats:', error);
       throw error;

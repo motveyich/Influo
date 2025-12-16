@@ -11,11 +11,11 @@ export class UserSettingsService {
         return this.settingsCache.get(userId)!;
       }
 
-      const settings = await apiClient.get<{data: UserSettings}>('/settings');
+      const settings = await apiClient.get<UserSettings>('/settings');
 
-      if (settings?.data) {
-        this.settingsCache.set(userId, settings.data);
-        return settings.data;
+      if (settings) {
+        this.settingsCache.set(userId, settings);
+        return settings;
       }
 
       return this.getDefaultSettings(userId);
@@ -27,10 +27,10 @@ export class UserSettingsService {
 
   async updateSettings(userId: string, updates: Partial<UserSettings>): Promise<UserSettings> {
     try {
-      const updatedSettings = await apiClient.put<{data: UserSettings}>('/settings', updates);
+      const updatedSettings = await apiClient.put<UserSettings>('/settings', updates);
 
-      if (updatedSettings?.data) {
-        this.settingsCache.set(userId, updatedSettings.data);
+      if (updatedSettings) {
+        this.settingsCache.set(userId, updatedSettings);
 
         analytics.track('user_settings_updated', {
           user_id: userId,

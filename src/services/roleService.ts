@@ -4,10 +4,10 @@ import { UserRole, UserRoleData } from '../core/types';
 export class RoleService {
   async getUserRole(userId: string): Promise<UserRole> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: { role: UserRole } }>(
+      const result = await apiClient.get<{ role: UserRole }>(
         `/roles/user/${userId}`
       );
-      return response.data.role;
+      return result.role;
     } catch (error) {
       console.error('Failed to get user role:', error);
       return 'user';
@@ -16,14 +16,13 @@ export class RoleService {
 
   async assignRole(userId: string, role: UserRole, metadata?: Record<string, any>): Promise<UserRoleData> {
     try {
-      const response = await apiClient.post<{ success: boolean; data: UserRoleData }>(
+      return await apiClient.post<UserRoleData>(
         `/roles/user/${userId}/assign`,
         {
           role,
           metadata: metadata || {},
         }
       );
-      return response.data;
     } catch (error) {
       console.error('Failed to assign role:', error);
       throw error;
@@ -41,10 +40,9 @@ export class RoleService {
 
   async getUsersWithRoles(): Promise<Array<UserRoleData & { userProfile: any }>> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: Array<UserRoleData & { userProfile: any }> }>(
+      return await apiClient.get<Array<UserRoleData & { userProfile: any }>>(
         '/roles/users-with-roles'
       );
-      return response.data;
     } catch (error) {
       console.error('Failed to get users with roles:', error);
       throw error;
@@ -53,10 +51,10 @@ export class RoleService {
 
   async checkPermission(userId: string, requiredRole: UserRole): Promise<boolean> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: { hasPermission: boolean } }>(
+      const result = await apiClient.get<{ hasPermission: boolean }>(
         `/roles/check-permission/${userId}?requiredRole=${requiredRole}`
       );
-      return response.data.hasPermission;
+      return result.hasPermission;
     } catch (error) {
       console.error('Failed to check permission:', error);
       return false;

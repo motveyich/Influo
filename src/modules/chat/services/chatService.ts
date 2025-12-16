@@ -21,14 +21,12 @@ export class ChatService {
 
       this.validateMessageData(messageData);
 
-      const response = await apiClient.post<{ success: boolean; data: ChatMessage }>('/chat/messages', {
+      const transformedMessage = await apiClient.post<ChatMessage>('/chat/messages', {
         receiverId: messageData.receiverId,
         messageContent: messageData.messageContent,
         messageType: messageData.messageType || 'text',
         metadata: messageData.metadata || {},
       });
-
-      const transformedMessage = response.data;
 
       realtimeService.sendChatMessage({
         type: 'chat_message',
@@ -52,11 +50,9 @@ export class ChatService {
         return [];
       }
 
-      const response = await apiClient.get<{ success: boolean; data: ChatMessage[] }>(
+      return await apiClient.get<ChatMessage[]>(
         `/chat/conversations/${userId2}?limit=${limit}&offset=${offset}`
       );
-
-      return response.data;
     } catch (error) {
       console.error('Failed to get conversation:', error);
       throw error;
@@ -65,8 +61,7 @@ export class ChatService {
 
   async getUserConversations(userId: string): Promise<any[]> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: any[] }>('/chat/chats');
-      return response.data;
+      return await apiClient.get<any[]>('/chat/chats');
     } catch (error) {
       console.error('Failed to get user conversations:', error);
       throw error;
@@ -90,8 +85,8 @@ export class ChatService {
 
   async getUnreadCount(): Promise<number> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: { count: number } }>('/chat/unread-count');
-      return response.data.count;
+      const result = await apiClient.get<{ count: number }>('/chat/unread-count');
+      return result.count;
     } catch (error) {
       console.error('Failed to get unread count:', error);
       return 0;
