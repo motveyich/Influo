@@ -17,6 +17,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { SupportModule } from './modules/support/support.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { BlacklistModule } from './modules/blacklist/blacklist.module';
+import { HomeModule } from './modules/home/home.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -46,6 +48,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     SupportModule,
     FavoritesModule,
     BlacklistModule,
+    HomeModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [
