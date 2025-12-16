@@ -19,7 +19,7 @@ export class SettingsService {
 
   async getUserSettings(userId: string): Promise<UserSettings> {
     try {
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
@@ -41,7 +41,7 @@ export class SettingsService {
 
   async updateSettings(userId: string, updates: Partial<UserSettings>): Promise<UserSettings> {
     try {
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
       const currentSettings = await this.getUserSettings(userId);
 
       const updatedSettings = {
@@ -74,7 +74,7 @@ export class SettingsService {
     newPassword: string
   ): Promise<void> {
     try {
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
 
       const { error: updateError } = await supabase.auth.admin.updateUserById(
         userId,
@@ -135,7 +135,7 @@ export class SettingsService {
 
   async signOutAllDevices(userId: string): Promise<void> {
     try {
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
 
       await supabase.auth.admin.signOut(userId, 'global');
 
@@ -174,7 +174,7 @@ export class SettingsService {
         throw new BadRequestException('Confirmation text must be "DELETE"');
       }
 
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
       const { error } = await supabase
         .from('user_profiles')
         .update({
@@ -193,7 +193,7 @@ export class SettingsService {
 
   private async createDefaultSettings(userId: string): Promise<UserSettings> {
     try {
-      const supabase = this.supabaseService.getClient();
+      const supabase = this.supabaseService.getAdminClient();
       const defaultSettings = this.getDefaultSettings(userId);
 
       const { data, error } = await supabase
