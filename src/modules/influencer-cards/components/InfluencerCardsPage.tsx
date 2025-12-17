@@ -136,7 +136,7 @@ export function InfluencerCardsPage() {
       setIsLoading(true);
       
       if (activeTab === 'influencers') {
-        const cards = await influencerCardService.getAllCards({
+        const cards = await influencerCardService.getCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
           minFollowers: minFollowersFilter ? parseInt(minFollowersFilter) : undefined,
           maxFollowers: maxFollowersFilter ? parseInt(maxFollowersFilter) : undefined,
@@ -146,7 +146,7 @@ export function InfluencerCardsPage() {
         });
         setInfluencerCards(cards);
       } else if (activeTab === 'advertisers') {
-        const cards = await advertiserCardService.getAllCards({
+        const cards = await advertiserCardService.getCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
           minBudget: minBudgetFilter ? parseInt(minBudgetFilter) : undefined,
           maxBudget: maxBudgetFilter ? parseInt(maxBudgetFilter) : undefined,
@@ -158,8 +158,8 @@ export function InfluencerCardsPage() {
         setAdvertiserCards(cards);
       } else if (activeTab === 'my_cards') {
         const [influencerCards, advertiserCards] = await Promise.all([
-          influencerCardService.getUserCards(currentUserId),
-          advertiserCardService.getUserCards(currentUserId)
+          influencerCardService.getMyCards(currentUserId),
+          advertiserCardService.getMyCards(currentUserId)
         ]);
         setMyInfluencerCards(influencerCards);
         setMyAdvertiserCards(advertiserCards);
@@ -181,8 +181,8 @@ export function InfluencerCardsPage() {
         return;
       }
       
-      const favorites = await favoriteService.getUserFavorites(currentUserId);
-      const influencerFavorites = favorites.filter(fav => 
+      const favorites = await favoriteService.getFavorites();
+      const influencerFavorites = favorites.filter(fav =>
         fav.targetType === 'influencer_card' || fav.targetType === 'advertiser_card'
       );
       
