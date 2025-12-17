@@ -87,13 +87,12 @@ class ApiClient {
 
       const json = await response.json();
 
-      // Если ответ содержит поле data, извлекаем его (бекенд всегда оборачивает в {success, data, timestamp})
-      if (json && typeof json === 'object' && 'data' in json) {
+      let result = json;
+      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
         console.log('[API] Extracting data from wrapped response');
-        return json.data;
+        result = result.data;
       }
-
-      return json;
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -161,13 +160,12 @@ class ApiClient {
 
       const json = await response.json();
 
-      // Если ответ содержит поле data, извлекаем его (бекенд всегда оборачивает в {success, data, timestamp})
-      if (json && typeof json === 'object' && 'data' in json) {
+      let result = json;
+      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
         console.log('[API] Extracting data from wrapped response (upload)');
-        return json.data;
+        result = result.data;
       }
-
-      return json;
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
