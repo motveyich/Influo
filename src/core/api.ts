@@ -20,22 +20,6 @@ interface RequestOptions {
   body?: any;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: string;
-}
-
-function isApiResponse<T>(response: any): response is ApiResponse<T> {
-  return (
-    response &&
-    typeof response === 'object' &&
-    'success' in response &&
-    'data' in response &&
-    typeof response.success === 'boolean'
-  );
-}
-
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -103,7 +87,9 @@ class ApiClient {
 
       const json = await response.json();
 
-      if (isApiResponse<T>(json)) {
+      // Если ответ содержит поле data, извлекаем его (бекенд всегда оборачивает в {success, data, timestamp})
+      if (json && typeof json === 'object' && 'data' in json) {
+        console.log('[API] Extracting data from wrapped response');
         return json.data;
       }
 
@@ -175,7 +161,9 @@ class ApiClient {
 
       const json = await response.json();
 
-      if (isApiResponse<T>(json)) {
+      // Если ответ содержит поле data, извлекаем его (бекенд всегда оборачивает в {success, data, timestamp})
+      if (json && typeof json === 'object' && 'data' in json) {
+        console.log('[API] Extracting data from wrapped response (upload)');
         return json.data;
       }
 
