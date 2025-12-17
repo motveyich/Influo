@@ -20,6 +20,42 @@ interface RequestOptions {
   body?: any;
 }
 
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: T;
+  timestamp?: string;
+}
+
+function isApiResponse(obj: unknown): obj is ApiResponse {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'success' in obj &&
+    'data' in obj &&
+    typeof (obj as ApiResponse).success === 'boolean'
+  );
+}
+
+function unwrapResponse<T>(json: unknown): T {
+  if (!isApiResponse(json)) {
+    return json as T;
+  }
+
+  if (!json.success) {
+    const errorMessage = typeof json.data === 'object' && json.data !== null && 'message' in json.data
+      ? String((json.data as { message: string }).message)
+      : 'Request failed';
+    throw new Error(errorMessage);
+  }
+
+  let result = json.data;
+  if (isApiResponse(result) && result.success) {
+    result = result.data;
+  }
+
+  return result as T;
+}
+
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -86,13 +122,7 @@ class ApiClient {
       }
 
       const json = await response.json();
-
-      let result = json;
-      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
-        console.log('[API] Extracting data from wrapped response');
-        result = result.data;
-      }
-      return result;
+      return unwrapResponse<T>(json);
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -159,13 +189,7 @@ class ApiClient {
       }
 
       const json = await response.json();
-
-      let result = json;
-      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
-        console.log('[API] Extracting data from wrapped response (upload)');
-        result = result.data;
-      }
-      return result;
+      return unwrapResponse<T>(json);
     } catch (error) {
       if (error instanceof Error) {
         throw error;
