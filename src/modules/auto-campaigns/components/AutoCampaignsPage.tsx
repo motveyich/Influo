@@ -94,16 +94,24 @@ export function AutoCampaignsPage() {
         const data = await autoCampaignService.getActiveCampaigns(currentUserId);
         console.log('Loaded active campaigns:', data);
         console.log('Active campaigns count:', data?.length);
-        setAllCampaigns(data);
+        console.log('Active campaigns data:', JSON.stringify(data, null, 2));
+        setAllCampaigns(data || []);
       } else {
         const data = await autoCampaignService.getCampaigns(currentUserId);
         console.log('Loaded my campaigns:', data);
         console.log('My campaigns count:', data?.length);
-        setMyCampaigns(data);
+        console.log('My campaigns data:', JSON.stringify(data, null, 2));
+        setMyCampaigns(data || []);
       }
     } catch (error) {
       console.error('Failed to load campaigns:', error);
+      console.error('Error details:', error);
       toast.error('Не удалось загрузить автокампании');
+      if (activeTab === 'all') {
+        setAllCampaigns([]);
+      } else {
+        setMyCampaigns([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -228,6 +236,10 @@ export function AutoCampaignsPage() {
   };
 
   const campaignsToShow = activeTab === 'all' ? allCampaigns : myCampaigns;
+  console.log('Currently showing campaigns:', campaignsToShow);
+  console.log('Active tab:', activeTab);
+  console.log('All campaigns:', allCampaigns);
+  console.log('My campaigns:', myCampaigns);
 
   if (isLoading) {
     return (

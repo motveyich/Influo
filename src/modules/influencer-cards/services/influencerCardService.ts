@@ -70,12 +70,22 @@ export class InfluencerCardService {
       const queryParams = new URLSearchParams();
       if (filters) {
         Object.keys(filters).forEach(key => {
-          if (filters[key] !== undefined) {
-            queryParams.append(key, String(filters[key]));
+          const value = filters[key];
+
+          if (value === undefined || value === null || value === '') {
+            return;
+          }
+
+          if (Array.isArray(value)) {
+            if (value.length === 0) return;
+            value.forEach(item => queryParams.append(key, String(item)));
+          } else {
+            queryParams.append(key, String(value));
           }
         });
       }
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      console.log('Loading influencer cards with query:', queryString);
       return await apiClient.get<InfluencerCard[]>(`/influencer-cards${queryString}`);
     } catch (error) {
       console.error('Failed to get cards:', error);

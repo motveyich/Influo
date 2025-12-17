@@ -48,10 +48,27 @@ export class OfferService {
         queryString = `?${queryParams.toString()}`;
       }
 
-      return await apiClient.get<CollaborationOffer[]>(`/offers${queryString}`);
+      console.log('Loading offers with query:', queryString);
+      const offers = await apiClient.get<CollaborationOffer[]>(`/offers${queryString}`);
+      console.log('Loaded offers:', offers);
+      return offers || [];
     } catch (error) {
       console.error('Failed to get offers:', error);
       throw error;
+    }
+  }
+
+  async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
+    try {
+      console.log('Loading offers for participant:', userId);
+      const offers = await apiClient.get<CollaborationOffer[]>(`/offers`);
+      console.log('All offers response:', offers);
+      console.log('Offers count:', offers?.length);
+      return offers || [];
+    } catch (error) {
+      console.error('Failed to get offers by participant:', error);
+      console.error('Error details:', error);
+      return [];
     }
   }
 

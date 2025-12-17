@@ -39,6 +39,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
   const loadReviews = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading reviews for user:', userId);
       // Загружаем отзывы обо мне
       const { data: received, error: receivedError } = await supabase
         .from(TABLES.REVIEWS)
@@ -46,7 +47,12 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
         .eq('reviewee_id', userId)
         .order('created_at', { ascending: false });
 
-      if (receivedError) throw receivedError;
+      if (receivedError) {
+        console.error('Failed to load received reviews:', receivedError);
+        setReceivedReviews([]);
+      }
+
+      console.log('Received reviews:', received);
 
       // Загружаем мои отзывы
       const { data: given, error: givenError } = await supabase
@@ -55,10 +61,15 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
         .eq('reviewer_id', userId)
         .order('created_at', { ascending: false });
 
-      if (givenError) throw givenError;
+      if (givenError) {
+        console.error('Failed to load given reviews:', givenError);
+        setGivenReviews([]);
+      }
+
+      console.log('Given reviews:', given);
 
       // Загружаем профили для полученных отзывов
-      if (received && received.length > 0) {
+      if (received && received.length > 0 && !receivedError) {
         const reviewerIds = received.map(r => r.reviewer_id);
         const { data: profiles } = await supabase
           .from(TABLES.USER_PROFILES)
@@ -83,7 +94,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
       }
 
       // Загружаем профили для отданных отзывов
-      if (given && given.length > 0) {
+      if (given && given.length > 0 && !givenError) {
         const reviewedIds = given.map(r => r.reviewee_id);
         const { data: profiles } = await supabase
           .from(TABLES.USER_PROFILES)
@@ -109,6 +120,9 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
 
     } catch (error) {
       console.error('Failed to load reviews:', error);
+      console.error('Error details:', error);
+      setReceivedReviews([]);
+      setGivenReviews([]);
     } finally {
       setIsLoading(false);
     }
