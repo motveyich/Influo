@@ -40,7 +40,11 @@ export class AutoCampaignService {
 
   async getCampaigns(userId: string): Promise<AutoCampaign[]> {
     try {
-      return await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
+      const campaigns = await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
+      return campaigns.map(campaign => ({
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      }));
     } catch (error) {
       console.error('Failed to get campaigns:', error);
       throw error;
@@ -49,7 +53,11 @@ export class AutoCampaignService {
 
   async getCampaign(campaignId: string): Promise<AutoCampaign> {
     try {
-      return await apiClient.get<AutoCampaign>(`/auto-campaigns/${campaignId}`);
+      const campaign = await apiClient.get<AutoCampaign>(`/auto-campaigns/${campaignId}`);
+      return {
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      };
     } catch (error) {
       console.error('Failed to get campaign:', error);
       throw error;
@@ -126,10 +134,15 @@ export class AutoCampaignService {
   async getActiveCampaigns(currentUserId?: string): Promise<AutoCampaign[]> {
     try {
       const campaigns = await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
+      const normalizedCampaigns = campaigns.map(campaign => ({
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      }));
+
       if (currentUserId) {
-        return campaigns.filter(c => c.advertiserId !== currentUserId);
+        return normalizedCampaigns.filter(c => c.advertiserId !== currentUserId);
       }
-      return campaigns;
+      return normalizedCampaigns;
     } catch (error) {
       console.error('Failed to get active campaigns:', error);
       throw error;

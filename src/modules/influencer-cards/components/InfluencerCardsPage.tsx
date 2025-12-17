@@ -141,8 +141,7 @@ export function InfluencerCardsPage() {
           minFollowers: minFollowersFilter ? parseInt(minFollowersFilter) : undefined,
           maxFollowers: maxFollowersFilter ? parseInt(maxFollowersFilter) : undefined,
           countries: selectedCountries.length > 0 ? selectedCountries : undefined,
-          searchQuery: searchQuery || undefined,
-          isActive: true
+          searchQuery: searchQuery || undefined
         });
         setInfluencerCards(cards);
       } else if (activeTab === 'advertisers') {
@@ -152,8 +151,7 @@ export function InfluencerCardsPage() {
           maxBudget: maxBudgetFilter ? parseInt(maxBudgetFilter) : undefined,
           productCategories: selectedProductCategories.length > 0 ? selectedProductCategories : undefined,
           serviceFormats: selectedServiceFormats.length > 0 ? selectedServiceFormats : undefined,
-          searchQuery: searchQuery || undefined,
-          isActive: true
+          searchQuery: searchQuery || undefined
         });
         setAdvertiserCards(cards);
       } else if (activeTab === 'my_cards') {

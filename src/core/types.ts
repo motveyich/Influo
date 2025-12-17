@@ -727,6 +727,12 @@ export interface AutoCampaign {
   createdAt: string;
   updatedAt: string;
   isParticipating?: boolean;
+  user?: {
+    id: string;
+    fullName: string;
+    username?: string;
+    avatar?: string;
+  };
 }
 
 export interface AutoCampaignFormData {

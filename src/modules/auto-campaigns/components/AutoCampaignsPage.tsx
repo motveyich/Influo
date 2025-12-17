@@ -47,19 +47,26 @@ export function AutoCampaignsPage() {
   }, [allCampaigns, myCampaigns, activeTab]);
 
   const loadAdvertiserProfiles = async (campaigns: AutoCampaign[]) => {
-    const advertiserIds = [...new Set(campaigns.map(c => c.advertiserId))];
     const profiles: Record<string, any> = {};
 
-    for (const advertiserId of advertiserIds) {
-      try {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, full_name, avatar')
-          .eq('user_id', advertiserId)
-          .maybeSingle();
-        if (data) profiles[advertiserId] = data;
-      } catch (error) {
-        console.error('Failed to load advertiser profile:', error);
+    for (const campaign of campaigns) {
+      if (campaign.user) {
+        profiles[campaign.advertiserId] = {
+          user_id: campaign.user.id,
+          full_name: campaign.user.fullName,
+          avatar: campaign.user.avatar
+        };
+      } else {
+        try {
+          const { data } = await supabase
+            .from('user_profiles')
+            .select('user_id, full_name, avatar')
+            .eq('user_id', campaign.advertiserId)
+            .maybeSingle();
+          if (data) profiles[campaign.advertiserId] = data;
+        } catch (error) {
+          console.error('Failed to load advertiser profile:', error);
+        }
       }
     }
 
@@ -85,9 +92,13 @@ export function AutoCampaignsPage() {
 
       if (activeTab === 'all') {
         const data = await autoCampaignService.getActiveCampaigns(currentUserId);
+        console.log('Loaded active campaigns:', data);
+        console.log('Active campaigns count:', data?.length);
         setAllCampaigns(data);
       } else {
         const data = await autoCampaignService.getCampaigns(currentUserId);
+        console.log('Loaded my campaigns:', data);
+        console.log('My campaigns count:', data?.length);
         setMyCampaigns(data);
       }
     } catch (error) {
