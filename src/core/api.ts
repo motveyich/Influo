@@ -53,6 +53,11 @@ function unwrapResponse<T>(json: unknown): T {
     result = result.data;
   }
 
+  // Log if we're returning null/undefined to help with debugging
+  if (result === null || result === undefined) {
+    console.warn('[API] Response data is null/undefined for successful request');
+  }
+
   return result as T;
 }
 

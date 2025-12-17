@@ -50,21 +50,23 @@ export class ChatService {
         return [];
       }
 
-      return await apiClient.get<ChatMessage[]>(
+      const messages = await apiClient.get<ChatMessage[]>(
         `/chat/conversations/${userId2}?limit=${limit}&offset=${offset}`
       );
+      return Array.isArray(messages) ? messages : [];
     } catch (error) {
       console.error('Failed to get conversation:', error);
-      throw error;
+      return [];
     }
   }
 
   async getUserConversations(userId: string): Promise<any[]> {
     try {
-      return await apiClient.get<any[]>('/chat/chats');
+      const conversations = await apiClient.get<any[]>('/chat/chats');
+      return Array.isArray(conversations) ? conversations : [];
     } catch (error) {
       console.error('Failed to get user conversations:', error);
-      throw error;
+      return [];
     }
   }
 

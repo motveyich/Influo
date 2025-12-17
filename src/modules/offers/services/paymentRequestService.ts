@@ -36,10 +36,11 @@ export class PaymentRequestService {
   async getPaymentRequests(offerId?: string): Promise<PaymentRequest[]> {
     try {
       const query = offerId ? `?offerId=${offerId}` : '';
-      return await apiClient.get<PaymentRequest[]>(`/payments${query}`);
+      const payments = await apiClient.get<PaymentRequest[]>(`/payments${query}`);
+      return Array.isArray(payments) ? payments : [];
     } catch (error) {
       console.error('Failed to get payment requests:', error);
-      throw error;
+      return [];
     }
   }
 

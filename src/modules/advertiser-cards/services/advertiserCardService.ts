@@ -65,10 +65,11 @@ export class AdvertiserCardService {
 
   async getMyCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards?userId=${userId}`);
+      const cards = await apiClient.get<AdvertiserCard[]>(`/advertiser-cards?userId=${userId}`);
+      return Array.isArray(cards) ? cards : [];
     } catch (error) {
       console.error('Failed to get user cards:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -93,10 +94,11 @@ export class AdvertiserCardService {
       }
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       console.log('Loading advertiser cards with query:', queryString);
-      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards${queryString}`);
+      const cards = await apiClient.get<AdvertiserCard[]>(`/advertiser-cards${queryString}`);
+      return Array.isArray(cards) ? cards : [];
     } catch (error) {
       console.error('Failed to get cards:', error);
-      throw error;
+      return [];
     }
   }
 

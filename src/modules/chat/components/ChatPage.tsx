@@ -112,10 +112,13 @@ export function ChatPage() {
     try {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
-      
+
+      // Дополнительная защита на уровне компонента
+      const safeConversations = Array.isArray(loadedConversations) ? loadedConversations : [];
+
       // Enhance conversations with chat type and restrictions
       const enhancedConversations = await Promise.all(
-        loadedConversations.map(async (conv) => {
+        safeConversations.map(async (conv) => {
           const isBlocked = blockedUsers.has(conv.participantId);
           const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
           const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
@@ -210,7 +213,8 @@ export function ChatPage() {
       const partnerId = selectedConversation?.participantId;
       if (partnerId) {
         const loadedMessages = await chatService.getConversation(currentUserId, partnerId);
-        setMessages(loadedMessages);
+        // Дополнительная защита на уровне компонента
+        setMessages(Array.isArray(loadedMessages) ? loadedMessages : []);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);

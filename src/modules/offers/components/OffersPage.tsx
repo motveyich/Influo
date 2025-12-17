@@ -59,10 +59,13 @@ export function OffersPage() {
       const loadedOffers = await offerService.getOffersByParticipant(currentUserId);
       console.log('Loaded offers:', loadedOffers);
       console.log('Loaded offers count:', loadedOffers?.length);
-      setAllOffers(loadedOffers || []);
+
+      // Дополнительная защита на уровне компонента
+      const safeOffers = Array.isArray(loadedOffers) ? loadedOffers : [];
+      setAllOffers(safeOffers);
 
       // Фильтруем по вкладке
-      const filteredByTab = (loadedOffers || []).filter(offer => {
+      const filteredByTab = safeOffers.filter(offer => {
         if (activeTab === 'active') {
           return ['pending', 'accepted', 'in_progress'].includes(offer.status);
         } else {

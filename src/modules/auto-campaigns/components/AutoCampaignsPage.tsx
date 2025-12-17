@@ -95,13 +95,15 @@ export function AutoCampaignsPage() {
         console.log('Loaded active campaigns:', data);
         console.log('Active campaigns count:', data?.length);
         console.log('Active campaigns data:', JSON.stringify(data, null, 2));
-        setAllCampaigns(data || []);
+        // Дополнительная защита на уровне компонента
+        setAllCampaigns(Array.isArray(data) ? data : []);
       } else {
         const data = await autoCampaignService.getCampaigns(currentUserId);
         console.log('Loaded my campaigns:', data);
         console.log('My campaigns count:', data?.length);
         console.log('My campaigns data:', JSON.stringify(data, null, 2));
-        setMyCampaigns(data || []);
+        // Дополнительная защита на уровне компонента
+        setMyCampaigns(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Failed to load campaigns:', error);

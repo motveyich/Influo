@@ -43,6 +43,13 @@ export class AutoCampaignService {
       console.log('Loading campaigns for user:', userId);
       const campaigns = await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
       console.log('Raw campaigns response:', campaigns);
+
+      // Защита: проверяем что campaigns это массив
+      if (!Array.isArray(campaigns)) {
+        console.warn('Campaigns response is not an array:', campaigns);
+        return [];
+      }
+
       const normalized = campaigns.map(campaign => ({
         ...campaign,
         advertiserId: campaign.advertiserId || campaign.user?.id || ''
@@ -51,7 +58,7 @@ export class AutoCampaignService {
       return normalized;
     } catch (error) {
       console.error('Failed to get campaigns:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -140,6 +147,13 @@ export class AutoCampaignService {
       console.log('Loading active campaigns, currentUserId:', currentUserId);
       const campaigns = await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
       console.log('Raw active campaigns response:', campaigns);
+
+      // Защита: проверяем что campaigns это массив
+      if (!Array.isArray(campaigns)) {
+        console.warn('Active campaigns response is not an array:', campaigns);
+        return [];
+      }
+
       const normalizedCampaigns = campaigns.map(campaign => ({
         ...campaign,
         advertiserId: campaign.advertiserId || campaign.user?.id || ''
@@ -154,7 +168,7 @@ export class AutoCampaignService {
       return normalizedCampaigns;
     } catch (error) {
       console.error('Failed to get active campaigns:', error);
-      throw error;
+      return [];
     }
   }
 }

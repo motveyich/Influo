@@ -35,10 +35,11 @@ export class ApplicationService {
       if (params?.status) {
         queryString = `?status=${params.status}`;
       }
-      return await apiClient.get<Application[]>(`/applications${queryString}`);
+      const applications = await apiClient.get<Application[]>(`/applications${queryString}`);
+      return Array.isArray(applications) ? applications : [];
     } catch (error) {
       console.error('Failed to get applications:', error);
-      throw error;
+      return [];
     }
   }
 

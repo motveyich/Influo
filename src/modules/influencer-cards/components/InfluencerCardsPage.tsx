@@ -143,7 +143,7 @@ export function InfluencerCardsPage() {
           countries: selectedCountries.length > 0 ? selectedCountries : undefined,
           searchQuery: searchQuery || undefined
         });
-        setInfluencerCards(cards);
+        setInfluencerCards(Array.isArray(cards) ? cards : []);
       } else if (activeTab === 'advertisers') {
         const cards = await advertiserCardService.getCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
@@ -153,14 +153,14 @@ export function InfluencerCardsPage() {
           serviceFormats: selectedServiceFormats.length > 0 ? selectedServiceFormats : undefined,
           searchQuery: searchQuery || undefined
         });
-        setAdvertiserCards(cards);
+        setAdvertiserCards(Array.isArray(cards) ? cards : []);
       } else if (activeTab === 'my_cards') {
         const [influencerCards, advertiserCards] = await Promise.all([
           influencerCardService.getMyCards(currentUserId),
           advertiserCardService.getMyCards(currentUserId)
         ]);
-        setMyInfluencerCards(influencerCards);
-        setMyAdvertiserCards(advertiserCards);
+        setMyInfluencerCards(Array.isArray(influencerCards) ? influencerCards : []);
+        setMyAdvertiserCards(Array.isArray(advertiserCards) ? advertiserCards : []);
       } else if (activeTab === 'favorites') {
         await loadFavorites();
       }

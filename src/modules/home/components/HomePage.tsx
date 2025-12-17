@@ -84,8 +84,9 @@ export function HomePage() {
 
       const results = await Promise.all(promises);
 
-      setPlatformUpdates(results[0]);
-      setPlatformEvents(results[1]);
+      // Защита: убедиться что результаты это массивы
+      setPlatformUpdates(Array.isArray(results[0]) ? results[0] : []);
+      setPlatformEvents(Array.isArray(results[1]) ? results[1] : []);
 
       if (currentUserId && results[2]) {
         setUserStats(results[2]);

@@ -58,10 +58,11 @@ export class InfluencerCardService {
 
   async getMyCards(userId: string): Promise<InfluencerCard[]> {
     try {
-      return await apiClient.get<InfluencerCard[]>(`/influencer-cards?userId=${userId}`);
+      const cards = await apiClient.get<InfluencerCard[]>(`/influencer-cards?userId=${userId}`);
+      return Array.isArray(cards) ? cards : [];
     } catch (error) {
       console.error('Failed to get user cards:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -86,10 +87,11 @@ export class InfluencerCardService {
       }
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       console.log('Loading influencer cards with query:', queryString);
-      return await apiClient.get<InfluencerCard[]>(`/influencer-cards${queryString}`);
+      const cards = await apiClient.get<InfluencerCard[]>(`/influencer-cards${queryString}`);
+      return Array.isArray(cards) ? cards : [];
     } catch (error) {
       console.error('Failed to get cards:', error);
-      throw error;
+      return [];
     }
   }
 
