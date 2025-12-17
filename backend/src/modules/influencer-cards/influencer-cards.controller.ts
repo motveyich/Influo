@@ -8,7 +8,6 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -50,18 +49,30 @@ export class InfluencerCardsController {
   @ApiQuery({ name: 'minFollowers', required: false, description: 'Minimum followers' })
   @ApiQuery({ name: 'maxFollowers', required: false, description: 'Maximum followers' })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
+  @ApiQuery({ name: 'countries', required: false, description: 'Filter by countries' })
+  @ApiQuery({ name: 'searchQuery', required: false, description: 'Search in description and interests' })
   @ApiResponse({ status: 200, description: 'List of influencer cards' })
   async findAll(
     @Query('platform') platform?: string,
-    @Query('minFollowers', new ParseIntPipe({ optional: true })) minFollowers?: number,
-    @Query('maxFollowers', new ParseIntPipe({ optional: true })) maxFollowers?: number,
+    @Query('minFollowers') minFollowers?: string,
+    @Query('maxFollowers') maxFollowers?: string,
     @Query('userId') userId?: string,
+    @Query('countries') countries?: string | string[],
+    @Query('searchQuery') searchQuery?: string,
   ) {
+    const parsedMinFollowers = minFollowers ? parseInt(minFollowers, 10) : undefined;
+    const parsedMaxFollowers = maxFollowers ? parseInt(maxFollowers, 10) : undefined;
+    const countriesArray = countries
+      ? (Array.isArray(countries) ? countries : [countries])
+      : undefined;
+
     return this.influencerCardsService.findAll({
       platform,
-      minFollowers,
-      maxFollowers,
+      minFollowers: parsedMinFollowers !== undefined && !isNaN(parsedMinFollowers) ? parsedMinFollowers : undefined,
+      maxFollowers: parsedMaxFollowers !== undefined && !isNaN(parsedMaxFollowers) ? parsedMaxFollowers : undefined,
       userId,
+      countries: countriesArray,
+      searchQuery,
     });
   }
 
