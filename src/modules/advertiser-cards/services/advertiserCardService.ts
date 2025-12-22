@@ -1,55 +1,44 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../../../core/api';
 import { AdvertiserCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class AdvertiserCardService {
   async createCard(cardData: Partial<AdvertiserCard>): Promise<AdvertiserCard> {
     try {
-      // Validate required fields
       this.validateCardData(cardData);
 
-      const newCard = {
-        user_id: cardData.userId,
-        company_name: cardData.companyName,
-        campaign_title: cardData.campaignTitle,
-        campaign_description: cardData.campaignDescription,
+      const payload = {
+        userId: cardData.userId,
+        companyName: cardData.companyName,
+        campaignTitle: cardData.campaignTitle,
+        campaignDescription: cardData.campaignDescription,
         platform: cardData.platform,
-        product_categories: cardData.productCategories,
+        productCategories: cardData.productCategories,
         budget: cardData.budget,
-        service_format: cardData.serviceFormat,
-        campaign_duration: cardData.campaignDuration,
-        influencer_requirements: cardData.influencerRequirements,
-        target_audience: cardData.targetAudience,
-        contact_info: cardData.contactInfo,
-        campaign_stats: cardData.campaignStats || {
+        serviceFormat: cardData.serviceFormat,
+        campaignDuration: cardData.campaignDuration,
+        influencerRequirements: cardData.influencerRequirements,
+        targetAudience: cardData.targetAudience,
+        contactInfo: cardData.contactInfo,
+        campaignStats: cardData.campaignStats || {
           completedCampaigns: 0,
           averageRating: 0,
           totalInfluencersWorked: 0,
           successRate: 0
         },
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       };
 
-      // For now, store in localStorage since we don't have advertiser_cards table
-      const existingCards = this.getStoredCards();
-      const cardWithId = {
-        ...this.transformFromStorage(newCard),
-        id: `adv_card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      };
-      
-      existingCards.push(cardWithId);
-      localStorage.setItem('advertiser_cards', JSON.stringify(existingCards));
+      const { data, error } = await apiClient.post<any>('/advertiser-cards', payload);
 
-      // Track card creation
+      if (error) throw new Error(error.message);
+
       analytics.track('advertiser_card_created', {
         user_id: cardData.userId,
         company_name: cardData.companyName,
-        card_id: cardWithId.id
+        card_id: data.id
       });
 
-      return cardWithId;
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to create advertiser card:', error);
       throw error;
@@ -60,29 +49,18 @@ export class AdvertiserCardService {
     try {
       this.validateCardData(updates, false);
 
-      const existingCards = this.getStoredCards();
-      const cardIndex = existingCards.findIndex(card => card.id === cardId);
-      
-      if (cardIndex === -1) {
-        throw new Error('Card not found');
-      }
+      const payload = this.transformToApiPayload(updates);
 
-      const updatedCard = {
-        ...existingCards[cardIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
+      const { data, error } = await apiClient.patch<any>(`/advertiser-cards/${cardId}`, payload);
 
-      existingCards[cardIndex] = updatedCard;
-      localStorage.setItem('advertiser_cards', JSON.stringify(existingCards));
+      if (error) throw new Error(error.message);
 
-      // Track card update
       analytics.track('advertiser_card_updated', {
         card_id: cardId,
         updated_fields: Object.keys(updates)
       });
 
-      return updatedCard;
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to update advertiser card:', error);
       throw error;
@@ -91,8 +69,14 @@ export class AdvertiserCardService {
 
   async getCard(cardId: string): Promise<AdvertiserCard | null> {
     try {
-      const existingCards = this.getStoredCards();
-      return existingCards.find(card => card.id === cardId) || null;
+      const { data, error } = await apiClient.get<any>(`/advertiser-cards/${cardId}`);
+
+      if (error) {
+        if (error.status === 404) return null;
+        throw new Error(error.message);
+      }
+
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to get advertiser card:', error);
       throw error;
@@ -101,8 +85,11 @@ export class AdvertiserCardService {
 
   async getUserCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      const existingCards = this.getStoredCards();
-      return existingCards.filter(card => card.userId === userId);
+      const { data, error } = await apiClient.get<any[]>(`/advertiser-cards?userId=${userId}`);
+
+      if (error) throw new Error(error.message);
+
+      return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
       console.error('Failed to get user cards:', error);
       throw error;
@@ -119,57 +106,38 @@ export class AdvertiserCardService {
     isActive?: boolean;
   }): Promise<AdvertiserCard[]> {
     try {
-      let cards = this.getStoredCards();
+      const params = new URLSearchParams();
 
       if (filters?.isActive !== undefined) {
-        cards = cards.filter(card => card.isActive === filters.isActive);
+        params.append('isActive', String(filters.isActive));
       }
-
       if (filters?.platform && filters.platform !== 'all') {
-        cards = cards.filter(card => card.platform === filters.platform);
+        params.append('platform', filters.platform);
       }
-
       if (filters?.productCategories && filters.productCategories.length > 0) {
-        cards = cards.filter(card => 
-          filters.productCategories!.some(category => 
-            card.productCategories.includes(category)
-          )
-        );
+        params.append('productCategories', filters.productCategories.join(','));
       }
-
       if (filters?.serviceFormats && filters.serviceFormats.length > 0) {
-        cards = cards.filter(card => 
-          filters.serviceFormats!.some(format => 
-            card.serviceFormat.includes(format)
-          )
-        );
+        params.append('serviceFormats', filters.serviceFormats.join(','));
       }
-
       if (filters?.minBudget) {
-        cards = cards.filter(card => {
-          return card.budget.amount && card.budget.amount >= filters.minBudget!;
-        });
+        params.append('minBudget', String(filters.minBudget));
       }
-
       if (filters?.maxBudget) {
-        cards = cards.filter(card => {
-          return card.budget.amount && card.budget.amount <= filters.maxBudget!;
-        });
+        params.append('maxBudget', String(filters.maxBudget));
       }
-
       if (filters?.searchQuery) {
-        const searchLower = filters.searchQuery.toLowerCase();
-        cards = cards.filter(card =>
-          card.campaignTitle.toLowerCase().includes(searchLower) ||
-          card.companyName.toLowerCase().includes(searchLower) ||
-          card.campaignDescription.toLowerCase().includes(searchLower) ||
-          card.productCategories.some(cat => cat.toLowerCase().includes(searchLower)) ||
-          card.serviceFormat.some(format => format.toLowerCase().includes(searchLower)) ||
-          (card.targetAudience.interests && card.targetAudience.interests.some(interest => interest.toLowerCase().includes(searchLower)))
-        );
+        params.append('search', filters.searchQuery);
       }
 
-      return cards.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const queryString = params.toString();
+      const endpoint = queryString ? `/advertiser-cards?${queryString}` : '/advertiser-cards';
+
+      const { data, error } = await apiClient.get<any[]>(endpoint);
+
+      if (error) throw new Error(error.message);
+
+      return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
       console.error('Failed to get all advertiser cards:', error);
       throw error;
@@ -178,11 +146,10 @@ export class AdvertiserCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const existingCards = this.getStoredCards();
-      const filteredCards = existingCards.filter(card => card.id !== cardId);
-      localStorage.setItem('advertiser_cards', JSON.stringify(filteredCards));
+      const { error } = await apiClient.delete(`/advertiser-cards/${cardId}`);
 
-      // Track card deletion
+      if (error) throw new Error(error.message);
+
       analytics.track('advertiser_card_deleted', {
         card_id: cardId
       });
@@ -194,123 +161,22 @@ export class AdvertiserCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<AdvertiserCard> {
     try {
-      const existingCards = this.getStoredCards();
-      const cardIndex = existingCards.findIndex(card => card.id === cardId);
-      
-      if (cardIndex === -1) {
-        throw new Error('Card not found');
-      }
+      const { data, error } = await apiClient.patch<any>(`/advertiser-cards/${cardId}`, {
+        isActive
+      });
 
-      existingCards[cardIndex].isActive = isActive;
-      existingCards[cardIndex].updatedAt = new Date().toISOString();
-      
-      localStorage.setItem('advertiser_cards', JSON.stringify(existingCards));
+      if (error) throw new Error(error.message);
 
-      // Track status change
       analytics.track('advertiser_card_status_changed', {
         card_id: cardId,
         is_active: isActive
       });
 
-      return existingCards[cardIndex];
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to toggle card status:', error);
       throw error;
     }
-  }
-
-  private getStoredCards(): AdvertiserCard[] {
-    try {
-      const stored = localStorage.getItem('advertiser_cards');
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Failed to load stored cards:', error);
-      return [];
-    }
-  }
-
-  private getMockCards(): AdvertiserCard[] {
-    return [
-      {
-        id: 'adv_1',
-        userId: '2',
-        companyName: 'EcoStyle',
-        campaignTitle: 'Summer Sustainable Fashion Campaign',
-        campaignDescription: 'Promote our new eco-friendly summer collection. Looking for fashion influencers who align with sustainability values.',
-        platform: 'instagram',
-        productCategories: ['Мода и стиль', 'Экология и устойчивое развитие'],
-        budget: {
-          amount: 50000,
-          currency: 'RUB'
-        },
-        serviceFormat: ['Пост', 'Рилс'],
-        campaignDuration: {
-          startDate: '2024-02-01T00:00:00Z',
-          endDate: '2024-03-01T00:00:00Z'
-        },
-        influencerRequirements: {
-          minFollowers: 10000,
-          maxFollowers: 500000,
-          minEngagementRate: 3.0
-        },
-        targetAudience: {
-          interests: ['Мода и стиль', 'Красота и косметика', 'Экология и устойчивое развитие']
-        },
-        contactInfo: {
-          email: 'partnerships@ecostyle.com',
-          website: 'https://ecostyle.com'
-        },
-        campaignStats: {
-          completedCampaigns: 12,
-          averageRating: 4.6,
-          totalInfluencersWorked: 45,
-          successRate: 85
-        },
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00Z',
-        updatedAt: '2024-01-20T10:30:00Z'
-      },
-      {
-        id: 'adv_2',
-        userId: '3',
-        companyName: 'TechWave',
-        campaignTitle: 'Wireless Headphones Product Launch',
-        campaignDescription: 'Launch campaign for our new premium wireless headphones. Seeking tech reviewers and lifestyle influencers.',
-        platform: 'youtube',
-        productCategories: ['Технологии и гаджеты', 'Музыка и развлечения'],
-        budget: {
-          amount: 2500,
-          currency: 'RUB'
-        },
-        serviceFormat: ['Видео', 'Пост'],
-        campaignDuration: {
-          startDate: '2024-01-20T00:00:00Z',
-          endDate: '2024-02-15T00:00:00Z'
-        },
-        influencerRequirements: {
-          minFollowers: 5000,
-          maxFollowers: 200000,
-          minEngagementRate: 2.5
-        },
-        targetAudience: {
-          interests: ['Технологии и гаджеты', 'Музыка и развлечения', 'Образ жизни']
-        },
-        contactInfo: {
-          email: 'marketing@techwave.com',
-          phone: '+1-555-0123',
-          website: 'https://techwave.com'
-        },
-        campaignStats: {
-          completedCampaigns: 8,
-          averageRating: 4.3,
-          totalInfluencersWorked: 28,
-          successRate: 78
-        },
-        isActive: true,
-        createdAt: '2024-01-10T00:00:00Z',
-        updatedAt: '2024-01-18T14:20:00Z'
-      }
-    ];
   }
 
   private validateCardData(cardData: Partial<AdvertiserCard>, isCreate: boolean = true): void {
@@ -351,26 +217,46 @@ export class AdvertiserCardService {
     }
   }
 
-  private transformFromStorage(dbData: any): AdvertiserCard {
+  private transformFromApi(apiData: any): AdvertiserCard {
     return {
-      id: dbData.id || `adv_card_${Date.now()}`,
-      userId: dbData.user_id,
-      companyName: dbData.company_name,
-      campaignTitle: dbData.campaign_title,
-      campaignDescription: dbData.campaign_description,
-      platform: dbData.platform,
-      productCategories: dbData.product_categories || [],
-      budget: dbData.budget,
-      serviceFormat: dbData.service_format,
-      campaignDuration: dbData.campaign_duration,
-      influencerRequirements: dbData.influencer_requirements,
-      targetAudience: dbData.target_audience || { interests: [] },
-      contactInfo: dbData.contact_info,
-      campaignStats: dbData.campaign_stats,
-      isActive: dbData.is_active,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      id: apiData.id,
+      userId: apiData.userId || apiData.user_id,
+      companyName: apiData.companyName || apiData.company_name,
+      campaignTitle: apiData.campaignTitle || apiData.campaign_title,
+      campaignDescription: apiData.campaignDescription || apiData.campaign_description,
+      platform: apiData.platform,
+      productCategories: apiData.productCategories || apiData.product_categories || [],
+      budget: apiData.budget,
+      serviceFormat: apiData.serviceFormat || apiData.service_format,
+      campaignDuration: apiData.campaignDuration || apiData.campaign_duration,
+      influencerRequirements: apiData.influencerRequirements || apiData.influencer_requirements,
+      targetAudience: apiData.targetAudience || apiData.target_audience || { interests: [] },
+      contactInfo: apiData.contactInfo || apiData.contact_info,
+      campaignStats: apiData.campaignStats || apiData.campaign_stats,
+      isActive: apiData.isActive ?? apiData.is_active,
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
     };
+  }
+
+  private transformToApiPayload(cardData: Partial<AdvertiserCard>): any {
+    const payload: any = {};
+
+    if (cardData.companyName) payload.companyName = cardData.companyName;
+    if (cardData.campaignTitle) payload.campaignTitle = cardData.campaignTitle;
+    if (cardData.campaignDescription) payload.campaignDescription = cardData.campaignDescription;
+    if (cardData.platform) payload.platform = cardData.platform;
+    if (cardData.productCategories) payload.productCategories = cardData.productCategories;
+    if (cardData.budget) payload.budget = cardData.budget;
+    if (cardData.serviceFormat) payload.serviceFormat = cardData.serviceFormat;
+    if (cardData.campaignDuration) payload.campaignDuration = cardData.campaignDuration;
+    if (cardData.influencerRequirements) payload.influencerRequirements = cardData.influencerRequirements;
+    if (cardData.targetAudience) payload.targetAudience = cardData.targetAudience;
+    if (cardData.contactInfo) payload.contactInfo = cardData.contactInfo;
+    if (cardData.campaignStats) payload.campaignStats = cardData.campaignStats;
+    if (cardData.isActive !== undefined) payload.isActive = cardData.isActive;
+
+    return payload;
   }
 }
 

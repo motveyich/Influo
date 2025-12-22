@@ -1,30 +1,17 @@
-import { supabase, TABLES } from '../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../core/api';
 import { UserRole, UserRoleData } from '../core/types';
-import { adminService } from './adminService';
 
 export class RoleService {
   async getUserRole(userId: string): Promise<UserRole> {
     try {
-      // First check user_roles table for active role assignment
-      const { data: roleData } = await supabase
-        .from(TABLES.USER_ROLES)
-        .select('role')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
+      const { data, error } = await apiClient.get<any>(`/roles/user/${userId}`);
 
-      if (roleData) {
-        return roleData.role;
+      if (error) {
+        console.error('Failed to get user role:', error);
+        return 'user';
       }
 
-      // Fallback to role in user_profiles
-      const { data: profileData } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      return profileData?.role || 'user';
+      return data?.role || 'user';
     } catch (error) {
       console.error('Failed to get user role:', error);
       return 'user';
@@ -33,49 +20,15 @@ export class RoleService {
 
   async assignRole(userId: string, role: UserRole, assignedBy: string): Promise<UserRoleData> {
     try {
-      // Check if assigner has permission
-      const assignerRole = await this.getUserRole(assignedBy);
-      if (assignerRole !== 'admin') {
-        throw new Error('Only admins can assign roles');
-      }
-
-      // Deactivate existing role assignments
-      await supabase
-        .from(TABLES.USER_ROLES)
-        .update({ is_active: false })
-        .eq('user_id', userId);
-
-      // Create new role assignment
-      const newRole = {
-        user_id: userId,
-        role: role,
-        assigned_by: assignedBy,
-        assigned_at: new Date().toISOString(),
-        is_active: true,
-        metadata: {}
-      };
-
-      const { data, error } = await supabase
-        .from(TABLES.USER_ROLES)
-        .insert([newRole])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update role in user_profiles for quick access
-      await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({ role: role })
-        .eq('user_id', userId);
-
-      // Log the action
-      await adminService.logAction(assignedBy, 'role_assigned', 'user_profile', userId, {
-        new_role: role,
-        previous_role: await this.getUserRole(userId)
+      const { data, error } = await apiClient.post<any>('/roles/assign', {
+        userId,
+        role,
+        assignedBy
       });
 
-      return this.transformFromDatabase(data);
+      if (error) throw new Error(error.message);
+
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to assign role:', error);
       throw error;
@@ -84,28 +37,9 @@ export class RoleService {
 
   async removeRole(userId: string, removedBy: string): Promise<void> {
     try {
-      // Check if remover has permission
-      const removerRole = await this.getUserRole(removedBy);
-      if (removerRole !== 'admin') {
-        throw new Error('Only admins can remove roles');
-      }
+      const { error } = await apiClient.delete(`/roles/user/${userId}?removedBy=${removedBy}`);
 
-      // Deactivate role assignments
-      await supabase
-        .from(TABLES.USER_ROLES)
-        .update({ is_active: false })
-        .eq('user_id', userId);
-
-      // Reset to default user role
-      await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({ role: 'user' })
-        .eq('user_id', userId);
-
-      // Log the action
-      await adminService.logAction(removedBy, 'role_removed', 'user_profile', userId, {
-        previous_role: await this.getUserRole(userId)
-      });
+      if (error) throw new Error(error.message);
     } catch (error) {
       console.error('Failed to remove role:', error);
       throw error;
@@ -114,20 +48,13 @@ export class RoleService {
 
   async getUsersWithRoles(): Promise<Array<UserRoleData & { userProfile: any }>> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.USER_ROLES)
-        .select(`
-          *,
-          user_profile:user_profiles(user_id, full_name, email, avatar, created_at)
-        `)
-        .eq('is_active', true)
-        .order('assigned_at', { ascending: false });
+      const { data, error } = await apiClient.get<any[]>('/roles/users-with-roles');
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      return data.map(item => ({
-        ...this.transformFromDatabase(item),
-        userProfile: item.user_profile
+      return (data || []).map(item => ({
+        ...this.transformFromApi(item),
+        userProfile: item.userProfile || item.user_profile
       }));
     } catch (error) {
       console.error('Failed to get users with roles:', error);
@@ -137,36 +64,32 @@ export class RoleService {
 
   async checkPermission(userId: string, requiredRole: UserRole): Promise<boolean> {
     try {
-      const userRole = await this.getUserRole(userId);
-      
-      switch (requiredRole) {
-        case 'user':
-          return true;
-        case 'moderator':
-          return userRole === 'moderator' || userRole === 'admin';
-        case 'admin':
-          return userRole === 'admin';
-        default:
-          return false;
+      const { data, error } = await apiClient.get<any>(`/roles/check-permission?userId=${userId}&requiredRole=${requiredRole}`);
+
+      if (error) {
+        console.error('Failed to check permission:', error);
+        return false;
       }
+
+      return data?.hasPermission === true;
     } catch (error) {
       console.error('Failed to check permission:', error);
       return false;
     }
   }
 
-  private transformFromDatabase(dbData: any): UserRoleData {
+  private transformFromApi(apiData: any): UserRoleData {
     return {
-      id: dbData.id,
-      userId: dbData.user_id,
-      role: dbData.role,
-      assignedBy: dbData.assigned_by,
-      assignedAt: dbData.assigned_at,
-      expiresAt: dbData.expires_at,
-      isActive: dbData.is_active,
-      metadata: dbData.metadata || {},
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      id: apiData.id,
+      userId: apiData.userId || apiData.user_id,
+      role: apiData.role,
+      assignedBy: apiData.assignedBy || apiData.assigned_by,
+      assignedAt: apiData.assignedAt || apiData.assigned_at,
+      expiresAt: apiData.expiresAt || apiData.expires_at,
+      isActive: apiData.isActive ?? apiData.is_active,
+      metadata: apiData.metadata || {},
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
     };
   }
 }

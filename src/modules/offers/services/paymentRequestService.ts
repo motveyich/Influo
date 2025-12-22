@@ -1,57 +1,35 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../../../core/api';
 import { PaymentRequest, PaymentRequestStatus } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
-import { chatService } from '../../chat/services/chatService';
 
 export class PaymentRequestService {
   async createPaymentRequest(requestData: Partial<PaymentRequest>): Promise<PaymentRequest> {
     try {
-      console.log('💰 [Payment Request] Creating with data:', {
-        offerId: requestData.offerId,
-        createdBy: requestData.createdBy,
-        amount: requestData.amount
-      });
-
       this.validatePaymentRequestData(requestData);
 
-      const newRequest = {
-        offer_id: requestData.offerId,
-        created_by: requestData.createdBy,
+      const payload = {
+        offerId: requestData.offerId,
+        createdBy: requestData.createdBy,
         amount: requestData.amount,
-        currency: requestData.currency || 'USD',
-        payment_type: requestData.paymentType,
-        payment_method: requestData.paymentMethod || 'bank_transfer',
-        payment_details: requestData.paymentDetails || {},
+        currency: requestData.currency || 'RUB',
+        paymentType: requestData.paymentType,
+        paymentMethod: requestData.paymentMethod || 'bank_transfer',
+        paymentDetails: requestData.paymentDetails || {},
         instructions: requestData.instructions,
-        status: 'draft',
-        is_frozen: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.PAYMENT_REQUESTS)
-        .insert([newRequest])
-        .select()
-        .maybeSingle();
+      const { data, error } = await apiClient.post<any>('/payments', payload);
 
-      if (error) throw error;
-      if (!data) throw new Error('Failed to create payment request');
+      if (error) throw new Error(error.message);
 
-      const transformedRequest = this.transformFromDatabase(data);
-
-      // Send notification
-      await this.sendPaymentRequestNotification(transformedRequest);
-
-      // Track analytics
       analytics.track('payment_request_created', {
-        payment_request_id: transformedRequest.id,
+        payment_request_id: data.id,
         offer_id: requestData.offerId,
         amount: requestData.amount,
         payment_type: requestData.paymentType
       });
 
-      return transformedRequest;
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to create payment request:', error);
       throw error;
@@ -65,57 +43,46 @@ export class PaymentRequestService {
     additionalData?: any
   ): Promise<PaymentRequest> {
     try {
-      const currentRequest = await this.getPaymentRequest(requestId);
-      if (!currentRequest) {
-        throw new Error('Payment request not found');
+      let endpoint = '';
+      let payload: any = { userId };
+
+      switch (newStatus) {
+        case 'pending':
+          endpoint = `/payments/${requestId}`;
+          payload.status = 'pending';
+          break;
+        case 'paying':
+          endpoint = `/payments/${requestId}/approve`;
+          break;
+        case 'paid':
+          endpoint = `/payments/${requestId}/mark-paid`;
+          payload.paymentProof = additionalData?.paymentProof;
+          break;
+        case 'confirmed':
+          endpoint = `/payments/${requestId}/confirm`;
+          break;
+        case 'failed':
+          endpoint = `/payments/${requestId}/reject`;
+          break;
+        case 'cancelled':
+          endpoint = `/payments/${requestId}/cancel`;
+          break;
+        default:
+          endpoint = `/payments/${requestId}`;
+          payload.status = newStatus;
       }
 
-      // Validate permission
-      this.validatePaymentStatusChangePermission(currentRequest, newStatus, userId);
+      const { data, error } = await apiClient.post<any>(endpoint, payload);
 
-      const updateData: any = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      };
+      if (error) throw new Error(error.message);
 
-      // Handle specific status changes
-      if (newStatus === 'paying') {
-        updateData.is_frozen = true; // Freeze payment window
-      }
-
-      if (newStatus === 'paid') {
-        updateData.confirmed_by = userId;
-        updateData.confirmed_at = new Date().toISOString();
-        updateData.payment_proof = additionalData?.paymentProof || {};
-      }
-
-      if (newStatus === 'failed') {
-        updateData.is_frozen = false; // Unfreeze for editing
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.PAYMENT_REQUESTS)
-        .update(updateData)
-        .eq('id', requestId)
-        .select()
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) throw new Error('Payment request not found');
-
-      const updatedRequest = this.transformFromDatabase(data);
-
-      // Send status update notification
-      await this.sendPaymentStatusNotification(updatedRequest, newStatus);
-
-      // Track analytics
       analytics.track('payment_request_status_updated', {
         payment_request_id: requestId,
         new_status: newStatus,
         user_id: userId
       });
 
-      return updatedRequest;
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to update payment status:', error);
       throw error;
@@ -124,16 +91,14 @@ export class PaymentRequestService {
 
   async getPaymentRequest(requestId: string): Promise<PaymentRequest | null> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.PAYMENT_REQUESTS)
-        .select('*')
-        .eq('id', requestId)
-        .maybeSingle();
+      const { data, error } = await apiClient.get<any>(`/payments/${requestId}`);
 
-      if (error) throw error;
-      if (!data) return null;
+      if (error) {
+        if (error.status === 404) return null;
+        throw new Error(error.message);
+      }
 
-      return this.transformFromDatabase(data);
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to get payment request:', error);
       throw error;
@@ -142,15 +107,11 @@ export class PaymentRequestService {
 
   async getOfferPaymentRequests(offerId: string): Promise<PaymentRequest[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.PAYMENT_REQUESTS)
-        .select('*')
-        .eq('offer_id', offerId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await apiClient.get<any[]>(`/payments?offerId=${offerId}`);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      return data.map(request => this.transformFromDatabase(request));
+      return (data || []).map(request => this.transformFromApi(request));
     } catch (error) {
       console.error('Failed to get offer payment requests:', error);
       throw error;
@@ -159,28 +120,10 @@ export class PaymentRequestService {
 
   async deletePaymentRequest(requestId: string, userId: string): Promise<void> {
     try {
-      const currentRequest = await this.getPaymentRequest(requestId);
-      if (!currentRequest) {
-        throw new Error('Payment request not found');
-      }
+      const { error } = await apiClient.delete(`/payments/${requestId}`);
 
-      // Only creator can delete unfrozen requests
-      if (currentRequest.createdBy !== userId) {
-        throw new Error('Only creator can delete payment requests');
-      }
+      if (error) throw new Error(error.message);
 
-      if (currentRequest.isFrozen) {
-        throw new Error('Cannot delete frozen payment request');
-      }
-
-      const { error } = await supabase
-        .from(TABLES.PAYMENT_REQUESTS)
-        .delete()
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      // Track analytics
       analytics.track('payment_request_deleted', {
         payment_request_id: requestId,
         user_id: userId
@@ -189,6 +132,23 @@ export class PaymentRequestService {
       console.error('Failed to delete payment request:', error);
       throw error;
     }
+  }
+
+  async getPaymentStatistics(): Promise<any> {
+    try {
+      const { data, error } = await apiClient.get<any>('/payments/statistics');
+
+      if (error) throw new Error(error.message);
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get payment statistics:', error);
+      throw error;
+    }
+  }
+
+  async getPaymentRequestsForOffer(offerId: string): Promise<PaymentRequest[]> {
+    return this.getOfferPaymentRequests(offerId);
   }
 
   private validatePaymentRequestData(requestData: Partial<PaymentRequest>): void {
@@ -205,136 +165,25 @@ export class PaymentRequestService {
     }
   }
 
-  private validatePaymentStatusChangePermission(
-    request: PaymentRequest, 
-    newStatus: PaymentRequestStatus, 
-    userId: string
-  ): void {
-    // Only creator (influencer) can edit unfrozen requests
-    if (['draft', 'pending'].includes(newStatus) && request.createdBy !== userId) {
-      throw new Error('Only creator can edit payment requests');
-    }
-
-    // Advertiser actions for payment confirmation
-    if (['paying', 'paid', 'failed'].includes(newStatus)) {
-      // Get offer to check if user is advertiser
-      // This would need to be validated via the offer relationship
-    }
-
-    // Cannot modify frozen requests (except by advertiser for payment actions)
-    if (request.isFrozen && !['paying', 'paid', 'failed', 'confirmed'].includes(newStatus)) {
-      throw new Error('Cannot modify frozen payment request');
-    }
-  }
-
-  private async sendPaymentRequestNotification(request: PaymentRequest): Promise<void> {
-    try {
-      // Get offer details to determine participants
-      const { data: offer } = await supabase
-        .from(TABLES.OFFERS)
-        .select('influencer_id, advertiser_id, title')
-        .eq('id', request.offerId)
-        .maybeSingle();
-
-      if (!offer) return;
-
-      const receiverId = offer.advertiser_id; // Always send to advertiser
-
-      await chatService.sendMessage({
-        senderId: request.createdBy,
-        receiverId: receiverId,
-        messageContent: `💳 Создано окно оплаты на сумму ${request.amount} ${request.currency} для сотрудничества "${offer.title}"`,
-        messageType: 'payment_window',
-        metadata: {
-          paymentRequestId: request.id,
-          offerId: request.offerId,
-          amount: request.amount,
-          paymentType: request.paymentType,
-          paymentDetails: request.paymentDetails,
-          status: request.status
-        }
-      });
-    } catch (error) {
-      console.error('Failed to send payment request notification:', error);
-    }
-  }
-
-  private async sendPaymentStatusNotification(request: PaymentRequest, newStatus: PaymentRequestStatus): Promise<void> {
-    try {
-      // Get offer details
-      const { data: offer } = await supabase
-        .from(TABLES.OFFERS)
-        .select('influencer_id, advertiser_id, title')
-        .eq('id', request.offerId)
-        .maybeSingle();
-
-      if (!offer) return;
-
-      const isAdvertiserAction = request.createdBy !== offer.advertiser_id;
-      const senderId = isAdvertiserAction ? offer.advertiser_id : offer.influencer_id;
-      const receiverId = isAdvertiserAction ? offer.influencer_id : offer.advertiser_id;
-
-      let messageContent = '';
-      switch (newStatus) {
-        case 'pending':
-          messageContent = `💳 Инфлюенсер создал окно оплаты на сумму ${request.amount} ${request.currency} для "${offer.title}". Ожидает вашей оплаты.`;
-          break;
-        case 'paying':
-          messageContent = `💰 Рекламодатель начал процесс оплаты для "${offer.title}"`;
-          break;
-        case 'paid':
-          messageContent = `✅ Оплата ${request.amount} ${request.currency} произведена для "${offer.title}"`;
-          break;
-        case 'confirmed':
-          messageContent = `🎉 Оплата ${request.amount} ${request.currency} подтверждена для "${offer.title}"`;
-          break;
-        case 'failed':
-          messageContent = `❌ Оплата для "${offer.title}" не удалась. Окно оплаты разморожено для редактирования`;
-          break;
-        default:
-          return;
-      }
-
-      await chatService.sendMessage({
-        senderId,
-        receiverId,
-        messageContent,
-        messageType: 'payment_confirmation',
-        metadata: {
-          paymentRequestId: request.id,
-          offerId: request.offerId,
-          actionType: `payment_${newStatus}`,
-          amount: request.amount
-        }
-      });
-    } catch (error) {
-      console.error('Failed to send payment status notification:', error);
-    }
-  }
-
-  private transformFromDatabase(dbData: any): PaymentRequest {
+  private transformFromApi(apiData: any): PaymentRequest {
     return {
-      id: dbData.id,
-      offerId: dbData.offer_id,
-      createdBy: dbData.created_by,
-      amount: parseFloat(dbData.amount),
-      currency: dbData.currency,
-      paymentType: dbData.payment_type,
-      paymentMethod: dbData.payment_method,
-      paymentDetails: dbData.payment_details || {},
-      instructions: dbData.instructions,
-      status: dbData.status,
-      isFrozen: dbData.is_frozen,
-      confirmedBy: dbData.confirmed_by,
-      confirmedAt: dbData.confirmed_at,
-      paymentProof: dbData.payment_proof || {},
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      id: apiData.id,
+      offerId: apiData.offerId || apiData.offer_id,
+      createdBy: apiData.createdBy || apiData.created_by,
+      amount: parseFloat(apiData.amount),
+      currency: apiData.currency,
+      paymentType: apiData.paymentType || apiData.payment_type,
+      paymentMethod: apiData.paymentMethod || apiData.payment_method,
+      paymentDetails: apiData.paymentDetails || apiData.payment_details || {},
+      instructions: apiData.instructions,
+      status: apiData.status,
+      isFrozen: apiData.isFrozen ?? apiData.is_frozen,
+      confirmedBy: apiData.confirmedBy || apiData.confirmed_by,
+      confirmedAt: apiData.confirmedAt || apiData.confirmed_at,
+      paymentProof: apiData.paymentProof || apiData.payment_proof || {},
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
     };
-  }
-
-  async getPaymentRequestsForOffer(offerId: string): Promise<PaymentRequest[]> {
-    return this.getOfferPaymentRequests(offerId);
   }
 }
 

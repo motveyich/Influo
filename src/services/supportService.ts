@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../core/api';
 
 export interface SupportTicket {
   id: string;
@@ -37,136 +37,88 @@ export interface TicketWithMessages extends SupportTicket {
 
 export const supportService = {
   async createTicket(userId: string, data: CreateTicketData): Promise<SupportTicket> {
-    const { data: ticket, error: ticketError } = await supabase
-      .from('support_tickets')
-      .insert({
-        user_id: userId,
-        subject: data.subject,
-        category: data.category,
-        priority: data.priority,
-        status: 'open'
-      })
-      .select()
-      .single();
+    const { data: ticket, error } = await apiClient.post<any>('/support/tickets', {
+      userId,
+      subject: data.subject,
+      category: data.category,
+      priority: data.priority,
+      message: data.message
+    });
 
-    if (ticketError) throw ticketError;
-
-    const { error: messageError } = await supabase
-      .from('support_messages')
-      .insert({
-        ticket_id: ticket.id,
-        sender_id: userId,
-        message: data.message,
-        is_staff_response: false
-      });
-
-    if (messageError) throw messageError;
+    if (error) throw new Error(error.message);
 
     return ticket;
   },
 
   async getUserTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select(`
-        *,
-        messages:support_messages(count)
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await apiClient.get<any[]>(`/support/tickets?userId=${userId}`);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 
-    return data.map(ticket => ({
+    return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messages[0]?.count || 0,
+      message_count: ticket.messageCount || ticket.message_count || 0,
       messages: []
     }));
   },
 
   async getAllTickets(): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select(`
-        *,
-        messages:support_messages(count)
-      `)
-      .order('created_at', { ascending: false });
+    const { data, error } = await apiClient.get<any[]>('/support/tickets');
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 
-    return data.map(ticket => ({
+    return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messages[0]?.count || 0,
+      message_count: ticket.messageCount || ticket.message_count || 0,
       messages: []
     }));
   },
 
   async getTicketById(ticketId: string): Promise<TicketWithMessages | null> {
-    const { data: ticket, error: ticketError } = await supabase
-      .from('support_tickets')
-      .select('*')
-      .eq('id', ticketId)
-      .maybeSingle();
+    const { data, error } = await apiClient.get<any>(`/support/tickets/${ticketId}`);
 
-    if (ticketError) throw ticketError;
-    if (!ticket) return null;
-
-    const { data: messages, error: messagesError } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('ticket_id', ticketId)
-      .order('created_at', { ascending: true });
-
-    if (messagesError) throw messagesError;
+    if (error) {
+      if (error.status === 404) return null;
+      throw new Error(error.message);
+    }
 
     return {
-      ...ticket,
-      messages: messages || [],
-      message_count: messages?.length || 0
+      ...data,
+      messages: data.messages || [],
+      message_count: data.messages?.length || data.messageCount || 0
     };
   },
 
   async addMessage(ticketId: string, senderId: string, message: string, isStaffResponse: boolean = false): Promise<SupportMessage> {
-    const { data, error } = await supabase
-      .from('support_messages')
-      .insert({
-        ticket_id: ticketId,
-        sender_id: senderId,
-        message,
-        is_staff_response: isStaffResponse
-      })
-      .select()
-      .single();
+    const { data, error } = await apiClient.post<any>(`/support/tickets/${ticketId}/messages`, {
+      senderId,
+      message,
+      isStaffResponse
+    });
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
+
     return data;
   },
 
   async updateTicketStatus(ticketId: string, status: SupportTicket['status'], resolvedAt?: string): Promise<void> {
-    const updateData: any = { status };
+    const payload: any = { status };
     if (status === 'resolved' || status === 'closed') {
-      updateData.resolved_at = resolvedAt || new Date().toISOString();
+      payload.resolvedAt = resolvedAt || new Date().toISOString();
     }
 
-    const { error } = await supabase
-      .from('support_tickets')
-      .update(updateData)
-      .eq('id', ticketId);
+    const { error } = await apiClient.patch(`/support/tickets/${ticketId}`, payload);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
   async assignTicket(ticketId: string, assignedTo: string | null): Promise<void> {
-    const { error } = await supabase
-      .from('support_tickets')
-      .update({
-        assigned_to: assignedTo,
-        status: assignedTo ? 'in_progress' : 'open'
-      })
-      .eq('id', ticketId);
+    const { error } = await apiClient.patch(`/support/tickets/${ticketId}`, {
+      assignedTo,
+      status: assignedTo ? 'in_progress' : 'open'
+    });
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
   async closeTicket(ticketId: string): Promise<void> {
@@ -174,58 +126,41 @@ export const supportService = {
   },
 
   async getTicketsByStatus(status: SupportTicket['status']): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select(`
-        *,
-        messages:support_messages(count)
-      `)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+    const { data, error } = await apiClient.get<any[]>(`/support/tickets?status=${status}`);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 
-    return data.map(ticket => ({
+    return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messages[0]?.count || 0,
+      message_count: ticket.messageCount || ticket.message_count || 0,
       messages: []
     }));
   },
 
   async getAssignedTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
-      .from('support_tickets')
-      .select(`
-        *,
-        messages:support_messages(count)
-      `)
-      .eq('assigned_to', userId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await apiClient.get<any[]>(`/support/tickets?assignedTo=${userId}`);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 
-    return data.map(ticket => ({
+    return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messages[0]?.count || 0,
+      message_count: ticket.messageCount || ticket.message_count || 0,
       messages: []
     }));
   },
 
+  async getStatistics(): Promise<any> {
+    const { data, error } = await apiClient.get<any>('/support/statistics');
+
+    if (error) throw new Error(error.message);
+
+    return data;
+  },
+
   subscribeToTicket(ticketId: string, callback: (message: SupportMessage) => void) {
-    return supabase
-      .channel(`ticket:${ticketId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_messages',
-          filter: `ticket_id=eq.${ticketId}`
-        },
-        (payload) => {
-          callback(payload.new as SupportMessage);
-        }
-      )
-      .subscribe();
+    showFeatureNotImplemented('Real-time ticket subscription', 'WebSocket /support/tickets/{id}/subscribe');
+    return {
+      unsubscribe: () => {}
+    };
   }
 };

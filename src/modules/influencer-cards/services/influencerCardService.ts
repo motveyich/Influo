@@ -1,64 +1,31 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../../../core/api';
 import { InfluencerCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
-import { moderationService } from '../../../services/moderationService';
 
 export class InfluencerCardService {
   async createCard(cardData: Partial<InfluencerCard>): Promise<InfluencerCard> {
     try {
-      // Validate required fields
       this.validateCardData(cardData);
 
-      const newCard = {
-        user_id: cardData.userId,
+      const payload = {
+        userId: cardData.userId,
         platform: cardData.platform,
         reach: cardData.reach,
-        audience_demographics: cardData.audienceDemographics,
-        service_details: cardData.serviceDetails,
-        rating: 0,
-        completed_campaigns: 0,
-        is_active: true,
-        moderation_status: 'pending',
-        is_deleted: false,
-        last_updated: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        audienceDemographics: cardData.audienceDemographics,
+        serviceDetails: cardData.serviceDetails,
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .insert([newCard])
-        .select()
-        .single();
+      const { data, error } = await apiClient.post<any>('/influencer-cards', payload);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      // Check content for violations
-      const description = cardData.serviceDetails?.description || '';
-      const violations = await moderationService.checkContentForViolations(description, 'influencer_card');
-      
-      if (violations.shouldFlag) {
-        await moderationService.addToModerationQueue('influencer_card', data.id, {
-          auto_flagged: true,
-          filter_matches: violations.matches,
-          priority: Math.max(...violations.matches.map(m => m.severity))
-        });
-      } else {
-        // Auto-approve if no violations
-        await supabase
-          .from(TABLES.INFLUENCER_CARDS)
-          .update({ moderation_status: 'approved' })
-          .eq('id', data.id);
-      }
-
-      // Track card creation
       analytics.track('influencer_card_created', {
         user_id: cardData.userId,
         platform: cardData.platform,
         card_id: data.id
       });
 
-      return this.transformFromDatabase(data);
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to create influencer card:', error);
       throw error;
@@ -67,31 +34,20 @@ export class InfluencerCardService {
 
   async updateCard(cardId: string, updates: Partial<InfluencerCard>): Promise<InfluencerCard> {
     try {
-      // Validate updates
       this.validateCardData(updates, false);
 
-      const updateData = {
-        ...this.transformToDatabase(updates),
-        last_updated: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const payload = this.transformToApiPayload(updates);
 
-      const { data, error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .update(updateData)
-        .eq('id', cardId)
-        .select()
-        .single();
+      const { data, error } = await apiClient.patch<any>(`/influencer-cards/${cardId}`, payload);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      // Track card update
       analytics.track('influencer_card_updated', {
         card_id: cardId,
         updated_fields: Object.keys(updates)
       });
 
-      return this.transformFromDatabase(data);
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to update influencer card:', error);
       throw error;
@@ -100,16 +56,14 @@ export class InfluencerCardService {
 
   async getCard(cardId: string): Promise<InfluencerCard | null> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .select('*')
-        .eq('id', cardId)
-        .maybeSingle();
+      const { data, error } = await apiClient.get<any>(`/influencer-cards/${cardId}`);
 
-      if (error) throw error;
-      if (!data) return null;
+      if (error) {
+        if (error.status === 404) return null;
+        throw new Error(error.message);
+      }
 
-      return this.transformFromDatabase(data);
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to get influencer card:', error);
       throw error;
@@ -118,15 +72,11 @@ export class InfluencerCardService {
 
   async getUserCards(userId: string): Promise<InfluencerCard[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await apiClient.get<any[]>(`/influencer-cards?userId=${userId}`);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      return data.map(card => this.transformFromDatabase(card));
+      return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
       console.error('Failed to get user cards:', error);
       throw error;
@@ -142,43 +92,35 @@ export class InfluencerCardService {
     isActive?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .select('*')
-        .eq('is_deleted', false)
-        .in('moderation_status', ['approved', 'pending']);
+      const params = new URLSearchParams();
 
       if (filters?.platform && filters.platform !== 'all') {
-        query = query.eq('platform', filters.platform);
+        params.append('platform', filters.platform);
       }
-
       if (filters?.isActive !== undefined) {
-        query = query.eq('is_active', filters.isActive);
+        params.append('isActive', String(filters.isActive));
       }
-
       if (filters?.minFollowers) {
-        query = query.gte('reach->followers', filters.minFollowers);
+        params.append('minFollowers', String(filters.minFollowers));
       }
-
       if (filters?.maxFollowers) {
-        query = query.lte('reach->followers', filters.maxFollowers);
+        params.append('maxFollowers', String(filters.maxFollowers));
       }
-
       if (filters?.countries && filters.countries.length > 0) {
-        query = query.filter('audience_demographics->topCountries', '?|', filters.countries);
+        params.append('countries', filters.countries.join(','));
       }
-
       if (filters?.searchQuery) {
-        query = query.or(`service_details->description.ilike.%${filters.searchQuery}%,audience_demographics->interests.cs.["${filters.searchQuery}"]`);
+        params.append('search', filters.searchQuery);
       }
 
-      query = query.order('created_at', { ascending: false });
+      const queryString = params.toString();
+      const endpoint = queryString ? `/influencer-cards?${queryString}` : '/influencer-cards';
 
-      const { data, error } = await query;
+      const { data, error } = await apiClient.get<any[]>(endpoint);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      return data.map(card => this.transformFromDatabase(card));
+      return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
       console.error('Failed to get all cards:', error);
       throw error;
@@ -187,14 +129,10 @@ export class InfluencerCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .delete()
-        .eq('id', cardId);
+      const { error } = await apiClient.delete(`/influencer-cards/${cardId}`);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      // Track card deletion
       analytics.track('influencer_card_deleted', {
         card_id: cardId
       });
@@ -206,27 +144,33 @@ export class InfluencerCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<InfluencerCard> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .update({ 
-          is_active: isActive,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cardId)
-        .select()
-        .single();
+      const { data, error } = await apiClient.patch<any>(`/influencer-cards/${cardId}`, {
+        isActive
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
-      // Track status change
       analytics.track('influencer_card_status_changed', {
         card_id: cardId,
         is_active: isActive
       });
 
-      return this.transformFromDatabase(data);
+      return this.transformFromApi(data);
     } catch (error) {
       console.error('Failed to toggle card status:', error);
+      throw error;
+    }
+  }
+
+  async getCardAnalytics(cardId: string): Promise<any> {
+    try {
+      const { data, error } = await apiClient.get<any>(`/influencer-cards/${cardId}/analytics`);
+
+      if (error) throw new Error(error.message);
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get card analytics:', error);
       throw error;
     }
   }
@@ -243,7 +187,7 @@ export class InfluencerCardService {
       if (!cardData.reach.followers || cardData.reach.followers < 0) {
         errors.push('Valid follower count is required');
       }
-      if (cardData.reach.engagementRate !== undefined && 
+      if (cardData.reach.engagementRate !== undefined &&
           (cardData.reach.engagementRate < 0 || cardData.reach.engagementRate > 100)) {
         errors.push('Engagement rate must be between 0 and 100');
       }
@@ -261,7 +205,7 @@ export class InfluencerCardService {
           errors.push('Pricing cannot be negative');
         }
       }
-      
+
       if (cardData.serviceDetails.currency && !['RUB', 'USD', 'EUR'].includes(cardData.serviceDetails.currency)) {
         errors.push('Invalid currency');
       }
@@ -272,44 +216,44 @@ export class InfluencerCardService {
     }
   }
 
-  private transformFromDatabase(dbData: any): InfluencerCard {
+  private transformFromApi(apiData: any): InfluencerCard {
     return {
-      id: dbData.id,
-      userId: dbData.user_id,
-      platform: dbData.platform,
-      reach: dbData.reach,
-      audienceDemographics: dbData.audience_demographics,
-      serviceDetails: dbData.service_details,
-      rating: dbData.rating,
-      completedCampaigns: dbData.completed_campaigns,
-      isActive: dbData.is_active,
-      lastUpdated: dbData.last_updated,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at,
-      isDeleted: dbData.is_deleted || false,
-      deletedAt: dbData.deleted_at,
-      deletedBy: dbData.deleted_by
+      id: apiData.id,
+      userId: apiData.userId || apiData.user_id,
+      platform: apiData.platform,
+      reach: apiData.reach,
+      audienceDemographics: apiData.audienceDemographics || apiData.audience_demographics,
+      serviceDetails: apiData.serviceDetails || apiData.service_details,
+      rating: apiData.rating,
+      completedCampaigns: apiData.completedCampaigns || apiData.completed_campaigns,
+      isActive: apiData.isActive ?? apiData.is_active,
+      lastUpdated: apiData.lastUpdated || apiData.last_updated,
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at,
+      isDeleted: apiData.isDeleted || apiData.is_deleted || false,
+      deletedAt: apiData.deletedAt || apiData.deleted_at,
+      deletedBy: apiData.deletedBy || apiData.deleted_by
     } as any;
   }
 
-  private transformToDatabase(cardData: Partial<InfluencerCard>): any {
-    const dbData: any = {};
-    
-    if (cardData.platform) dbData.platform = cardData.platform;
-    if (cardData.reach) dbData.reach = cardData.reach;
-    if (cardData.audienceDemographics) dbData.audience_demographics = cardData.audienceDemographics;
+  private transformToApiPayload(cardData: Partial<InfluencerCard>): any {
+    const payload: any = {};
+
+    if (cardData.platform) payload.platform = cardData.platform;
+    if (cardData.reach) payload.reach = cardData.reach;
+    if (cardData.audienceDemographics) payload.audienceDemographics = cardData.audienceDemographics;
     if (cardData.serviceDetails) {
-      dbData.service_details = {
+      payload.serviceDetails = {
         ...cardData.serviceDetails,
         pricing: cardData.serviceDetails.pricing || {},
         currency: cardData.serviceDetails.currency || 'RUB'
       };
     }
-    if (cardData.rating !== undefined) dbData.rating = cardData.rating;
-    if (cardData.completedCampaigns !== undefined) dbData.completed_campaigns = cardData.completedCampaigns;
-    if (cardData.isActive !== undefined) dbData.is_active = cardData.isActive;
+    if (cardData.rating !== undefined) payload.rating = cardData.rating;
+    if (cardData.completedCampaigns !== undefined) payload.completedCampaigns = cardData.completedCampaigns;
+    if (cardData.isActive !== undefined) payload.isActive = cardData.isActive;
 
-    return dbData;
+    return payload;
   }
 }
 
