@@ -7,11 +7,12 @@ export class ApplicationService {
     try {
       this.validateApplicationData(applicationData);
 
+      const cardType = applicationData.targetType?.replace('_card', '') as 'influencer' | 'advertiser';
+
       const payload = {
-        targetId: applicationData.targetId,
-        targetType: applicationData.targetType,
-        targetReferenceId: applicationData.targetReferenceId,
-        applicationData: applicationData.applicationData,
+        cardId: applicationData.targetReferenceId,
+        cardType,
+        message: applicationData.applicationData?.message || '',
       };
 
       const application = await apiClient.post<Application>('/applications', payload);
@@ -71,11 +72,8 @@ export class ApplicationService {
   }
 
   private validateApplicationData(applicationData: Partial<Application>): void {
-    if (!applicationData.targetId || !applicationData.targetType) {
-      throw new Error('Target ID and type are required');
-    }
-    if (!applicationData.applicationData) {
-      throw new Error('Application data is required');
+    if (!applicationData.targetReferenceId || !applicationData.targetType) {
+      throw new Error('Card ID and type are required');
     }
   }
 }
