@@ -31,7 +31,7 @@ export class AuthService {
       throw new UnauthorizedException(authError.message);
     }
 
-    if (!authData.user || !authData.session) {
+    if (!authData.user) {
       throw new UnauthorizedException('Failed to create user');
     }
 
@@ -71,12 +71,6 @@ export class AuthService {
         fullName: signupDto.fullName,
         userType: signupDto.userType,
       },
-      supabaseSession: {
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
-        expires_at: authData.session.expires_at,
-        expires_in: authData.session.expires_in,
-      },
       ...tokens,
     };
   }
@@ -89,7 +83,7 @@ export class AuthService {
       password: loginDto.password,
     });
 
-    if (authError || !authData.user || !authData.session) {
+    if (authError || !authData.user) {
       this.logger.error(`Login failed: ${authError?.message}`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -103,11 +97,6 @@ export class AuthService {
 
     if (profileError || !profile) {
       throw new UnauthorizedException('User profile not found');
-    }
-
-    if (profile.is_deleted === true) {
-      this.logger.error(`Login blocked: User ${authData.user.id} is deleted/blocked`);
-      throw new UnauthorizedException('Your account has been blocked. Please contact support.');
     }
 
     await adminClient
@@ -134,12 +123,6 @@ export class AuthService {
         userType: profile.user_type,
         avatar: profile.avatar,
       },
-      supabaseSession: {
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
-        expires_at: authData.session.expires_at,
-        expires_in: authData.session.expires_in,
-      },
       ...tokens,
     };
   }
@@ -163,7 +146,7 @@ export class AuthService {
       refresh_token: refreshToken,
     });
 
-    if (error || !data.user || !data.session) {
+    if (error || !data.user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -180,15 +163,7 @@ export class AuthService {
       userType: profile?.user_type || 'influencer',
     });
 
-    return {
-      ...tokens,
-      supabaseSession: {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_at: data.session.expires_at,
-        expires_in: data.session.expires_in,
-      },
-    };
+    return tokens;
   }
 
   async getCurrentUser(userId: string) {
@@ -204,10 +179,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    if (profile.is_deleted === true) {
-      throw new UnauthorizedException('Account has been blocked');
-    }
-
     return {
       id: profile.user_id,
       email: profile.email,
@@ -218,30 +189,19 @@ export class AuthService {
       bio: profile.bio,
       location: profile.location,
       unifiedAccountInfo: profile.unified_account_info,
-      isDeleted: profile.is_deleted || false,
-      deletedAt: profile.deleted_at,
     };
   }
 
   private async generateTokens(payload: JwtPayload) {
-    const jwtSecret = this.configService.get<string>('JWT_SECRET');
-    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-
-    this.logger.debug(`Generating tokens for user: ${payload.email}`);
-    this.logger.debug(`JWT_SECRET configured: ${!!jwtSecret}`);
-    this.logger.debug(`JWT_REFRESH_SECRET configured: ${!!jwtRefreshSecret}`);
-
     const accessToken = this.jwtService.sign(payload, {
-      secret: jwtSecret,
+      secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: jwtRefreshSecret,
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
     });
-
-    this.logger.debug(`Tokens generated successfully for user: ${payload.email}`);
 
     return {
       accessToken,

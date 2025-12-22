@@ -804,12 +804,13 @@ export function InfluencerCardDetailPage() {
         <ApplicationModal
           isOpen={showApplicationModal}
           onClose={() => setShowApplicationModal(false)}
-          cardId={card.id}
-          cardType="influencer"
-          cardOwnerId={card.userId}
-          onOfferSent={() => {
+          targetId={card.userId}
+          targetType="influencer_card"
+          targetReferenceId={card.id}
+          applicantId={currentUserId}
+          onApplicationSent={() => {
             setShowApplicationModal(false);
-            toast.success('Offer sent successfully!');
+            toast.success('Заявка отправлена успешно!');
           }}
         />
       )}

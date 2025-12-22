@@ -10,17 +10,13 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
 import { InfluencerCardsModule } from './modules/influencer-cards/influencer-cards.module';
 import { AdvertiserCardsModule } from './modules/advertiser-cards/advertiser-cards.module';
 import { AutoCampaignsModule } from './modules/auto-campaigns/auto-campaigns.module';
+import { ApplicationsModule } from './modules/applications/applications.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SupportModule } from './modules/support/support.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { BlacklistModule } from './modules/blacklist/blacklist.module';
-import { HomeModule } from './modules/home/home.module';
-import { SettingsModule } from './modules/settings/settings.module';
-import { ChatModule } from './modules/chat/chat.module';
-import { AdminModule } from './modules/admin/admin.module';
-import { RolesModule } from './modules/roles/roles.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -30,6 +26,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
     ThrottlerModule.forRoot([
       {
@@ -43,17 +40,13 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     InfluencerCardsModule,
     AdvertiserCardsModule,
     AutoCampaignsModule,
+    ApplicationsModule,
     OffersModule,
     ReviewsModule,
     PaymentsModule,
     SupportModule,
     FavoritesModule,
     BlacklistModule,
-    HomeModule,
-    SettingsModule,
-    ChatModule,
-    AdminModule,
-    RolesModule,
   ],
   controllers: [AppController],
   providers: [

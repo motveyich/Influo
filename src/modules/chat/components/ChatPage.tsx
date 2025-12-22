@@ -11,8 +11,8 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
+import { supabase } from '../../../core/supabase';
 import { UserAvatar } from '../../../components/UserAvatar';
-import { profileService } from '../../profiles/services/profileService';
 import toast from 'react-hot-toast';
 
 interface Conversation {
@@ -112,13 +112,10 @@ export function ChatPage() {
     try {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
-
-      // Дополнительная защита на уровне компонента
-      const safeConversations = Array.isArray(loadedConversations) ? loadedConversations : [];
-
+      
       // Enhance conversations with chat type and restrictions
       const enhancedConversations = await Promise.all(
-        safeConversations.map(async (conv) => {
+        loadedConversations.map(async (conv) => {
           const isBlocked = blockedUsers.has(conv.participantId);
           const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
           const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
@@ -180,26 +177,31 @@ export function ChatPage() {
 
   const createNewConversation = async (userId: string) => {
     try {
-      const userProfile = await profileService.getProfile(userId);
-
+      // Get user profile to create conversation entry
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', userId)
+        .single();
+      
       if (userProfile) {
         const newConversation: Conversation = {
           id: userId,
           participantId: userId,
-          participantName: userProfile.fullName || 'Пользователь',
+          participantName: userProfile.full_name || 'Пользователь',
           participantAvatar: userProfile.avatar,
           unreadCount: 0,
           isOnline: false,
           chatType: 'new',
-          canSendMessage: true,
+          canSendMessage: true, // Can send initial message
           isBlocked: false,
           initiatedBy: currentUserId,
           hasReceiverResponded: false
         };
-
+        
         setConversations(prev => [newConversation, ...prev]);
         setSelectedConversation(newConversation);
-        setActiveTab('new');
+        setActiveTab('new'); // Switch to "new" tab for new conversations
       }
     } catch (error) {
       console.error('Failed to create new conversation:', error);
@@ -213,8 +215,7 @@ export function ChatPage() {
       const partnerId = selectedConversation?.participantId;
       if (partnerId) {
         const loadedMessages = await chatService.getConversation(currentUserId, partnerId);
-        // Дополнительная защита на уровне компонента
-        setMessages(Array.isArray(loadedMessages) ? loadedMessages : []);
+        setMessages(loadedMessages);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);

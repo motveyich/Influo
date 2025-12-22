@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
-import { CreateOfferDto, UpdateOfferDto, OfferSourceType } from './dto';
+import { CreateOfferDto, UpdateOfferDto } from './dto';
 
 @Injectable()
 export class OffersService {
@@ -11,95 +11,35 @@ export class OffersService {
   async create(userId: string, createOfferDto: CreateOfferDto) {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: currentUser } = await supabase
+    const { data: advertiser } = await supabase
       .from('user_profiles')
       .select('user_type')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!currentUser) {
-      throw new ForbiddenException('User profile not found');
+    if (!advertiser || advertiser.user_type !== 'advertiser') {
+      throw new ForbiddenException('Only advertisers can create offers');
     }
 
-    const sourceType = createOfferDto.sourceType || OfferSourceType.DIRECT;
-    let advertiserId: string;
-    let influencerId: string;
+    const { data: influencer } = await supabase
+      .from('user_profiles')
+      .select('user_type')
+      .eq('user_id', createOfferDto.influencerId)
+      .maybeSingle();
 
-    if (sourceType === OfferSourceType.INFLUENCER_CARD) {
-      if (currentUser.user_type !== 'advertiser') {
-        throw new ForbiddenException('Only advertisers can apply to influencer cards');
-      }
-      advertiserId = userId;
-      influencerId = createOfferDto.influencerId!;
-
-      const { data: influencer } = await supabase
-        .from('user_profiles')
-        .select('user_type')
-        .eq('user_id', influencerId)
-        .maybeSingle();
-
-      if (!influencer || influencer.user_type !== 'influencer') {
-        throw new NotFoundException('Influencer not found');
-      }
-    } else if (sourceType === OfferSourceType.ADVERTISER_CARD) {
-      if (currentUser.user_type !== 'influencer') {
-        throw new ForbiddenException('Only influencers can apply to advertiser cards');
-      }
-      influencerId = userId;
-      advertiserId = createOfferDto.advertiserId!;
-
-      const { data: advertiser } = await supabase
-        .from('user_profiles')
-        .select('user_type')
-        .eq('user_id', advertiserId)
-        .maybeSingle();
-
-      if (!advertiser || advertiser.user_type !== 'advertiser') {
-        throw new NotFoundException('Advertiser not found');
-      }
-    } else if (sourceType === OfferSourceType.CAMPAIGN) {
-      if (currentUser.user_type !== 'influencer') {
-        throw new ForbiddenException('Only influencers can apply to campaigns');
-      }
-      influencerId = userId;
-      advertiserId = createOfferDto.advertiserId!;
-    } else {
-      if (currentUser.user_type !== 'advertiser') {
-        throw new ForbiddenException('Only advertisers can create direct offers');
-      }
-      advertiserId = userId;
-      influencerId = createOfferDto.influencerId!;
-
-      const { data: influencer } = await supabase
-        .from('user_profiles')
-        .select('user_type')
-        .eq('user_id', influencerId)
-        .maybeSingle();
-
-      if (!influencer || influencer.user_type !== 'influencer') {
-        throw new NotFoundException('Influencer not found');
-      }
+    if (!influencer || influencer.user_type !== 'influencer') {
+      throw new NotFoundException('Influencer not found');
     }
 
-    const details = {
+    const offerData = {
+      advertiser_id: userId,
+      influencer_id: createOfferDto.influencerId,
       title: createOfferDto.title,
       description: createOfferDto.description,
-      contentType: createOfferDto.contentType,
-      deadline: createOfferDto.deadline,
-      deliverables: createOfferDto.deliverables || [],
-    };
-
-    const offerData: Record<string, any> = {
-      advertiser_id: advertiserId,
-      influencer_id: influencerId,
-      details: details,
-      proposed_rate: createOfferDto.amount,
+      amount: createOfferDto.amount,
       currency: createOfferDto.currency,
-      timeline: createOfferDto.timeline,
-      source_type: sourceType,
-      source_card_id: createOfferDto.sourceCardId,
-      campaign_id: createOfferDto.campaignId,
-      initiated_by: userId,
+      content_type: createOfferDto.contentType,
+      deadline: createOfferDto.deadline,
       status: 'pending',
       created_at: new Date().toISOString(),
     };
@@ -159,7 +99,7 @@ export class OffersService {
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
         influencer:user_profiles!offers_influencer_id_fkey(*)
       `)
-      .eq('offer_id', id)
+      .eq('id', id)
       .maybeSingle();
 
     if (error || !offer) {
@@ -178,8 +118,8 @@ export class OffersService {
 
     const { data: existingOffer } = await supabase
       .from('offers')
-      .select('advertiser_id, status, details')
-      .eq('offer_id', id)
+      .select('advertiser_id, status')
+      .eq('id', id)
       .maybeSingle();
 
     if (!existingOffer) {
@@ -198,41 +138,25 @@ export class OffersService {
       updated_at: new Date().toISOString(),
     };
 
-    const currentDetails = existingOffer.details || {};
-    let detailsUpdated = false;
+    const fieldMappings: Record<string, string> = {
+      title: 'title',
+      description: 'description',
+      amount: 'amount',
+      currency: 'currency',
+      contentType: 'content_type',
+      deadline: 'deadline',
+    };
 
-    if (updateOfferDto.title !== undefined) {
-      currentDetails.title = updateOfferDto.title;
-      detailsUpdated = true;
-    }
-    if (updateOfferDto.description !== undefined) {
-      currentDetails.description = updateOfferDto.description;
-      detailsUpdated = true;
-    }
-    if (updateOfferDto.contentType !== undefined) {
-      currentDetails.contentType = updateOfferDto.contentType;
-      detailsUpdated = true;
-    }
-    if (updateOfferDto.deadline !== undefined) {
-      currentDetails.deadline = updateOfferDto.deadline;
-      detailsUpdated = true;
-    }
-
-    if (detailsUpdated) {
-      updateData.details = currentDetails;
-    }
-
-    if (updateOfferDto.amount !== undefined) {
-      updateData.proposed_rate = updateOfferDto.amount;
-    }
-    if (updateOfferDto.currency !== undefined) {
-      updateData.currency = updateOfferDto.currency;
-    }
+    Object.entries(fieldMappings).forEach(([dtoKey, dbKey]) => {
+      if ((updateOfferDto as any)[dtoKey] !== undefined) {
+        updateData[dbKey] = (updateOfferDto as any)[dtoKey];
+      }
+    });
 
     const { data: updatedOffer, error } = await supabase
       .from('offers')
       .update(updateData)
-      .eq('offer_id', id)
+      .eq('id', id)
       .select(`
         *,
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
@@ -273,7 +197,7 @@ export class OffersService {
     const { data: offer } = await supabase
       .from('offers')
       .select('advertiser_id, influencer_id, status')
-      .eq('offer_id', id)
+      .eq('id', id)
       .maybeSingle();
 
     if (!offer) {
@@ -303,7 +227,7 @@ export class OffersService {
     const { data: updated, error } = await supabase
       .from('offers')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('offer_id', id)
+      .eq('id', id)
       .select(`
         *,
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
@@ -319,24 +243,16 @@ export class OffersService {
   }
 
   private transformOffer(offer: any) {
-    const details = offer.details || {};
-
     return {
-      id: offer.offer_id,
+      id: offer.id,
       advertiserId: offer.advertiser_id,
       influencerId: offer.influencer_id,
-      title: details.title || '',
-      description: details.description || '',
-      amount: offer.proposed_rate,
+      title: offer.title,
+      description: offer.description,
+      amount: offer.amount,
       currency: offer.currency,
-      contentType: details.contentType || '',
-      deadline: details.deadline || null,
-      timeline: offer.timeline,
-      deliverables: details.deliverables || offer.deliverables || [],
-      sourceType: offer.source_type,
-      sourceCardId: offer.source_card_id,
-      campaignId: offer.campaign_id,
-      initiatedBy: offer.initiated_by,
+      contentType: offer.content_type,
+      deadline: offer.deadline,
       status: offer.status,
       createdAt: offer.created_at,
       updatedAt: offer.updated_at,

@@ -5,11 +5,12 @@ const getApiBaseUrl = (): string => {
     return envUrl;
   }
 
+  // In development, use proxy; in production, use direct URL
   if (import.meta.env.DEV) {
     return '/api';
   }
 
-  return 'https://influo-seven.vercel.app/api';
+  return 'https://influo-seven.vercel.app';
 };
 
 const API_URL = getApiBaseUrl();
@@ -18,47 +19,6 @@ interface RequestOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
-}
-
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  data: T;
-  timestamp?: string;
-}
-
-function isApiResponse(obj: unknown): obj is ApiResponse {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'success' in obj &&
-    'data' in obj &&
-    typeof (obj as ApiResponse).success === 'boolean'
-  );
-}
-
-function unwrapResponse<T>(json: unknown): T {
-  if (!isApiResponse(json)) {
-    return json as T;
-  }
-
-  if (!json.success) {
-    const errorMessage = typeof json.data === 'object' && json.data !== null && 'message' in json.data
-      ? String((json.data as { message: string }).message)
-      : 'Request failed';
-    throw new Error(errorMessage);
-  }
-
-  let result = json.data;
-  if (isApiResponse(result) && result.success) {
-    result = result.data;
-  }
-
-  // Log if we're returning null/undefined to help with debugging
-  if (result === null || result === undefined) {
-    console.warn('[API] Response data is null/undefined for successful request');
-  }
-
-  return result as T;
 }
 
 class ApiClient {
@@ -96,8 +56,6 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    console.log(`[API] ${options.method || 'GET'} ${url}`, { hasToken: !!token });
-
     const config: RequestInit = {
       method: options.method || 'GET',
       headers,
@@ -126,8 +84,7 @@ class ApiClient {
         return {} as T;
       }
 
-      const json = await response.json();
-      return unwrapResponse<T>(json);
+      return await response.json();
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -193,8 +150,7 @@ class ApiClient {
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
-      const json = await response.json();
-      return unwrapResponse<T>(json);
+      return await response.json();
     } catch (error) {
       if (error instanceof Error) {
         throw error;

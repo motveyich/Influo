@@ -35,11 +35,10 @@ export class ReviewService {
 
   async getReviews(userId: string): Promise<CollaborationReview[]> {
     try {
-      const reviews = await apiClient.get<CollaborationReview[]>(`/reviews?userId=${userId}`);
-      return Array.isArray(reviews) ? reviews : [];
+      return await apiClient.get<CollaborationReview[]>(`/reviews?userId=${userId}`);
     } catch (error) {
       console.error('Failed to get reviews:', error);
-      return [];
+      throw error;
     }
   }
 

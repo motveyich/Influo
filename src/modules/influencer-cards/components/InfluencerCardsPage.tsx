@@ -136,31 +136,33 @@ export function InfluencerCardsPage() {
       setIsLoading(true);
       
       if (activeTab === 'influencers') {
-        const cards = await influencerCardService.getCards({
+        const cards = await influencerCardService.getAllCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
           minFollowers: minFollowersFilter ? parseInt(minFollowersFilter) : undefined,
           maxFollowers: maxFollowersFilter ? parseInt(maxFollowersFilter) : undefined,
           countries: selectedCountries.length > 0 ? selectedCountries : undefined,
-          searchQuery: searchQuery || undefined
+          searchQuery: searchQuery || undefined,
+          isActive: true
         });
-        setInfluencerCards(Array.isArray(cards) ? cards : []);
+        setInfluencerCards(cards);
       } else if (activeTab === 'advertisers') {
-        const cards = await advertiserCardService.getCards({
+        const cards = await advertiserCardService.getAllCards({
           platform: platformFilter !== 'all' ? platformFilter : undefined,
           minBudget: minBudgetFilter ? parseInt(minBudgetFilter) : undefined,
           maxBudget: maxBudgetFilter ? parseInt(maxBudgetFilter) : undefined,
           productCategories: selectedProductCategories.length > 0 ? selectedProductCategories : undefined,
           serviceFormats: selectedServiceFormats.length > 0 ? selectedServiceFormats : undefined,
-          searchQuery: searchQuery || undefined
+          searchQuery: searchQuery || undefined,
+          isActive: true
         });
-        setAdvertiserCards(Array.isArray(cards) ? cards : []);
+        setAdvertiserCards(cards);
       } else if (activeTab === 'my_cards') {
         const [influencerCards, advertiserCards] = await Promise.all([
-          influencerCardService.getMyCards(currentUserId),
-          advertiserCardService.getMyCards(currentUserId)
+          influencerCardService.getUserCards(currentUserId),
+          advertiserCardService.getUserCards(currentUserId)
         ]);
-        setMyInfluencerCards(Array.isArray(influencerCards) ? influencerCards : []);
-        setMyAdvertiserCards(Array.isArray(advertiserCards) ? advertiserCards : []);
+        setMyInfluencerCards(influencerCards);
+        setMyAdvertiserCards(advertiserCards);
       } else if (activeTab === 'favorites') {
         await loadFavorites();
       }
@@ -179,8 +181,8 @@ export function InfluencerCardsPage() {
         return;
       }
       
-      const favorites = await favoriteService.getFavorites();
-      const influencerFavorites = favorites.filter(fav =>
+      const favorites = await favoriteService.getUserFavorites(currentUserId);
+      const influencerFavorites = favorites.filter(fav => 
         fav.targetType === 'influencer_card' || fav.targetType === 'advertiser_card'
       );
       

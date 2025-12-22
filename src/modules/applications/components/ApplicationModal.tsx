@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { applicationService, OfferResponse, CreateOfferFromCardData } from '../services/applicationService';
+import { Application } from '../../../core/types';
+import { applicationService } from '../services/applicationService';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Send, AlertCircle, DollarSign, Calendar, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -7,19 +8,25 @@ import toast from 'react-hot-toast';
 interface ApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  cardId: string;
-  cardType: 'influencer' | 'advertiser';
-  cardOwnerId: string;
-  onOfferSent?: (offer: OfferResponse) => void;
+  targetId: string;
+  targetType: 'influencer_card' | 'advertiser_card' | 'campaign';
+  targetReferenceId: string;
+  applicantId: string;
+  onApplicationSent?: (application: Application) => void;
+  completedApplicationId?: string; // For showing review option
+  showReviewOption?: boolean;
 }
 
 export function ApplicationModal({
   isOpen,
   onClose,
-  cardId,
-  cardType,
-  cardOwnerId,
-  onOfferSent,
+  targetId,
+  targetType,
+  targetReferenceId,
+  applicantId,
+  onApplicationSent,
+  completedApplicationId,
+  showReviewOption = false
 }: ApplicationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -31,6 +38,8 @@ export function ApplicationModal({
     proposedRate: 0,
     timeline: '',
     deliverables: [] as string[],
+    additionalInfo: '',
+    status: 'pending'
   });
 
   const [newDeliverable, setNewDeliverable] = useState('');
@@ -39,17 +48,17 @@ export function ApplicationModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = 'Сообщение обязательно';
     } else if (formData.message.length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = 'Сообщение должно содержать минимум 10 символов';
     }
 
-    if (!formData.proposedRate || formData.proposedRate <= 0) {
-      newErrors.proposedRate = 'Please specify a rate';
+    if (targetType !== 'campaign' && (!formData.proposedRate || formData.proposedRate <= 0)) {
+      newErrors.proposedRate = 'Укажите предлагаемую ставку';
     }
 
     if (!formData.timeline.trim()) {
-      newErrors.timeline = 'Timeline is required';
+      newErrors.timeline = 'Временные рамки обязательны';
     }
 
     setErrors(newErrors);
@@ -58,30 +67,28 @@ export function ApplicationModal({
 
   const handleSendApplication = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error('Пожалуйста, исправьте ошибки перед отправкой');
       return;
     }
 
     setIsLoading(true);
     try {
-      const data: CreateOfferFromCardData = {
-        cardId,
-        cardType,
-        cardOwnerId,
-        message: formData.message,
-        proposedRate: formData.proposedRate,
-        timeline: formData.timeline,
-        deliverables: formData.deliverables,
+      const applicationData: Partial<Application> = {
+        applicantId,
+        targetId,
+        targetType,
+        targetReferenceId,
+        applicationData: formData
       };
 
-      const sentOffer = await applicationService.createApplication(data);
-
-      toast.success('Offer sent successfully!');
-      onOfferSent?.(sentOffer);
+      const sentApplication = await applicationService.createApplication(applicationData);
+      
+      toast.success('Заявка отправлена успешно!');
+      onApplicationSent?.(sentApplication);
       onClose();
     } catch (error: any) {
-      console.error('Failed to send offer:', error);
-      toast.error(error.message || 'Failed to send offer');
+      console.error('Failed to send application:', error);
+      toast.error(error.message || 'Не удалось отправить заявку');
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +96,7 @@ export function ApplicationModal({
 
   const addDeliverable = () => {
     if (!newDeliverable.trim()) return;
-
+    
     setFormData(prev => ({
       ...prev,
       deliverables: [...prev.deliverables, newDeliverable.trim()]
@@ -109,9 +116,10 @@ export function ApplicationModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            Send Collaboration Offer
+            Отправить заявку на сотрудничество
           </h2>
           <button
             onClick={onClose}
@@ -121,10 +129,12 @@ export function ApplicationModal({
           </button>
         </div>
 
+        {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[70vh] space-y-6">
+          {/* Message */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message *
+              Сообщение *
             </label>
             <textarea
               value={formData.message}
@@ -133,7 +143,7 @@ export function ApplicationModal({
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.message ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder="Tell about yourself, your experience, and why you're interested in collaboration..."
+              placeholder="Расскажите о себе, своем опыте и почему вы заинтересованы в сотрудничестве..."
             />
             <div className="flex justify-between items-center mt-1">
               {errors.message && (
@@ -143,38 +153,42 @@ export function ApplicationModal({
                 </p>
               )}
               <p className="text-sm text-gray-500 ml-auto">
-                {formData.message.length}/1000 characters
+                {formData.message.length}/1000 символов
               </p>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Proposed Rate (USD) *
-            </label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="number"
-                value={formData.proposedRate}
-                onChange={(e) => setFormData(prev => ({ ...prev, proposedRate: parseInt(e.target.value) || 0 }))}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.proposedRate ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="1000"
-              />
+          {/* Proposed Rate (for non-campaign applications) */}
+          {targetType !== 'campaign' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Предлагаемая ставка (USD) *
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="number"
+                  value={formData.proposedRate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, proposedRate: parseInt(e.target.value) || 0 }))}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.proposedRate ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="1000"
+                />
+              </div>
+              {errors.proposedRate && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.proposedRate}
+                </p>
+              )}
             </div>
-            {errors.proposedRate && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {errors.proposedRate}
-              </p>
-            )}
-          </div>
+          )}
 
+          {/* Timeline */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Timeline *
+              Временные рамки *
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -185,7 +199,7 @@ export function ApplicationModal({
                 className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.timeline ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="e.g., 2 weeks from acceptance, by March 15"
+                placeholder="например, 2 недели с момента принятия, до 15 марта"
               />
             </div>
             {errors.timeline && (
@@ -196,17 +210,19 @@ export function ApplicationModal({
             )}
           </div>
 
+          {/* Deliverables */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              What you offer
+              Что вы предлагаете
             </label>
-
+            
+            {/* Add new deliverable */}
             <div className="flex space-x-2 mb-3">
               <input
                 type="text"
                 value={newDeliverable}
                 onChange={(e) => setNewDeliverable(e.target.value)}
-                placeholder="e.g., 1 Instagram post, 3 Stories slides"
+                placeholder="например, 1 пост в Instagram, 3 слайда в Stories"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && addDeliverable()}
               />
@@ -215,10 +231,11 @@ export function ApplicationModal({
                 onClick={addDeliverable}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
-                Add
+                Добавить
               </button>
             </div>
 
+            {/* Deliverables list */}
             <div className="space-y-2">
               {formData.deliverables.map((deliverable, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
@@ -236,14 +253,29 @@ export function ApplicationModal({
               ))}
             </div>
           </div>
+
+          {/* Additional Info */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Дополнительная информация
+            </label>
+            <textarea
+              value={formData.additionalInfo}
+              onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Любая дополнительная информация, портфолио, опыт работы..."
+            />
+          </div>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
-            Cancel
+            Отмена
           </button>
           <button
             onClick={handleSendApplication}
@@ -251,7 +283,7 @@ export function ApplicationModal({
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
-            <span>{isLoading ? 'Sending...' : 'Send Offer'}</span>
+            <span>{isLoading ? 'Отправка...' : 'Отправить заявку'}</span>
           </button>
         </div>
       </div>

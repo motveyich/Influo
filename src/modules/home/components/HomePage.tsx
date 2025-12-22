@@ -64,7 +64,7 @@ export function HomePage() {
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
 
   useEffect(() => {
-    if (!loading) {
+    if (currentUserId && !loading) {
       loadHomeData();
     }
   }, [currentUserId, loading]);
@@ -72,28 +72,20 @@ export function HomePage() {
   const loadHomeData = async () => {
     try {
       setIsLoading(true);
-
-      const promises: Promise<any>[] = [
+      
+      const [
+        updatesData,
+        eventsData,
+        statsData
+      ] = await Promise.all([
         homeService.getPlatformUpdates(),
         homeService.getPlatformEvents(),
-      ];
+        homeService.getUserStats(currentUserId)
+      ]);
 
-      if (currentUserId) {
-        promises.push(homeService.getUserStats(currentUserId));
-      }
-
-      const results = await Promise.all(promises);
-
-      // Защита: убедиться что результаты это массивы
-      setPlatformUpdates(Array.isArray(results[0]) ? results[0] : []);
-      setPlatformEvents(Array.isArray(results[1]) ? results[1] : []);
-
-      if (currentUserId && results[2]) {
-        setUserStats(results[2]);
-      } else {
-        setUserStats(null);
-      }
-
+      setPlatformUpdates(updatesData);
+      setPlatformEvents(eventsData);
+      setUserStats(statsData);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Failed to load home data:', error);

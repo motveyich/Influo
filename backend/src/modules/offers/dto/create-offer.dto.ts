@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsEnum, IsOptional, Min, IsArray } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, Min } from 'class-validator';
 
 export enum OfferStatus {
   PENDING = 'pending',
@@ -9,31 +9,13 @@ export enum OfferStatus {
   CANCELLED = 'cancelled',
 }
 
-export enum OfferSourceType {
-  DIRECT = 'direct',
-  INFLUENCER_CARD = 'influencer_card',
-  ADVERTISER_CARD = 'advertiser_card',
-  CAMPAIGN = 'campaign',
-}
-
 export class CreateOfferDto {
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
     description: 'Influencer user ID',
-    required: false,
   })
-  @IsOptional()
   @IsString()
-  influencerId?: string;
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'Advertiser user ID (for card applications)',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  advertiserId?: string;
+  influencerId: string;
 
   @ApiProperty({
     example: 'Sponsored Instagram post',
@@ -79,51 +61,4 @@ export class CreateOfferDto {
   @IsOptional()
   @IsString()
   deadline?: string;
-
-  @ApiProperty({
-    example: '2 weeks',
-    description: 'Timeline for delivery',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  timeline?: string;
-
-  @ApiProperty({
-    example: ['1 post', '3 stories'],
-    description: 'List of deliverables',
-    required: false,
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  deliverables?: string[];
-
-  @ApiProperty({
-    enum: OfferSourceType,
-    example: OfferSourceType.DIRECT,
-    description: 'Source type of the offer',
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(OfferSourceType)
-  sourceType?: OfferSourceType;
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'Source card ID (if from card application)',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  sourceCardId?: string;
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'Campaign ID (if from campaign)',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  campaignId?: string;
 }

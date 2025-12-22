@@ -43,11 +43,10 @@ export class FavoriteService {
       if (params?.targetType) {
         queryString = `?targetType=${params.targetType}`;
       }
-      const favorites = await apiClient.get<Favorite[]>(`/favorites${queryString}`);
-      return Array.isArray(favorites) ? favorites : [];
+      return await apiClient.get<Favorite[]>(`/favorites${queryString}`);
     } catch (error) {
       console.error('Failed to get favorites:', error);
-      return [];
+      throw error;
     }
   }
 

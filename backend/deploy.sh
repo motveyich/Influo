@@ -39,7 +39,7 @@ if [ $? -eq 0 ]; then
   echo "✅ Deployment successful!"
   echo ""
   echo "📋 Next steps:"
-  echo "1. Copy the deployment URL (something like: https://influo-seven.vercel.app/)"
+  echo "1. Copy the deployment URL (something like: https://backend-xyz.vercel.app)"
   echo "2. Go to Vercel Dashboard and add environment variables:"
   echo "   https://vercel.com/dashboard"
   echo "   - SUPABASE_URL"

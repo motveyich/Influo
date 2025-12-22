@@ -13,8 +13,8 @@ export class PaymentsService {
 
     const { data: offer } = await supabase
       .from('offers')
-      .select('advertiser_id, influencer_id, status, proposed_rate')
-      .eq('offer_id', createDto.offerId)
+      .select('advertiser_id, influencer_id, status, amount')
+      .eq('id', createDto.offerId)
       .maybeSingle();
 
     if (!offer) {
@@ -43,7 +43,7 @@ export class PaymentsService {
       offer_id: createDto.offerId,
       influencer_id: userId,
       advertiser_id: offer.advertiser_id,
-      amount: createDto.amount || offer.proposed_rate,
+      amount: createDto.amount || offer.amount,
       currency: createDto.currency,
       description: createDto.description,
       payment_method: createDto.paymentMethod,
