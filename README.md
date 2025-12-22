@@ -144,52 +144,12 @@ analytics.track('custom_event', {
 
 ## 🚀 Deployment
 
-This application uses a three-tier architecture:
-```
-Frontend (Vercel) → Backend API (Vercel) → Supabase Database
-```
-
-### Quick Setup
-
-**For detailed deployment instructions, see:**
-- **[README_DEPLOYMENT.md](./README_DEPLOYMENT.md)** - Overview of all documentation
-- **[VERCEL_QUICK_FIX.md](./VERCEL_QUICK_FIX.md)** - Fast 3-step setup (⚡ Start here!)
-- **[VERCEL_SETUP.md](./VERCEL_SETUP.md)** - Complete deployment guide
-
-### Local Development
-
-**Backend:**
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your credentials
-npm run start:dev
-```
-
-**Frontend:**
-```bash
-npm install
-cp .env.example .env
-# Edit .env to point to backend
-npm run dev
-```
-
-### Production Build
+The app is ready for deployment to Netlify:
 
 ```bash
-# Frontend
 npm run build
-
-# Backend is deployed as Vercel serverless function
-# See VERCEL_SETUP.md for details
+# Deploy dist/ folder to your hosting provider
 ```
-
-**Environment Variables:**
-- Frontend: `VITE_API_BASE_URL` (backend URL)
-- Backend: `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, etc.
-
-See deployment documentation for complete setup instructions.
 
 ## 🤝 Contributing
 
