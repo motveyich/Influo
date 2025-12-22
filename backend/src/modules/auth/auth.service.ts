@@ -99,11 +99,6 @@ export class AuthService {
       throw new UnauthorizedException('User profile not found');
     }
 
-    if (profile.is_deleted === true) {
-      this.logger.error(`Login blocked: User ${authData.user.id} is deleted/blocked`);
-      throw new UnauthorizedException('Your account has been blocked. Please contact support.');
-    }
-
     await adminClient
       .from('user_profiles')
       .update({
@@ -184,10 +179,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    if (profile.is_deleted === true) {
-      throw new UnauthorizedException('Account has been blocked');
-    }
-
     return {
       id: profile.user_id,
       email: profile.email,
@@ -198,8 +189,6 @@ export class AuthService {
       bio: profile.bio,
       location: profile.location,
       unifiedAccountInfo: profile.unified_account_info,
-      isDeleted: profile.is_deleted || false,
-      deletedAt: profile.deleted_at,
     };
   }
 
