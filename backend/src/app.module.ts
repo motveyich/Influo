@@ -10,7 +10,6 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
 import { InfluencerCardsModule } from './modules/influencer-cards/influencer-cards.module';
 import { AdvertiserCardsModule } from './modules/advertiser-cards/advertiser-cards.module';
 import { AutoCampaignsModule } from './modules/auto-campaigns/auto-campaigns.module';
-import { ApplicationsModule } from './modules/applications/applications.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -44,7 +43,6 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     InfluencerCardsModule,
     AdvertiserCardsModule,
     AutoCampaignsModule,
-    ApplicationsModule,
     OffersModule,
     ReviewsModule,
     PaymentsModule,

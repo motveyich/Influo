@@ -31,11 +31,10 @@ export class OffersController {
   constructor(private offersService: OffersService) {}
 
   @Post()
-  @Roles('advertiser')
-  @ApiOperation({ summary: 'Create a new offer' })
+  @ApiOperation({ summary: 'Create a new offer or apply to a card/campaign' })
   @ApiResponse({ status: 201, description: 'Offer created successfully' })
-  @ApiResponse({ status: 403, description: 'Only advertisers can create offers' })
-  @ApiResponse({ status: 404, description: 'Influencer not found' })
+  @ApiResponse({ status: 403, description: 'Invalid user type for this action' })
+  @ApiResponse({ status: 404, description: 'Target user not found' })
   async create(
     @Body() createOfferDto: CreateOfferDto,
     @CurrentUser('userId') userId: string,

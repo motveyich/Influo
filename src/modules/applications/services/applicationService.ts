@@ -1,79 +1,131 @@
 import { apiClient } from '../../../core/api';
-import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
+export type OfferSourceType = 'direct' | 'influencer_card' | 'advertiser_card' | 'campaign';
+
+export interface CreateOfferFromCardData {
+  cardId: string;
+  cardType: 'influencer' | 'advertiser';
+  cardOwnerId: string;
+  message: string;
+  proposedRate: number;
+  currency?: string;
+  timeline: string;
+  deliverables: string[];
+  contentType?: string;
+}
+
+export interface OfferResponse {
+  id: string;
+  advertiserId: string;
+  influencerId: string;
+  title: string;
+  description: string;
+  amount: number;
+  currency: string;
+  contentType: string;
+  deadline?: string;
+  timeline?: string;
+  deliverables?: string[];
+  sourceType: OfferSourceType;
+  sourceCardId?: string;
+  campaignId?: string;
+  initiatedBy?: string;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  advertiser?: {
+    id: string;
+    fullName: string;
+    username?: string;
+    avatar?: string;
+  };
+  influencer?: {
+    id: string;
+    fullName: string;
+    username?: string;
+    avatar?: string;
+  };
+}
+
 export class ApplicationService {
-  async createApplication(applicationData: Partial<Application>): Promise<Application> {
+  async createApplication(data: CreateOfferFromCardData): Promise<OfferResponse> {
     try {
-      this.validateApplicationData(applicationData);
+      const sourceType: OfferSourceType = data.cardType === 'influencer'
+        ? 'influencer_card'
+        : 'advertiser_card';
 
-      const cardType = applicationData.targetType?.replace('_card', '') as 'influencer' | 'advertiser';
-
-      const payload = {
-        cardId: applicationData.targetReferenceId,
-        cardType,
-        message: applicationData.applicationData?.message || '',
+      const payload: Record<string, any> = {
+        title: `Application for ${data.cardType} card`,
+        description: data.message,
+        amount: data.proposedRate,
+        currency: data.currency || 'USD',
+        contentType: data.contentType || 'collaboration',
+        timeline: data.timeline,
+        deliverables: data.deliverables,
+        sourceType,
+        sourceCardId: data.cardId,
       };
 
-      const application = await apiClient.post<Application>('/applications', payload);
+      if (data.cardType === 'influencer') {
+        payload.influencerId = data.cardOwnerId;
+      } else {
+        payload.advertiserId = data.cardOwnerId;
+      }
 
-      analytics.track('application_created', {
-        application_id: application.id,
-        target_type: applicationData.targetType,
-        target_id: applicationData.targetId
+      const offer = await apiClient.post<OfferResponse>('/offers', payload);
+
+      analytics.track('offer_created_from_card', {
+        offer_id: offer.id,
+        source_type: sourceType,
+        card_id: data.cardId,
       });
 
-      return application;
+      return offer;
     } catch (error) {
-      console.error('Failed to create application:', error);
+      console.error('Failed to create offer from card:', error);
       throw error;
     }
   }
 
-  async getApplications(params?: { status?: string }): Promise<Application[]> {
+  async getApplications(params?: { status?: string }): Promise<OfferResponse[]> {
     try {
       let queryString = '';
       if (params?.status) {
         queryString = `?status=${params.status}`;
       }
-      const applications = await apiClient.get<Application[]>(`/applications${queryString}`);
-      return Array.isArray(applications) ? applications : [];
+      const offers = await apiClient.get<OfferResponse[]>(`/offers${queryString}`);
+      return Array.isArray(offers) ? offers : [];
     } catch (error) {
-      console.error('Failed to get applications:', error);
+      console.error('Failed to get offers:', error);
       return [];
     }
   }
 
-  async getApplication(applicationId: string): Promise<Application> {
+  async getApplication(offerId: string): Promise<OfferResponse> {
     try {
-      return await apiClient.get<Application>(`/applications/${applicationId}`);
+      return await apiClient.get<OfferResponse>(`/offers/${offerId}`);
     } catch (error) {
-      console.error('Failed to get application:', error);
+      console.error('Failed to get offer:', error);
       throw error;
     }
   }
 
-  async acceptApplication(applicationId: string): Promise<Application> {
+  async acceptApplication(offerId: string): Promise<OfferResponse> {
     try {
-      return await apiClient.post<Application>(`/applications/${applicationId}/accept`);
+      return await apiClient.post<OfferResponse>(`/offers/${offerId}/accept`);
     } catch (error) {
-      console.error('Failed to accept application:', error);
+      console.error('Failed to accept offer:', error);
       throw error;
     }
   }
 
-  async rejectApplication(applicationId: string): Promise<Application> {
+  async rejectApplication(offerId: string): Promise<OfferResponse> {
     try {
-      return await apiClient.post<Application>(`/applications/${applicationId}/reject`);
+      return await apiClient.post<OfferResponse>(`/offers/${offerId}/decline`);
     } catch (error) {
-      console.error('Failed to reject application:', error);
+      console.error('Failed to decline offer:', error);
       throw error;
-    }
-  }
-
-  private validateApplicationData(applicationData: Partial<Application>): void {
-    if (!applicationData.targetReferenceId || !applicationData.targetType) {
-      throw new Error('Card ID and type are required');
     }
   }
 }

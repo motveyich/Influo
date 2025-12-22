@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
-import { CreateOfferDto, UpdateOfferDto } from './dto';
+import { CreateOfferDto, UpdateOfferDto, OfferSourceType } from './dto';
 
 @Injectable()
 export class OffersService {
@@ -11,35 +11,91 @@ export class OffersService {
   async create(userId: string, createOfferDto: CreateOfferDto) {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: advertiser } = await supabase
+    const { data: currentUser } = await supabase
       .from('user_profiles')
       .select('user_type')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!advertiser || advertiser.user_type !== 'advertiser') {
-      throw new ForbiddenException('Only advertisers can create offers');
+    if (!currentUser) {
+      throw new ForbiddenException('User profile not found');
     }
 
-    const { data: influencer } = await supabase
-      .from('user_profiles')
-      .select('user_type')
-      .eq('user_id', createOfferDto.influencerId)
-      .maybeSingle();
+    const sourceType = createOfferDto.sourceType || OfferSourceType.DIRECT;
+    let advertiserId: string;
+    let influencerId: string;
 
-    if (!influencer || influencer.user_type !== 'influencer') {
-      throw new NotFoundException('Influencer not found');
+    if (sourceType === OfferSourceType.INFLUENCER_CARD) {
+      if (currentUser.user_type !== 'advertiser') {
+        throw new ForbiddenException('Only advertisers can apply to influencer cards');
+      }
+      advertiserId = userId;
+      influencerId = createOfferDto.influencerId!;
+
+      const { data: influencer } = await supabase
+        .from('user_profiles')
+        .select('user_type')
+        .eq('user_id', influencerId)
+        .maybeSingle();
+
+      if (!influencer || influencer.user_type !== 'influencer') {
+        throw new NotFoundException('Influencer not found');
+      }
+    } else if (sourceType === OfferSourceType.ADVERTISER_CARD) {
+      if (currentUser.user_type !== 'influencer') {
+        throw new ForbiddenException('Only influencers can apply to advertiser cards');
+      }
+      influencerId = userId;
+      advertiserId = createOfferDto.advertiserId!;
+
+      const { data: advertiser } = await supabase
+        .from('user_profiles')
+        .select('user_type')
+        .eq('user_id', advertiserId)
+        .maybeSingle();
+
+      if (!advertiser || advertiser.user_type !== 'advertiser') {
+        throw new NotFoundException('Advertiser not found');
+      }
+    } else if (sourceType === OfferSourceType.CAMPAIGN) {
+      if (currentUser.user_type !== 'influencer') {
+        throw new ForbiddenException('Only influencers can apply to campaigns');
+      }
+      influencerId = userId;
+      advertiserId = createOfferDto.advertiserId!;
+    } else {
+      if (currentUser.user_type !== 'advertiser') {
+        throw new ForbiddenException('Only advertisers can create direct offers');
+      }
+      advertiserId = userId;
+      influencerId = createOfferDto.influencerId!;
+
+      const { data: influencer } = await supabase
+        .from('user_profiles')
+        .select('user_type')
+        .eq('user_id', influencerId)
+        .maybeSingle();
+
+      if (!influencer || influencer.user_type !== 'influencer') {
+        throw new NotFoundException('Influencer not found');
+      }
     }
 
-    const offerData = {
-      advertiser_id: userId,
-      influencer_id: createOfferDto.influencerId,
+    const offerData: Record<string, any> = {
+      advertiser_id: advertiserId,
+      influencer_id: influencerId,
       title: createOfferDto.title,
       description: createOfferDto.description,
       amount: createOfferDto.amount,
       currency: createOfferDto.currency,
       content_type: createOfferDto.contentType,
       deadline: createOfferDto.deadline,
+      timeline: createOfferDto.timeline,
+      deliverables: createOfferDto.deliverables,
+      source_type: sourceType,
+      source_card_id: createOfferDto.sourceCardId,
+      campaign_id: createOfferDto.campaignId,
+      initiated_by: userId,
       status: 'pending',
       created_at: new Date().toISOString(),
     };
@@ -253,6 +309,12 @@ export class OffersService {
       currency: offer.currency,
       contentType: offer.content_type,
       deadline: offer.deadline,
+      timeline: offer.timeline,
+      deliverables: offer.deliverables,
+      sourceType: offer.source_type,
+      sourceCardId: offer.source_card_id,
+      campaignId: offer.campaign_id,
+      initiatedBy: offer.initiated_by,
       status: offer.status,
       createdAt: offer.created_at,
       updatedAt: offer.updated_at,
