@@ -126,7 +126,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {currentUserProfile?.profileCompletion && !currentUserProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={currentUserProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
@@ -239,7 +239,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {currentUserProfile?.profileCompletion && !currentUserProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={currentUserProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
@@ -359,7 +359,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {currentUserProfile?.profileCompletion && !currentUserProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={currentUserProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}

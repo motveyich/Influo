@@ -397,6 +397,8 @@ export const ru: TranslationKeys = {
     connectionLost: 'Соединение потеряно. Сообщения могут задерживаться.',
     reconnecting: 'Переподключение...',
     rateLimitWarning: 'Вы отправляете сообщения слишком быстро. Подождите немного перед отправкой следующего.',
+    noMainChats: 'Нет основных чатов',
+    mainChatsDescription: 'Отправляйте заявки и предложения для начала новых диалогов',
     noNewChats: 'Нет новых чатов',
     newChatsDescription: 'Новые диалоги и предложения появятся здесь',
     noRestrictedChats: 'Нет ограниченных чатов',

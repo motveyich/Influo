@@ -5,12 +5,11 @@ const getApiBaseUrl = (): string => {
     return envUrl;
   }
 
-  // In development, use proxy; in production, use direct URL
   if (import.meta.env.DEV) {
     return '/api';
   }
 
-  return 'https://influo-seven.vercel.app';
+  return 'https://influo-seven.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
@@ -56,6 +55,8 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    console.log(`[API] ${options.method || 'GET'} ${url}`, { hasToken: !!token });
+
     const config: RequestInit = {
       method: options.method || 'GET',
       headers,
@@ -84,7 +85,14 @@ class ApiClient {
         return {} as T;
       }
 
-      return await response.json();
+      const json = await response.json();
+
+      let result = json;
+      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
+        console.log('[API] Extracting data from wrapped response');
+        result = result.data;
+      }
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -150,7 +158,14 @@ class ApiClient {
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
-      return await response.json();
+      const json = await response.json();
+
+      let result = json;
+      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
+        console.log('[API] Extracting data from wrapped response (upload)');
+        result = result.data;
+      }
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw error;

@@ -39,7 +39,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User successfully logged out' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(@Request() req: any) {
-    return this.authService.logout(req.user.userId);
+    return this.authService.logout(req.user.id);
   }
 
   @Public()
@@ -67,6 +67,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Current user information' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getCurrentUser(@Request() req: any) {
-    return this.authService.getCurrentUser(req.user.userId);
+    return this.authService.getCurrentUser(req.user.id);
   }
 }

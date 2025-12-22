@@ -40,7 +40,15 @@ export class AutoCampaignService {
 
   async getCampaigns(userId: string): Promise<AutoCampaign[]> {
     try {
-      return await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
+      console.log('Loading campaigns for user:', userId);
+      const campaigns = await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
+      console.log('Raw campaigns response:', campaigns);
+      const normalized = campaigns.map(campaign => ({
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      }));
+      console.log('Normalized campaigns:', normalized);
+      return normalized;
     } catch (error) {
       console.error('Failed to get campaigns:', error);
       throw error;
@@ -49,7 +57,11 @@ export class AutoCampaignService {
 
   async getCampaign(campaignId: string): Promise<AutoCampaign> {
     try {
-      return await apiClient.get<AutoCampaign>(`/auto-campaigns/${campaignId}`);
+      const campaign = await apiClient.get<AutoCampaign>(`/auto-campaigns/${campaignId}`);
+      return {
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      };
     } catch (error) {
       console.error('Failed to get campaign:', error);
       throw error;
@@ -83,6 +95,33 @@ export class AutoCampaignService {
     }
   }
 
+  async resumeCampaign(campaignId: string): Promise<AutoCampaign> {
+    try {
+      return await apiClient.post<AutoCampaign>(`/auto-campaigns/${campaignId}/resume`);
+    } catch (error) {
+      console.error('Failed to resume campaign:', error);
+      throw error;
+    }
+  }
+
+  async launchCampaign(campaignId: string, advertiserId: string): Promise<AutoCampaign> {
+    try {
+      const campaign = await apiClient.patch<AutoCampaign>(`/auto-campaigns/${campaignId}`, {
+        status: 'active'
+      });
+
+      analytics.track('auto_campaign_launched', {
+        campaignId,
+        advertiserId
+      });
+
+      return campaign;
+    } catch (error) {
+      console.error('Failed to launch campaign:', error);
+      throw error;
+    }
+  }
+
   async deleteCampaign(campaignId: string): Promise<void> {
     try {
       await apiClient.delete(`/auto-campaigns/${campaignId}`);
@@ -96,9 +135,23 @@ export class AutoCampaignService {
     }
   }
 
-  async getActiveCampaigns(): Promise<AutoCampaign[]> {
+  async getActiveCampaigns(currentUserId?: string): Promise<AutoCampaign[]> {
     try {
-      return await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
+      console.log('Loading active campaigns, currentUserId:', currentUserId);
+      const campaigns = await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
+      console.log('Raw active campaigns response:', campaigns);
+      const normalizedCampaigns = campaigns.map(campaign => ({
+        ...campaign,
+        advertiserId: campaign.advertiserId || campaign.user?.id || ''
+      }));
+
+      if (currentUserId) {
+        const filtered = normalizedCampaigns.filter(c => c.advertiserId !== currentUserId);
+        console.log('Filtered active campaigns (excluding current user):', filtered);
+        return filtered;
+      }
+      console.log('All active campaigns:', normalizedCampaigns);
+      return normalizedCampaigns;
     } catch (error) {
       console.error('Failed to get active campaigns:', error);
       throw error;

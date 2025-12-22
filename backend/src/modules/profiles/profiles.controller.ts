@@ -28,7 +28,7 @@ import {
 import { ProfilesService } from './profiles.service';
 import { UpdateProfileDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 
 @ApiTags('profiles')
 @Controller('profiles')
@@ -38,6 +38,7 @@ export class ProfilesController {
   constructor(private profilesService: ProfilesService) {}
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get user profile by ID' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({ status: 200, description: 'Profile found' })
@@ -124,6 +125,7 @@ export class ProfilesController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Search profiles' })
   @ApiQuery({ name: 'q', description: 'Search query', required: true })
   @ApiQuery({ name: 'userType', description: 'User type filter', required: false })

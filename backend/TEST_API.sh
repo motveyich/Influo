@@ -3,7 +3,7 @@
 # Backend API Test Script
 # Tests the Vercel deployment to ensure all endpoints work
 
-BACKEND_URL="${1:-https://backend-ten-bice-31.vercel.app}"
+BACKEND_URL="${1:-https://influo-seven.vercel.app/}"
 
 echo "🧪 Testing Backend API: $BACKEND_URL"
 echo "=========================================="
@@ -42,7 +42,7 @@ echo ""
 # Test 3: OPTIONS preflight (CORS)
 echo "3️⃣ Testing CORS Preflight..."
 response=$(curl -s -w "\n%{http_code}" -X OPTIONS "$BACKEND_URL/api/auth/login" \
-  -H "Origin: https://your-frontend.vercel.app" \
+  -H "Origin: https://influo-seven.vercel.app/" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type")
 status_code=$(echo "$response" | tail -n 1)
