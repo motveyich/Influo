@@ -81,17 +81,21 @@ export class OffersService {
       }
     }
 
+    const details = {
+      title: createOfferDto.title,
+      description: createOfferDto.description,
+      contentType: createOfferDto.contentType,
+      deadline: createOfferDto.deadline,
+      deliverables: createOfferDto.deliverables || [],
+    };
+
     const offerData: Record<string, any> = {
       advertiser_id: advertiserId,
       influencer_id: influencerId,
-      title: createOfferDto.title,
-      description: createOfferDto.description,
-      amount: createOfferDto.amount,
+      details: details,
+      proposed_rate: createOfferDto.amount,
       currency: createOfferDto.currency,
-      content_type: createOfferDto.contentType,
-      deadline: createOfferDto.deadline,
       timeline: createOfferDto.timeline,
-      deliverables: createOfferDto.deliverables,
       source_type: sourceType,
       source_card_id: createOfferDto.sourceCardId,
       campaign_id: createOfferDto.campaignId,
@@ -155,7 +159,7 @@ export class OffersService {
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
         influencer:user_profiles!offers_influencer_id_fkey(*)
       `)
-      .eq('id', id)
+      .eq('offer_id', id)
       .maybeSingle();
 
     if (error || !offer) {
@@ -174,8 +178,8 @@ export class OffersService {
 
     const { data: existingOffer } = await supabase
       .from('offers')
-      .select('advertiser_id, status')
-      .eq('id', id)
+      .select('advertiser_id, status, details')
+      .eq('offer_id', id)
       .maybeSingle();
 
     if (!existingOffer) {
@@ -194,25 +198,41 @@ export class OffersService {
       updated_at: new Date().toISOString(),
     };
 
-    const fieldMappings: Record<string, string> = {
-      title: 'title',
-      description: 'description',
-      amount: 'amount',
-      currency: 'currency',
-      contentType: 'content_type',
-      deadline: 'deadline',
-    };
+    const currentDetails = existingOffer.details || {};
+    let detailsUpdated = false;
 
-    Object.entries(fieldMappings).forEach(([dtoKey, dbKey]) => {
-      if ((updateOfferDto as any)[dtoKey] !== undefined) {
-        updateData[dbKey] = (updateOfferDto as any)[dtoKey];
-      }
-    });
+    if (updateOfferDto.title !== undefined) {
+      currentDetails.title = updateOfferDto.title;
+      detailsUpdated = true;
+    }
+    if (updateOfferDto.description !== undefined) {
+      currentDetails.description = updateOfferDto.description;
+      detailsUpdated = true;
+    }
+    if (updateOfferDto.contentType !== undefined) {
+      currentDetails.contentType = updateOfferDto.contentType;
+      detailsUpdated = true;
+    }
+    if (updateOfferDto.deadline !== undefined) {
+      currentDetails.deadline = updateOfferDto.deadline;
+      detailsUpdated = true;
+    }
+
+    if (detailsUpdated) {
+      updateData.details = currentDetails;
+    }
+
+    if (updateOfferDto.amount !== undefined) {
+      updateData.proposed_rate = updateOfferDto.amount;
+    }
+    if (updateOfferDto.currency !== undefined) {
+      updateData.currency = updateOfferDto.currency;
+    }
 
     const { data: updatedOffer, error } = await supabase
       .from('offers')
       .update(updateData)
-      .eq('id', id)
+      .eq('offer_id', id)
       .select(`
         *,
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
@@ -253,7 +273,7 @@ export class OffersService {
     const { data: offer } = await supabase
       .from('offers')
       .select('advertiser_id, influencer_id, status')
-      .eq('id', id)
+      .eq('offer_id', id)
       .maybeSingle();
 
     if (!offer) {
@@ -283,7 +303,7 @@ export class OffersService {
     const { data: updated, error } = await supabase
       .from('offers')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('offer_id', id)
       .select(`
         *,
         advertiser:user_profiles!offers_advertiser_id_fkey(*),
@@ -299,18 +319,20 @@ export class OffersService {
   }
 
   private transformOffer(offer: any) {
+    const details = offer.details || {};
+
     return {
-      id: offer.id,
+      id: offer.offer_id,
       advertiserId: offer.advertiser_id,
       influencerId: offer.influencer_id,
-      title: offer.title,
-      description: offer.description,
-      amount: offer.amount,
+      title: details.title || '',
+      description: details.description || '',
+      amount: offer.proposed_rate,
       currency: offer.currency,
-      contentType: offer.content_type,
-      deadline: offer.deadline,
+      contentType: details.contentType || '',
+      deadline: details.deadline || null,
       timeline: offer.timeline,
-      deliverables: offer.deliverables,
+      deliverables: details.deliverables || offer.deliverables || [],
       sourceType: offer.source_type,
       sourceCardId: offer.source_card_id,
       campaignId: offer.campaign_id,

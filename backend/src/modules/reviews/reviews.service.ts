@@ -14,7 +14,7 @@ export class ReviewsService {
     const { data: offer } = await supabase
       .from('offers')
       .select('advertiser_id, influencer_id, status')
-      .eq('id', createReviewDto.offerId)
+      .eq('offer_id', createReviewDto.offerId)
       .maybeSingle();
 
     if (!offer) {

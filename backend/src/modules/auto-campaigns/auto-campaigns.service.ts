@@ -30,17 +30,17 @@ export class AutoCampaignsService {
     }
 
     const campaignData = {
-      user_id: userId,
+      advertiser_id: userId,
       title: createAutoCampaignDto.title,
       description: createAutoCampaignDto.description,
-      platform: createAutoCampaignDto.platform,
-      max_influencers: createAutoCampaignDto.maxInfluencers,
-      current_influencers: 0,
-      budget: createAutoCampaignDto.budget,
-      follower_range: createAutoCampaignDto.followerRange,
-      min_engagement_rate: createAutoCampaignDto.minEngagementRate,
-      target_interests: createAutoCampaignDto.targetInterests,
-      target_age_groups: createAutoCampaignDto.targetAgeGroups || {},
+      platforms: [createAutoCampaignDto.platform],
+      target_influencers_count: createAutoCampaignDto.maxInfluencers,
+      budget_min: createAutoCampaignDto.budget?.amount || 0,
+      budget_max: createAutoCampaignDto.budget?.amount || 0,
+      audience_min: createAutoCampaignDto.followerRange.min,
+      audience_max: createAutoCampaignDto.followerRange.max,
+      target_audience_interests: createAutoCampaignDto.targetInterests || [],
+      target_age_groups: createAutoCampaignDto.targetAgeGroups ? Object.keys(createAutoCampaignDto.targetAgeGroups) : [],
       target_countries: createAutoCampaignDto.targetCountries || [],
       enable_chat: createAutoCampaignDto.enableChat ?? true,
       status: 'active',
@@ -67,10 +67,10 @@ export class AutoCampaignsService {
 
     let query = supabase
       .from('auto_campaigns')
-      .select('*, user_profiles!inner(*)');
+      .select('*, user_profiles!auto_campaigns_advertiser_id_fkey(*)');
 
     if (filters?.platform) {
-      query = query.eq('platform', filters.platform);
+      query = query.contains('platforms', [filters.platform]);
     }
 
     if (filters?.status) {
@@ -80,7 +80,7 @@ export class AutoCampaignsService {
     }
 
     if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('advertiser_id', filters.userId);
     }
 
     const { data: campaigns, error } = await query.order('created_at', { ascending: false });
@@ -98,7 +98,7 @@ export class AutoCampaignsService {
 
     const { data: campaign, error } = await supabase
       .from('auto_campaigns')
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!auto_campaigns_advertiser_id_fkey(*)')
       .eq('id', id)
       .maybeSingle();
 
@@ -114,7 +114,7 @@ export class AutoCampaignsService {
 
     const { data: existingCampaign } = await supabase
       .from('auto_campaigns')
-      .select('user_id, status')
+      .select('advertiser_id, status')
       .eq('id', id)
       .maybeSingle();
 
@@ -122,7 +122,7 @@ export class AutoCampaignsService {
       throw new NotFoundException('Auto campaign not found');
     }
 
-    if (existingCampaign.user_id !== userId) {
+    if (existingCampaign.advertiser_id !== userId) {
       throw new ForbiddenException('You can only update your own campaigns');
     }
 
@@ -140,31 +140,44 @@ export class AutoCampaignsService {
       updated_at: new Date().toISOString(),
     };
 
-    const fieldMappings: Record<string, string> = {
-      title: 'title',
-      description: 'description',
-      platform: 'platform',
-      maxInfluencers: 'max_influencers',
-      budget: 'budget',
-      followerRange: 'follower_range',
-      minEngagementRate: 'min_engagement_rate',
-      targetInterests: 'target_interests',
-      targetAgeGroups: 'target_age_groups',
-      targetCountries: 'target_countries',
-      enableChat: 'enable_chat',
-    };
-
-    Object.entries(fieldMappings).forEach(([dtoKey, dbKey]) => {
-      if ((updateAutoCampaignDto as any)[dtoKey] !== undefined) {
-        updateData[dbKey] = (updateAutoCampaignDto as any)[dtoKey];
-      }
-    });
+    if (updateAutoCampaignDto.title !== undefined) {
+      updateData.title = updateAutoCampaignDto.title;
+    }
+    if (updateAutoCampaignDto.description !== undefined) {
+      updateData.description = updateAutoCampaignDto.description;
+    }
+    if (updateAutoCampaignDto.platform !== undefined) {
+      updateData.platforms = [updateAutoCampaignDto.platform];
+    }
+    if (updateAutoCampaignDto.maxInfluencers !== undefined) {
+      updateData.target_influencers_count = updateAutoCampaignDto.maxInfluencers;
+    }
+    if (updateAutoCampaignDto.budget !== undefined) {
+      updateData.budget_min = updateAutoCampaignDto.budget.amount;
+      updateData.budget_max = updateAutoCampaignDto.budget.amount;
+    }
+    if (updateAutoCampaignDto.followerRange !== undefined) {
+      updateData.audience_min = updateAutoCampaignDto.followerRange.min;
+      updateData.audience_max = updateAutoCampaignDto.followerRange.max;
+    }
+    if (updateAutoCampaignDto.targetInterests !== undefined) {
+      updateData.target_audience_interests = updateAutoCampaignDto.targetInterests;
+    }
+    if (updateAutoCampaignDto.targetAgeGroups !== undefined) {
+      updateData.target_age_groups = Object.keys(updateAutoCampaignDto.targetAgeGroups);
+    }
+    if (updateAutoCampaignDto.targetCountries !== undefined) {
+      updateData.target_countries = updateAutoCampaignDto.targetCountries;
+    }
+    if (updateAutoCampaignDto.enableChat !== undefined) {
+      updateData.enable_chat = updateAutoCampaignDto.enableChat;
+    }
 
     const { data: updatedCampaign, error } = await supabase
       .from('auto_campaigns')
       .update(updateData)
       .eq('id', id)
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!auto_campaigns_advertiser_id_fkey(*)')
       .single();
 
     if (error) {
@@ -180,7 +193,7 @@ export class AutoCampaignsService {
 
     const { data: existingCampaign } = await supabase
       .from('auto_campaigns')
-      .select('user_id')
+      .select('advertiser_id')
       .eq('id', id)
       .maybeSingle();
 
@@ -188,7 +201,7 @@ export class AutoCampaignsService {
       throw new NotFoundException('Auto campaign not found');
     }
 
-    if (existingCampaign.user_id !== userId) {
+    if (existingCampaign.advertiser_id !== userId) {
       throw new ForbiddenException('You can only delete your own campaigns');
     }
 
@@ -209,14 +222,19 @@ export class AutoCampaignsService {
     const campaign = await this.findOne(campaignId);
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: influencerCards, error } = await supabase
+    const platforms = campaign.platforms || [campaign.platform];
+    const primaryPlatform = platforms[0];
+
+    let query = supabase
       .from('influencer_cards')
       .select('*, user_profiles!inner(*)')
-      .eq('platform', campaign.platform)
-      .eq('is_active', true)
-      .gte('reach->>followers', campaign.followerRange.min)
-      .lte('reach->>followers', campaign.followerRange.max)
-      .gte('reach->>engagementRate', campaign.minEngagementRate);
+      .eq('is_active', true);
+
+    if (primaryPlatform) {
+      query = query.eq('platform', primaryPlatform);
+    }
+
+    const { data: influencerCards, error } = await query;
 
     if (error) {
       this.logger.error(`Failed to find matches: ${error.message}`, error);
@@ -224,14 +242,27 @@ export class AutoCampaignsService {
     }
 
     const matchedCards = influencerCards.filter((card) => {
+      const followers = card.reach?.followers || 0;
+      if (followers < campaign.audienceMin || followers > campaign.audienceMax) {
+        return false;
+      }
+
       const cardInterests = card.audience_demographics?.interests || [];
-      const hasMatchingInterest = campaign.targetInterests.some((interest: string) =>
-        cardInterests.includes(interest),
-      );
-      return hasMatchingInterest;
+      const targetInterests = campaign.targetAudienceInterests || [];
+      if (targetInterests.length > 0) {
+        const hasMatchingInterest = targetInterests.some((interest: string) =>
+          cardInterests.includes(interest),
+        );
+        if (!hasMatchingInterest) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
-    return matchedCards.slice(0, campaign.maxInfluencers - campaign.currentInfluencers);
+    const remainingSlots = campaign.targetInfluencersCount - campaign.acceptedOffersCount;
+    return matchedCards.slice(0, Math.max(0, remainingSlots));
   }
 
   async pauseCampaign(id: string, userId: string) {
@@ -239,7 +270,7 @@ export class AutoCampaignsService {
 
     const { data: campaign } = await supabase
       .from('auto_campaigns')
-      .select('user_id, status')
+      .select('advertiser_id, status')
       .eq('id', id)
       .maybeSingle();
 
@@ -247,7 +278,7 @@ export class AutoCampaignsService {
       throw new NotFoundException('Campaign not found');
     }
 
-    if (campaign.user_id !== userId) {
+    if (campaign.advertiser_id !== userId) {
       throw new ForbiddenException('You can only pause your own campaigns');
     }
 
@@ -272,7 +303,7 @@ export class AutoCampaignsService {
 
     const { data: campaign } = await supabase
       .from('auto_campaigns')
-      .select('user_id, status, current_influencers, max_influencers')
+      .select('advertiser_id, status, accepted_offers_count, target_influencers_count')
       .eq('id', id)
       .maybeSingle();
 
@@ -280,7 +311,7 @@ export class AutoCampaignsService {
       throw new NotFoundException('Campaign not found');
     }
 
-    if (campaign.user_id !== userId) {
+    if (campaign.advertiser_id !== userId) {
       throw new ForbiddenException('You can only resume your own campaigns');
     }
 
@@ -288,7 +319,7 @@ export class AutoCampaignsService {
       throw new BadRequestException('Can only resume paused campaigns');
     }
 
-    const newStatus = campaign.current_influencers > 0 ? 'in_progress' : 'active';
+    const newStatus = (campaign.accepted_offers_count || 0) > 0 ? 'in_progress' : 'active';
 
     const { error } = await supabase
       .from('auto_campaigns')
@@ -303,22 +334,44 @@ export class AutoCampaignsService {
   }
 
   private transformCampaign(campaign: any) {
+    const platforms = campaign.platforms || [];
+    const primaryPlatform = platforms[0] || null;
+
     return {
       id: campaign.id,
-      userId: campaign.user_id,
+      advertiserId: campaign.advertiser_id,
+      userId: campaign.advertiser_id,
       title: campaign.title,
       description: campaign.description,
-      platform: campaign.platform,
-      maxInfluencers: campaign.max_influencers,
-      currentInfluencers: campaign.current_influencers,
-      budget: campaign.budget,
-      followerRange: campaign.follower_range,
-      minEngagementRate: campaign.min_engagement_rate,
-      targetInterests: campaign.target_interests,
-      targetAgeGroups: campaign.target_age_groups,
-      targetCountries: campaign.target_countries,
+      platform: primaryPlatform,
+      platforms: platforms,
+      maxInfluencers: campaign.target_influencers_count,
+      targetInfluencersCount: campaign.target_influencers_count,
+      currentInfluencers: campaign.accepted_offers_count || 0,
+      acceptedOffersCount: campaign.accepted_offers_count || 0,
+      sentOffersCount: campaign.sent_offers_count || 0,
+      completedOffersCount: campaign.completed_offers_count || 0,
+      budget: {
+        amount: campaign.budget_max || campaign.budget_min || 0,
+        currency: 'RUB',
+      },
+      budgetMin: campaign.budget_min,
+      budgetMax: campaign.budget_max,
+      followerRange: {
+        min: campaign.audience_min,
+        max: campaign.audience_max,
+      },
+      audienceMin: campaign.audience_min,
+      audienceMax: campaign.audience_max,
+      minEngagementRate: 0,
+      targetInterests: campaign.target_audience_interests || [],
+      targetAudienceInterests: campaign.target_audience_interests || [],
+      targetAgeGroups: campaign.target_age_groups || [],
+      targetCountries: campaign.target_countries || [],
       enableChat: campaign.enable_chat,
       status: campaign.status,
+      startDate: campaign.start_date,
+      endDate: campaign.end_date,
       createdAt: campaign.created_at,
       updatedAt: campaign.updated_at,
       user: campaign.user_profiles ? {

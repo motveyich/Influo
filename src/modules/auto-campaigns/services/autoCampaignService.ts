@@ -8,19 +8,20 @@ export class AutoCampaignService {
       const payload = {
         title: data.title,
         description: data.description,
-        budgetMin: data.budgetMin,
-        budgetMax: data.budgetMax,
-        audienceMin: data.audienceMin,
-        audienceMax: data.audienceMax,
-        targetInfluencersCount: data.targetInfluencersCount,
-        contentTypes: data.contentTypes,
-        platforms: data.platforms,
+        platform: data.platforms?.[0] || 'instagram',
+        maxInfluencers: data.targetInfluencersCount,
+        budget: {
+          amount: data.budgetMax || data.budgetMin || 0,
+          currency: 'RUB',
+        },
+        followerRange: {
+          min: data.audienceMin,
+          max: data.audienceMax,
+        },
+        minEngagementRate: 0,
+        targetInterests: data.targetAudienceInterests || [],
         targetCountries: data.targetCountries,
-        targetAudienceInterests: data.targetAudienceInterests,
-        productCategories: data.productCategories,
         enableChat: data.enableChat,
-        startDate: data.startDate,
-        endDate: data.endDate,
       };
 
       const campaign = await apiClient.post<AutoCampaign>('/auto-campaigns', payload);
@@ -44,7 +45,6 @@ export class AutoCampaignService {
       const campaigns = await apiClient.get<AutoCampaign[]>(`/auto-campaigns?userId=${userId}`);
       console.log('Raw campaigns response:', campaigns);
 
-      // Защита: проверяем что campaigns это массив
       if (!Array.isArray(campaigns)) {
         console.warn('Campaigns response is not an array:', campaigns);
         return [];
@@ -77,7 +77,24 @@ export class AutoCampaignService {
 
   async updateCampaign(campaignId: string, updates: Partial<AutoCampaign>): Promise<AutoCampaign> {
     try {
-      return await apiClient.patch<AutoCampaign>(`/auto-campaigns/${campaignId}`, updates);
+      const payload: Record<string, any> = {};
+
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.description !== undefined) payload.description = updates.description;
+      if (updates.platforms !== undefined) payload.platform = updates.platforms[0];
+      if (updates.targetInfluencersCount !== undefined) payload.maxInfluencers = updates.targetInfluencersCount;
+      if (updates.budgetMin !== undefined || updates.budgetMax !== undefined) {
+        payload.budget = { amount: updates.budgetMax || updates.budgetMin || 0, currency: 'RUB' };
+      }
+      if (updates.audienceMin !== undefined || updates.audienceMax !== undefined) {
+        payload.followerRange = { min: updates.audienceMin || 0, max: updates.audienceMax || 0 };
+      }
+      if (updates.targetAudienceInterests !== undefined) payload.targetInterests = updates.targetAudienceInterests;
+      if (updates.targetCountries !== undefined) payload.targetCountries = updates.targetCountries;
+      if (updates.enableChat !== undefined) payload.enableChat = updates.enableChat;
+      if (updates.status !== undefined) payload.status = updates.status;
+
+      return await apiClient.patch<AutoCampaign>(`/auto-campaigns/${campaignId}`, payload);
     } catch (error) {
       console.error('Failed to update campaign:', error);
       throw error;
@@ -148,7 +165,6 @@ export class AutoCampaignService {
       const campaigns = await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
       console.log('Raw active campaigns response:', campaigns);
 
-      // Защита: проверяем что campaigns это массив
       if (!Array.isArray(campaigns)) {
         console.warn('Active campaigns response is not an array:', campaigns);
         return [];
