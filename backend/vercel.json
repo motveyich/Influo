@@ -1,16 +1,9 @@
 {
   "version": 2,
   "framework": null,
-  "installCommand": "npm install",
+  "installCommand": "npm install --include=dev",
   "buildCommand": "npm run build",
-  "outputDirectory": ".",
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node",
-      "maxDuration": 30,
-      "includeFiles": "dist/**"
-    }
-  },
+  "outputDirectory": "./dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -19,6 +12,17 @@
     {
       "source": "/(.*)",
       "destination": "/api/index.js"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,PATCH,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "*" }
+      ]
     }
   ]
 }
