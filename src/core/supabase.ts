@@ -36,23 +36,10 @@ const safeSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX
 
 export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: false,
+    autoRefreshToken: false,
     detectSessionInUrl: false,
-    storage: {
-      getItem: (key: string) => {
-        if (typeof window === 'undefined') return null;
-        return localStorage.getItem(key);
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof window === 'undefined') return;
-        localStorage.setItem(key, value);
-      },
-      removeItem: (key: string) => {
-        if (typeof window === 'undefined') return;
-        localStorage.removeItem(key);
-      },
-    },
+    storage: undefined,
   },
   realtime: {
     params: {
@@ -60,38 +47,6 @@ export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
     },
   },
 });
-
-export const setSupabaseSession = async (session: {
-  access_token: string;
-  refresh_token: string;
-}) => {
-  try {
-    const { error } = await supabase.auth.setSession({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-    });
-
-    if (error) {
-      console.error('Failed to set Supabase session:', error);
-      return false;
-    }
-
-    console.log('✅ Supabase session set successfully');
-    return true;
-  } catch (error) {
-    console.error('Error setting Supabase session:', error);
-    return false;
-  }
-};
-
-export const clearSupabaseSession = async () => {
-  try {
-    await supabase.auth.signOut();
-    console.log('✅ Supabase session cleared');
-  } catch (error) {
-    console.error('Error clearing Supabase session:', error);
-  }
-};
 
 // Add a helper function to check connection status
 export const checkSupabaseConnection = async () => {

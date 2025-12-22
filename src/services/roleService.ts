@@ -5,31 +5,26 @@ import { adminService } from './adminService';
 export class RoleService {
   async getUserRole(userId: string): Promise<UserRole> {
     try {
-      // First try to get role from user_profiles (faster, single query)
-      const { data: profileData, error: profileError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (!profileError && profileData?.role) {
-        return profileData.role as UserRole;
-      }
-
-      // Fallback: check user_roles table for active role assignment
-      const { data: roleData, error: roleError } = await supabase
+      // First check user_roles table for active role assignment
+      const { data: roleData } = await supabase
         .from(TABLES.USER_ROLES)
         .select('role')
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!roleError && roleData?.role) {
-        return roleData.role as UserRole;
+      if (roleData) {
+        return roleData.role;
       }
 
-      // Default to 'user' if no role found
-      return 'user';
+      // Fallback to role in user_profiles
+      const { data: profileData } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      return profileData?.role || 'user';
     } catch (error) {
       console.error('Failed to get user role:', error);
       return 'user';

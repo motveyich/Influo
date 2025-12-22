@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import { setSupabaseSession, clearSupabaseSession } from './supabase';
+import { cleanSupabaseTokens } from '../utils/cleanStorage';
 
 export interface User {
   id: string;
@@ -17,22 +17,12 @@ export interface AuthState {
   loading: boolean;
 }
 
-export interface AuthData {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
-  supabaseSession?: {
-    access_token: string;
-    refresh_token: string;
-    expires_at?: number;
-    expires_in?: number;
-  };
-}
-
 export interface AuthResponse {
-  success: boolean;
-  data: AuthData;
-  timestamp: string;
+  data: {
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+  }
 }
 
 class AuthService {
@@ -49,6 +39,9 @@ class AuthService {
 
     console.log('🔐 Auth initialize:', { hasToken: !!token, hasRefresh: !!refreshToken });
 
+    // Clean old Supabase tokens on startup
+    cleanSupabaseTokens();
+
     if (!token) {
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
@@ -56,8 +49,7 @@ class AuthService {
     }
 
     try {
-      const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-      const user = meResponse.data || meResponse as unknown as User;
+      const user = await apiClient.get<User>('/auth/me');
       this.currentState = { user, loading: false };
       console.log('✅ User authenticated:', user.email);
     } catch (error) {
@@ -67,28 +59,16 @@ class AuthService {
       if (refreshToken) {
         try {
           console.log('🔄 Attempting token refresh...');
-          const response = await apiClient.post<AuthResponse>('/auth/refresh', {
+          const {data: response} = await apiClient.post<AuthResponse>('/auth/refresh', {
             refreshToken
           });
 
-          const authData = response.data;
+          apiClient.setAccessToken(response.accessToken);
+          localStorage.setItem('refreshToken', response.refreshToken);
 
-          if (authData?.accessToken) {
-            apiClient.setAccessToken(authData.accessToken);
-            localStorage.setItem('refreshToken', authData.refreshToken);
-
-            // Set Supabase session if available
-            if (authData.supabaseSession) {
-              await setSupabaseSession(authData.supabaseSession);
-            }
-
-            const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-            const user = meResponse.data || meResponse as unknown as User;
-            this.currentState = { user, loading: false };
-            console.log('✅ Token refreshed successfully');
-          } else {
-            throw new Error('Invalid refresh response');
-          }
+          const user = await apiClient.get<User>('/auth/me');
+          this.currentState = { user, loading: false };
+          console.log('✅ Token refreshed successfully');
         } catch (refreshError) {
           console.error('❌ Token refresh failed:', refreshError);
           apiClient.setAccessToken(null);
@@ -120,40 +100,35 @@ class AuthService {
   async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
       console.log('📝 Attempting sign up for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/signup', {
+      const {data: response} = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
         userType,
       });
 
-      const authData = response.data;
-
       console.log('📦 Signup response received:', {
-        hasUser: !!authData?.user,
-        hasAccessToken: !!authData?.accessToken,
-        hasRefreshToken: !!authData?.refreshToken,
-        hasSupabaseSession: !!authData?.supabaseSession,
+        hasUser: !!response.user,
+        hasAccessToken: !!response.accessToken,
+        hasRefreshToken: !!response.refreshToken,
       });
 
-      if (!authData?.accessToken || !authData?.refreshToken) {
+      if (!response.accessToken || !response.refreshToken) {
         console.error('❌ Invalid response format:', response);
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set backend tokens
-      apiClient.setAccessToken(authData.accessToken);
-      localStorage.setItem('refreshToken', authData.refreshToken);
+      // Set tokens
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      // Set Supabase session
-      if (authData.supabaseSession) {
-        await setSupabaseSession(authData.supabaseSession);
-      }
+      // Clean old Supabase tokens
+      cleanSupabaseTokens();
 
-      this.currentState = { user: authData.user, loading: false };
+      this.currentState = { user: response.user, loading: false };
       this.notifyListeners();
 
       console.log('✅ Sign up successful');
-      return { data: authData, error: null };
+      return { data: response, error: null };
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
       return {
@@ -169,41 +144,37 @@ class AuthService {
   async signIn(email: string, password: string) {
     try {
       console.log('🔐 Attempting sign in for:', email);
-      const response = await apiClient.post<AuthResponse>('/auth/login', {
+      const {data: response} = await apiClient.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
 
-      const authData = response.data;
-
       console.log('📦 Login response received (raw):', response);
       console.log('📦 Login response details:', {
-        hasUser: !!authData?.user,
-        hasAccessToken: !!authData?.accessToken,
-        hasRefreshToken: !!authData?.refreshToken,
-        hasSupabaseSession: !!authData?.supabaseSession,
-        userId: authData?.user?.id,
+        hasUser: !!response.user,
+        hasAccessToken: !!response.accessToken,
+        hasRefreshToken: !!response.refreshToken,
+        userId: response.user?.id,
+        responseKeys: Object.keys(response),
       });
 
-      if (!authData?.accessToken || !authData?.refreshToken) {
+      if (!response.accessToken || !response.refreshToken) {
         console.error('❌ Invalid response format:', response);
         throw new Error('Invalid auth response: missing tokens');
       }
 
-      // Set backend tokens
-      apiClient.setAccessToken(authData.accessToken);
-      localStorage.setItem('refreshToken', authData.refreshToken);
+      // Set tokens
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      // Set Supabase session
-      if (authData.supabaseSession) {
-        await setSupabaseSession(authData.supabaseSession);
-      }
+      // Clean old Supabase tokens
+      cleanSupabaseTokens();
 
-      this.currentState = { user: authData.user, loading: false };
+      this.currentState = { user: response.user, loading: false };
       this.notifyListeners();
 
       console.log('✅ Sign in successful');
-      return { data: authData, error: null };
+      return { data: response, error: null };
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
       return {
@@ -224,7 +195,6 @@ class AuthService {
     } finally {
       apiClient.setAccessToken(null);
       localStorage.removeItem('refreshToken');
-      await clearSupabaseSession();
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
     }
@@ -249,8 +219,7 @@ class AuthService {
 
     if (token) {
       try {
-        const meResponse = await apiClient.get<{ success: boolean; data: User }>('/auth/me');
-        const user = meResponse.data || meResponse as unknown as User;
+        const user = await apiClient.get<User>('/auth/me');
         this.currentState = { user, loading: false };
         this.notifyListeners();
       } catch (error) {

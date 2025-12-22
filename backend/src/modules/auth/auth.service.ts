@@ -31,7 +31,7 @@ export class AuthService {
       throw new UnauthorizedException(authError.message);
     }
 
-    if (!authData.user || !authData.session) {
+    if (!authData.user) {
       throw new UnauthorizedException('Failed to create user');
     }
 
@@ -71,12 +71,6 @@ export class AuthService {
         fullName: signupDto.fullName,
         userType: signupDto.userType,
       },
-      supabaseSession: {
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
-        expires_at: authData.session.expires_at,
-        expires_in: authData.session.expires_in,
-      },
       ...tokens,
     };
   }
@@ -89,7 +83,7 @@ export class AuthService {
       password: loginDto.password,
     });
 
-    if (authError || !authData.user || !authData.session) {
+    if (authError || !authData.user) {
       this.logger.error(`Login failed: ${authError?.message}`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -134,12 +128,6 @@ export class AuthService {
         userType: profile.user_type,
         avatar: profile.avatar,
       },
-      supabaseSession: {
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
-        expires_at: authData.session.expires_at,
-        expires_in: authData.session.expires_in,
-      },
       ...tokens,
     };
   }
@@ -163,7 +151,7 @@ export class AuthService {
       refresh_token: refreshToken,
     });
 
-    if (error || !data.user || !data.session) {
+    if (error || !data.user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -180,15 +168,7 @@ export class AuthService {
       userType: profile?.user_type || 'influencer',
     });
 
-    return {
-      ...tokens,
-      supabaseSession: {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_at: data.session.expires_at,
-        expires_in: data.session.expires_in,
-      },
-    };
+    return tokens;
   }
 
   async getCurrentUser(userId: string) {
