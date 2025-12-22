@@ -5,7 +5,7 @@ const getApiBaseUrl = (): string => {
     return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
 
-  return 'https://beckend-git-main-matveys-projects-0d62e667.vercel.app/api';
+  return 'https://backend-ten-bice-31.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
