@@ -77,22 +77,12 @@ export class AdvertiserCardService {
       const queryParams = new URLSearchParams();
       if (filters) {
         Object.keys(filters).forEach(key => {
-          const value = filters[key];
-
-          if (value === undefined || value === null || value === '') {
-            return;
-          }
-
-          if (Array.isArray(value)) {
-            if (value.length === 0) return;
-            value.forEach(item => queryParams.append(key, String(item)));
-          } else {
-            queryParams.append(key, String(value));
+          if (filters[key] !== undefined) {
+            queryParams.append(key, String(filters[key]));
           }
         });
       }
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      console.log('Loading advertiser cards with query:', queryString);
       return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards${queryString}`);
     } catch (error) {
       console.error('Failed to get cards:', error);

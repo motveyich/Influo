@@ -57,12 +57,10 @@ export function OffersPage() {
 
       // Загружаем все предложения, где пользователь является участником
       const loadedOffers = await offerService.getOffersByParticipant(currentUserId);
-      console.log('Loaded offers:', loadedOffers);
-      console.log('Loaded offers count:', loadedOffers?.length);
-      setAllOffers(loadedOffers || []);
+      setAllOffers(loadedOffers);
 
       // Фильтруем по вкладке
-      const filteredByTab = (loadedOffers || []).filter(offer => {
+      const filteredByTab = loadedOffers.filter(offer => {
         if (activeTab === 'active') {
           return ['pending', 'accepted', 'in_progress'].includes(offer.status);
         } else {
@@ -70,12 +68,9 @@ export function OffersPage() {
         }
       });
 
-      console.log('Filtered offers:', filteredByTab);
-      console.log('Active tab:', activeTab);
       setOffers(filteredByTab);
     } catch (error) {
       console.error('Failed to load offers:', error);
-      console.error('Error details:', error);
       toast.error('Не удалось загрузить предложения');
       setOffers([]);
       setAllOffers([]);

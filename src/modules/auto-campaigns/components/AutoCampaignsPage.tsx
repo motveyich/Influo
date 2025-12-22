@@ -47,26 +47,19 @@ export function AutoCampaignsPage() {
   }, [allCampaigns, myCampaigns, activeTab]);
 
   const loadAdvertiserProfiles = async (campaigns: AutoCampaign[]) => {
+    const advertiserIds = [...new Set(campaigns.map(c => c.advertiserId))];
     const profiles: Record<string, any> = {};
 
-    for (const campaign of campaigns) {
-      if (campaign.user) {
-        profiles[campaign.advertiserId] = {
-          user_id: campaign.user.id,
-          full_name: campaign.user.fullName,
-          avatar: campaign.user.avatar
-        };
-      } else {
-        try {
-          const { data } = await supabase
-            .from('user_profiles')
-            .select('user_id, full_name, avatar')
-            .eq('user_id', campaign.advertiserId)
-            .maybeSingle();
-          if (data) profiles[campaign.advertiserId] = data;
-        } catch (error) {
-          console.error('Failed to load advertiser profile:', error);
-        }
+    for (const advertiserId of advertiserIds) {
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('user_id, full_name, avatar')
+          .eq('user_id', advertiserId)
+          .maybeSingle();
+        if (data) profiles[advertiserId] = data;
+      } catch (error) {
+        console.error('Failed to load advertiser profile:', error);
       }
     }
 
@@ -92,26 +85,14 @@ export function AutoCampaignsPage() {
 
       if (activeTab === 'all') {
         const data = await autoCampaignService.getActiveCampaigns(currentUserId);
-        console.log('Loaded active campaigns:', data);
-        console.log('Active campaigns count:', data?.length);
-        console.log('Active campaigns data:', JSON.stringify(data, null, 2));
-        setAllCampaigns(data || []);
+        setAllCampaigns(data);
       } else {
         const data = await autoCampaignService.getCampaigns(currentUserId);
-        console.log('Loaded my campaigns:', data);
-        console.log('My campaigns count:', data?.length);
-        console.log('My campaigns data:', JSON.stringify(data, null, 2));
-        setMyCampaigns(data || []);
+        setMyCampaigns(data);
       }
     } catch (error) {
       console.error('Failed to load campaigns:', error);
-      console.error('Error details:', error);
       toast.error('Не удалось загрузить автокампании');
-      if (activeTab === 'all') {
-        setAllCampaigns([]);
-      } else {
-        setMyCampaigns([]);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -236,10 +217,6 @@ export function AutoCampaignsPage() {
   };
 
   const campaignsToShow = activeTab === 'all' ? allCampaigns : myCampaigns;
-  console.log('Currently showing campaigns:', campaignsToShow);
-  console.log('Active tab:', activeTab);
-  console.log('All campaigns:', allCampaigns);
-  console.log('My campaigns:', myCampaigns);
 
   if (isLoading) {
     return (

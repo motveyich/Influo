@@ -3,14 +3,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Public()
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
@@ -21,7 +19,6 @@ export class AuthController {
     return this.authService.signup(signupDto);
   }
 
-  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user' })
@@ -39,10 +36,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User successfully logged out' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(@Request() req: any) {
-    return this.authService.logout(req.user.id);
+    return this.authService.logout(req.user.userId);
   }
 
-  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
@@ -67,6 +63,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Current user information' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getCurrentUser(@Request() req: any) {
-    return this.authService.getCurrentUser(req.user.id);
+    return this.authService.getCurrentUser(req.user.userId);
   }
 }

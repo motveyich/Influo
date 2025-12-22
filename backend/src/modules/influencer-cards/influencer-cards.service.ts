@@ -52,14 +52,7 @@ export class InfluencerCardsService {
     return this.transformCard(card);
   }
 
-  async findAll(filters?: {
-    platform?: string;
-    minFollowers?: number;
-    maxFollowers?: number;
-    userId?: string;
-    countries?: string[];
-    searchQuery?: string;
-  }) {
+  async findAll(filters?: { platform?: string; minFollowers?: number; maxFollowers?: number; userId?: string }) {
     const supabase = this.supabaseService.getAdminClient();
 
     let query = supabase
@@ -90,33 +83,7 @@ export class InfluencerCardsService {
       return [];
     }
 
-    let filteredCards = cards;
-
-    if (filters?.countries && filters.countries.length > 0) {
-      const countriesToFilter = filters.countries;
-      filteredCards = filteredCards.filter((card) => {
-        const topCountries = card.audience_demographics?.topCountries || [];
-        return countriesToFilter.some((country) =>
-          topCountries.some((tc: string) => tc.toLowerCase().includes(country.toLowerCase()))
-        );
-      });
-    }
-
-    if (filters?.searchQuery) {
-      const searchLower = filters.searchQuery.toLowerCase();
-      filteredCards = filteredCards.filter((card) => {
-        const description = card.service_details?.description?.toLowerCase() || '';
-        const contentTypes = (card.service_details?.contentTypes || []).join(' ').toLowerCase();
-        const interests = (card.audience_demographics?.interests || []).join(' ').toLowerCase();
-        return (
-          description.includes(searchLower) ||
-          contentTypes.includes(searchLower) ||
-          interests.includes(searchLower)
-        );
-      });
-    }
-
-    return filteredCards.map((card) => this.transformCard(card));
+    return cards.map((card) => this.transformCard(card));
   }
 
   async findOne(id: string) {

@@ -2,14 +2,10 @@ const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
   if (envUrl) {
-    return envUrl;
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
 
-  if (import.meta.env.DEV) {
-    return '/api';
-  }
-
-  return 'https://influo-seven.vercel.app/api';
+  return 'https://beckend-git-main-matveys-projects-0d62e667.vercel.app/api';
 };
 
 const API_URL = getApiBaseUrl();
@@ -55,13 +51,9 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    console.log(`[API] ${options.method || 'GET'} ${url}`, { hasToken: !!token });
-
     const config: RequestInit = {
       method: options.method || 'GET',
       headers,
-      mode: 'cors',
-      credentials: 'omit',
     };
 
     if (options.body) {
@@ -85,14 +77,7 @@ class ApiClient {
         return {} as T;
       }
 
-      const json = await response.json();
-
-      let result = json;
-      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
-        console.log('[API] Extracting data from wrapped response');
-        result = result.data;
-      }
-      return result;
+      return await response.json();
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -144,8 +129,6 @@ class ApiClient {
         method: 'POST',
         headers,
         body: formData,
-        mode: 'cors',
-        credentials: 'omit',
       });
 
       if (response.status === 401) {
@@ -158,14 +141,7 @@ class ApiClient {
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
-      const json = await response.json();
-
-      let result = json;
-      while (result && typeof result === 'object' && 'data' in result && 'success' in result) {
-        console.log('[API] Extracting data from wrapped response (upload)');
-        result = result.data;
-      }
-      return result;
+      return await response.json();
     } catch (error) {
       if (error instanceof Error) {
         throw error;

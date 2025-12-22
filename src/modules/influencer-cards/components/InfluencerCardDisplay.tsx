@@ -5,7 +5,7 @@ import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, 
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
-import { profileService } from '../../profiles/services/profileService';
+import { supabase } from '../../../core/supabase';
 import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
@@ -54,14 +54,12 @@ export function InfluencerCardDisplay({
 
   const loadUserProfile = async () => {
     try {
-      const profile = await profileService.getProfile(card.userId);
-      if (profile) {
-        setUserProfile({
-          user_id: profile.userId,
-          full_name: profile.fullName,
-          avatar: profile.avatar
-        });
-      }
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar')
+        .eq('user_id', card.userId)
+        .maybeSingle();
+      if (data) setUserProfile(data);
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
@@ -95,6 +93,23 @@ export function InfluencerCardDisplay({
   const handleIntegrationSubmit = async (integrationDetails: any) => {
     setIsLoading(true);
     try {
+
+      // Check for existing application to this user
+      const { data: existingApplication } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('applicant_id', currentUserId)
+        .eq('target_reference_id', card.id)
+        .eq('target_type', 'influencer_card')
+        .not('status', 'in', '(cancelled,withdrawn)')
+        .maybeSingle();
+
+      if (existingApplication) {
+        toast.error('Вы уже отправили заявку на эту карточку');
+        setIsLoading(false);
+        return;
+      }
+
       await applicationService.createApplication({
         applicantId: currentUserId,
         targetId: card.userId,

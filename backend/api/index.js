@@ -27,20 +27,20 @@ async function bootstrapServer() {
     }
   );
 
-  const frontendOrigin = process.env.FRONTEND_ORIGIN || process.env.FRONTEND_URL;
+  const frontendOrigin = process.env.FRONTEND_ORIGIN || process.env.FRONTEND_URL || '*';
 
   // CRITICAL: DO NOT set global prefix here
   // The request path /api/auth/login should match controller @Controller('auth')
   // WITHOUT an additional /api prefix
 
   app.enableCors({
-    origin: frontendOrigin ? [
+    origin: frontendOrigin === '*' ? '*' : [
       frontendOrigin,
       'http://localhost:5173',
       'http://localhost:3000',
       /\.vercel\.app$/,
-    ] : '*',
-    credentials: false,
+    ],
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Client-Info', 'apikey'],
   });

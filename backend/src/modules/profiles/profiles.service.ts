@@ -199,11 +199,8 @@ export class ProfilesService {
   }
 
   private transformProfile(profile: any) {
-    const profileCompletion = this.calculateProfileCompletion(profile);
-
     return {
       id: profile.user_id,
-      userId: profile.user_id,
       email: profile.email,
       fullName: profile.full_name,
       username: profile.username,
@@ -215,63 +212,9 @@ export class ProfilesService {
       userType: profile.user_type,
       socialMediaLinks: profile.social_media_links || {},
       metrics: profile.metrics || {},
-      influencerData: profile.influencer_data || null,
-      advertiserData: profile.advertiser_data || null,
       unifiedAccountInfo: profile.unified_account_info || {},
-      profileCompletion,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     };
-  }
-
-  private calculateProfileCompletion(profile: any) {
-    const hasBasicInfo = !!(
-      profile.full_name?.trim() &&
-      profile.email?.trim() &&
-      profile.phone?.trim() &&
-      profile.location?.trim() &&
-      profile.bio?.trim() &&
-      profile.bio.trim().length >= 50
-    );
-
-    const hasInfluencerSetup = this.hasInfluencerContent(profile.influencer_data);
-    const hasAdvertiserSetup = this.hasAdvertiserContent(profile.advertiser_data);
-
-    let completionPercentage = 0;
-    if (hasBasicInfo) completionPercentage += 50;
-    if (hasInfluencerSetup) completionPercentage += 25;
-    if (hasAdvertiserSetup) completionPercentage += 25;
-
-    return {
-      basicInfo: hasBasicInfo,
-      influencerSetup: hasInfluencerSetup,
-      advertiserSetup: hasAdvertiserSetup,
-      overallComplete: hasBasicInfo && hasInfluencerSetup && hasAdvertiserSetup,
-      completionPercentage,
-    };
-  }
-
-  private hasInfluencerContent(data: any): boolean {
-    if (!data) return false;
-    return !!(
-      data.mainSocialLink?.trim() ||
-      data.category?.trim() ||
-      data.platformName?.trim() ||
-      (data.socialMediaLinks?.length > 0) ||
-      (data.metrics?.totalFollowers > 0) ||
-      (data.contentCategories?.length > 0)
-    );
-  }
-
-  private hasAdvertiserContent(data: any): boolean {
-    if (!data) return false;
-    return !!(
-      data.companyName?.trim() ||
-      data.companyWebsite?.trim() ||
-      data.companyDescription?.trim() ||
-      data.industry?.trim() ||
-      data.previousCampaigns > 0 ||
-      data.averageBudget > 0
-    );
   }
 }
