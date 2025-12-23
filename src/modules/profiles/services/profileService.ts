@@ -307,7 +307,13 @@ export class ProfileService {
       website: apiData.website,
       influencerData: apiData.influencerData || apiData.influencer_data,
       advertiserData: apiData.advertiserData || apiData.advertiser_data,
-      profileCompletion: apiData.profileCompletion || apiData.profile_completion || this.calculateProfileCompletion(apiData),
+      profileCompletion: apiData.profileCompletion || apiData.profile_completion || {
+        basicInfo: apiData.profile_completion_basic_info ?? false,
+        influencerSetup: apiData.profile_completion_influencer_setup ?? false,
+        advertiserSetup: apiData.profile_completion_advertiser_setup ?? false,
+        overallComplete: apiData.profile_completion_overall_complete ?? false,
+        completionPercentage: apiData.profile_completion_percentage ?? 0
+      },
       unifiedAccountInfo: {
         isVerified: apiData.isVerified || false,
         joinedAt: apiData.createdAt || apiData.created_at || new Date().toISOString(),
