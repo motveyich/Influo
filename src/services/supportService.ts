@@ -1,4 +1,4 @@
-import { apiClient, showFeatureNotImplemented } from '../core/api';
+import { supabase } from '../core/supabase';
 
 export interface SupportTicket {
   id: string;
@@ -37,64 +37,102 @@ export interface TicketWithMessages extends SupportTicket {
 
 export const supportService = {
   async createTicket(userId: string, data: CreateTicketData): Promise<SupportTicket> {
-    const { data: ticket, error } = await apiClient.post<any>('/support/tickets', {
-      userId,
-      subject: data.subject,
-      category: data.category,
-      priority: data.priority,
-      message: data.message
-    });
+    const { data: ticket, error } = await supabase
+      .from('support_tickets')
+      .insert({
+        user_id: userId,
+        subject: data.subject,
+        category: data.category,
+        priority: data.priority,
+        status: 'open'
+      })
+      .select()
+      .single();
 
     if (error) throw new Error(error.message);
+
+    if (ticket) {
+      await supabase.from('support_messages').insert({
+        ticket_id: ticket.id,
+        sender_id: userId,
+        message: data.message,
+        is_staff_response: false
+      });
+    }
 
     return ticket;
   },
 
   async getUserTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await apiClient.get<any[]>(`/support/tickets?userId=${userId}`);
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select(`
+        *,
+        support_messages (count)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
     return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messageCount || ticket.message_count || 0,
+      message_count: ticket.support_messages?.[0]?.count || 0,
       messages: []
     }));
   },
 
   async getAllTickets(): Promise<TicketWithMessages[]> {
-    const { data, error } = await apiClient.get<any[]>('/support/tickets');
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select(`
+        *,
+        support_messages (count)
+      `)
+      .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
     return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messageCount || ticket.message_count || 0,
+      message_count: ticket.support_messages?.[0]?.count || 0,
       messages: []
     }));
   },
 
   async getTicketById(ticketId: string): Promise<TicketWithMessages | null> {
-    const { data, error } = await apiClient.get<any>(`/support/tickets/${ticketId}`);
+    const { data: ticket, error: ticketError } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .maybeSingle();
 
-    if (error) {
-      if (error.status === 404) return null;
-      throw new Error(error.message);
-    }
+    if (ticketError || !ticket) return null;
+
+    const { data: messages, error: messagesError } = await supabase
+      .from('support_messages')
+      .select('*')
+      .eq('ticket_id', ticketId)
+      .order('created_at', { ascending: true });
 
     return {
-      ...data,
-      messages: data.messages || [],
-      message_count: data.messages?.length || data.messageCount || 0
+      ...ticket,
+      messages: messages || [],
+      message_count: messages?.length || 0
     };
   },
 
   async addMessage(ticketId: string, senderId: string, message: string, isStaffResponse: boolean = false): Promise<SupportMessage> {
-    const { data, error } = await apiClient.post<any>(`/support/tickets/${ticketId}/messages`, {
-      senderId,
-      message,
-      isStaffResponse
-    });
+    const { data, error } = await supabase
+      .from('support_messages')
+      .insert({
+        ticket_id: ticketId,
+        sender_id: senderId,
+        message,
+        is_staff_response: isStaffResponse
+      })
+      .select()
+      .single();
 
     if (error) throw new Error(error.message);
 
@@ -104,19 +142,25 @@ export const supportService = {
   async updateTicketStatus(ticketId: string, status: SupportTicket['status'], resolvedAt?: string): Promise<void> {
     const payload: any = { status };
     if (status === 'resolved' || status === 'closed') {
-      payload.resolvedAt = resolvedAt || new Date().toISOString();
+      payload.resolved_at = resolvedAt || new Date().toISOString();
     }
 
-    const { error } = await apiClient.patch(`/support/tickets/${ticketId}`, payload);
+    const { error } = await supabase
+      .from('support_tickets')
+      .update(payload)
+      .eq('id', ticketId);
 
     if (error) throw new Error(error.message);
   },
 
   async assignTicket(ticketId: string, assignedTo: string | null): Promise<void> {
-    const { error } = await apiClient.patch(`/support/tickets/${ticketId}`, {
-      assignedTo,
-      status: assignedTo ? 'in_progress' : 'open'
-    });
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({
+        assigned_to: assignedTo,
+        status: assignedTo ? 'in_progress' : 'open'
+      })
+      .eq('id', ticketId);
 
     if (error) throw new Error(error.message);
   },
@@ -126,41 +170,87 @@ export const supportService = {
   },
 
   async getTicketsByStatus(status: SupportTicket['status']): Promise<TicketWithMessages[]> {
-    const { data, error } = await apiClient.get<any[]>(`/support/tickets?status=${status}`);
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select(`
+        *,
+        support_messages (count)
+      `)
+      .eq('status', status)
+      .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
     return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messageCount || ticket.message_count || 0,
+      message_count: ticket.support_messages?.[0]?.count || 0,
       messages: []
     }));
   },
 
   async getAssignedTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await apiClient.get<any[]>(`/support/tickets?assignedTo=${userId}`);
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select(`
+        *,
+        support_messages (count)
+      `)
+      .eq('assigned_to', userId)
+      .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
     return (data || []).map(ticket => ({
       ...ticket,
-      message_count: ticket.messageCount || ticket.message_count || 0,
+      message_count: ticket.support_messages?.[0]?.count || 0,
       messages: []
     }));
   },
 
   async getStatistics(): Promise<any> {
-    const { data, error } = await apiClient.get<any>('/support/statistics');
+    const { count: openCount } = await supabase
+      .from('support_tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open');
 
-    if (error) throw new Error(error.message);
+    const { count: inProgressCount } = await supabase
+      .from('support_tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'in_progress');
 
-    return data;
+    const { count: resolvedCount } = await supabase
+      .from('support_tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'resolved');
+
+    return {
+      open: openCount || 0,
+      in_progress: inProgressCount || 0,
+      resolved: resolvedCount || 0
+    };
   },
 
   subscribeToTicket(ticketId: string, callback: (message: SupportMessage) => void) {
-    showFeatureNotImplemented('Real-time ticket subscription', 'WebSocket /support/tickets/{id}/subscribe');
+    const channel = supabase
+      .channel(`ticket-${ticketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `ticket_id=eq.${ticketId}`
+        },
+        (payload) => {
+          callback(payload.new as SupportMessage);
+        }
+      )
+      .subscribe();
+
     return {
-      unsubscribe: () => {}
+      unsubscribe: () => {
+        channel.unsubscribe();
+      }
     };
   }
 };

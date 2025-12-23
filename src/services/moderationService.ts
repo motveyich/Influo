@@ -1,4 +1,4 @@
-import { apiClient, showFeatureNotImplemented } from '../core/api';
+import { supabase } from '../core/supabase';
 import { ContentReport, ModerationQueueItem, ContentFilter, ReportType, ModerationStatus } from '../core/types';
 
 export class ModerationService {
@@ -10,7 +10,10 @@ export class ModerationService {
 
   async loadContentFilters(): Promise<void> {
     try {
-      const { data, error } = await apiClient.get<any[]>('/moderation/content-filters');
+      const { data, error } = await supabase
+        .from('content_filters')
+        .select('*')
+        .eq('is_active', true);
 
       if (error) {
         console.warn('Content filters not available yet:', error);
@@ -18,7 +21,7 @@ export class ModerationService {
         return;
       }
 
-      this.contentFilters = (data || []).map(filter => this.transformFilterFromApi(filter));
+      this.contentFilters = (data || []).map(filter => this.transformFilterFromDb(filter));
     } catch (error) {
       console.warn('Failed to load content filters, using empty filters:', error);
       this.contentFilters = [];
@@ -27,21 +30,23 @@ export class ModerationService {
 
   async createReport(reportData: Partial<ContentReport>): Promise<ContentReport> {
     try {
-      const payload = {
-        reporterId: reportData.reporterId,
-        targetType: reportData.targetType,
-        targetId: reportData.targetId,
-        reportType: reportData.reportType,
-        description: reportData.description,
-        evidence: reportData.evidence || {},
-        metadata: reportData.metadata || {}
-      };
+      const { data, error } = await supabase
+        .from('content_reports')
+        .insert({
+          reporter_id: reportData.reporterId,
+          target_type: reportData.targetType,
+          target_id: reportData.targetId,
+          report_type: reportData.reportType,
+          description: reportData.description,
+          evidence: reportData.evidence || {},
+          metadata: reportData.metadata || {}
+        })
+        .select()
+        .single();
 
-      const { data, error } = await apiClient.post<any>('/moderation/reports', payload);
+      if (error) throw error;
 
-      if (error) throw new Error(error.message);
-
-      return this.transformReportFromApi(data);
+      return this.transformReportFromDb(data);
     } catch (error) {
       console.error('Failed to create report:', error);
       throw error;
@@ -54,19 +59,28 @@ export class ModerationService {
     priority?: number;
   }): Promise<ContentReport[]> {
     try {
-      const params = new URLSearchParams();
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.reportType) params.append('reportType', filters.reportType);
-      if (filters?.priority) params.append('priority', String(filters.priority));
+      let query = supabase
+        .from('content_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/moderation/reports?${queryString}` : '/moderation/reports';
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
 
-      const { data, error } = await apiClient.get<any[]>(endpoint);
+      if (filters?.reportType) {
+        query = query.eq('report_type', filters.reportType);
+      }
 
-      if (error) throw new Error(error.message);
+      if (filters?.priority) {
+        query = query.eq('priority', filters.priority);
+      }
 
-      return (data || []).map(report => this.transformReportFromApi(report));
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(report => this.transformReportFromDb(report));
     } catch (error) {
       console.error('Failed to get reports:', error);
       throw error;
@@ -80,15 +94,21 @@ export class ModerationService {
     reviewedBy: string
   ): Promise<ContentReport> {
     try {
-      const { data, error } = await apiClient.post<any>(`/moderation/reports/${reportId}/resolve`, {
-        resolution,
-        notes,
-        reviewedBy
-      });
+      const { data, error } = await supabase
+        .from('content_reports')
+        .update({
+          status: resolution,
+          resolution_notes: notes,
+          reviewed_by: reviewedBy,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', reportId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      return this.transformReportFromApi(data);
+      return this.transformReportFromDb(data);
     } catch (error) {
       console.error('Failed to resolve report:', error);
       throw error;
@@ -101,19 +121,28 @@ export class ModerationService {
     assignedModerator?: string;
   }): Promise<ModerationQueueItem[]> {
     try {
-      const params = new URLSearchParams();
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.contentType) params.append('contentType', filters.contentType);
-      if (filters?.assignedModerator) params.append('assignedModerator', filters.assignedModerator);
+      let query = supabase
+        .from('moderation_queue')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/moderation/queue?${queryString}` : '/moderation/queue';
+      if (filters?.status) {
+        query = query.eq('moderation_status', filters.status);
+      }
 
-      const { data, error } = await apiClient.get<any[]>(endpoint);
+      if (filters?.contentType) {
+        query = query.eq('content_type', filters.contentType);
+      }
 
-      if (error) throw new Error(error.message);
+      if (filters?.assignedModerator) {
+        query = query.eq('assigned_moderator', filters.assignedModerator);
+      }
 
-      return (data || []).map(item => this.transformQueueItemFromApi(item));
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(item => this.transformQueueItemFromDb(item));
     } catch (error) {
       console.error('Failed to get moderation queue:', error);
       throw error;
@@ -126,15 +155,19 @@ export class ModerationService {
     metadata?: Record<string, any>
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await apiClient.post<any>('/moderation/queue', {
-        contentType,
-        contentId,
-        metadata: metadata || {}
-      });
+      const { data, error } = await supabase
+        .from('moderation_queue')
+        .insert({
+          content_type: contentType,
+          content_id: contentId,
+          metadata: metadata || {}
+        })
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      return this.transformQueueItemFromApi(data);
+      return this.transformQueueItemFromDb(data);
     } catch (error) {
       console.error('Failed to add to moderation queue:', error);
       throw error;
@@ -148,15 +181,21 @@ export class ModerationService {
     moderatorId: string
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await apiClient.post<any>(`/moderation/queue/${queueItemId}/moderate`, {
-        decision,
-        notes,
-        moderatorId
-      });
+      const { data, error } = await supabase
+        .from('moderation_queue')
+        .update({
+          moderation_status: decision,
+          review_notes: notes,
+          assigned_moderator: moderatorId,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', queueItemId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      return this.transformQueueItemFromApi(data);
+      return this.transformQueueItemFromDb(data);
     } catch (error) {
       console.error('Failed to moderate content:', error);
       throw error;
@@ -203,60 +242,60 @@ export class ModerationService {
     }
   }
 
-  private transformReportFromApi(apiData: any): ContentReport {
+  private transformReportFromDb(dbData: any): ContentReport {
     return {
-      id: apiData.id,
-      reporterId: apiData.reporterId || apiData.reporter_id,
-      targetType: apiData.targetType || apiData.target_type,
-      targetId: apiData.targetId || apiData.target_id,
-      reportType: apiData.reportType || apiData.report_type,
-      description: apiData.description,
-      evidence: apiData.evidence || {},
-      status: apiData.status,
-      reviewedBy: apiData.reviewedBy || apiData.reviewed_by,
-      reviewedAt: apiData.reviewedAt || apiData.reviewed_at,
-      resolutionNotes: apiData.resolutionNotes || apiData.resolution_notes,
-      priority: apiData.priority,
-      metadata: apiData.metadata || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
+      id: dbData.id,
+      reporterId: dbData.reporter_id,
+      targetType: dbData.target_type,
+      targetId: dbData.target_id,
+      reportType: dbData.report_type,
+      description: dbData.description,
+      evidence: dbData.evidence || {},
+      status: dbData.status,
+      reviewedBy: dbData.reviewed_by,
+      reviewedAt: dbData.reviewed_at,
+      resolutionNotes: dbData.resolution_notes,
+      priority: dbData.priority,
+      metadata: dbData.metadata || {},
+      createdAt: dbData.created_at,
+      updatedAt: dbData.updated_at
     };
   }
 
-  private transformQueueItemFromApi(apiData: any): ModerationQueueItem {
+  private transformQueueItemFromDb(dbData: any): ModerationQueueItem {
     return {
-      id: apiData.id,
-      contentType: apiData.contentType || apiData.content_type,
-      contentId: apiData.contentId || apiData.content_id,
-      contentData: apiData.contentData || apiData.content_data || {},
-      moderationStatus: apiData.moderationStatus || apiData.moderation_status,
-      flaggedReasons: apiData.flaggedReasons || apiData.flagged_reasons || [],
-      autoFlagged: apiData.autoFlagged ?? apiData.auto_flagged,
-      filterMatches: apiData.filterMatches || apiData.filter_matches || {},
-      assignedModerator: apiData.assignedModerator || apiData.assigned_moderator,
-      reviewedAt: apiData.reviewedAt || apiData.reviewed_at,
-      reviewNotes: apiData.reviewNotes || apiData.review_notes,
-      priority: apiData.priority,
-      metadata: apiData.metadata || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
+      id: dbData.id,
+      contentType: dbData.content_type,
+      contentId: dbData.content_id,
+      contentData: dbData.content_data || {},
+      moderationStatus: dbData.moderation_status,
+      flaggedReasons: dbData.flagged_reasons || [],
+      autoFlagged: dbData.auto_flagged,
+      filterMatches: dbData.filter_matches || {},
+      assignedModerator: dbData.assigned_moderator,
+      reviewedAt: dbData.reviewed_at,
+      reviewNotes: dbData.review_notes,
+      priority: dbData.priority,
+      metadata: dbData.metadata || {},
+      createdAt: dbData.created_at,
+      updatedAt: dbData.updated_at
     };
   }
 
-  private transformFilterFromApi(apiData: any): ContentFilter {
+  private transformFilterFromDb(dbData: any): ContentFilter {
     return {
-      id: apiData.id,
-      filterName: apiData.filterName || apiData.filter_name,
-      filterType: apiData.filterType || apiData.filter_type,
-      pattern: apiData.pattern,
-      isRegex: apiData.isRegex ?? apiData.is_regex,
-      isActive: apiData.isActive ?? apiData.is_active,
-      severity: apiData.severity,
-      action: apiData.action,
-      createdBy: apiData.createdBy || apiData.created_by,
-      metadata: apiData.metadata || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
+      id: dbData.id,
+      filterName: dbData.filter_name,
+      filterType: dbData.filter_type,
+      pattern: dbData.pattern,
+      isRegex: dbData.is_regex,
+      isActive: dbData.is_active,
+      severity: dbData.severity,
+      action: dbData.action,
+      createdBy: dbData.created_by,
+      metadata: dbData.metadata || {},
+      createdAt: dbData.created_at,
+      updatedAt: dbData.updated_at
     };
   }
 }

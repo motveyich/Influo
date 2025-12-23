@@ -1,42 +1,92 @@
-import { apiClient, showFeatureNotImplemented } from '../core/api';
+import { supabase } from '../core/supabase';
 
 export class AvatarService {
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
   private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
-  async uploadAvatar(userId: string, file: File): Promise<string> {
+  async uploadAvatar(userId: string, file: File): Promise<{ url: string | null; error: string | null }> {
     try {
       if (!file) {
-        throw new Error('Файл не выбран');
+        return { url: null, error: 'Файл не выбран' };
       }
 
       if (file.size > this.MAX_FILE_SIZE) {
-        throw new Error('Размер файла не должен превышать 5 МБ');
+        return { url: null, error: 'Размер файла не должен превышать 5 МБ' };
       }
 
       if (!this.ALLOWED_TYPES.includes(file.type)) {
-        throw new Error('Допустимые форматы: JPEG, PNG, WebP, GIF');
+        return { url: null, error: 'Допустимые форматы: JPEG, PNG, WebP, GIF' };
       }
 
-      const { data, error } = await apiClient.uploadFile<any>(`/profiles/${userId}/avatar`, file, 'avatar');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/avatar.${fileExt}`;
 
-      if (error) throw new Error(error.message);
+      const { data: existingFiles } = await supabase.storage
+        .from('avatars')
+        .list(userId);
 
-      return data.avatarUrl;
+      if (existingFiles && existingFiles.length > 0) {
+        for (const existingFile of existingFiles) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${userId}/${existingFile.name}`]);
+        }
+      }
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          upsert: true,
+          contentType: file.type
+        });
+
+      if (error) return { url: null, error: error.message };
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      await supabase
+        .from('user_profiles')
+        .update({ avatar: publicUrl })
+        .eq('user_id', userId);
+
+      return { url: publicUrl, error: null };
     } catch (error) {
       console.error('Failed to upload avatar:', error);
-      throw error;
+      return {
+        url: null,
+        error: error instanceof Error ? error.message : 'Failed to upload avatar'
+      };
     }
   }
 
-  async deleteAvatar(userId: string): Promise<void> {
+  async deleteAvatar(userId: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await apiClient.delete(`/profiles/${userId}/avatar`);
+      const { data: files } = await supabase.storage
+        .from('avatars')
+        .list(userId);
 
-      if (error) throw new Error(error.message);
+      if (files && files.length > 0) {
+        const filesToDelete = files.map(file => `${userId}/${file.name}`);
+        await supabase.storage
+          .from('avatars')
+          .remove(filesToDelete);
+      }
+
+      await supabase
+        .from('user_profiles')
+        .update({ avatar: null })
+        .eq('user_id', userId);
+
+      return { error: null };
     } catch (error) {
       console.error('Failed to delete avatar:', error);
-      throw error;
+      return {
+        error: error instanceof Error ? error.message : 'Failed to delete avatar'
+      };
     }
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { authService, AuthState, User } from '../core/auth';
+import { supabase } from '../core/supabase';
 import { UserRole } from '../core/types';
-import { apiClient } from '../core/api';
 
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({ user: null, loading: true });
@@ -18,6 +18,7 @@ export function useAuth() {
   useEffect(() => {
     if (authState.user) {
       loadUserRole();
+      checkUserStatus();
     } else {
       setUserRole('user');
       setRoleLoading(false);
@@ -29,7 +30,12 @@ export function useAuth() {
   const loadUserRole = async () => {
     try {
       setRoleLoading(true);
-      const { data, error } = await apiClient.get<{ role: UserRole }>(`/roles/user/${authState.user!.id}`);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', authState.user!.id)
+        .maybeSingle();
+
       if (data && !error) {
         setUserRole(data.role || 'user');
       } else {
@@ -47,9 +53,14 @@ export function useAuth() {
     if (!authState.user) return;
     setBlockCheckLoading(true);
     try {
-      const { data, error } = await apiClient.get<{ isBlocked?: boolean }>(`/profiles/${authState.user.id}`);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('is_deleted, deleted_at')
+        .eq('user_id', authState.user.id)
+        .maybeSingle();
+
       if (data && !error) {
-        setIsBlocked(data.isBlocked || false);
+        setIsBlocked(!!(data.is_deleted || data.deleted_at));
       }
     } catch (error) {
       console.error('Failed to check user status:', error);

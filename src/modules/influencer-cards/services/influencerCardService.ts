@@ -1,4 +1,5 @@
-import { apiClient, showFeatureNotImplemented } from '../../../core/api';
+import { supabase } from '../../../core/supabase';
+import { showFeatureNotImplemented } from '../../../core/utils';
 import { InfluencerCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 

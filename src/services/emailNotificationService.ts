@@ -1,4 +1,4 @@
-import { showFeatureNotImplemented } from '../core/api';
+import { supabase } from '../core/supabase';
 
 export interface EmailNotificationData {
   userName?: string;
@@ -17,7 +17,18 @@ class EmailNotificationService {
     subject: string,
     data: EmailNotificationData
   ): Promise<void> {
-    console.warn('Email notifications not yet implemented in backend');
+    try {
+      await supabase.functions.invoke('send-email-notification', {
+        body: {
+          userId,
+          type,
+          subject,
+          data
+        }
+      });
+    } catch (error) {
+      console.error('Failed to send email notification:', error);
+    }
   }
 
   async sendPlatformUpdateNotification(userId: string, updateContent: string): Promise<void> {

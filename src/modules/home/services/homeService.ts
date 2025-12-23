@@ -1,4 +1,4 @@
-import { apiClient, showFeatureNotImplemented } from '../../../core/api';
+import { supabase } from '../../../core/supabase';
 import { analytics } from '../../../core/analytics';
 
 interface PlatformUpdate {
@@ -32,7 +32,12 @@ export class HomeService {
 
   async getPlatformUpdates(): Promise<PlatformUpdate[]> {
     try {
-      const { data, error } = await apiClient.get<any[]>('/home/updates');
+      const { data, error } = await supabase
+        .from('platform_updates')
+        .select('*')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false })
+        .limit(5);
 
       if (error) {
         console.error('Failed to fetch platform updates:', error);
@@ -43,9 +48,9 @@ export class HomeService {
         id: update.id,
         title: update.title,
         description: update.description,
-        type: update.type as 'feature' | 'improvement' | 'announcement',
-        publishedAt: update.publishedAt || update.published_at,
-        isImportant: update.isImportant ?? update.is_important
+        type: update.type,
+        publishedAt: update.published_at,
+        isImportant: update.is_important
       }));
     } catch (error) {
       console.error('Failed to fetch platform updates:', error);
@@ -55,7 +60,12 @@ export class HomeService {
 
   async getPlatformEvents(): Promise<PlatformEvent[]> {
     try {
-      const { data, error } = await apiClient.get<any[]>('/home/events');
+      const { data, error } = await supabase
+        .from('platform_events')
+        .select('*')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false})
+        .limit(5);
 
       if (error) {
         console.error('Failed to fetch platform events:', error);
@@ -66,9 +76,9 @@ export class HomeService {
         id: event.id,
         title: event.title,
         description: event.description,
-        type: event.type as 'campaign_launch' | 'achievement' | 'contest' | 'milestone',
-        participantCount: event.participantCount || event.participant_count,
-        publishedAt: event.publishedAt || event.published_at
+        type: event.type,
+        participantCount: event.participant_count,
+        publishedAt: event.published_at
       }));
     } catch (error) {
       console.error('Failed to fetch platform events:', error);
@@ -78,20 +88,48 @@ export class HomeService {
 
   async getUserStats(userId: string): Promise<UserStats> {
     try {
-      const { data, error } = await apiClient.get<any>(`/home/stats?userId=${userId}`);
+      const { count: pendingApplications } = await supabase
+        .from('offers')
+        .select('*', { count: 'exact', head: true })
+        .eq('influencer_id', userId)
+        .eq('status', 'pending');
 
-      if (error) {
-        console.error('Failed to fetch user stats:', error);
-        return this.getEmptyStats();
-      }
+      const { count: unreadMessages } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+      const { count: pendingPayouts } = await supabase
+        .from('payment_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('influencer_id', userId)
+        .eq('status', 'pending');
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const { count: totalReviews } = await supabase
+        .from('reviews')
+        .select('*', { count: 'exact', head: true })
+        .eq('reviewed_user_id', userId);
+
+      const { count: completedDeals } = await supabase
+        .from('offers')
+        .select('*', { count: 'exact', head: true })
+        .eq('influencer_id', userId)
+        .eq('status', 'completed');
 
       return {
-        pendingApplications: data.pendingApplications || data.pending_applications || 0,
-        unreadMessages: data.unreadMessages || data.unread_messages || 0,
-        pendingPayouts: data.pendingPayouts || data.pending_payouts || 0,
-        accountRating: Number((data.accountRating || data.account_rating || 0).toFixed(1)),
-        totalReviews: data.totalReviews || data.total_reviews || 0,
-        completedDeals: data.completedDeals || data.completed_deals || 0
+        pendingApplications: pendingApplications || 0,
+        unreadMessages: unreadMessages || 0,
+        pendingPayouts: pendingPayouts || 0,
+        accountRating: profile?.rating || 0,
+        totalReviews: totalReviews || 0,
+        completedDeals: completedDeals || 0
       };
     } catch (error) {
       console.error('Failed to fetch user stats:', error);
@@ -105,14 +143,13 @@ export class HomeService {
 
   async getPendingPaymentsCount(userId: string): Promise<number> {
     try {
-      const { data, error } = await apiClient.get<any>(`/home/stats?userId=${userId}`);
+      const { count } = await supabase
+        .from('payment_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('influencer_id', userId)
+        .eq('status', 'pending');
 
-      if (error) {
-        console.error('Failed to get pending payments count:', error);
-        return 0;
-      }
-
-      return data?.pendingPayouts || data?.pending_payouts || 0;
+      return count || 0;
     } catch (error) {
       console.error('Failed to get pending payments count:', error);
       return 0;

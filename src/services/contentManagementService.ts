@@ -1,62 +1,132 @@
-import { apiClient, showFeatureNotImplemented } from '../core/api';
+import { supabase } from '../core/supabase';
 import { PlatformUpdate, PlatformEvent } from '../core/types';
 
 export class ContentManagementService {
 
   async createUpdate(updateData: Partial<PlatformUpdate>, createdBy: string): Promise<PlatformUpdate> {
-    showFeatureNotImplemented('Platform updates management', 'POST /content-management/updates');
-    throw new Error('Platform updates management is not yet implemented');
+    const { data, error } = await supabase
+      .from('platform_updates')
+      .insert({
+        ...updateData,
+        created_by: createdBy
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateUpdate(updateId: string, updates: Partial<PlatformUpdate>, updatedBy: string): Promise<PlatformUpdate> {
-    showFeatureNotImplemented('Platform updates management', 'PATCH /content-management/updates/{id}');
-    throw new Error('Platform updates management is not yet implemented');
+    const { data, error } = await supabase
+      .from('platform_updates')
+      .update(updates)
+      .eq('id', updateId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async deleteUpdate(updateId: string, deletedBy: string): Promise<void> {
-    showFeatureNotImplemented('Platform updates management', 'DELETE /content-management/updates/{id}');
-    throw new Error('Platform updates management is not yet implemented');
+    const { error } = await supabase
+      .from('platform_updates')
+      .delete()
+      .eq('id', updateId);
+
+    if (error) throw error;
   }
 
   async getAllUpdates(filters?: {
     type?: string;
     isPublished?: boolean;
   }): Promise<PlatformUpdate[]> {
-    console.warn('Platform updates management not yet implemented in backend');
-    return [];
+    let query = supabase.from('platform_updates').select('*');
+
+    if (filters?.type) {
+      query = query.eq('type', filters.type);
+    }
+
+    if (filters?.isPublished !== undefined) {
+      query = query.eq('is_published', filters.isPublished);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Failed to get updates:', error);
+      return [];
+    }
+
+    return data || [];
   }
 
   async getPublishedUpdates(): Promise<PlatformUpdate[]> {
-    console.warn('Platform updates management not yet implemented in backend');
-    return [];
+    return this.getAllUpdates({ isPublished: true });
   }
 
   async createEvent(eventData: Partial<PlatformEvent>, createdBy: string): Promise<PlatformEvent> {
-    showFeatureNotImplemented('Platform events management', 'POST /content-management/events');
-    throw new Error('Platform events management is not yet implemented');
+    const { data, error } = await supabase
+      .from('platform_events')
+      .insert({
+        ...eventData,
+        created_by: createdBy
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateEvent(eventId: string, updates: Partial<PlatformEvent>, updatedBy: string): Promise<PlatformEvent> {
-    showFeatureNotImplemented('Platform events management', 'PATCH /content-management/events/{id}');
-    throw new Error('Platform events management is not yet implemented');
+    const { data, error } = await supabase
+      .from('platform_events')
+      .update(updates)
+      .eq('id', eventId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async deleteEvent(eventId: string, deletedBy: string): Promise<void> {
-    showFeatureNotImplemented('Platform events management', 'DELETE /content-management/events/{id}');
-    throw new Error('Platform events management is not yet implemented');
+    const { error } = await supabase
+      .from('platform_events')
+      .delete()
+      .eq('id', eventId);
+
+    if (error) throw error;
   }
 
   async getAllEvents(filters?: {
     type?: string;
     isPublished?: boolean;
   }): Promise<PlatformEvent[]> {
-    console.warn('Platform events management not yet implemented in backend');
-    return [];
+    let query = supabase.from('platform_events').select('*');
+
+    if (filters?.type) {
+      query = query.eq('type', filters.type);
+    }
+
+    if (filters?.isPublished !== undefined) {
+      query = query.eq('is_published', filters.isPublished);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Failed to get events:', error);
+      return [];
+    }
+
+    return data || [];
   }
 
   async getPublishedEvents(): Promise<PlatformEvent[]> {
-    console.warn('Platform events management not yet implemented in backend');
-    return [];
+    return this.getAllEvents({ isPublished: true });
   }
 }
 

@@ -1,4 +1,4 @@
-import { apiClient } from '../core/api';
+import { supabase } from '../core/supabase';
 import { authService } from '../core/auth';
 
 export interface BlacklistEntry {
@@ -12,14 +12,17 @@ export interface BlacklistEntry {
 class BlacklistService {
   async isBlacklisted(userId: string, targetUserId: string): Promise<boolean> {
     try {
-      const { data, error } = await apiClient.get<any>(`/blacklist/check?userId=${userId}&targetUserId=${targetUserId}`);
+      const { data, error } = await supabase.rpc('is_user_blacklisted', {
+        p_user_id: userId,
+        p_target_user_id: targetUserId
+      });
 
       if (error) {
         console.error('Error checking blacklist:', error);
         return false;
       }
 
-      return data?.isBlacklisted === true;
+      return data === true;
     } catch (error) {
       console.error('Error checking blacklist:', error);
       return false;
@@ -31,18 +34,20 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await apiClient.post('/blacklist', {
-        blockerId: user.id,
-        blockedId: blockedUserId,
-        reason: reason || null
-      });
+      const { error } = await supabase
+        .from('blacklist')
+        .insert({
+          blocker_id: user.id,
+          blocked_id: blockedUserId,
+          reason: reason || null
+        });
 
       if (error) {
-        if (error.message?.includes('already')) {
+        if (error.code === '23505') {
           console.log('User already in blacklist, treating as success');
           return;
         }
-        throw new Error(error.message);
+        throw error;
       }
     } catch (error: any) {
       console.error('Error adding to blacklist:', error);
@@ -55,9 +60,13 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await apiClient.delete(`/blacklist?blockerId=${user.id}&blockedId=${blockedUserId}`);
+      const { error } = await supabase
+        .from('blacklist')
+        .delete()
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', blockedUserId);
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
     } catch (error: any) {
       console.error('Error removing from blacklist:', error);
       throw new Error(error.message || 'Failed to remove from blacklist');
@@ -69,16 +78,19 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await apiClient.get<any[]>(`/blacklist?blockerId=${user.id}`);
+      const { data, error } = await supabase
+        .from('blacklist')
+        .select('*')
+        .eq('blocker_id', user.id);
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       return (data || []).map(item => ({
         id: item.id,
-        blockerId: item.blockerId || item.blocker_id,
-        blockedId: item.blockedId || item.blocked_id,
+        blockerId: item.blocker_id,
+        blockedId: item.blocked_id,
         reason: item.reason,
-        createdAt: item.createdAt || item.created_at
+        createdAt: item.created_at
       }));
     } catch (error: any) {
       console.error('Error fetching blacklist:', error);
@@ -91,11 +103,14 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) return false;
 
-      const { data, error } = await apiClient.get<any>(`/blacklist/check?userId=${user.id}&targetUserId=${userId}`);
+      const { data, error } = await supabase.rpc('is_user_blacklisted', {
+        p_user_id: user.id,
+        p_target_user_id: userId
+      });
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      return data?.isBlacklisted === true;
+      return data === true;
     } catch (error) {
       console.error('Error checking blacklist status:', error);
       return false;

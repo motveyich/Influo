@@ -1,4 +1,4 @@
-import { apiClient } from '../core/api';
+import { supabase } from '../core/supabase';
 import { ContentReport, ReportType } from '../core/types';
 import { moderationService } from './moderationService';
 import { analytics } from '../core/analytics';
@@ -40,37 +40,41 @@ export class ReportService {
 
   async getUserReports(userId: string): Promise<ContentReport[]> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/moderation/reports?reporterId=${userId}`);
+      const { data, error } = await supabase
+        .from('content_reports')
+        .select('*')
+        .eq('reporter_id', userId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Failed to get user reports:', error);
         return [];
       }
 
-      return (data || []).map(report => this.transformFromApi(report));
+      return (data || []).map(report => this.transformFromDb(report));
     } catch (error) {
       console.error('Failed to get user reports:', error);
       return [];
     }
   }
 
-  private transformFromApi(apiData: any): ContentReport {
+  private transformFromDb(dbData: any): ContentReport {
     return {
-      id: apiData.id,
-      reporterId: apiData.reporterId || apiData.reporter_id,
-      targetType: apiData.targetType || apiData.target_type,
-      targetId: apiData.targetId || apiData.target_id,
-      reportType: apiData.reportType || apiData.report_type,
-      description: apiData.description,
-      evidence: apiData.evidence || {},
-      status: apiData.status,
-      reviewedBy: apiData.reviewedBy || apiData.reviewed_by,
-      reviewedAt: apiData.reviewedAt || apiData.reviewed_at,
-      resolutionNotes: apiData.resolutionNotes || apiData.resolution_notes,
-      priority: apiData.priority,
-      metadata: apiData.metadata || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
+      id: dbData.id,
+      reporterId: dbData.reporter_id,
+      targetType: dbData.target_type,
+      targetId: dbData.target_id,
+      reportType: dbData.report_type,
+      description: dbData.description,
+      evidence: dbData.evidence || {},
+      status: dbData.status,
+      reviewedBy: dbData.reviewed_by,
+      reviewedAt: dbData.reviewed_at,
+      resolutionNotes: dbData.resolution_notes,
+      priority: dbData.priority,
+      metadata: dbData.metadata || {},
+      createdAt: dbData.created_at,
+      updatedAt: dbData.updated_at
     };
   }
 }
