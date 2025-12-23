@@ -34,11 +34,28 @@ export class ProfileService {
         return this.transformFromApi(createdData);
       }
 
-      if (profileData.fullName || profileData.bio || profileData.location) {
+      if (profileData.fullName || profileData.bio || profileData.location || profileData.phone) {
         return await this.updateProfile(userId, profileData);
       }
 
-      return this.transformFromApi(data);
+      const profile = this.transformFromApi(data);
+
+      const completion = this.calculateProfileCompletion(profile);
+
+      await supabase
+        .from('user_profiles')
+        .update({
+          profile_completion_basic_info: completion.basicInfo,
+          profile_completion_influencer_setup: completion.influencerSetup,
+          profile_completion_advertiser_setup: completion.advertiserSetup,
+          profile_completion_overall_complete: completion.overallComplete,
+          profile_completion_percentage: completion.completionPercentage
+        })
+        .eq('user_id', userId);
+
+      profile.profileCompletion = completion;
+
+      return profile;
     } catch (error) {
       console.error('Failed to create profile:', error);
       throw error;
@@ -65,7 +82,24 @@ export class ProfileService {
         throw new Error(error.message);
       }
 
-      return this.transformFromApi(data);
+      const profile = this.transformFromApi(data);
+
+      const completion = this.calculateProfileCompletion(profile);
+
+      await supabase
+        .from('user_profiles')
+        .update({
+          profile_completion_basic_info: completion.basicInfo,
+          profile_completion_influencer_setup: completion.influencerSetup,
+          profile_completion_advertiser_setup: completion.advertiserSetup,
+          profile_completion_overall_complete: completion.overallComplete,
+          profile_completion_percentage: completion.completionPercentage
+        })
+        .eq('user_id', userId);
+
+      profile.profileCompletion = completion;
+
+      return profile;
     } catch (error) {
       console.error('Failed to update profile:', error);
       throw error;
@@ -223,7 +257,6 @@ export class ProfileService {
 
     if (profile.fullName?.trim() &&
         profile.email?.trim() &&
-        profile.phone?.trim() &&
         profile.location?.trim() &&
         profile.bio?.trim() &&
         profile.bio.trim().length >= 50) {
