@@ -1,8 +1,5 @@
-import { supabase, TABLES } from '../core/supabase';
-import { isSupabaseConfigured } from '../core/supabase';
-import { UserProfile, Campaign, InfluencerCard, ContentReport, ModerationQueueItem, AdminLog, UserRole } from '../core/types';
-import { roleService } from './roleService';
-import { Newspaper, Bell, Calendar } from 'lucide-react';
+import { apiClient, showFeatureNotImplemented } from '../core/api';
+import { UserProfile, Campaign, InfluencerCard, AdminLog, UserRole } from '../core/types';
 
 export class AdminService {
   async logAction(
@@ -13,23 +10,15 @@ export class AdminService {
     details?: Record<string, any>
   ): Promise<void> {
     try {
-      const logEntry = {
-        admin_id: adminId,
-        action_type: actionType,
-        target_type: targetType,
-        target_id: targetId,
+      await apiClient.post('/admin/logs', {
+        adminId,
+        actionType,
+        targetType,
+        targetId,
         details: details || {},
-        ip_address: null, // Would be populated by edge function
-        user_agent: navigator.userAgent,
-        session_id: `session_${Date.now()}`,
-        created_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from(TABLES.ADMIN_LOGS)
-        .insert([logEntry]);
-
-      if (error) throw error;
+        userAgent: navigator.userAgent,
+        sessionId: `session_${Date.now()}`
+      });
     } catch (error) {
       console.error('Failed to log admin action:', error);
     }
@@ -41,31 +30,19 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<UserProfile[]> {
     try {
-      let query = supabase
-        .from(TABLES.USER_PROFILES)
-        .select('*');
+      const params = new URLSearchParams();
+      if (filters?.role) params.append('role', filters.role);
+      if (filters?.searchQuery) params.append('search', filters.searchQuery);
+      if (filters?.isDeleted !== undefined) params.append('isDeleted', String(filters.isDeleted));
 
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
-      }
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/users?${queryString}` : '/admin/users';
 
-      if (filters?.role) {
-        query = query.eq('role', filters.role);
-      }
+      const { data, error } = await apiClient.get<any[]>(endpoint);
 
-      if (filters?.searchQuery) {
-        query = query.or(`full_name.ilike.%${filters.searchQuery}%,email.ilike.%${filters.searchQuery}%`);
-      }
+      if (error) throw new Error(error.message);
 
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(user => this.transformUserFromDatabase(user));
+      return (data || []).map(user => this.transformUserFromApi(user));
     } catch (error) {
       console.error('Failed to get all users:', error);
       throw error;
@@ -75,90 +52,26 @@ export class AdminService {
   async deleteUser(userId: string, deletedBy: string, deleterUserRole: UserRole): Promise<void> {
     try {
       console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
-      
-      // Check permissions using provided role
+
       if (!['admin', 'moderator'].includes(deleterUserRole)) {
         console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', deleterUserRole);
         throw new Error('Insufficient permissions');
       }
 
-      console.log('✅ [AdminService] Permission check passed, admin role:', deleterUserRole);
-
-      // Prevent self-blocking
       if (userId === deletedBy) {
         throw new Error('Cannot block yourself');
       }
 
-      // Check if user is already blocked
-      console.log('🔧 [AdminService] Checking if user is already blocked...');
-      const { data: currentUser, error: checkError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('is_deleted, deleted_at')
-        .eq('user_id', userId)
-        .single();
+      const { error } = await apiClient.post('/admin/block', {
+        userId,
+        blockedBy: deletedBy
+      });
 
-      if (checkError) {
-        console.error('❌ [AdminService] Failed to check user status:', checkError);
-        throw new Error(`Failed to check user status: ${checkError.message}`);
-      }
+      if (error) throw new Error(error.message);
 
-      if (currentUser.is_deleted === true) {
-        console.log('⚠️ [AdminService] User is already blocked');
-        throw new Error('User is already blocked');
-      }
+      console.log('✅ [AdminService] User blocked successfully');
 
-      // Get current user's session to ensure proper authentication
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session.session) {
-        throw new Error('Authentication session not found. Please log in again.');
-      }
-
-      // Block user by setting is_deleted to true with proper error handling
-      console.log('🔧 [AdminService] Updating user_profiles table...');
-      try {
-        const { data, error } = await supabase
-          .from(TABLES.USER_PROFILES)
-          .update({
-            is_deleted: true,
-            deleted_at: new Date().toISOString(),
-            deleted_by: deletedBy
-          })
-          .eq('user_id', userId)
-          .select();
-
-        if (error) {
-          console.error('❌ [AdminService] Database update failed:', error);
-          
-          // Provide specific error messages based on error code
-          if (error.code === '42501' || error.message.includes('permission denied')) {
-            throw new Error('Permission denied: RLS policy blocks this operation. Please ensure you have proper admin/moderator role and the RLS policies are correctly configured.');
-          } else if (error.code === 'PGRST301' || error.message.includes('row-level security')) {
-            throw new Error('Row Level Security policy prevented this operation. The admin RLS policies may need to be updated in Supabase.');
-          } else {
-            throw new Error(`Database update failed: ${error.message}`);
-          }
-        }
-
-        console.log('✅ [AdminService] User blocked successfully in database');
-        
-        // Verify the update worked
-        console.log('🔧 [AdminService] Verifying database update...');
-        if (!data || data.length === 0 || !data[0].is_deleted) {
-          throw new Error('User blocking failed - database update did not take effect. This may be due to RLS policy restrictions.');
-        }
-      } catch (updateError: any) {
-        console.error('❌ [AdminService] Update operation failed:', updateError);
-        throw updateError;
-      }
-
-      // Log the action
-      try {
-        await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
-      } catch (logError) {
-        console.warn('⚠️ [AdminService] Failed to log action, but user was blocked successfully:', logError);
-      }
-      
-      console.log('✅ [AdminService] Action logged successfully');
+      await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
     } catch (error) {
       console.error('❌ [AdminService] Complete failure in deleteUser:', error);
       throw error;
@@ -166,47 +79,32 @@ export class AdminService {
   }
 
   async blockUser(userId: string, reason?: string): Promise<void> {
-    const deletedBy = (await supabase.auth.getUser()).data.user?.id;
-    if (!deletedBy) {
-      throw new Error('User not authenticated');
+    try {
+      const { error } = await apiClient.post('/admin/block', {
+        userId,
+        reason
+      });
+
+      if (error) throw new Error(error.message);
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      throw error;
     }
-
-    const { data: adminProfile } = await supabase
-      .from(TABLES.USER_PROFILES)
-      .select('role')
-      .eq('user_id', deletedBy)
-      .single();
-
-    const role = adminProfile?.role || 'user';
-    return this.deleteUser(userId, deletedBy, role);
   }
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-      const hasPermission = await roleService.checkPermission(restoredBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
-
       console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
 
-      const { error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({
-          is_deleted: false,
-          deleted_at: null,
-          deleted_by: null
-        })
-        .eq('user_id', userId);
+      const { error } = await apiClient.post('/admin/unblock', {
+        userId,
+        unblockedBy: restoredBy
+      });
 
-      if (error) {
-        console.error('❌ [AdminService] Failed to restore user:', error);
-        throw error;
-      }
+      if (error) throw new Error(error.message);
 
       console.log('✅ [AdminService] User restored successfully');
 
-      // Log the action
       await this.logAction(restoredBy, 'user_restored', 'user_profile', userId);
     } catch (error) {
       console.error('Failed to restore user:', error);
@@ -216,62 +114,38 @@ export class AdminService {
 
   async getAllCampaigns(filters?: {
     status?: string;
-    moderationStatus?: ModerationStatus;
+    moderationStatus?: any;
     isDeleted?: boolean;
   }): Promise<Campaign[]> {
     try {
-      let query = supabase
-        .from(TABLES.CAMPAIGNS)
-        .select('*');
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.moderationStatus) params.append('moderationStatus', filters.moderationStatus);
+      if (filters?.isDeleted !== undefined) params.append('isDeleted', String(filters.isDeleted));
 
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/campaigns?${queryString}` : '/admin/campaigns';
+
+      const { data, error } = await apiClient.get<any[]>(endpoint);
+
+      if (error) {
+        console.error('Failed to get campaigns:', error);
+        return [];
       }
 
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters?.moderationStatus) {
-        query = query.eq('moderation_status', filters.moderationStatus);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(campaign => this.transformCampaignFromDatabase(campaign));
+      return (data || []).map(campaign => this.transformCampaignFromApi(campaign));
     } catch (error) {
       console.error('Failed to get all campaigns:', error);
-      throw error;
+      return [];
     }
   }
 
   async deleteCampaign(campaignId: string, deletedBy: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
+      const { error } = await apiClient.delete(`/admin/campaigns/${campaignId}?deletedBy=${deletedBy}`);
 
-      // Soft delete campaign
-      const { error } = await supabase
-        .from(TABLES.CAMPAIGNS)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: deletedBy
-        })
-        .eq('campaign_id', campaignId);
+      if (error) throw new Error(error.message);
 
-      if (error) throw error;
-
-      // Log the action
       await this.logAction(deletedBy, 'campaign_deleted', 'campaign', campaignId);
     } catch (error) {
       console.error('Failed to delete campaign:', error);
@@ -280,58 +154,37 @@ export class AdminService {
   }
 
   async getAllInfluencerCards(filters?: {
-    moderationStatus?: ModerationStatus;
+    moderationStatus?: any;
     isDeleted?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .select('*');
+      const params = new URLSearchParams();
+      if (filters?.moderationStatus) params.append('moderationStatus', filters.moderationStatus);
+      if (filters?.isDeleted !== undefined) params.append('isDeleted', String(filters.isDeleted));
 
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/influencer-cards?${queryString}` : '/admin/influencer-cards';
+
+      const { data, error } = await apiClient.get<any[]>(endpoint);
+
+      if (error) {
+        console.error('Failed to get influencer cards:', error);
+        return [];
       }
 
-      if (filters?.moderationStatus) {
-        query = query.eq('moderation_status', filters.moderationStatus);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(card => this.transformInfluencerCardFromDatabase(card));
+      return (data || []).map(card => this.transformInfluencerCardFromApi(card));
     } catch (error) {
       console.error('Failed to get all influencer cards:', error);
-      throw error;
+      return [];
     }
   }
 
   async deleteInfluencerCard(cardId: string, deletedBy: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
+      const { error } = await apiClient.delete(`/admin/influencer-cards/${cardId}?deletedBy=${deletedBy}`);
 
-      // Soft delete card
-      const { error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: deletedBy
-        })
-        .eq('id', cardId);
+      if (error) throw new Error(error.message);
 
-      if (error) throw error;
-
-      // Log the action
       await this.logAction(deletedBy, 'influencer_card_deleted', 'influencer_card', cardId);
     } catch (error) {
       console.error('Failed to delete influencer card:', error);
@@ -345,131 +198,120 @@ export class AdminService {
     limit?: number;
   }): Promise<AdminLog[]> {
     try {
-      // Check if Supabase is configured
-      if (!isSupabaseConfigured()) {
-        console.warn('Supabase not configured, returning empty admin logs');
+      const params = new URLSearchParams();
+      if (filters?.adminId) params.append('adminId', filters.adminId);
+      if (filters?.actionType) params.append('actionType', filters.actionType);
+      if (filters?.limit) params.append('limit', String(filters.limit));
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/logs?${queryString}` : '/admin/logs';
+
+      const { data, error } = await apiClient.get<any[]>(endpoint);
+
+      if (error) {
+        console.warn('Admin logs not available:', error);
         return [];
       }
 
-      let query = supabase
-        .from(TABLES.ADMIN_LOGS)
-        .select('*');
-
-      if (filters?.adminId) {
-        query = query.eq('admin_id', filters.adminId);
-      }
-
-      if (filters?.actionType) {
-        query = query.eq('action_type', filters.actionType);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(log => this.transformLogFromDatabase(log));
+      return (data || []).map(log => this.transformLogFromApi(log));
     } catch (error) {
       console.error('Failed to get admin logs:', error);
-      
-      // Handle specific error types
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.warn('Supabase connection failed, returning empty logs');
-        return [];
-      }
-      
-      // For other errors, still return empty array to prevent crashes
       return [];
     }
   }
 
-  private transformUserFromDatabase(dbData: any): UserProfile {
+  async getAdminStats(): Promise<any> {
+    try {
+      const { data, error } = await apiClient.get<any>('/admin/stats');
+
+      if (error) {
+        console.warn('Admin stats not available:', error);
+        return {};
+      }
+
+      return data || {};
+    } catch (error) {
+      console.error('Failed to get admin stats:', error);
+      return {};
+    }
+  }
+
+  private transformUserFromApi(apiData: any): UserProfile {
     const baseProfile = {
-      userId: dbData.user_id,
-      email: dbData.email,
-      fullName: dbData.full_name,
-      username: dbData.username || '',
-      phone: dbData.phone || '',
-      userType: dbData.user_type,
-      avatar: dbData.avatar,
-      bio: dbData.bio,
-      location: dbData.location,
-      website: dbData.website,
-      influencerData: dbData.influencer_data,
-      advertiserData: dbData.advertiser_data,
-      profileCompletion: dbData.profile_completion,
-      unifiedAccountInfo: {
-        ...dbData.unified_account_info,
-        accountType: dbData.user_type
+      userId: apiData.userId || apiData.user_id,
+      email: apiData.email,
+      fullName: apiData.fullName || apiData.full_name,
+      username: apiData.username || '',
+      phone: apiData.phone || '',
+      userType: apiData.userType || apiData.user_type,
+      avatar: apiData.avatar,
+      bio: apiData.bio,
+      location: apiData.location,
+      website: apiData.website,
+      influencerData: apiData.influencerData || apiData.influencer_data,
+      advertiserData: apiData.advertiserData || apiData.advertiser_data,
+      profileCompletion: apiData.profileCompletion || apiData.profile_completion,
+      unifiedAccountInfo: apiData.unifiedAccountInfo || apiData.unified_account_info || {
+        accountType: apiData.userType || apiData.user_type
       },
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
     };
-    
-    // Add deletion fields
+
     return {
       ...baseProfile,
-      is_deleted: dbData.is_deleted || false,
-      deleted_at: dbData.deleted_at,
-      deleted_by: dbData.deleted_by
-    } as UserProfile & {
-      is_deleted: boolean;
-      deleted_at: string | null;
-      deleted_by: string | null;
+      is_deleted: apiData.isDeleted ?? apiData.is_deleted ?? false,
+      deleted_at: apiData.deletedAt || apiData.deleted_at,
+      deleted_by: apiData.deletedBy || apiData.deleted_by
+    } as any;
+  }
+
+  private transformCampaignFromApi(apiData: any): Campaign {
+    return {
+      campaignId: apiData.campaignId || apiData.campaign_id,
+      advertiserId: apiData.advertiserId || apiData.advertiser_id,
+      title: apiData.title,
+      description: apiData.description,
+      brand: apiData.brand,
+      budget: apiData.budget,
+      preferences: apiData.preferences,
+      status: apiData.status,
+      timeline: apiData.timeline,
+      metrics: apiData.metrics,
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
     };
   }
 
-  private transformCampaignFromDatabase(dbData: any): Campaign {
+  private transformInfluencerCardFromApi(apiData: any): InfluencerCard {
     return {
-      campaignId: dbData.campaign_id,
-      advertiserId: dbData.advertiser_id,
-      title: dbData.title,
-      description: dbData.description,
-      brand: dbData.brand,
-      budget: dbData.budget,
-      preferences: dbData.preferences,
-      status: dbData.status,
-      timeline: dbData.timeline,
-      metrics: dbData.metrics,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
-    };
+      id: apiData.id,
+      userId: apiData.userId || apiData.user_id,
+      platform: apiData.platform,
+      reach: apiData.reach,
+      audienceDemographics: apiData.audienceDemographics || apiData.audience_demographics,
+      serviceDetails: apiData.serviceDetails || apiData.service_details,
+      rating: apiData.rating,
+      completedCampaigns: apiData.completedCampaigns || apiData.completed_campaigns,
+      isActive: apiData.isActive ?? apiData.is_active,
+      lastUpdated: apiData.lastUpdated || apiData.last_updated,
+      createdAt: apiData.createdAt || apiData.created_at,
+      updatedAt: apiData.updatedAt || apiData.updated_at
+    } as any;
   }
 
-  private transformInfluencerCardFromDatabase(dbData: any): InfluencerCard {
+  private transformLogFromApi(apiData: any): AdminLog {
     return {
-      id: dbData.id,
-      userId: dbData.user_id,
-      platform: dbData.platform,
-      reach: dbData.reach,
-      audienceDemographics: dbData.audience_demographics,
-      serviceDetails: dbData.service_details,
-      rating: dbData.rating,
-      completedCampaigns: dbData.completed_campaigns,
-      isActive: dbData.is_active,
-      lastUpdated: dbData.last_updated,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
-    };
-  }
-
-  private transformLogFromDatabase(dbData: any): AdminLog {
-    return {
-      id: dbData.id,
-      adminId: dbData.admin_id,
-      actionType: dbData.action_type,
-      targetType: dbData.target_type,
-      targetId: dbData.target_id,
-      details: dbData.details || {},
-      ipAddress: dbData.ip_address,
-      userAgent: dbData.user_agent,
-      sessionId: dbData.session_id,
-      createdAt: dbData.created_at
+      id: apiData.id,
+      adminId: apiData.adminId || apiData.admin_id,
+      actionType: apiData.actionType || apiData.action_type,
+      targetType: apiData.targetType || apiData.target_type,
+      targetId: apiData.targetId || apiData.target_id,
+      details: apiData.details || {},
+      ipAddress: apiData.ipAddress || apiData.ip_address,
+      userAgent: apiData.userAgent || apiData.user_agent,
+      sessionId: apiData.sessionId || apiData.session_id,
+      createdAt: apiData.createdAt || apiData.created_at
     };
   }
 }

@@ -1,7 +1,6 @@
-import { supabase } from '../core/supabase';
+import { apiClient, showFeatureNotImplemented } from '../core/api';
 
 export class AvatarService {
-  private readonly BUCKET_NAME = 'avatars';
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
   private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -19,44 +18,11 @@ export class AvatarService {
         throw new Error('Допустимые форматы: JPEG, PNG, WebP, GIF');
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
+      const { data, error } = await apiClient.uploadFile<any>(`/profiles/${userId}/avatar`, file, 'avatar');
 
-      const { data: existingFiles } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list(userId);
+      if (error) throw new Error(error.message);
 
-      if (existingFiles && existingFiles.length > 0) {
-        for (const existingFile of existingFiles) {
-          await supabase.storage
-            .from(this.BUCKET_NAME)
-            .remove([`${userId}/${existingFile.name}`]);
-        }
-      }
-
-      const { data, error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) throw error;
-
-      const { data: publicUrlData } = supabase.storage
-        .from(this.BUCKET_NAME)
-        .getPublicUrl(fileName);
-
-      const avatarUrl = publicUrlData.publicUrl;
-
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ avatar: avatarUrl })
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
-      return avatarUrl;
+      return data.avatarUrl;
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       throw error;
@@ -65,25 +31,9 @@ export class AvatarService {
 
   async deleteAvatar(userId: string): Promise<void> {
     try {
-      const { data: files } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list(userId);
+      const { error } = await apiClient.delete(`/profiles/${userId}/avatar`);
 
-      if (files && files.length > 0) {
-        const filesToRemove = files.map(file => `${userId}/${file.name}`);
-        const { error } = await supabase.storage
-          .from(this.BUCKET_NAME)
-          .remove(filesToRemove);
-
-        if (error) throw error;
-      }
-
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ avatar: null })
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
+      if (error) throw new Error(error.message);
     } catch (error) {
       console.error('Failed to delete avatar:', error);
       throw error;
