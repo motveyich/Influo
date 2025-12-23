@@ -10,29 +10,28 @@ export class AdvertiserCardService {
       this.validateCardData(cardData);
 
       const payload = {
-        userId: cardData.userId,
-        companyName: cardData.companyName,
-        campaignTitle: cardData.campaignTitle,
-        campaignDescription: cardData.campaignDescription,
+        user_id: cardData.userId,
+        company_name: cardData.companyName,
+        campaign_title: cardData.campaignTitle,
+        campaign_description: cardData.campaignDescription,
         platform: cardData.platform,
-        productCategories: cardData.productCategories,
+        product_categories: cardData.productCategories,
         budget: cardData.budget,
-        serviceFormat: cardData.serviceFormat,
-        campaignDuration: cardData.campaignDuration,
-        influencerRequirements: cardData.influencerRequirements,
-        targetAudience: cardData.targetAudience,
-        contactInfo: cardData.contactInfo,
-        campaignStats: cardData.campaignStats || {
-          completedCampaigns: 0,
-          averageRating: 0,
-          totalInfluencersWorked: 0,
-          successRate: 0
-        },
+        service_format: cardData.serviceFormat,
+        campaign_duration: cardData.campaignDuration,
+        influencer_requirements: cardData.influencerRequirements,
+        target_audience: cardData.targetAudience,
+        contact_info: cardData.contactInfo,
+        is_active: cardData.isActive !== undefined ? cardData.isActive : true,
       };
 
-      const { data, error } = await apiClient.post<any>('/advertiser-cards', payload);
+      const { data, error } = await supabase
+        .from('advertiser_cards')
+        .insert([payload])
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('advertiser_card_created', {
         user_id: cardData.userId,
@@ -53,9 +52,14 @@ export class AdvertiserCardService {
 
       const payload = this.transformToApiPayload(updates);
 
-      const { data, error } = await apiClient.patch<any>(`/advertiser-cards/${cardId}`, payload);
+      const { data, error } = await supabase
+        .from('advertiser_cards')
+        .update(payload)
+        .eq('id', cardId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('advertiser_card_updated', {
         card_id: cardId,
@@ -71,12 +75,14 @@ export class AdvertiserCardService {
 
   async getCard(cardId: string): Promise<AdvertiserCard | null> {
     try {
-      const { data, error } = await apiClient.get<any>(`/advertiser-cards/${cardId}`);
+      const { data, error } = await supabase
+        .from('advertiser_cards')
+        .select('*')
+        .eq('id', cardId)
+        .maybeSingle();
 
-      if (error) {
-        if (error.status === 404) return null;
-        throw new Error(error.message);
-      }
+      if (error) throw error;
+      if (!data) return null;
 
       return this.transformFromApi(data);
     } catch (error) {
@@ -87,9 +93,13 @@ export class AdvertiserCardService {
 
   async getUserCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/advertiser-cards?userId=${userId}`);
+      const { data, error } = await supabase
+        .from('advertiser_cards')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
@@ -108,36 +118,29 @@ export class AdvertiserCardService {
     isActive?: boolean;
   }): Promise<AdvertiserCard[]> {
     try {
-      const params = new URLSearchParams();
+      let query = supabase.from('advertiser_cards').select('*');
 
       if (filters?.isActive !== undefined) {
-        params.append('isActive', String(filters.isActive));
+        query = query.eq('is_active', filters.isActive);
       }
+
       if (filters?.platform && filters.platform !== 'all') {
-        params.append('platform', filters.platform);
+        query = query.eq('platform', filters.platform);
       }
-      if (filters?.productCategories && filters.productCategories.length > 0) {
-        params.append('productCategories', filters.productCategories.join(','));
-      }
-      if (filters?.serviceFormats && filters.serviceFormats.length > 0) {
-        params.append('serviceFormats', filters.serviceFormats.join(','));
-      }
+
       if (filters?.minBudget) {
-        params.append('minBudget', String(filters.minBudget));
+        query = query.gte('budget->>amount', filters.minBudget);
       }
+
       if (filters?.maxBudget) {
-        params.append('maxBudget', String(filters.maxBudget));
-      }
-      if (filters?.searchQuery) {
-        params.append('search', filters.searchQuery);
+        query = query.lte('budget->>amount', filters.maxBudget);
       }
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/advertiser-cards?${queryString}` : '/advertiser-cards';
+      query = query.order('created_at', { ascending: false });
 
-      const { data, error } = await apiClient.get<any[]>(endpoint);
+      const { data, error } = await query;
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
@@ -148,9 +151,12 @@ export class AdvertiserCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await apiClient.delete(`/advertiser-cards/${cardId}`);
+      const { error } = await supabase
+        .from('advertiser_cards')
+        .delete()
+        .eq('id', cardId);
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('advertiser_card_deleted', {
         card_id: cardId
@@ -163,11 +169,14 @@ export class AdvertiserCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<AdvertiserCard> {
     try {
-      const { data, error } = await apiClient.patch<any>(`/advertiser-cards/${cardId}`, {
-        isActive
-      });
+      const { data, error } = await supabase
+        .from('advertiser_cards')
+        .update({ is_active: isActive })
+        .eq('id', cardId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('advertiser_card_status_changed', {
         card_id: cardId,
@@ -244,19 +253,18 @@ export class AdvertiserCardService {
   private transformToApiPayload(cardData: Partial<AdvertiserCard>): any {
     const payload: any = {};
 
-    if (cardData.companyName) payload.companyName = cardData.companyName;
-    if (cardData.campaignTitle) payload.campaignTitle = cardData.campaignTitle;
-    if (cardData.campaignDescription) payload.campaignDescription = cardData.campaignDescription;
+    if (cardData.companyName) payload.company_name = cardData.companyName;
+    if (cardData.campaignTitle) payload.campaign_title = cardData.campaignTitle;
+    if (cardData.campaignDescription) payload.campaign_description = cardData.campaignDescription;
     if (cardData.platform) payload.platform = cardData.platform;
-    if (cardData.productCategories) payload.productCategories = cardData.productCategories;
+    if (cardData.productCategories) payload.product_categories = cardData.productCategories;
     if (cardData.budget) payload.budget = cardData.budget;
-    if (cardData.serviceFormat) payload.serviceFormat = cardData.serviceFormat;
-    if (cardData.campaignDuration) payload.campaignDuration = cardData.campaignDuration;
-    if (cardData.influencerRequirements) payload.influencerRequirements = cardData.influencerRequirements;
-    if (cardData.targetAudience) payload.targetAudience = cardData.targetAudience;
-    if (cardData.contactInfo) payload.contactInfo = cardData.contactInfo;
-    if (cardData.campaignStats) payload.campaignStats = cardData.campaignStats;
-    if (cardData.isActive !== undefined) payload.isActive = cardData.isActive;
+    if (cardData.serviceFormat) payload.service_format = cardData.serviceFormat;
+    if (cardData.campaignDuration) payload.campaign_duration = cardData.campaignDuration;
+    if (cardData.influencerRequirements) payload.influencer_requirements = cardData.influencerRequirements;
+    if (cardData.targetAudience) payload.target_audience = cardData.targetAudience;
+    if (cardData.contactInfo) payload.contact_info = cardData.contactInfo;
+    if (cardData.isActive !== undefined) payload.is_active = cardData.isActive;
 
     return payload;
   }

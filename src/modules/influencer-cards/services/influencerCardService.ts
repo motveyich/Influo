@@ -10,16 +10,21 @@ export class InfluencerCardService {
       this.validateCardData(cardData);
 
       const payload = {
-        userId: cardData.userId,
+        user_id: cardData.userId,
         platform: cardData.platform,
         reach: cardData.reach,
-        audienceDemographics: cardData.audienceDemographics,
-        serviceDetails: cardData.serviceDetails,
+        audience_demographics: cardData.audienceDemographics,
+        service_details: cardData.serviceDetails,
+        is_active: cardData.isActive !== undefined ? cardData.isActive : true,
       };
 
-      const { data, error } = await apiClient.post<any>('/influencer-cards', payload);
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .insert([payload])
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('influencer_card_created', {
         user_id: cardData.userId,
@@ -40,9 +45,14 @@ export class InfluencerCardService {
 
       const payload = this.transformToApiPayload(updates);
 
-      const { data, error } = await apiClient.patch<any>(`/influencer-cards/${cardId}`, payload);
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .update(payload)
+        .eq('id', cardId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('influencer_card_updated', {
         card_id: cardId,
@@ -58,12 +68,14 @@ export class InfluencerCardService {
 
   async getCard(cardId: string): Promise<InfluencerCard | null> {
     try {
-      const { data, error } = await apiClient.get<any>(`/influencer-cards/${cardId}`);
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .select('*')
+        .eq('id', cardId)
+        .maybeSingle();
 
-      if (error) {
-        if (error.status === 404) return null;
-        throw new Error(error.message);
-      }
+      if (error) throw error;
+      if (!data) return null;
 
       return this.transformFromApi(data);
     } catch (error) {
@@ -74,9 +86,13 @@ export class InfluencerCardService {
 
   async getUserCards(userId: string): Promise<InfluencerCard[]> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/influencer-cards?userId=${userId}`);
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
@@ -94,33 +110,29 @@ export class InfluencerCardService {
     isActive?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      const params = new URLSearchParams();
+      let query = supabase.from('influencer_cards').select('*');
 
       if (filters?.platform && filters.platform !== 'all') {
-        params.append('platform', filters.platform);
+        query = query.eq('platform', filters.platform);
       }
+
       if (filters?.isActive !== undefined) {
-        params.append('isActive', String(filters.isActive));
+        query = query.eq('is_active', filters.isActive);
       }
+
       if (filters?.minFollowers) {
-        params.append('minFollowers', String(filters.minFollowers));
+        query = query.gte('reach->>followers', filters.minFollowers);
       }
+
       if (filters?.maxFollowers) {
-        params.append('maxFollowers', String(filters.maxFollowers));
-      }
-      if (filters?.countries && filters.countries.length > 0) {
-        params.append('countries', filters.countries.join(','));
-      }
-      if (filters?.searchQuery) {
-        params.append('search', filters.searchQuery);
+        query = query.lte('reach->>followers', filters.maxFollowers);
       }
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/influencer-cards?${queryString}` : '/influencer-cards';
+      query = query.order('created_at', { ascending: false });
 
-      const { data, error } = await apiClient.get<any[]>(endpoint);
+      const { data, error } = await query;
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       return (data || []).map(card => this.transformFromApi(card));
     } catch (error) {
@@ -131,9 +143,12 @@ export class InfluencerCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await apiClient.delete(`/influencer-cards/${cardId}`);
+      const { error } = await supabase
+        .from('influencer_cards')
+        .delete()
+        .eq('id', cardId);
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('influencer_card_deleted', {
         card_id: cardId
@@ -146,11 +161,14 @@ export class InfluencerCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<InfluencerCard> {
     try {
-      const { data, error } = await apiClient.patch<any>(`/influencer-cards/${cardId}`, {
-        isActive
-      });
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .update({ is_active: isActive })
+        .eq('id', cardId)
+        .select()
+        .single();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       analytics.track('influencer_card_status_changed', {
         card_id: cardId,
@@ -166,11 +184,15 @@ export class InfluencerCardService {
 
   async getCardAnalytics(cardId: string): Promise<any> {
     try {
-      const { data, error } = await apiClient.get<any>(`/influencer-cards/${cardId}/analytics`);
+      const { data, error } = await supabase
+        .from('influencer_cards')
+        .select('rating, completed_campaigns')
+        .eq('id', cardId)
+        .maybeSingle();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      return data;
+      return data || { rating: 0, completed_campaigns: 0 };
     } catch (error) {
       console.error('Failed to get card analytics:', error);
       throw error;
@@ -243,17 +265,17 @@ export class InfluencerCardService {
 
     if (cardData.platform) payload.platform = cardData.platform;
     if (cardData.reach) payload.reach = cardData.reach;
-    if (cardData.audienceDemographics) payload.audienceDemographics = cardData.audienceDemographics;
+    if (cardData.audienceDemographics) payload.audience_demographics = cardData.audienceDemographics;
     if (cardData.serviceDetails) {
-      payload.serviceDetails = {
+      payload.service_details = {
         ...cardData.serviceDetails,
         pricing: cardData.serviceDetails.pricing || {},
         currency: cardData.serviceDetails.currency || 'RUB'
       };
     }
     if (cardData.rating !== undefined) payload.rating = cardData.rating;
-    if (cardData.completedCampaigns !== undefined) payload.completedCampaigns = cardData.completedCampaigns;
-    if (cardData.isActive !== undefined) payload.isActive = cardData.isActive;
+    if (cardData.completedCampaigns !== undefined) payload.completed_campaigns = cardData.completedCampaigns;
+    if (cardData.isActive !== undefined) payload.is_active = cardData.isActive;
 
     return payload;
   }
