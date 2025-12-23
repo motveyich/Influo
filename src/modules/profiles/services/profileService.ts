@@ -1,28 +1,63 @@
 import { supabase } from '../../../core/supabase';
-import { showFeatureNotImplemented } from '../../../core/utils';
+import { apiClient } from '../../../core/apiClient';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
 
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
-    showFeatureNotImplemented(
-      'Создание профиля',
-      'POST /profiles - Create user profile (profile is created during signup)'
-    );
-    throw new Error('Profile creation is handled during signup');
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        throw new Error('Not authenticated');
+      }
+
+      const userId = session.data.session.user.id;
+
+      const { data, error } = await apiClient.get<any>(`/profiles/${userId}`);
+
+      if (error || !data) {
+        const { data: createdData, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: userId,
+            email: profileData.email || session.data.session.user.email || '',
+            full_name: profileData.fullName || 'User',
+            user_type: profileData.userType || 'influencer',
+            role: 'user',
+          })
+          .select()
+          .maybeSingle();
+
+        if (createError) {
+          throw new Error(createError.message);
+        }
+
+        return this.transformFromApi(createdData);
+      }
+
+      if (profileData.fullName || profileData.bio || profileData.location) {
+        return await this.updateProfile(userId, profileData);
+      }
+
+      return this.transformFromApi(data);
+    } catch (error) {
+      console.error('Failed to create profile:', error);
+      throw error;
+    }
   }
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
       const updatePayload: Record<string, unknown> = {};
 
-      if (updates.fullName !== undefined) updatePayload.fullName = updates.fullName;
+      if (updates.fullName !== undefined) updatePayload.full_name = updates.fullName;
       if (updates.username !== undefined) updatePayload.username = updates.username;
       if (updates.phone !== undefined) updatePayload.phone = updates.phone;
       if (updates.bio !== undefined) updatePayload.bio = updates.bio;
       if (updates.location !== undefined) updatePayload.location = updates.location;
       if (updates.website !== undefined) updatePayload.website = updates.website;
-      if (updates.influencerData !== undefined) updatePayload.socialMediaLinks = updates.influencerData?.socialMediaLinks;
-      if (updates.advertiserData !== undefined) updatePayload.metrics = updates.advertiserData;
+      if (updates.avatar !== undefined) updatePayload.avatar = updates.avatar;
+      if (updates.influencerData !== undefined) updatePayload.influencer_data = updates.influencerData;
+      if (updates.advertiserData !== undefined) updatePayload.advertiser_data = updates.advertiserData;
 
       const { data, error } = await apiClient.patch<any>(`/profiles/${userId}`, updatePayload);
 
