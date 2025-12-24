@@ -1,11 +1,11 @@
-import { supabase } from '../../../core/supabase';
+import { db } from '../../../api/database';
 import { apiClient } from '../../../core/apiClient';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
 
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         throw new Error('Not authenticated');
       }
@@ -15,7 +15,7 @@ export class ProfileService {
       const { data, error } = await apiClient.get<any>(`/profiles/${userId}`);
 
       if (error || !data) {
-        const { data: createdData, error: createError } = await supabase
+        const { data: createdData, error: createError } = await db
           .from('user_profiles')
           .insert({
             user_id: userId,
@@ -24,14 +24,14 @@ export class ProfileService {
             user_type: profileData.userType || 'influencer',
             role: 'user',
           })
-          .select()
-          .maybeSingle();
+          .execute();
 
         if (createError) {
           throw new Error(createError.message);
         }
 
-        return this.transformFromApi(createdData);
+        const profileData = Array.isArray(createdData) ? createdData[0] : createdData;
+        return this.transformFromApi(profileData);
       }
 
       if (profileData.fullName || profileData.bio || profileData.location || profileData.phone) {

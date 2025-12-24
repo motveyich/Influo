@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { db } from '../api/database';
 import { UserProfile, Campaign, InfluencerCard, AdminLog, UserRole } from '../core/types';
 
 export class AdminService {
@@ -10,7 +10,7 @@ export class AdminService {
     details?: Record<string, any>
   ): Promise<void> {
     try {
-      await supabase.from('admin_logs').insert({
+      await db.from('admin_logs').insert({
         admin_id: adminId,
         action_type: actionType,
         target_type: targetType,
@@ -18,7 +18,7 @@ export class AdminService {
         details: details || {},
         user_agent: navigator.userAgent,
         session_id: `session_${Date.now()}`
-      });
+      }).execute();
     } catch (error) {
       console.error('Failed to log admin action:', error);
     }
@@ -30,7 +30,7 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<UserProfile[]> {
     try {
-      let query = supabase
+      let query = db
         .from('user_profiles')
         .select('*');
 
@@ -39,14 +39,15 @@ export class AdminService {
       }
 
       if (filters?.searchQuery) {
-        query = query.or(`email.ilike.%${filters.searchQuery}%,full_name.ilike.%${filters.searchQuery}%`);
+        const searchPattern = `%${filters.searchQuery}%`;
+        query = query.ilike('email', searchPattern).ilike('full_name', searchPattern);
       }
 
       if (filters?.isDeleted !== undefined) {
         query = query.eq('is_deleted', filters.isDeleted);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.execute();
 
       if (error) throw error;
 
@@ -70,7 +71,7 @@ export class AdminService {
         throw new Error('Cannot block yourself');
       }
 
-      const { error } = await supabase.rpc('admin_block_user', {
+      const { error } = await db.rpc('admin_block_user', {
         p_user_id: userId,
         p_blocked_by: deletedBy
       });
@@ -88,7 +89,7 @@ export class AdminService {
 
   async blockUser(userId: string, blockedBy: string): Promise<void> {
     try {
-      const { error } = await supabase.rpc('admin_block_user', {
+      const { error } = await db.rpc('admin_block_user', {
         p_user_id: userId,
         p_blocked_by: blockedBy
       });
@@ -104,7 +105,7 @@ export class AdminService {
     try {
       console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
 
-      const { error } = await supabase.rpc('admin_unblock_user', {
+      const { error } = await db.rpc('admin_unblock_user', {
         p_user_id: userId,
         p_unblocked_by: restoredBy
       });
@@ -126,7 +127,7 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<Campaign[]> {
     try {
-      let query = supabase
+      let query = db
         .from('auto_campaigns')
         .select('*');
 
@@ -138,7 +139,7 @@ export class AdminService {
         query = query.eq('is_deleted', filters.isDeleted);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.execute();
 
       if (error) {
         console.error('Failed to get campaigns:', error);
@@ -154,14 +155,15 @@ export class AdminService {
 
   async deleteCampaign(campaignId: string, deletedBy: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('auto_campaigns')
         .update({
           is_deleted: true,
           deleted_at: new Date().toISOString(),
           deleted_by: deletedBy
         })
-        .eq('id', campaignId);
+        .eq('id', campaignId)
+        .execute();
 
       if (error) throw error;
 
@@ -177,7 +179,7 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = supabase
+      let query = db
         .from('influencer_cards')
         .select('*');
 
@@ -185,7 +187,7 @@ export class AdminService {
         query = query.eq('is_deleted', filters.isDeleted);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.execute();
 
       if (error) {
         console.error('Failed to get influencer cards:', error);
@@ -201,14 +203,15 @@ export class AdminService {
 
   async deleteInfluencerCard(cardId: string, deletedBy: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('influencer_cards')
         .update({
           is_deleted: true,
           deleted_at: new Date().toISOString(),
           deleted_by: deletedBy
         })
-        .eq('id', cardId);
+        .eq('id', cardId)
+        .execute();
 
       if (error) throw error;
 
@@ -225,7 +228,7 @@ export class AdminService {
     limit?: number;
   }): Promise<AdminLog[]> {
     try {
-      let query = supabase
+      let query = db
         .from('admin_logs')
         .select('*')
         .order('created_at', { ascending: false });
@@ -242,7 +245,7 @@ export class AdminService {
         query = query.limit(filters.limit);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.execute();
 
       if (error) {
         console.warn('Admin logs not available:', error);
@@ -258,28 +261,36 @@ export class AdminService {
 
   async getAdminStats(): Promise<any> {
     try {
-      const { count: totalUsers } = await supabase
+      const usersResult = await db
         .from('user_profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('user_id')
+        .execute();
+      const totalUsers = Array.isArray(usersResult.data) ? usersResult.data.length : 0;
 
-      const { count: totalCampaigns } = await supabase
+      const campaignsResult = await db
         .from('auto_campaigns')
-        .select('*', { count: 'exact', head: true });
+        .select('id')
+        .execute();
+      const totalCampaigns = Array.isArray(campaignsResult.data) ? campaignsResult.data.length : 0;
 
-      const { count: totalInfluencerCards } = await supabase
+      const cardsResult = await db
         .from('influencer_cards')
-        .select('*', { count: 'exact', head: true });
+        .select('id')
+        .execute();
+      const totalInfluencerCards = Array.isArray(cardsResult.data) ? cardsResult.data.length : 0;
 
-      const { count: pendingReports } = await supabase
+      const reportsResult = await db
         .from('content_reports')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .select('id')
+        .eq('status', 'pending')
+        .execute();
+      const pendingReports = Array.isArray(reportsResult.data) ? reportsResult.data.length : 0;
 
       return {
-        totalUsers: totalUsers || 0,
-        totalCampaigns: totalCampaigns || 0,
-        totalInfluencerCards: totalInfluencerCards || 0,
-        pendingReports: pendingReports || 0
+        totalUsers,
+        totalCampaigns,
+        totalInfluencerCards,
+        pendingReports
       };
     } catch (error) {
       console.error('Failed to get admin stats:', error);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { authService, AuthState, User } from '../core/auth';
-import { supabase } from '../core/supabase';
+import { db } from '../api/database';
 import { UserRole } from '../core/types';
 
 export function useAuth() {
@@ -30,7 +30,7 @@ export function useAuth() {
   const loadUserRole = async () => {
     try {
       setRoleLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('user_profiles')
         .select('role')
         .eq('user_id', authState.user!.id)
@@ -53,7 +53,7 @@ export function useAuth() {
     if (!authState.user) return;
     setBlockCheckLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('user_profiles')
         .select('is_deleted, deleted_at')
         .eq('user_id', authState.user.id)

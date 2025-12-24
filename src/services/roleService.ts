@@ -1,10 +1,10 @@
-import { supabase } from '../core/supabase';
+import { db } from '../api/database';
 import { UserRole, UserRoleData } from '../core/types';
 
 export class RoleService {
   async getUserRole(userId: string): Promise<UserRole> {
     try {
-      const { data, error } = await supabase.rpc('get_user_role', {
+      const { data, error } = await db.rpc('get_user_role', {
         p_user_id: userId
       });
 
@@ -22,24 +22,25 @@ export class RoleService {
 
   async assignRole(userId: string, role: UserRole, assignedBy: string): Promise<UserRoleData> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('user_roles')
         .insert({
           user_id: userId,
           role,
           assigned_by: assignedBy
         })
-        .select()
         .single();
 
       if (error) throw error;
 
-      await supabase
+      await db
         .from('user_profiles')
         .update({ role })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .execute();
 
-      return this.transformFromDb(data);
+      const roleData = Array.isArray(data) ? data[0] : data;
+      return this.transformFromDb(roleData);
     } catch (error) {
       console.error('Failed to assign role:', error);
       throw error;
@@ -48,15 +49,17 @@ export class RoleService {
 
   async removeRole(userId: string, removedBy: string): Promise<void> {
     try {
-      await supabase
+      await db
         .from('user_roles')
         .update({ is_active: false })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .execute();
 
-      await supabase
+      await db
         .from('user_profiles')
         .update({ role: 'user' })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .execute();
     } catch (error) {
       console.error('Failed to remove role:', error);
       throw error;
@@ -65,13 +68,11 @@ export class RoleService {
 
   async getUsersWithRoles(): Promise<Array<UserRoleData & { userProfile: any }>> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('user_roles')
-        .select(`
-          *,
-          user_profiles (*)
-        `)
-        .eq('is_active', true);
+        .select('*')
+        .eq('is_active', true)
+        .execute();
 
       if (error) throw error;
 

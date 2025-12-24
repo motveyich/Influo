@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { db } from '../api/database';
 
 export class AvatarService {
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -20,57 +20,38 @@ export class AvatarService {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/avatar.${fileExt}`;
 
-    const { data: existingFiles } = await supabase.storage
+    const { data, error } = await db.storage
       .from('avatars')
-      .list(userId);
-
-    if (existingFiles && existingFiles.length > 0) {
-      for (const existingFile of existingFiles) {
-        await supabase.storage
-          .from('avatars')
-          .remove([`${userId}/${existingFile.name}`]);
-      }
-    }
-
-    const { data, error } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, {
-        upsert: true,
-        contentType: file.type
-      });
+      .upload(fileName, file);
 
     if (error) throw new Error(error.message);
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = db.storage
       .from('avatars')
       .getPublicUrl(fileName);
 
     const publicUrl = publicUrlData.publicUrl;
 
-    await supabase
+    await db
       .from('user_profiles')
       .update({ avatar: publicUrl })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .execute();
 
     return publicUrl;
   }
 
   async deleteAvatar(userId: string): Promise<void> {
-    const { data: files } = await supabase.storage
+    const paths = [`${userId}/`];
+    await db.storage
       .from('avatars')
-      .list(userId);
+      .remove(paths);
 
-    if (files && files.length > 0) {
-      const filesToDelete = files.map(file => `${userId}/${file.name}`);
-      await supabase.storage
-        .from('avatars')
-        .remove(filesToDelete);
-    }
-
-    await supabase
+    await db
       .from('user_profiles')
       .update({ avatar: null })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .execute();
   }
 
   getAvatarUrl(avatarUrl: string | null): string {

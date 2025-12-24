@@ -1,5 +1,4 @@
-import { supabase } from './supabase';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { db } from '../api/database';
 
 export interface User {
   id: string;
@@ -26,6 +25,11 @@ interface UserProfile {
   deleted_at: string | null;
 }
 
+interface AuthUser {
+  id: string;
+  email: string;
+}
+
 class AuthService {
   private listeners: ((state: AuthState) => void)[] = [];
   private currentState: AuthState = { user: null, loading: true };
@@ -35,7 +39,7 @@ class AuthService {
   }
 
   private async initialize() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await db.auth.getSession();
 
     if (session?.user) {
       await this.loadUserProfile(session.user);
@@ -45,7 +49,7 @@ class AuthService {
 
     this.notifyListeners();
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    db.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         await this.loadUserProfile(session.user);
       } else if (event === 'SIGNED_OUT') {
@@ -57,9 +61,9 @@ class AuthService {
     });
   }
 
-  private async loadUserProfile(authUser: SupabaseUser) {
+  private async loadUserProfile(authUser: AuthUser) {
     try {
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await db
         .from('user_profiles')
         .select('*')
         .eq('user_id', authUser.id)
@@ -68,7 +72,7 @@ class AuthService {
       if (error) throw error;
 
       if (profile && (profile.is_deleted || profile.deleted_at)) {
-        await supabase.auth.signOut();
+        await db.auth.signOut();
         this.currentState = { user: null, loading: false };
         this.notifyListeners();
         return;
@@ -112,7 +116,7 @@ class AuthService {
 
   async signUp(email: string, password: string, fullName?: string, userType: string = 'influencer') {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await db.auth.signUp({
         email,
         password,
         options: {
@@ -155,7 +159,7 @@ class AuthService {
 
   async signIn(email: string, password: string) {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await db.auth.signInWithPassword({
         email,
         password,
       });
@@ -175,14 +179,14 @@ class AuthService {
       }
 
       if (authData.user) {
-        const { data: profile } = await supabase
+        const { data: profile } = await db
           .from('user_profiles')
           .select('is_deleted, deleted_at')
           .eq('user_id', authData.user.id)
           .maybeSingle();
 
         if (profile && (profile.is_deleted || profile.deleted_at)) {
-          await supabase.auth.signOut();
+          await db.auth.signOut();
           return {
             data: null,
             error: {
@@ -211,7 +215,7 @@ class AuthService {
 
   async signOut() {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await db.auth.signOut();
       if (error) throw error;
 
       this.currentState = { user: null, loading: false };
@@ -241,7 +245,7 @@ class AuthService {
   }
 
   async refreshUserData() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await db.auth.getUser();
     if (user) {
       await this.loadUserProfile(user);
     }

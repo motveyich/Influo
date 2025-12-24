@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { db } from '../api/database';
 
 export interface ApiError {
   message: string;
@@ -14,7 +14,7 @@ export interface ApiResponse<T> {
 class ApiClient {
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         return {
           data: null,
@@ -42,7 +42,7 @@ class ApiClient {
 
   async post<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         return {
           data: null,
@@ -70,7 +70,7 @@ class ApiClient {
 
   async patch<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         return {
           data: null,
@@ -98,7 +98,7 @@ class ApiClient {
 
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         return {
           data: null,
@@ -126,7 +126,7 @@ class ApiClient {
 
   async uploadFile<T>(endpoint: string, file: File): Promise<ApiResponse<T>> {
     try {
-      const session = await supabase.auth.getSession();
+      const session = await db.auth.getSession();
       if (!session.data.session) {
         return {
           data: null,
@@ -153,11 +153,9 @@ class ApiClient {
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/avatar.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await db.storage
         .from('avatars')
-        .upload(filePath, file, {
-          upsert: true,
-        });
+        .upload(filePath, file);
 
       if (uploadError) {
         return {
@@ -169,7 +167,7 @@ class ApiClient {
         };
       }
 
-      const { data: publicUrlData } = supabase.storage
+      const { data: publicUrlData } = db.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
@@ -207,12 +205,16 @@ class ApiClient {
         const userType = params.get('userType');
         const limit = parseInt(params.get('limit') || '10');
 
-        let dbQuery = supabase
+        let dbQuery = db
           .from('user_profiles')
           .select('*');
 
         if (query) {
-          dbQuery = dbQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%,bio.ilike.%${query}%`);
+          const searchPattern = `%${query}%`;
+          dbQuery = dbQuery
+            .ilike('full_name', searchPattern)
+            .ilike('email', searchPattern)
+            .ilike('bio', searchPattern);
         }
 
         if (userType) {
@@ -221,7 +223,7 @@ class ApiClient {
 
         dbQuery = dbQuery.limit(limit);
 
-        const { data, error } = await dbQuery;
+        const { data, error } = await dbQuery.execute();
 
         if (error) {
           return {
@@ -237,7 +239,7 @@ class ApiClient {
       }
 
       if (userId && !action && method === 'GET') {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from('user_profiles')
           .select('*')
           .eq('user_id', userId)
@@ -258,12 +260,11 @@ class ApiClient {
       }
 
       if (userId && !action && method === 'PATCH') {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from('user_profiles')
           .update(body)
           .eq('user_id', userId)
-          .select()
-          .maybeSingle();
+          .execute();
 
         if (error) {
           return {
@@ -279,7 +280,7 @@ class ApiClient {
       }
 
       if (userId && action === 'completion' && method === 'GET') {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from('user_profiles')
           .select('full_name, email, phone, location, bio, influencer_data, advertiser_data')
           .eq('user_id', userId)
