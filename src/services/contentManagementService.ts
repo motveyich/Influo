@@ -1,10 +1,10 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 import { PlatformUpdate, PlatformEvent } from '../core/types';
 
 export class ContentManagementService {
 
   async createUpdate(updateData: Partial<PlatformUpdate>, createdBy: string): Promise<PlatformUpdate> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('platform_updates')
       .insert({
         ...updateData,
@@ -18,7 +18,7 @@ export class ContentManagementService {
   }
 
   async updateUpdate(updateId: string, updates: Partial<PlatformUpdate>, updatedBy: string): Promise<PlatformUpdate> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('platform_updates')
       .update(updates)
       .eq('id', updateId)
@@ -30,7 +30,7 @@ export class ContentManagementService {
   }
 
   async deleteUpdate(updateId: string, deletedBy: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await database
       .from('platform_updates')
       .delete()
       .eq('id', updateId);
@@ -42,7 +42,7 @@ export class ContentManagementService {
     type?: string;
     isPublished?: boolean;
   }): Promise<PlatformUpdate[]> {
-    let query = supabase.from('platform_updates').select('*');
+    let query = database.from('platform_updates').select('*');
 
     if (filters?.type) {
       query = query.eq('type', filters.type);
@@ -67,7 +67,7 @@ export class ContentManagementService {
   }
 
   async createEvent(eventData: Partial<PlatformEvent>, createdBy: string): Promise<PlatformEvent> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('platform_events')
       .insert({
         ...eventData,
@@ -81,7 +81,7 @@ export class ContentManagementService {
   }
 
   async updateEvent(eventId: string, updates: Partial<PlatformEvent>, updatedBy: string): Promise<PlatformEvent> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('platform_events')
       .update(updates)
       .eq('id', eventId)
@@ -93,7 +93,7 @@ export class ContentManagementService {
   }
 
   async deleteEvent(eventId: string, deletedBy: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await database
       .from('platform_events')
       .delete()
       .eq('id', eventId);
@@ -105,7 +105,7 @@ export class ContentManagementService {
     type?: string;
     isPublished?: boolean;
   }): Promise<PlatformEvent[]> {
-    let query = supabase.from('platform_events').select('*');
+    let query = database.from('platform_events').select('*');
 
     if (filters?.type) {
       query = query.eq('type', filters.type);

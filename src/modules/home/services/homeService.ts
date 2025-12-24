@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { analytics } from '../../../core/analytics';
 
 interface PlatformUpdate {
@@ -32,7 +32,7 @@ export class HomeService {
 
   async getPlatformUpdates(): Promise<PlatformUpdate[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('platform_updates')
         .select('*')
         .eq('is_published', true)
@@ -60,7 +60,7 @@ export class HomeService {
 
   async getPlatformEvents(): Promise<PlatformEvent[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('platform_events')
         .select('*')
         .eq('is_published', true)
@@ -88,36 +88,36 @@ export class HomeService {
 
   async getUserStats(userId: string): Promise<UserStats> {
     try {
-      const { count: pendingApplications } = await supabase
+      const { count: pendingApplications } = await database
         .from('offers')
         .select('*', { count: 'exact', head: true })
         .eq('influencer_id', userId)
         .eq('status', 'pending');
 
-      const { count: unreadMessages } = await supabase
+      const { count: unreadMessages } = await database
         .from('chat_messages')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', userId)
         .eq('is_read', false);
 
-      const { count: pendingPayouts } = await supabase
+      const { count: pendingPayouts } = await database
         .from('payment_requests')
         .select('*', { count: 'exact', head: true })
         .eq('influencer_id', userId)
         .eq('status', 'pending');
 
-      const { data: profile } = await supabase
+      const { data: profile } = await database
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const { count: totalReviews } = await supabase
+      const { count: totalReviews } = await database
         .from('reviews')
         .select('*', { count: 'exact', head: true })
         .eq('reviewed_user_id', userId);
 
-      const { count: completedDeals } = await supabase
+      const { count: completedDeals } = await database
         .from('offers')
         .select('*', { count: 'exact', head: true })
         .eq('influencer_id', userId)
@@ -143,7 +143,7 @@ export class HomeService {
 
   async getPendingPaymentsCount(userId: string): Promise<number> {
     try {
-      const { count } = await supabase
+      const { count } = await database
         .from('payment_requests')
         .select('*', { count: 'exact', head: true })
         .eq('influencer_id', userId)

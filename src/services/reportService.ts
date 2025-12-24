@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 import { ContentReport, ReportType } from '../core/types';
 import { moderationService } from './moderationService';
 import { analytics } from '../core/analytics';
@@ -40,7 +40,7 @@ export class ReportService {
 
   async getUserReports(userId: string): Promise<ContentReport[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('content_reports')
         .select('*')
         .eq('reporter_id', userId)

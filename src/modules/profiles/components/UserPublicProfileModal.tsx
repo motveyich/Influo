@@ -37,9 +37,9 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
       if (profileData) {
         // Метрики теперь хранятся непосредственно в user_profiles
         // и обновляются автоматически через триггеры БД
-        const { supabase } = await import('../../../core/supabase');
+        const { database } = await import('../../../core/database');
 
-        const { data: profileMetrics } = await supabase
+        const { data: profileMetrics } = await database
           .from('user_profiles')
           .select('completed_deals_count, total_reviews_count, average_rating')
           .eq('user_id', userId)

@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../core/supabase';
+import { database, TABLES } from '../core/database';
 import { UserSettings } from '../core/types';
 import { authService } from '../core/auth';
 import { analytics } from '../core/analytics';
@@ -13,7 +13,7 @@ export class UserSettingsService {
         return this.settingsCache.get(userId)!;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('user_settings')
         .select('*')
         .eq('user_id', userId)
@@ -47,7 +47,7 @@ export class UserSettingsService {
         updatedAt: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('user_settings')
         .upsert([this.transformToDatabase(updatedSettings)], {
           onConflict: 'user_id'
@@ -78,13 +78,13 @@ export class UserSettingsService {
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     try {
       // Verify current password by attempting to sign in
-      const { data: user } = await supabase.auth.getUser();
+      const { data: user } = await database.auth.getUser();
       if (!user.user?.email) {
         throw new Error('User email not found');
       }
 
-      // Update password using Supabase Auth
-      const { error } = await supabase.auth.updateUser({
+      // Update password using Database Auth
+      const { error } = await database.auth.updateUser({
         password: newPassword
       });
 
@@ -156,7 +156,7 @@ export class UserSettingsService {
   async signOutAllDevices(userId: string): Promise<void> {
     try {
       // Sign out from all sessions
-      await supabase.auth.signOut({ scope: 'global' });
+      await database.auth.signOut({ scope: 'global' });
 
       // Clear active sessions in settings
       await this.updateSettings(userId, {
@@ -204,7 +204,7 @@ export class UserSettingsService {
       }
 
       // Mark user profile as deleted
-      const { error } = await supabase
+      const { error } = await database
         .from(TABLES.USER_PROFILES)
         .update({
           is_deleted: true,
@@ -229,7 +229,7 @@ export class UserSettingsService {
     try {
       const defaultSettings = this.getDefaultSettings(userId);
       
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('user_settings')
         .insert([this.transformToDatabase(defaultSettings)])
         .select()

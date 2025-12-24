@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 
 export interface EmailNotificationData {
   userName?: string;
@@ -18,7 +18,7 @@ class EmailNotificationService {
     data: EmailNotificationData
   ): Promise<void> {
     try {
-      await supabase.functions.invoke('send-email-notification', {
+      await database.functions.invoke('send-email-notification', {
         body: {
           userId,
           type,

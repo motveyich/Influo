@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 import { authService } from '../core/auth';
 
 export interface BlacklistEntry {
@@ -12,7 +12,7 @@ export interface BlacklistEntry {
 class BlacklistService {
   async isBlacklisted(userId: string, targetUserId: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('is_user_blacklisted', {
+      const { data, error } = await database.rpc('is_user_blacklisted', {
         p_user_id: userId,
         p_target_user_id: targetUserId
       });
@@ -34,7 +34,7 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
+      const { error } = await database
         .from('blacklist')
         .insert({
           blocker_id: user.id,
@@ -60,7 +60,7 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
+      const { error } = await database
         .from('blacklist')
         .delete()
         .eq('blocker_id', user.id)
@@ -78,7 +78,7 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('blacklist')
         .select('*')
         .eq('blocker_id', user.id);
@@ -103,7 +103,7 @@ class BlacklistService {
       const user = authService.getCurrentUser();
       if (!user) return false;
 
-      const { data, error } = await supabase.rpc('is_user_blacklisted', {
+      const { data, error } = await database.rpc('is_user_blacklisted', {
         p_user_id: user.id,
         p_target_user_id: userId
       });

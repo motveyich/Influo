@@ -3,7 +3,7 @@ import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/t
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { UserAvatar } from '../../../components/UserAvatar';
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import {
   Clock,
   DollarSign,
@@ -64,7 +64,7 @@ export function OfferCard({
   const loadPartnerProfile = async () => {
     const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
     try {
-      const { data } = await supabase
+      const { data } = await database
         .from('user_profiles')
         .select('user_id, full_name, avatar')
         .eq('user_id', partnerId)

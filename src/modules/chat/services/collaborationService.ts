@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { database, TABLES } from '../../../core/database';
 import { CollaborationForm } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
@@ -20,7 +20,7 @@ export class CollaborationService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from(TABLES.COLLABORATION_FORMS)
         .insert([newRequest])
         .select()
@@ -70,7 +70,7 @@ export class CollaborationService {
     responseData?: any
   ): Promise<CollaborationForm> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from(TABLES.COLLABORATION_FORMS)
         .update({
           status: response,
@@ -122,7 +122,7 @@ export class CollaborationService {
 
   async getCollaborationRequest(requestId: string): Promise<CollaborationForm | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from(TABLES.COLLABORATION_FORMS)
         .select('*')
         .eq('id', requestId)
@@ -142,7 +142,7 @@ export class CollaborationService {
     try {
       const column = type === 'sent' ? 'sender_id' : 'receiver_id';
       
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from(TABLES.COLLABORATION_FORMS)
         .select('*')
         .eq(column, userId)

@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { showFeatureNotImplemented } from '../../../core/utils';
 import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
@@ -24,7 +24,7 @@ export class ApplicationService {
         }
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('applications')
         .insert([payload])
         .select()
@@ -51,10 +51,10 @@ export class ApplicationService {
     responseData?: any
   ): Promise<Application> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await database.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: existingApp, error: fetchError } = await supabase
+      const { data: existingApp, error: fetchError } = await database
         .from('applications')
         .select('*')
         .eq('id', applicationId)
@@ -74,7 +74,7 @@ export class ApplicationService {
         updatedTimeline.completedAt = now;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('applications')
         .update({
           status: response,
@@ -103,7 +103,7 @@ export class ApplicationService {
     try {
       const column = type === 'sent' ? 'applicant_id' : 'target_id';
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('applications')
         .select('*')
         .eq(column, userId)
@@ -120,10 +120,10 @@ export class ApplicationService {
 
   async getApplication(applicationId: string): Promise<Application | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await database.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('applications')
         .select('*')
         .eq('id', applicationId)
@@ -142,10 +142,10 @@ export class ApplicationService {
 
   async markApplicationAsViewed(applicationId: string): Promise<void> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await database.auth.getUser();
       if (!user) return;
 
-      const { data: existingApp } = await supabase
+      const { data: existingApp } = await database
         .from('applications')
         .select('metadata')
         .eq('id', applicationId)
@@ -161,7 +161,7 @@ export class ApplicationService {
         lastViewed: now
       };
 
-      await supabase
+      await database
         .from('applications')
         .update({ metadata: updatedMetadata })
         .eq('id', applicationId);
@@ -172,10 +172,10 @@ export class ApplicationService {
 
   async cancelApplication(applicationId: string): Promise<void> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await database.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: existingApp, error: fetchError } = await supabase
+      const { data: existingApp, error: fetchError } = await database
         .from('applications')
         .select('*')
         .eq('id', applicationId)
@@ -191,7 +191,7 @@ export class ApplicationService {
         cancelledAt: now
       };
 
-      const { error } = await supabase
+      const { error } = await database
         .from('applications')
         .update({
           status: 'cancelled',

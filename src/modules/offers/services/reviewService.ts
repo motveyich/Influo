@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { database, TABLES } from '../../../core/database';
 import { CollaborationReview } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { emailNotificationService } from '../../../services/emailNotificationService';
@@ -21,7 +21,7 @@ export class ReviewService {
         metadata: reviewData.metadata || {},
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('reviews')
         .insert([newReview])
         .select('id, deal_id, reviewer_id, reviewee_id, rating, title, comment, collaboration_type, is_public, helpful_votes, metadata, created_at, updated_at')
@@ -62,7 +62,7 @@ export class ReviewService {
 
   async getOfferReviews(offerId: string): Promise<CollaborationReview[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('reviews')
         .select(`
           id,
@@ -97,7 +97,7 @@ export class ReviewService {
     try {
       const column = type === 'given' ? 'reviewer_id' : 'reviewee_id';
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('reviews')
         .select(`
           id,
@@ -132,7 +132,7 @@ export class ReviewService {
   async canUserReview(offerId: string, userId: string): Promise<boolean> {
     try {
       // Check if offer is completed or terminated
-      const { data: offer } = await supabase
+      const { data: offer } = await database
         .from('offers')
         .select('status, influencer_id, advertiser_id, influencer_reviewed, advertiser_reviewed')
         .eq('offer_id', offerId)
@@ -166,7 +166,7 @@ export class ReviewService {
   private async updateOfferReviewStatus(offerId: string, reviewerId: string): Promise<void> {
     try {
       // Get offer to determine which review flag to update
-      const { data: offer } = await supabase
+      const { data: offer } = await database
         .from('offers')
         .select('influencer_id, advertiser_id')
         .eq('offer_id', offerId)
@@ -176,7 +176,7 @@ export class ReviewService {
 
       const updateField = reviewerId === offer.influencer_id ? 'influencer_reviewed' : 'advertiser_reviewed';
 
-      await supabase
+      await database
         .from('offers')
         .update({ [updateField]: true })
         .eq('offer_id', offerId);

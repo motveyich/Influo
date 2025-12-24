@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { CardAnalytics } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
@@ -6,7 +6,7 @@ export class CardAnalyticsService {
   async trackCardView(cardType: 'influencer' | 'advertiser', cardId: string, viewerId: string): Promise<void> {
     try {
       // Проверяем, что таблица существует
-      const { error: tableError } = await supabase
+      const { error: tableError } = await database
         .from('card_analytics')
         .select('id')
         .limit(1);
@@ -66,17 +66,17 @@ export class CardAnalyticsService {
   async getCardAnalytics(cardType: 'influencer' | 'advertiser', cardId: string): Promise<CardAnalytics | null> {
     try {
       // Проверяем, что таблица существует
-      const { error: tableError } = await supabase
+      const { error: tableError } = await database
         .from('card_analytics')
         .select('id')
         .limit(1);
-      
+
       if (tableError && tableError.code === '42P01') {
         console.warn('Card analytics table does not exist yet');
         return this.createInitialAnalytics(cardType, cardId);
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('card_analytics')
         .select('*')
         .eq('card_type', cardType)
@@ -96,7 +96,7 @@ export class CardAnalyticsService {
 
   async getUserCardAnalytics(userId: string, cardType?: 'influencer' | 'advertiser'): Promise<CardAnalytics[]> {
     try {
-      let query = supabase
+      let query = database
         .from('card_analytics')
         .select('*')
         .eq('owner_id', userId);
@@ -158,7 +158,7 @@ export class CardAnalyticsService {
       };
 
       // Get existing record to merge metrics
-      const { data: existing } = await supabase
+      const { data: existing } = await database
         .from('card_analytics')
         .select('*')
         .eq('card_type', cardType)
@@ -203,7 +203,7 @@ export class CardAnalyticsService {
         engagement_data: existing?.engagement_data || baseRecord.engagement_data
       };
 
-      const { error } = await supabase
+      const { error } = await database
         .from('card_analytics')
         .upsert(upsertData, {
           onConflict: 'card_type,card_id,date_recorded'
@@ -218,7 +218,7 @@ export class CardAnalyticsService {
   private async getCardOwnerId(cardType: 'influencer' | 'advertiser', cardId: string): Promise<string> {
     try {
       if (cardType === 'influencer') {
-        const { data } = await supabase
+        const { data } = await database
           .from('influencer_cards')
           .select('user_id')
           .eq('id', cardId)

@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { apiClient } from '../../../core/apiClient';
 import { showFeatureNotImplemented } from '../../../core/utils';
 import { AdvertiserCard } from '../../../core/types';
@@ -25,7 +25,7 @@ export class AdvertiserCardService {
         is_active: cardData.isActive !== undefined ? cardData.isActive : true,
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('advertiser_cards')
         .insert([payload])
         .select()
@@ -52,7 +52,7 @@ export class AdvertiserCardService {
 
       const payload = this.transformToApiPayload(updates);
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('advertiser_cards')
         .update(payload)
         .eq('id', cardId)
@@ -75,7 +75,7 @@ export class AdvertiserCardService {
 
   async getCard(cardId: string): Promise<AdvertiserCard | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('advertiser_cards')
         .select('*')
         .eq('id', cardId)
@@ -93,7 +93,7 @@ export class AdvertiserCardService {
 
   async getUserCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('advertiser_cards')
         .select('*')
         .eq('user_id', userId)
@@ -118,7 +118,7 @@ export class AdvertiserCardService {
     isActive?: boolean;
   }): Promise<AdvertiserCard[]> {
     try {
-      let query = supabase.from('advertiser_cards').select('*');
+      let query = database.from('advertiser_cards').select('*');
 
       if (filters?.isActive !== undefined) {
         query = query.eq('is_active', filters.isActive);
@@ -151,7 +151,7 @@ export class AdvertiserCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const { error } = await database
         .from('advertiser_cards')
         .delete()
         .eq('id', cardId);
@@ -169,7 +169,7 @@ export class AdvertiserCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<AdvertiserCard> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('advertiser_cards')
         .update({ is_active: isActive })
         .eq('id', cardId)

@@ -42,7 +42,7 @@ export class ProfileService {
 
       const completion = this.calculateProfileCompletion(profile);
 
-      await supabase
+      await database
         .from('user_profiles')
         .update({
           profile_completion_basic_info: completion.basicInfo,
@@ -86,7 +86,7 @@ export class ProfileService {
 
       const completion = this.calculateProfileCompletion(profile);
 
-      await supabase
+      await database
         .from('user_profiles')
         .update({
           profile_completion_basic_info: completion.basicInfo,

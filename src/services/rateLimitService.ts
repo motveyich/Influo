@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 import { authService } from '../core/auth';
 
 export type InteractionType = 'application' | 'favorite' | 'automatic_offer' | 'manual_offer';
@@ -21,7 +21,7 @@ class RateLimitService {
     cardId?: string
   ): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('is_rate_limited', {
+      const { data, error } = await database.rpc('is_rate_limited', {
         p_user_id: userId,
         p_target_user_id: targetUserId
       });
@@ -48,7 +48,7 @@ class RateLimitService {
       const user = authService.getCurrentUser();
       if (!user) return;
 
-      await supabase.from('rate_limit_interactions').insert({
+      await database.from('rate_limit_interactions').insert({
         user_id: user.id,
         target_user_id: targetUserId,
         interaction_type: interactionType,
@@ -62,7 +62,7 @@ class RateLimitService {
 
   async getLastInteraction(userId: string, targetUserId: string): Promise<RateLimitInteraction | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('rate_limit_interactions')
         .select('*')
         .eq('user_id', userId)

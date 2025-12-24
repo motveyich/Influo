@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 
 export interface SupportTicket {
   id: string;
@@ -37,7 +37,7 @@ export interface TicketWithMessages extends SupportTicket {
 
 export const supportService = {
   async createTicket(userId: string, data: CreateTicketData): Promise<SupportTicket> {
-    const { data: ticket, error } = await supabase
+    const { data: ticket, error } = await database
       .from('support_tickets')
       .insert({
         user_id: userId,
@@ -52,7 +52,7 @@ export const supportService = {
     if (error) throw new Error(error.message);
 
     if (ticket) {
-      await supabase.from('support_messages').insert({
+      await database.from('support_messages').insert({
         ticket_id: ticket.id,
         sender_id: userId,
         message: data.message,
@@ -64,7 +64,7 @@ export const supportService = {
   },
 
   async getUserTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('support_tickets')
       .select(`
         *,
@@ -83,7 +83,7 @@ export const supportService = {
   },
 
   async getAllTickets(): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('support_tickets')
       .select(`
         *,
@@ -101,7 +101,7 @@ export const supportService = {
   },
 
   async getTicketById(ticketId: string): Promise<TicketWithMessages | null> {
-    const { data: ticket, error: ticketError } = await supabase
+    const { data: ticket, error: ticketError } = await database
       .from('support_tickets')
       .select('*')
       .eq('id', ticketId)
@@ -109,7 +109,7 @@ export const supportService = {
 
     if (ticketError || !ticket) return null;
 
-    const { data: messages, error: messagesError } = await supabase
+    const { data: messages, error: messagesError } = await database
       .from('support_messages')
       .select('*')
       .eq('ticket_id', ticketId)
@@ -123,7 +123,7 @@ export const supportService = {
   },
 
   async addMessage(ticketId: string, senderId: string, message: string, isStaffResponse: boolean = false): Promise<SupportMessage> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('support_messages')
       .insert({
         ticket_id: ticketId,
@@ -145,7 +145,7 @@ export const supportService = {
       payload.resolved_at = resolvedAt || new Date().toISOString();
     }
 
-    const { error } = await supabase
+    const { error } = await database
       .from('support_tickets')
       .update(payload)
       .eq('id', ticketId);
@@ -154,7 +154,7 @@ export const supportService = {
   },
 
   async assignTicket(ticketId: string, assignedTo: string | null): Promise<void> {
-    const { error } = await supabase
+    const { error } = await database
       .from('support_tickets')
       .update({
         assigned_to: assignedTo,
@@ -170,7 +170,7 @@ export const supportService = {
   },
 
   async getTicketsByStatus(status: SupportTicket['status']): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('support_tickets')
       .select(`
         *,
@@ -189,7 +189,7 @@ export const supportService = {
   },
 
   async getAssignedTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from('support_tickets')
       .select(`
         *,
@@ -208,17 +208,17 @@ export const supportService = {
   },
 
   async getStatistics(): Promise<any> {
-    const { count: openCount } = await supabase
+    const { count: openCount } = await database
       .from('support_tickets')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'open');
 
-    const { count: inProgressCount } = await supabase
+    const { count: inProgressCount } = await database
       .from('support_tickets')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'in_progress');
 
-    const { count: resolvedCount } = await supabase
+    const { count: resolvedCount } = await database
       .from('support_tickets')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'resolved');
@@ -231,7 +231,7 @@ export const supportService = {
   },
 
   subscribeToTicket(ticketId: string, callback: (message: SupportMessage) => void) {
-    const channel = supabase
+    const channel = database
       .channel(`ticket-${ticketId}`)
       .on(
         'postgres_changes',

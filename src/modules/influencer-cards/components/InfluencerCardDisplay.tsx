@@ -5,7 +5,7 @@ import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, 
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
@@ -54,7 +54,7 @@ export function InfluencerCardDisplay({
 
   const loadUserProfile = async () => {
     try {
-      const { data } = await supabase
+      const { data } = await database
         .from('user_profiles')
         .select('user_id, full_name, avatar')
         .eq('user_id', card.userId)
@@ -95,7 +95,7 @@ export function InfluencerCardDisplay({
     try {
 
       // Check for existing application to this user
-      const { data: existingApplication } = await supabase
+      const { data: existingApplication } = await database
         .from('applications')
         .select('id')
         .eq('applicant_id', currentUserId)

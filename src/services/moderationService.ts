@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { database } from '../core/database';
 import { ContentReport, ModerationQueueItem, ContentFilter, ReportType, ModerationStatus } from '../core/types';
 
 export class ModerationService {
@@ -10,7 +10,7 @@ export class ModerationService {
 
   async loadContentFilters(): Promise<void> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('content_filters')
         .select('*')
         .eq('is_active', true);
@@ -30,7 +30,7 @@ export class ModerationService {
 
   async createReport(reportData: Partial<ContentReport>): Promise<ContentReport> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('content_reports')
         .insert({
           reporter_id: reportData.reporterId,
@@ -59,7 +59,7 @@ export class ModerationService {
     priority?: number;
   }): Promise<ContentReport[]> {
     try {
-      let query = supabase
+      let query = database
         .from('content_reports')
         .select('*')
         .order('created_at', { ascending: false });
@@ -94,7 +94,7 @@ export class ModerationService {
     reviewedBy: string
   ): Promise<ContentReport> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('content_reports')
         .update({
           status: resolution,
@@ -121,7 +121,7 @@ export class ModerationService {
     assignedModerator?: string;
   }): Promise<ModerationQueueItem[]> {
     try {
-      let query = supabase
+      let query = database
         .from('moderation_queue')
         .select('*')
         .order('created_at', { ascending: false });
@@ -155,7 +155,7 @@ export class ModerationService {
     metadata?: Record<string, any>
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('moderation_queue')
         .insert({
           content_type: contentType,
@@ -181,7 +181,7 @@ export class ModerationService {
     moderatorId: string
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('moderation_queue')
         .update({
           moderation_status: decision,

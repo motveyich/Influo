@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { apiClient } from '../../../core/apiClient';
 import { showFeatureNotImplemented } from '../../../core/utils';
 import { InfluencerCard } from '../../../core/types';
@@ -18,7 +18,7 @@ export class InfluencerCardService {
         is_active: cardData.isActive !== undefined ? cardData.isActive : true,
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .insert([payload])
         .select()
@@ -45,7 +45,7 @@ export class InfluencerCardService {
 
       const payload = this.transformToApiPayload(updates);
 
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .update(payload)
         .eq('id', cardId)
@@ -68,7 +68,7 @@ export class InfluencerCardService {
 
   async getCard(cardId: string): Promise<InfluencerCard | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .select('*')
         .eq('id', cardId)
@@ -86,7 +86,7 @@ export class InfluencerCardService {
 
   async getUserCards(userId: string): Promise<InfluencerCard[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .select('*')
         .eq('user_id', userId)
@@ -110,7 +110,7 @@ export class InfluencerCardService {
     isActive?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = supabase.from('influencer_cards').select('*');
+      let query = database.from('influencer_cards').select('*');
 
       if (filters?.platform && filters.platform !== 'all') {
         query = query.eq('platform', filters.platform);
@@ -143,7 +143,7 @@ export class InfluencerCardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const { error } = await database
         .from('influencer_cards')
         .delete()
         .eq('id', cardId);
@@ -161,7 +161,7 @@ export class InfluencerCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<InfluencerCard> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .update({ is_active: isActive })
         .eq('id', cardId)
@@ -184,7 +184,7 @@ export class InfluencerCardService {
 
   async getCardAnalytics(cardId: string): Promise<any> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await database
         .from('influencer_cards')
         .select('rating, completed_campaigns')
         .eq('id', cardId)

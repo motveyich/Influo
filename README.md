@@ -1,10 +1,10 @@
 # Influo MVP Platform
 
-A comprehensive influencer-advertiser collaboration platform built with React, TypeScript, Tailwind CSS, and Supabase.
+A comprehensive influencer-advertiser collaboration platform built with React, TypeScript, Tailwind CSS, and Bolt Database.
 
 > **Built for Bolt.new** - This project uses Bolt.new's built-in database (Bolt Database). Make sure to configure your database credentials from the Bolt.new Project Settings.
 
-## 🚀 Features
+## Features
 
 ### Core Modules
 - **Profiles**: Browse and discover influencers and advertisers
@@ -19,16 +19,16 @@ A comprehensive influencer-advertiser collaboration platform built with React, T
 - **Analytics Integration**: Google Analytics with fallback to local storage
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
 - **Type Safety**: Full TypeScript implementation
-- **Database**: Supabase with Row Level Security (RLS)
+- **Database**: Built-in Bolt Database with Row Level Security (RLS)
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 src/
 ├── core/                   # Core utilities and services
 │   ├── types.ts           # TypeScript definitions
 │   ├── config.ts          # App configuration
-│   ├── supabase.ts        # Database client
+│   ├── database.ts        # Database client
 │   ├── analytics.ts       # Analytics service
 │   └── realtime.ts        # Real-time service
 ├── modules/               # Feature modules
@@ -42,11 +42,10 @@ src/
 └── App.tsx              # Root component
 ```
 
-## 🛠️ Setup
+## Setup
 
 ### Prerequisites
 - Node.js 18+
-- Supabase account
 
 ### Installation
 
@@ -56,7 +55,7 @@ src/
    ```
 
 2. **Set up Bolt Database**
-   - This project uses **Bolt.new's built-in Supabase database**
+   - This project uses **Bolt.new's built-in database**
    - Open the **Bolt Database** panel in Bolt.new (right side of the interface)
    - Navigate to **Project Settings → Database** or **Connection Info**
    - Copy your Bolt Database URL and Anon Key
@@ -67,13 +66,10 @@ src/
 
    ```bash
    # Open .env file and replace these values:
-   VITE_SUPABASE_URL=https://your-bolt-project-id.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_bolt_database_anon_key
+   VITE_DATABASE_URL=https://your-bolt-project-id.database.co
+   VITE_DATABASE_KEY=your_bolt_database_anon_key
    ```
 
-   ⚠️ **Critical**: You MUST update these values with your actual Bolt Database credentials from Project Settings!
-
-   💡 **Where to find credentials**:
    - In Bolt.new: Click **Settings** → **Database** → **Connection Info**
    - Or check the **Bolt Database** panel → **Settings/Secrets**
 
@@ -82,18 +78,18 @@ src/
    npm run dev
    ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### "Failed to fetch" errors
 If you see "Failed to fetch" errors in the browser console:
 
-1. **Check your `.env` file**: Make sure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set with your actual **Bolt Database** credentials (NOT placeholder values!)
+1. **Check your `.env` file**: Make sure `VITE_DATABASE_URL` and `VITE_DATABASE_KEY` are set with your actual **Bolt Database** credentials (NOT placeholder values!)
 2. **Get credentials from Bolt.new**: Open **Project Settings → Database → Connection Info** and copy the correct URL and Anon Key
 3. **Verify Bolt Database is active**: Check the **Bolt Database** panel to ensure tables are visible and accessible
 4. **Restart the development server**: After updating `.env`, restart with `npm run dev`
 5. **Check the browser console**: Look for detailed error messages about the connection
 
-## 📊 Database Schema
+## Database Schema
 
 ### Core Tables
 - `user_profiles` - User account information
@@ -109,7 +105,7 @@ If you see "Failed to fetch" errors in the browser console:
 - Authenticated user policies
 - Cross-user interaction policies for messaging and offers
 
-## 🎯 Key Features
+## Key Features
 
 ### Real-time Features
 - **Live Chat**: Instant messaging with online status
@@ -126,7 +122,7 @@ If you see "Failed to fetch" errors in the browser console:
 - **Retry Logic**: Automatic retry for failed operations
 - **User Feedback**: Toast notifications for all actions
 
-## 🔧 Development
+## Development
 
 ### Adding New Modules
 1. Create module directory in `src/modules/`
@@ -135,7 +131,7 @@ If you see "Failed to fetch" errors in the browser console:
 4. Add navigation in `Layout.tsx`
 
 ### Database Changes
-- Create new migration files in `supabase/migrations/`
+- Use the Bolt Database migration tools
 - Follow naming convention: `feature_description.sql`
 - Include RLS policies and proper indexing
 
@@ -148,7 +144,7 @@ analytics.track('custom_event', {
 });
 ```
 
-## 🚀 Deployment
+## Deployment
 
 The app is ready for deployment to Netlify:
 
@@ -157,7 +153,7 @@ npm run build
 # Deploy dist/ folder to your hosting provider
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Follow the modular architecture
 2. Maintain TypeScript strict mode
@@ -165,21 +161,21 @@ npm run build
 4. Include analytics tracking for user actions
 5. Follow the established naming conventions
 
-## 📱 Mobile Support
+## Mobile Support
 
 - Responsive design with mobile-first approach
 - Touch-friendly interface elements
 - Optimized performance for mobile devices
 - Progressive Web App (PWA) ready
 
-## 🔒 Security
+## Security
 
 - Row Level Security on all database tables
 - Input validation and sanitization
-- Secure authentication with Supabase Auth
+- Secure authentication with built-in Auth
 - HTTPS-only cookies and secure headers
 
-## 📈 Performance
+## Performance
 
 - Code splitting by modules
 - Lazy loading where appropriate
@@ -188,4 +184,4 @@ npm run build
 
 ---
 
-Built with ❤️ using React, TypeScript, Tailwind CSS, and Supabase.
+Built with React, TypeScript, Tailwind CSS, and Bolt Database.

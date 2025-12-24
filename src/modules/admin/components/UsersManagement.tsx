@@ -100,7 +100,7 @@ export function UsersManagement({ onStatsUpdate }: UsersManagementProps) {
       console.error('Failed to delete user:', error);
       
       if (error.message.includes('RLS policy')) {
-        toast.error('Ошибка прав доступа. Проверьте настройки Supabase RLS политик.');
+        toast.error('Ошибка прав доступа. Проверьте настройки Database RLS политик.');
       } else if (error.message.includes('already blocked')) {
         toast.error('Пользователь уже заблокирован');
       } else if (error.message.includes('Cannot block yourself')) {

@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { apiClient } from '../../../core/apiClient';
 import { showFeatureNotImplemented } from '../../../core/utils';
 import { ChatMessage } from '../../../core/types';

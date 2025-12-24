@@ -7,7 +7,7 @@ import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import toast from 'react-hot-toast';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { supabase } from '../../../core/supabase';
+import { database } from '../../../core/database';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AdvertiserCardDisplayProps {

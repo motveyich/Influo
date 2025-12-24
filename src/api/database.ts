@@ -37,8 +37,8 @@ export const TABLES = {
   SUPPORT_MESSAGES: 'support_messages',
 } as const;
 
-const DB_URL = import.meta.env.VITE_SUPABASE_URL;
-const DB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const DB_URL = import.meta.env.VITE_DATABASE_URL;
+const DB_KEY = import.meta.env.VITE_DATABASE_KEY;
 
 interface DatabaseError {
   message: string;

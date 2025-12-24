@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../core/supabase';
+import { database, TABLES } from '../core/database';
 import { analytics } from '../core/analytics';
 
 export class DealService {
