@@ -2,6 +2,8 @@
 
 A comprehensive influencer-advertiser collaboration platform built with React, TypeScript, Tailwind CSS, and Supabase.
 
+> **Built for Bolt.new** - This project uses Bolt.new's built-in database (Bolt Database). Make sure to configure your database credentials from the Bolt.new Project Settings.
+
 ## 🚀 Features
 
 ### Core Modules
@@ -53,24 +55,27 @@ src/
    npm install
    ```
 
-2. **Set up Supabase**
-   - Create a new Supabase project at [supabase.com](https://supabase.com)
-   - Go to Settings > API in your Supabase dashboard
-   - Copy your Project URL and anon/public key
-   - The database schema will be automatically created
+2. **Set up Bolt Database**
+   - This project uses **Bolt.new's built-in Supabase database**
+   - Open the **Bolt Database** panel in Bolt.new (right side of the interface)
+   - Navigate to **Project Settings → Database** or **Connection Info**
+   - Copy your Bolt Database URL and Anon Key
+   - The database schema is already created automatically
 
 3. **Environment Variables**
+   **IMPORTANT**: Update the `.env` file with your Bolt Database credentials:
+
    ```bash
-   cp .env.example .env
+   # Open .env file and replace these values:
+   VITE_SUPABASE_URL=https://your-bolt-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_bolt_database_anon_key
    ```
-   
-   **Open the `.env` file and update it with your actual Supabase credentials:**
-   ```bash
-   VITE_SUPABASE_URL=https://your-project-id.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_anon_key_here
-   ```
-   
-   ⚠️ **Important**: Make sure to replace the placeholder values with your actual Supabase project URL and anonymous key!
+
+   ⚠️ **Critical**: You MUST update these values with your actual Bolt Database credentials from Project Settings!
+
+   💡 **Where to find credentials**:
+   - In Bolt.new: Click **Settings** → **Database** → **Connection Info**
+   - Or check the **Bolt Database** panel → **Settings/Secrets**
 
 4. **Start development server**
    ```bash
@@ -82,10 +87,11 @@ src/
 ### "Failed to fetch" errors
 If you see "Failed to fetch" errors in the browser console:
 
-1. **Check your `.env` file**: Make sure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set with your actual Supabase credentials
-2. **Verify your Supabase project**: Ensure your Supabase project is active and accessible
-3. **Restart the development server**: After updating `.env`, restart with `npm run dev`
-4. **Check the browser console**: Look for detailed error messages about the connection
+1. **Check your `.env` file**: Make sure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set with your actual **Bolt Database** credentials (NOT placeholder values!)
+2. **Get credentials from Bolt.new**: Open **Project Settings → Database → Connection Info** and copy the correct URL and Anon Key
+3. **Verify Bolt Database is active**: Check the **Bolt Database** panel to ensure tables are visible and accessible
+4. **Restart the development server**: After updating `.env`, restart with `npm run dev`
+5. **Check the browser console**: Look for detailed error messages about the connection
 
 ## 📊 Database Schema
 
