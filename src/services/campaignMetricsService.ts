@@ -1,4 +1,4 @@
-import { database } from '../core/database';
+import { supabase } from '../core/supabase';
 
 export class CampaignMetricsService {
   private trackedCampaigns = new Set<string>();
@@ -11,7 +11,7 @@ export class CampaignMetricsService {
         return;
       }
 
-      const { error } = await database
+      const { error } = await supabase
         .from('campaign_views')
         .insert([{
           campaign_id: campaignId,
@@ -41,7 +41,7 @@ export class CampaignMetricsService {
     engagement: number;
   }> {
     try {
-      const { data, error } = await database
+      const { data, error } = await supabase
         .from('auto_campaigns')
         .select('metrics')
         .eq('id', campaignId)
@@ -68,7 +68,7 @@ export class CampaignMetricsService {
 
   async refreshCampaignMetrics(campaignId: string): Promise<void> {
     try {
-      const { error } = await database.rpc('update_campaign_metrics', {
+      const { error } = await supabase.rpc('update_campaign_metrics', {
         p_campaign_id: campaignId
       });
 

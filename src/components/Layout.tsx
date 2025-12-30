@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUserSettings } from '../hooks/useUserSettings';
-import { isDatabaseConfigured } from '../core/database';
+import { isSupabaseConfigured } from '../core/supabase';
 import { applyInterfaceSettings } from '../core/interfaceSettingsUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import { useProfileCompletion } from '../modules/profiles/hooks/useProfileCompletion';
@@ -31,7 +31,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [showAuthModal, setShowAuthModal] = React.useState(false);
-  const [showDatabaseWarning, setShowDatabaseWarning] = React.useState(false);
+  const [showSupabaseWarning, setShowSupabaseWarning] = React.useState(false);
   const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
@@ -57,9 +57,9 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   React.useEffect(() => {
-    // Check Database configuration
-    if (!isDatabaseConfigured()) {
-      setShowDatabaseWarning(true);
+    // Check Supabase configuration
+    if (!isSupabaseConfigured()) {
+      setShowSupabaseWarning(true);
     }
   }, []);
 
@@ -116,14 +116,14 @@ export function Layout({ children }: LayoutProps) {
   return (
     <EngagementTracker userId={currentUserId} feature={getCurrentFeature()}>
       <div className="min-h-screen bg-gray-50">
-        {/* Database Configuration Warning */}
-        {showDatabaseWarning && (
+        {/* Supabase Configuration Warning */}
+        {showSupabaseWarning && (
           <div className="bg-red-600 text-white p-3 text-center relative">
             <p className="text-sm">
-              ⚠️ Database не настроен! Настройте переменные окружения в файле .env и перезапустите сервер.
+              ⚠️ Supabase не настроен! Настройте переменные окружения в файле .env и перезапустите сервер.
             </p>
             <button
-              onClick={() => setShowDatabaseWarning(false)}
+              onClick={() => setShowSupabaseWarning(false)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200"
             >
               ✕

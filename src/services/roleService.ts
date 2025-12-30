@@ -1,19 +1,30 @@
-import { db } from '../api/database';
+import { supabase, TABLES } from '../core/supabase';
 import { UserRole, UserRoleData } from '../core/types';
+import { adminService } from './adminService';
 
 export class RoleService {
   async getUserRole(userId: string): Promise<UserRole> {
     try {
-      const { data, error } = await db.rpc('get_user_role', {
-        p_user_id: userId
-      });
+      // First check user_roles table for active role assignment
+      const { data: roleData } = await supabase
+        .from(TABLES.USER_ROLES)
+        .select('role')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Failed to get user role:', error);
-        return 'user';
+      if (roleData) {
+        return roleData.role;
       }
 
-      return data || 'user';
+      // Fallback to role in user_profiles
+      const { data: profileData } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      return profileData?.role || 'user';
     } catch (error) {
       console.error('Failed to get user role:', error);
       return 'user';
@@ -22,25 +33,49 @@ export class RoleService {
 
   async assignRole(userId: string, role: UserRole, assignedBy: string): Promise<UserRoleData> {
     try {
-      const { data, error } = await db
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role,
-          assigned_by: assignedBy
-        })
+      // Check if assigner has permission
+      const assignerRole = await this.getUserRole(assignedBy);
+      if (assignerRole !== 'admin') {
+        throw new Error('Only admins can assign roles');
+      }
+
+      // Deactivate existing role assignments
+      await supabase
+        .from(TABLES.USER_ROLES)
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      // Create new role assignment
+      const newRole = {
+        user_id: userId,
+        role: role,
+        assigned_by: assignedBy,
+        assigned_at: new Date().toISOString(),
+        is_active: true,
+        metadata: {}
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.USER_ROLES)
+        .insert([newRole])
+        .select()
         .single();
 
       if (error) throw error;
 
-      await db
-        .from('user_profiles')
-        .update({ role })
-        .eq('user_id', userId)
-        .execute();
+      // Update role in user_profiles for quick access
+      await supabase
+        .from(TABLES.USER_PROFILES)
+        .update({ role: role })
+        .eq('user_id', userId);
 
-      const roleData = Array.isArray(data) ? data[0] : data;
-      return this.transformFromDb(roleData);
+      // Log the action
+      await adminService.logAction(assignedBy, 'role_assigned', 'user_profile', userId, {
+        new_role: role,
+        previous_role: await this.getUserRole(userId)
+      });
+
+      return this.transformFromDatabase(data);
     } catch (error) {
       console.error('Failed to assign role:', error);
       throw error;
@@ -49,17 +84,28 @@ export class RoleService {
 
   async removeRole(userId: string, removedBy: string): Promise<void> {
     try {
-      await db
-        .from('user_roles')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .execute();
+      // Check if remover has permission
+      const removerRole = await this.getUserRole(removedBy);
+      if (removerRole !== 'admin') {
+        throw new Error('Only admins can remove roles');
+      }
 
-      await db
-        .from('user_profiles')
+      // Deactivate role assignments
+      await supabase
+        .from(TABLES.USER_ROLES)
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      // Reset to default user role
+      await supabase
+        .from(TABLES.USER_PROFILES)
         .update({ role: 'user' })
-        .eq('user_id', userId)
-        .execute();
+        .eq('user_id', userId);
+
+      // Log the action
+      await adminService.logAction(removedBy, 'role_removed', 'user_profile', userId, {
+        previous_role: await this.getUserRole(userId)
+      });
     } catch (error) {
       console.error('Failed to remove role:', error);
       throw error;
@@ -68,17 +114,20 @@ export class RoleService {
 
   async getUsersWithRoles(): Promise<Array<UserRoleData & { userProfile: any }>> {
     try {
-      const { data, error } = await db
-        .from('user_roles')
-        .select('*')
+      const { data, error } = await supabase
+        .from(TABLES.USER_ROLES)
+        .select(`
+          *,
+          user_profile:user_profiles(user_id, full_name, email, avatar, created_at)
+        `)
         .eq('is_active', true)
-        .execute();
+        .order('assigned_at', { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...this.transformFromDb(item),
-        userProfile: item.user_profiles
+      return data.map(item => ({
+        ...this.transformFromDatabase(item),
+        userProfile: item.user_profile
       }));
     } catch (error) {
       console.error('Failed to get users with roles:', error);
@@ -89,21 +138,24 @@ export class RoleService {
   async checkPermission(userId: string, requiredRole: UserRole): Promise<boolean> {
     try {
       const userRole = await this.getUserRole(userId);
-
-      const roleHierarchy: Record<UserRole, number> = {
-        'user': 0,
-        'moderator': 1,
-        'admin': 2
-      };
-
-      return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
+      
+      switch (requiredRole) {
+        case 'user':
+          return true;
+        case 'moderator':
+          return userRole === 'moderator' || userRole === 'admin';
+        case 'admin':
+          return userRole === 'admin';
+        default:
+          return false;
+      }
     } catch (error) {
       console.error('Failed to check permission:', error);
       return false;
     }
   }
 
-  private transformFromDb(dbData: any): UserRoleData {
+  private transformFromDatabase(dbData: any): UserRoleData {
     return {
       id: dbData.id,
       userId: dbData.user_id,

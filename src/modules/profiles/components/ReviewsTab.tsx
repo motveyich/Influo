@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, User, Calendar } from 'lucide-react';
-import { database, TABLES } from '../../../core/database';
+import { supabase, TABLES } from '../../../core/supabase';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -40,7 +40,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
     setIsLoading(true);
     try {
       // Загружаем отзывы обо мне
-      const { data: received, error: receivedError } = await database
+      const { data: received, error: receivedError } = await supabase
         .from(TABLES.REVIEWS)
         .select('*')
         .eq('reviewee_id', userId)
@@ -49,7 +49,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
       if (receivedError) throw receivedError;
 
       // Загружаем мои отзывы
-      const { data: given, error: givenError } = await database
+      const { data: given, error: givenError } = await supabase
         .from(TABLES.REVIEWS)
         .select('*')
         .eq('reviewer_id', userId)
@@ -60,7 +60,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
       // Загружаем профили для полученных отзывов
       if (received && received.length > 0) {
         const reviewerIds = received.map(r => r.reviewer_id);
-        const { data: profiles } = await database
+        const { data: profiles } = await supabase
           .from(TABLES.USER_PROFILES)
           .select('user_id, full_name, avatar_url')
           .in('user_id', reviewerIds);
@@ -85,7 +85,7 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
       // Загружаем профили для отданных отзывов
       if (given && given.length > 0) {
         const reviewedIds = given.map(r => r.reviewee_id);
-        const { data: profiles } = await database
+        const { data: profiles } = await supabase
           .from(TABLES.USER_PROFILES)
           .select('user_id, full_name, avatar_url')
           .in('user_id', reviewedIds);

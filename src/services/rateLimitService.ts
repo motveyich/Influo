@@ -1,5 +1,4 @@
-import { database } from '../core/database';
-import { authService } from '../core/auth';
+import { supabase } from '../core/supabase';
 
 export type InteractionType = 'application' | 'favorite' | 'automatic_offer' | 'manual_offer';
 
@@ -21,9 +20,11 @@ class RateLimitService {
     cardId?: string
   ): Promise<boolean> {
     try {
-      const { data, error } = await database.rpc('is_rate_limited', {
+      const { data, error } = await supabase.rpc('is_rate_limited', {
         p_user_id: userId,
-        p_target_user_id: targetUserId
+        p_target_user_id: targetUserId,
+        p_interaction_type: interactionType || null,
+        p_card_id: cardId || null
       });
 
       if (error) {
@@ -45,24 +46,29 @@ class RateLimitService {
     campaignId?: string
   ): Promise<void> {
     try {
-      const user = authService.getCurrentUser();
-      if (!user) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      await database.from('rate_limit_interactions').insert({
-        user_id: user.id,
-        target_user_id: targetUserId,
-        interaction_type: interactionType,
-        card_id: cardId,
-        campaign_id: campaignId
-      });
-    } catch (error) {
+      const { error } = await supabase
+        .from('rate_limit_interactions')
+        .insert({
+          user_id: user.id,
+          target_user_id: targetUserId,
+          interaction_type: interactionType,
+          card_id: cardId || null,
+          campaign_id: campaignId || null
+        });
+
+      if (error) throw error;
+    } catch (error: any) {
       console.error('Error recording interaction:', error);
+      throw new Error(error.message || 'Failed to record interaction');
     }
   }
 
   async getLastInteraction(userId: string, targetUserId: string): Promise<RateLimitInteraction | null> {
     try {
-      const { data, error } = await database
+      const { data, error } = await supabase
         .from('rate_limit_interactions')
         .select('*')
         .eq('user_id', userId)
@@ -71,7 +77,8 @@ class RateLimitService {
         .limit(1)
         .maybeSingle();
 
-      if (error || !data) return null;
+      if (error) throw error;
+      if (!data) return null;
 
       return {
         id: data.id,
@@ -83,7 +90,7 @@ class RateLimitService {
         createdAt: data.created_at
       };
     } catch (error) {
-      console.error('Error getting last interaction:', error);
+      console.error('Error fetching last interaction:', error);
       return null;
     }
   }
@@ -93,15 +100,15 @@ class RateLimitService {
       const lastInteraction = await this.getLastInteraction(userId, targetUserId);
       if (!lastInteraction) return 0;
 
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      const interactionTime = new Date(lastInteraction.createdAt);
+      const interactionTime = new Date(lastInteraction.createdAt).getTime();
+      const now = Date.now();
+      const oneHourInMs = 60 * 60 * 1000;
+      const elapsed = now - interactionTime;
+      const remaining = oneHourInMs - elapsed;
 
-      if (interactionTime < oneHourAgo) return 0;
-
-      const remainingMs = (interactionTime.getTime() + 60 * 60 * 1000) - Date.now();
-      return Math.ceil(remainingMs / (60 * 1000));
+      return Math.max(0, Math.ceil(remaining / 1000 / 60));
     } catch (error) {
-      console.error('Error getting remaining time:', error);
+      console.error('Error calculating remaining time:', error);
       return 0;
     }
   }
@@ -113,20 +120,30 @@ class RateLimitService {
     cardId?: string
   ): Promise<{ allowed: boolean; remainingMinutes?: number; reason?: string }> {
     try {
-      const isLimited = await this.isRateLimited(userId, targetUserId);
+      const isLimited = await this.isRateLimited(userId, targetUserId, interactionType, cardId);
 
       if (isLimited) {
         const remainingMinutes = await this.getRemainingTime(userId, targetUserId);
+
+        let message: string;
+        if (interactionType === 'favorite') {
+          message = `Вы недавно добавили эту карточку в избранное. Попробуйте через ${remainingMinutes} мин.`;
+        } else if (interactionType === 'application') {
+          message = `Вы недавно отправили заявку на эту карточку. Попробуйте через ${remainingMinutes} мин.`;
+        } else {
+          message = `Вы недавно взаимодействовали с этим пользователем. Попробуйте через ${remainingMinutes} мин.`;
+        }
+
         return {
           allowed: false,
           remainingMinutes,
-          reason: `Please wait ${remainingMinutes} minutes before interacting again`
+          reason: message
         };
       }
 
       return { allowed: true };
     } catch (error) {
-      console.error('Error checking if can interact:', error);
+      console.error('Error checking interaction permission:', error);
       return { allowed: true };
     }
   }

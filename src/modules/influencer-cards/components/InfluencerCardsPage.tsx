@@ -8,7 +8,7 @@ import { InfluencerCardModal } from './InfluencerCardModal';
 import { AdvertiserCardModal } from '../../advertiser-cards/components/AdvertiserCardModal';
 import { influencerCardService } from '../services/influencerCardService';
 import { advertiserCardService } from '../../advertiser-cards/services/advertiserCardService';
-import { isDatabaseConfigured } from '../../../core/database';
+import { isSupabaseConfigured } from '../../../core/supabase';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { FeatureGate } from '../../../components/FeatureGate';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -175,8 +175,8 @@ export function InfluencerCardsPage() {
 
   const loadFavorites = async () => {
     try {
-      if (!isDatabaseConfigured()) {
-        console.warn('Database not configured, skipping favorites loading');
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping favorites loading');
         setFavoriteCards([]);
         return;
       }
@@ -205,7 +205,7 @@ export function InfluencerCardsPage() {
     } catch (error) {
       console.error('Failed to load favorites:', error);
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.warn('Database connection failed when loading favorites');
+        console.warn('Supabase connection failed when loading favorites');
       } else {
         toast.error('Не удалось загрузить избранные карточки');
       }

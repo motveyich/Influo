@@ -1,6 +1,4 @@
-import { database } from '../../../core/database';
-import { apiClient } from '../../../core/apiClient';
-import { showFeatureNotImplemented } from '../../../core/utils';
+import { apiClient } from '../../../core/api';
 import { PaymentRequest, PaymentRequestStatus } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
@@ -11,181 +9,92 @@ export class PaymentRequestService {
 
       const payload = {
         offerId: requestData.offerId,
-        createdBy: requestData.createdBy,
         amount: requestData.amount,
-        currency: requestData.currency || 'RUB',
+        currency: requestData.currency || 'USD',
         paymentType: requestData.paymentType,
         paymentMethod: requestData.paymentMethod || 'bank_transfer',
         paymentDetails: requestData.paymentDetails || {},
         instructions: requestData.instructions,
       };
 
-      const { data, error } = await apiClient.post<any>('/payments', payload);
-
-      if (error) throw new Error(error.message);
+      const request = await apiClient.post<PaymentRequest>('/payments', payload);
 
       analytics.track('payment_request_created', {
-        payment_request_id: data.id,
+        payment_request_id: request.id,
         offer_id: requestData.offerId,
         amount: requestData.amount,
-        payment_type: requestData.paymentType
+        currency: requestData.currency
       });
 
-      return this.transformFromApi(data);
+      return request;
     } catch (error) {
       console.error('Failed to create payment request:', error);
       throw error;
     }
   }
 
-  async updatePaymentStatus(
-    requestId: string,
-    newStatus: PaymentRequestStatus,
-    userId: string,
-    additionalData?: any
-  ): Promise<PaymentRequest> {
+  async getPaymentRequests(offerId?: string): Promise<PaymentRequest[]> {
     try {
-      let endpoint = '';
-      let payload: any = { userId };
-
-      switch (newStatus) {
-        case 'pending':
-          endpoint = `/payments/${requestId}`;
-          payload.status = 'pending';
-          break;
-        case 'paying':
-          endpoint = `/payments/${requestId}/approve`;
-          break;
-        case 'paid':
-          endpoint = `/payments/${requestId}/mark-paid`;
-          payload.paymentProof = additionalData?.paymentProof;
-          break;
-        case 'confirmed':
-          endpoint = `/payments/${requestId}/confirm`;
-          break;
-        case 'failed':
-          endpoint = `/payments/${requestId}/reject`;
-          break;
-        case 'cancelled':
-          endpoint = `/payments/${requestId}/cancel`;
-          break;
-        default:
-          endpoint = `/payments/${requestId}`;
-          payload.status = newStatus;
-      }
-
-      const { data, error } = await apiClient.post<any>(endpoint, payload);
-
-      if (error) throw new Error(error.message);
-
-      analytics.track('payment_request_status_updated', {
-        payment_request_id: requestId,
-        new_status: newStatus,
-        user_id: userId
-      });
-
-      return this.transformFromApi(data);
+      const query = offerId ? `?offerId=${offerId}` : '';
+      return await apiClient.get<PaymentRequest[]>(`/payments${query}`);
     } catch (error) {
-      console.error('Failed to update payment status:', error);
+      console.error('Failed to get payment requests:', error);
       throw error;
     }
   }
 
-  async getPaymentRequest(requestId: string): Promise<PaymentRequest | null> {
+  async getPaymentRequest(requestId: string): Promise<PaymentRequest> {
     try {
-      const { data, error } = await apiClient.get<any>(`/payments/${requestId}`);
-
-      if (error) {
-        if (error.status === 404) return null;
-        throw new Error(error.message);
-      }
-
-      return this.transformFromApi(data);
+      return await apiClient.get<PaymentRequest>(`/payments/${requestId}`);
     } catch (error) {
       console.error('Failed to get payment request:', error);
       throw error;
     }
   }
 
-  async getOfferPaymentRequests(offerId: string): Promise<PaymentRequest[]> {
+  async updatePaymentRequest(requestId: string, updates: Partial<PaymentRequest>): Promise<PaymentRequest> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/payments?offerId=${offerId}`);
-
-      if (error) throw new Error(error.message);
-
-      return (data || []).map(request => this.transformFromApi(request));
+      return await apiClient.patch<PaymentRequest>(`/payments/${requestId}`, updates);
     } catch (error) {
-      console.error('Failed to get offer payment requests:', error);
+      console.error('Failed to update payment request:', error);
       throw error;
     }
   }
 
-  async deletePaymentRequest(requestId: string, userId: string): Promise<void> {
+  async approvePaymentRequest(requestId: string): Promise<PaymentRequest> {
     try {
-      const { error } = await apiClient.delete(`/payments/${requestId}`);
-
-      if (error) throw new Error(error.message);
-
-      analytics.track('payment_request_deleted', {
-        payment_request_id: requestId,
-        user_id: userId
-      });
+      return await apiClient.post<PaymentRequest>(`/payments/${requestId}/approve`);
     } catch (error) {
-      console.error('Failed to delete payment request:', error);
+      console.error('Failed to approve payment request:', error);
       throw error;
     }
   }
 
-  async getPaymentStatistics(): Promise<any> {
+  async rejectPaymentRequest(requestId: string, reason?: string): Promise<PaymentRequest> {
     try {
-      const { data, error } = await apiClient.get<any>('/payments/statistics');
-
-      if (error) throw new Error(error.message);
-
-      return data;
+      return await apiClient.post<PaymentRequest>(`/payments/${requestId}/reject`, { reason });
     } catch (error) {
-      console.error('Failed to get payment statistics:', error);
+      console.error('Failed to reject payment request:', error);
       throw error;
     }
   }
 
-  async getPaymentRequestsForOffer(offerId: string): Promise<PaymentRequest[]> {
-    return this.getOfferPaymentRequests(offerId);
+  async markAsPaid(requestId: string): Promise<PaymentRequest> {
+    try {
+      return await apiClient.post<PaymentRequest>(`/payments/${requestId}/mark-paid`);
+    } catch (error) {
+      console.error('Failed to mark payment as paid:', error);
+      throw error;
+    }
   }
 
   private validatePaymentRequestData(requestData: Partial<PaymentRequest>): void {
-    const errors: string[] = [];
-
-    if (!requestData.offerId) errors.push('Offer ID is required');
-    if (!requestData.createdBy) errors.push('Creator ID is required');
-    if (!requestData.amount || requestData.amount <= 0) errors.push('Valid amount is required');
-    if (!requestData.paymentType) errors.push('Payment type is required');
-    if (!requestData.paymentDetails) errors.push('Payment details are required');
-
-    if (errors.length > 0) {
-      throw new Error(errors.join('; '));
+    if (!requestData.offerId || !requestData.amount || requestData.amount <= 0) {
+      throw new Error('Offer ID and valid amount are required');
     }
-  }
-
-  private transformFromApi(apiData: any): PaymentRequest {
-    return {
-      id: apiData.id,
-      offerId: apiData.offerId || apiData.offer_id,
-      createdBy: apiData.createdBy || apiData.created_by,
-      amount: parseFloat(apiData.amount),
-      currency: apiData.currency,
-      paymentType: apiData.paymentType || apiData.payment_type,
-      paymentMethod: apiData.paymentMethod || apiData.payment_method,
-      paymentDetails: apiData.paymentDetails || apiData.payment_details || {},
-      instructions: apiData.instructions,
-      status: apiData.status,
-      isFrozen: apiData.isFrozen ?? apiData.is_frozen,
-      confirmedBy: apiData.confirmedBy || apiData.confirmed_by,
-      confirmedAt: apiData.confirmedAt || apiData.confirmed_at,
-      paymentProof: apiData.paymentProof || apiData.payment_proof || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
-    };
+    if (!requestData.paymentType) {
+      throw new Error('Payment type is required');
+    }
   }
 }
 

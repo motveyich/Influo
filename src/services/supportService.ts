@@ -1,4 +1,4 @@
-import { database } from '../core/database';
+import { supabase } from '../core/supabase';
 
 export interface SupportTicket {
   id: string;
@@ -37,7 +37,7 @@ export interface TicketWithMessages extends SupportTicket {
 
 export const supportService = {
   async createTicket(userId: string, data: CreateTicketData): Promise<SupportTicket> {
-    const { data: ticket, error } = await database
+    const { data: ticket, error: ticketError } = await supabase
       .from('support_tickets')
       .insert({
         user_id: userId,
@@ -49,71 +49,76 @@ export const supportService = {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (ticketError) throw ticketError;
 
-    if (ticket) {
-      await database.from('support_messages').insert({
+    const { error: messageError } = await supabase
+      .from('support_messages')
+      .insert({
         ticket_id: ticket.id,
         sender_id: userId,
         message: data.message,
         is_staff_response: false
       });
-    }
+
+    if (messageError) throw messageError;
 
     return ticket;
   },
 
   async getUserTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await database
+    const { data, error } = await supabase
       .from('support_tickets')
       .select(`
         *,
-        support_messages (count)
+        messages:support_messages(count)
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
 
-    return (data || []).map(ticket => ({
+    return data.map(ticket => ({
       ...ticket,
-      message_count: ticket.support_messages?.[0]?.count || 0,
+      message_count: ticket.messages[0]?.count || 0,
       messages: []
     }));
   },
 
   async getAllTickets(): Promise<TicketWithMessages[]> {
-    const { data, error } = await database
+    const { data, error } = await supabase
       .from('support_tickets')
       .select(`
         *,
-        support_messages (count)
+        messages:support_messages(count)
       `)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
 
-    return (data || []).map(ticket => ({
+    return data.map(ticket => ({
       ...ticket,
-      message_count: ticket.support_messages?.[0]?.count || 0,
+      message_count: ticket.messages[0]?.count || 0,
       messages: []
     }));
   },
 
   async getTicketById(ticketId: string): Promise<TicketWithMessages | null> {
-    const { data: ticket, error: ticketError } = await database
+    const { data: ticket, error: ticketError } = await supabase
       .from('support_tickets')
       .select('*')
       .eq('id', ticketId)
       .maybeSingle();
 
-    if (ticketError || !ticket) return null;
+    if (ticketError) throw ticketError;
+    if (!ticket) return null;
 
-    const { data: messages, error: messagesError } = await database
+    const { data: messages, error: messagesError } = await supabase
       .from('support_messages')
       .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
+
+    if (messagesError) throw messagesError;
 
     return {
       ...ticket,
@@ -123,7 +128,7 @@ export const supportService = {
   },
 
   async addMessage(ticketId: string, senderId: string, message: string, isStaffResponse: boolean = false): Promise<SupportMessage> {
-    const { data, error } = await database
+    const { data, error } = await supabase
       .from('support_messages')
       .insert({
         ticket_id: ticketId,
@@ -134,27 +139,26 @@ export const supportService = {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
-
+    if (error) throw error;
     return data;
   },
 
   async updateTicketStatus(ticketId: string, status: SupportTicket['status'], resolvedAt?: string): Promise<void> {
-    const payload: any = { status };
+    const updateData: any = { status };
     if (status === 'resolved' || status === 'closed') {
-      payload.resolved_at = resolvedAt || new Date().toISOString();
+      updateData.resolved_at = resolvedAt || new Date().toISOString();
     }
 
-    const { error } = await database
+    const { error } = await supabase
       .from('support_tickets')
-      .update(payload)
+      .update(updateData)
       .eq('id', ticketId);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
   },
 
   async assignTicket(ticketId: string, assignedTo: string | null): Promise<void> {
-    const { error } = await database
+    const { error } = await supabase
       .from('support_tickets')
       .update({
         assigned_to: assignedTo,
@@ -162,7 +166,7 @@ export const supportService = {
       })
       .eq('id', ticketId);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
   },
 
   async closeTicket(ticketId: string): Promise<void> {
@@ -170,69 +174,46 @@ export const supportService = {
   },
 
   async getTicketsByStatus(status: SupportTicket['status']): Promise<TicketWithMessages[]> {
-    const { data, error } = await database
+    const { data, error } = await supabase
       .from('support_tickets')
       .select(`
         *,
-        support_messages (count)
+        messages:support_messages(count)
       `)
       .eq('status', status)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
 
-    return (data || []).map(ticket => ({
+    return data.map(ticket => ({
       ...ticket,
-      message_count: ticket.support_messages?.[0]?.count || 0,
+      message_count: ticket.messages[0]?.count || 0,
       messages: []
     }));
   },
 
   async getAssignedTickets(userId: string): Promise<TicketWithMessages[]> {
-    const { data, error } = await database
+    const { data, error } = await supabase
       .from('support_tickets')
       .select(`
         *,
-        support_messages (count)
+        messages:support_messages(count)
       `)
       .eq('assigned_to', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
 
-    return (data || []).map(ticket => ({
+    return data.map(ticket => ({
       ...ticket,
-      message_count: ticket.support_messages?.[0]?.count || 0,
+      message_count: ticket.messages[0]?.count || 0,
       messages: []
     }));
   },
 
-  async getStatistics(): Promise<any> {
-    const { count: openCount } = await database
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open');
-
-    const { count: inProgressCount } = await database
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'in_progress');
-
-    const { count: resolvedCount } = await database
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'resolved');
-
-    return {
-      open: openCount || 0,
-      in_progress: inProgressCount || 0,
-      resolved: resolvedCount || 0
-    };
-  },
-
   subscribeToTicket(ticketId: string, callback: (message: SupportMessage) => void) {
-    const channel = database
-      .channel(`ticket-${ticketId}`)
+    return supabase
+      .channel(`ticket:${ticketId}`)
       .on(
         'postgres_changes',
         {
@@ -246,11 +227,5 @@ export const supportService = {
         }
       )
       .subscribe();
-
-    return {
-      unsubscribe: () => {
-        channel.unsubscribe();
-      }
-    };
   }
 };

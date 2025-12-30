@@ -11,7 +11,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
-import { database } from '../../../core/database';
+import { supabase } from '../../../core/supabase';
 import { UserAvatar } from '../../../components/UserAvatar';
 import toast from 'react-hot-toast';
 
@@ -178,7 +178,7 @@ export function ChatPage() {
   const createNewConversation = async (userId: string) => {
     try {
       // Get user profile to create conversation entry
-      const { data: userProfile } = await database
+      const { data: userProfile } = await supabase
         .from('user_profiles')
         .select('user_id, full_name, avatar')
         .eq('user_id', userId)

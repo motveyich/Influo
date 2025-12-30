@@ -39,7 +39,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const [basicInfo, setBasicInfo] = useState({
     fullName: '',
     email: '',
-    phone: '',
     bio: '',
     location: '',
     website: '',
@@ -139,7 +138,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       setBasicInfo({
         fullName: currentProfile.fullName || '',
         email: currentProfile.email || '',
-        phone: currentProfile.phone || '',
         bio: currentProfile.bio || '',
         location: currentProfile.location || '',
         website: currentProfile.website || '',
@@ -564,19 +562,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                       {errors.email}
                     </p>
                   )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Телефон
-                  </label>
-                  <input
-                    type="tel"
-                    value={basicInfo.phone}
-                    onChange={(e) => setBasicInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="+7 (XXX) XXX-XX-XX"
-                  />
                 </div>
 
                 <div>

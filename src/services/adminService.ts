@@ -1,5 +1,8 @@
-import { db } from '../api/database';
-import { UserProfile, Campaign, InfluencerCard, AdminLog, UserRole } from '../core/types';
+import { supabase, TABLES } from '../core/supabase';
+import { isSupabaseConfigured } from '../core/supabase';
+import { UserProfile, Campaign, InfluencerCard, ContentReport, ModerationQueueItem, AdminLog, UserRole } from '../core/types';
+import { roleService } from './roleService';
+import { Newspaper, Bell, Calendar } from 'lucide-react';
 
 export class AdminService {
   async logAction(
@@ -10,15 +13,23 @@ export class AdminService {
     details?: Record<string, any>
   ): Promise<void> {
     try {
-      await db.from('admin_logs').insert({
+      const logEntry = {
         admin_id: adminId,
         action_type: actionType,
         target_type: targetType,
         target_id: targetId,
         details: details || {},
+        ip_address: null, // Would be populated by edge function
         user_agent: navigator.userAgent,
-        session_id: `session_${Date.now()}`
-      }).execute();
+        session_id: `session_${Date.now()}`,
+        created_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from(TABLES.ADMIN_LOGS)
+        .insert([logEntry]);
+
+      if (error) throw error;
     } catch (error) {
       console.error('Failed to log admin action:', error);
     }
@@ -30,28 +41,31 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<UserProfile[]> {
     try {
-      let query = db
-        .from('user_profiles')
+      let query = supabase
+        .from(TABLES.USER_PROFILES)
         .select('*');
+
+      if (filters?.isDeleted !== undefined) {
+        query = query.eq('is_deleted', filters.isDeleted);
+      } else {
+        query = query.eq('is_deleted', false);
+      }
 
       if (filters?.role) {
         query = query.eq('role', filters.role);
       }
 
       if (filters?.searchQuery) {
-        const searchPattern = `%${filters.searchQuery}%`;
-        query = query.ilike('email', searchPattern).ilike('full_name', searchPattern);
+        query = query.or(`full_name.ilike.%${filters.searchQuery}%,email.ilike.%${filters.searchQuery}%`);
       }
 
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      }
+      query = query.order('created_at', { ascending: false });
 
-      const { data, error } = await query.execute();
+      const { data, error } = await query;
 
       if (error) throw error;
 
-      return (data || []).map(user => this.transformUserFromDb(user));
+      return data.map(user => this.transformUserFromDatabase(user));
     } catch (error) {
       console.error('Failed to get all users:', error);
       throw error;
@@ -61,59 +75,138 @@ export class AdminService {
   async deleteUser(userId: string, deletedBy: string, deleterUserRole: UserRole): Promise<void> {
     try {
       console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
-
+      
+      // Check permissions using provided role
       if (!['admin', 'moderator'].includes(deleterUserRole)) {
         console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', deleterUserRole);
         throw new Error('Insufficient permissions');
       }
 
+      console.log('✅ [AdminService] Permission check passed, admin role:', deleterUserRole);
+
+      // Prevent self-blocking
       if (userId === deletedBy) {
         throw new Error('Cannot block yourself');
       }
 
-      const { error } = await db.rpc('admin_block_user', {
-        p_user_id: userId,
-        p_blocked_by: deletedBy
-      });
+      // Check if user is already blocked
+      console.log('🔧 [AdminService] Checking if user is already blocked...');
+      const { data: currentUser, error: checkError } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('is_deleted, deleted_at')
+        .eq('user_id', userId)
+        .single();
 
-      if (error) throw error;
+      if (checkError) {
+        console.error('❌ [AdminService] Failed to check user status:', checkError);
+        throw new Error(`Failed to check user status: ${checkError.message}`);
+      }
 
-      console.log('✅ [AdminService] User blocked successfully');
+      if (currentUser.is_deleted === true) {
+        console.log('⚠️ [AdminService] User is already blocked');
+        throw new Error('User is already blocked');
+      }
 
-      await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
+      // Get current user's session to ensure proper authentication
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session.session) {
+        throw new Error('Authentication session not found. Please log in again.');
+      }
+
+      // Block user by setting is_deleted to true with proper error handling
+      console.log('🔧 [AdminService] Updating user_profiles table...');
+      try {
+        const { data, error } = await supabase
+          .from(TABLES.USER_PROFILES)
+          .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString(),
+            deleted_by: deletedBy
+          })
+          .eq('user_id', userId)
+          .select();
+
+        if (error) {
+          console.error('❌ [AdminService] Database update failed:', error);
+          
+          // Provide specific error messages based on error code
+          if (error.code === '42501' || error.message.includes('permission denied')) {
+            throw new Error('Permission denied: RLS policy blocks this operation. Please ensure you have proper admin/moderator role and the RLS policies are correctly configured.');
+          } else if (error.code === 'PGRST301' || error.message.includes('row-level security')) {
+            throw new Error('Row Level Security policy prevented this operation. The admin RLS policies may need to be updated in Supabase.');
+          } else {
+            throw new Error(`Database update failed: ${error.message}`);
+          }
+        }
+
+        console.log('✅ [AdminService] User blocked successfully in database');
+        
+        // Verify the update worked
+        console.log('🔧 [AdminService] Verifying database update...');
+        if (!data || data.length === 0 || !data[0].is_deleted) {
+          throw new Error('User blocking failed - database update did not take effect. This may be due to RLS policy restrictions.');
+        }
+      } catch (updateError: any) {
+        console.error('❌ [AdminService] Update operation failed:', updateError);
+        throw updateError;
+      }
+
+      // Log the action
+      try {
+        await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
+      } catch (logError) {
+        console.warn('⚠️ [AdminService] Failed to log action, but user was blocked successfully:', logError);
+      }
+      
+      console.log('✅ [AdminService] Action logged successfully');
     } catch (error) {
       console.error('❌ [AdminService] Complete failure in deleteUser:', error);
       throw error;
     }
   }
 
-  async blockUser(userId: string, blockedBy: string): Promise<void> {
-    try {
-      const { error } = await db.rpc('admin_block_user', {
-        p_user_id: userId,
-        p_blocked_by: blockedBy
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Failed to block user:', error);
-      throw error;
+  async blockUser(userId: string, reason?: string): Promise<void> {
+    const deletedBy = (await supabase.auth.getUser()).data.user?.id;
+    if (!deletedBy) {
+      throw new Error('User not authenticated');
     }
+
+    const { data: adminProfile } = await supabase
+      .from(TABLES.USER_PROFILES)
+      .select('role')
+      .eq('user_id', deletedBy)
+      .single();
+
+    const role = adminProfile?.role || 'user';
+    return this.deleteUser(userId, deletedBy, role);
   }
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
+      const hasPermission = await roleService.checkPermission(restoredBy, 'moderator');
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
       console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
 
-      const { error } = await db.rpc('admin_unblock_user', {
-        p_user_id: userId,
-        p_unblocked_by: restoredBy
-      });
+      const { error } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .update({
+          is_deleted: false,
+          deleted_at: null,
+          deleted_by: null
+        })
+        .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [AdminService] Failed to restore user:', error);
+        throw error;
+      }
 
       console.log('✅ [AdminService] User restored successfully');
 
+      // Log the action
       await this.logAction(restoredBy, 'user_restored', 'user_profile', userId);
     } catch (error) {
       console.error('Failed to restore user:', error);
@@ -123,50 +216,62 @@ export class AdminService {
 
   async getAllCampaigns(filters?: {
     status?: string;
-    moderationStatus?: any;
+    moderationStatus?: ModerationStatus;
     isDeleted?: boolean;
   }): Promise<Campaign[]> {
     try {
-      let query = db
-        .from('auto_campaigns')
+      let query = supabase
+        .from(TABLES.CAMPAIGNS)
         .select('*');
+
+      if (filters?.isDeleted !== undefined) {
+        query = query.eq('is_deleted', filters.isDeleted);
+      } else {
+        query = query.eq('is_deleted', false);
+      }
 
       if (filters?.status) {
         query = query.eq('status', filters.status);
       }
 
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
+      if (filters?.moderationStatus) {
+        query = query.eq('moderation_status', filters.moderationStatus);
       }
 
-      const { data, error } = await query.execute();
+      query = query.order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to get campaigns:', error);
-        return [];
-      }
+      const { data, error } = await query;
 
-      return (data || []).map(campaign => this.transformCampaignFromDb(campaign));
+      if (error) throw error;
+
+      return data.map(campaign => this.transformCampaignFromDatabase(campaign));
     } catch (error) {
       console.error('Failed to get all campaigns:', error);
-      return [];
+      throw error;
     }
   }
 
   async deleteCampaign(campaignId: string, deletedBy: string): Promise<void> {
     try {
-      const { error } = await db
-        .from('auto_campaigns')
+      // Check permissions
+      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Soft delete campaign
+      const { error } = await supabase
+        .from(TABLES.CAMPAIGNS)
         .update({
           is_deleted: true,
           deleted_at: new Date().toISOString(),
           deleted_by: deletedBy
         })
-        .eq('id', campaignId)
-        .execute();
+        .eq('campaign_id', campaignId);
 
       if (error) throw error;
 
+      // Log the action
       await this.logAction(deletedBy, 'campaign_deleted', 'campaign', campaignId);
     } catch (error) {
       console.error('Failed to delete campaign:', error);
@@ -175,46 +280,58 @@ export class AdminService {
   }
 
   async getAllInfluencerCards(filters?: {
-    moderationStatus?: any;
+    moderationStatus?: ModerationStatus;
     isDeleted?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = db
-        .from('influencer_cards')
+      let query = supabase
+        .from(TABLES.INFLUENCER_CARDS)
         .select('*');
 
       if (filters?.isDeleted !== undefined) {
         query = query.eq('is_deleted', filters.isDeleted);
+      } else {
+        query = query.eq('is_deleted', false);
       }
 
-      const { data, error } = await query.execute();
-
-      if (error) {
-        console.error('Failed to get influencer cards:', error);
-        return [];
+      if (filters?.moderationStatus) {
+        query = query.eq('moderation_status', filters.moderationStatus);
       }
 
-      return (data || []).map(card => this.transformInfluencerCardFromDb(card));
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data.map(card => this.transformInfluencerCardFromDatabase(card));
     } catch (error) {
       console.error('Failed to get all influencer cards:', error);
-      return [];
+      throw error;
     }
   }
 
   async deleteInfluencerCard(cardId: string, deletedBy: string): Promise<void> {
     try {
-      const { error } = await db
-        .from('influencer_cards')
+      // Check permissions
+      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Soft delete card
+      const { error } = await supabase
+        .from(TABLES.INFLUENCER_CARDS)
         .update({
           is_deleted: true,
           deleted_at: new Date().toISOString(),
           deleted_by: deletedBy
         })
-        .eq('id', cardId)
-        .execute();
+        .eq('id', cardId);
 
       if (error) throw error;
 
+      // Log the action
       await this.logAction(deletedBy, 'influencer_card_deleted', 'influencer_card', cardId);
     } catch (error) {
       console.error('Failed to delete influencer card:', error);
@@ -228,10 +345,15 @@ export class AdminService {
     limit?: number;
   }): Promise<AdminLog[]> {
     try {
-      let query = db
-        .from('admin_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, returning empty admin logs');
+        return [];
+      }
+
+      let query = supabase
+        .from(TABLES.ADMIN_LOGS)
+        .select('*');
 
       if (filters?.adminId) {
         query = query.eq('admin_id', filters.adminId);
@@ -241,64 +363,32 @@ export class AdminService {
         query = query.eq('action_type', filters.actionType);
       }
 
+      query = query.order('created_at', { ascending: false });
+
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
 
-      const { data, error } = await query.execute();
+      const { data, error } = await query;
 
-      if (error) {
-        console.warn('Admin logs not available:', error);
-        return [];
-      }
+      if (error) throw error;
 
-      return (data || []).map(log => this.transformLogFromDb(log));
+      return data.map(log => this.transformLogFromDatabase(log));
     } catch (error) {
       console.error('Failed to get admin logs:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Supabase connection failed, returning empty logs');
+        return [];
+      }
+      
+      // For other errors, still return empty array to prevent crashes
       return [];
     }
   }
 
-  async getAdminStats(): Promise<any> {
-    try {
-      const usersResult = await db
-        .from('user_profiles')
-        .select('user_id')
-        .execute();
-      const totalUsers = Array.isArray(usersResult.data) ? usersResult.data.length : 0;
-
-      const campaignsResult = await db
-        .from('auto_campaigns')
-        .select('id')
-        .execute();
-      const totalCampaigns = Array.isArray(campaignsResult.data) ? campaignsResult.data.length : 0;
-
-      const cardsResult = await db
-        .from('influencer_cards')
-        .select('id')
-        .execute();
-      const totalInfluencerCards = Array.isArray(cardsResult.data) ? cardsResult.data.length : 0;
-
-      const reportsResult = await db
-        .from('content_reports')
-        .select('id')
-        .eq('status', 'pending')
-        .execute();
-      const pendingReports = Array.isArray(reportsResult.data) ? reportsResult.data.length : 0;
-
-      return {
-        totalUsers,
-        totalCampaigns,
-        totalInfluencerCards,
-        pendingReports
-      };
-    } catch (error) {
-      console.error('Failed to get admin stats:', error);
-      return {};
-    }
-  }
-
-  private transformUserFromDb(dbData: any): UserProfile {
+  private transformUserFromDatabase(dbData: any): UserProfile {
     const baseProfile = {
       userId: dbData.user_id,
       email: dbData.email,
@@ -313,39 +403,45 @@ export class AdminService {
       influencerData: dbData.influencer_data,
       advertiserData: dbData.advertiser_data,
       profileCompletion: dbData.profile_completion,
-      unifiedAccountInfo: dbData.unified_account_info || {
+      unifiedAccountInfo: {
+        ...dbData.unified_account_info,
         accountType: dbData.user_type
       },
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
-
+    
+    // Add deletion fields
     return {
       ...baseProfile,
-      is_deleted: dbData.is_deleted ?? false,
+      is_deleted: dbData.is_deleted || false,
       deleted_at: dbData.deleted_at,
       deleted_by: dbData.deleted_by
-    } as any;
+    } as UserProfile & {
+      is_deleted: boolean;
+      deleted_at: string | null;
+      deleted_by: string | null;
+    };
   }
 
-  private transformCampaignFromDb(dbData: any): Campaign {
+  private transformCampaignFromDatabase(dbData: any): Campaign {
     return {
-      campaignId: dbData.id,
+      campaignId: dbData.campaign_id,
       advertiserId: dbData.advertiser_id,
       title: dbData.title,
       description: dbData.description,
-      brand: dbData.brand_name || dbData.brand,
+      brand: dbData.brand,
       budget: dbData.budget,
-      preferences: dbData.target_criteria || {},
+      preferences: dbData.preferences,
       status: dbData.status,
-      timeline: { startDate: dbData.start_date, endDate: dbData.end_date },
-      metrics: dbData.metrics || {},
+      timeline: dbData.timeline,
+      metrics: dbData.metrics,
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
   }
 
-  private transformInfluencerCardFromDb(dbData: any): InfluencerCard {
+  private transformInfluencerCardFromDatabase(dbData: any): InfluencerCard {
     return {
       id: dbData.id,
       userId: dbData.user_id,
@@ -355,14 +451,14 @@ export class AdminService {
       serviceDetails: dbData.service_details,
       rating: dbData.rating,
       completedCampaigns: dbData.completed_campaigns,
-      isActive: dbData.is_active ?? true,
-      lastUpdated: dbData.updated_at,
+      isActive: dbData.is_active,
+      lastUpdated: dbData.last_updated,
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
-    } as any;
+    };
   }
 
-  private transformLogFromDb(dbData: any): AdminLog {
+  private transformLogFromDatabase(dbData: any): AdminLog {
     return {
       id: dbData.id,
       adminId: dbData.admin_id,

@@ -28,7 +28,6 @@ export function AvatarUpload({ userId, currentAvatarUrl, fullName, onAvatarUpdat
     setIsUploading(true);
     try {
       const avatarUrl = await avatarService.uploadAvatar(userId, file);
-      setPreviewUrl(avatarUrl);
       onAvatarUpdate(avatarUrl);
       toast.success('Аватар успешно загружен');
     } catch (error: any) {

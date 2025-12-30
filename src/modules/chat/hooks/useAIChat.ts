@@ -54,8 +54,8 @@ export function useAIChat(currentUserId: string, partnerId: string) {
       console.error('Failed to send question:', err);
       
       // Show user-friendly error messages
-      if (err.message.includes('Database не настроен')) {
-        setError('AI-анализ недоступен: требуется настройка Database');
+      if (err.message.includes('Supabase не настроен')) {
+        setError('AI-анализ недоступен: требуется настройка Supabase');
       } else if (err.message.includes('Не удалось подключиться к AI-сервису')) {
         setError('AI-сервис временно недоступен');
       } else {

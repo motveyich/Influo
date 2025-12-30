@@ -10,7 +10,7 @@ import { UserPublicProfileModal } from '../../profiles/components/UserPublicProf
 import { AutoCampaignApplicationModal } from './AutoCampaignApplicationModal';
 import { AutoCampaignCollaborationsModal } from './AutoCampaignCollaborationsModal';
 import { UserAvatar } from '../../../components/UserAvatar';
-import { database } from '../../../core/database';
+import { supabase } from '../../../core/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -52,7 +52,7 @@ export function AutoCampaignsPage() {
 
     for (const advertiserId of advertiserIds) {
       try {
-        const { data } = await database
+        const { data } = await supabase
           .from('user_profiles')
           .select('user_id, full_name, avatar')
           .eq('user_id', advertiserId)

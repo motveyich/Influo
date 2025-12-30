@@ -1,59 +1,34 @@
-import { db } from '../../../api/database';
-import { apiClient } from '../../../core/apiClient';
+import { apiClient } from '../../../core/api';
 import { UserProfile, SocialMediaLink } from '../../../core/types';
+import { analytics } from '../../../core/analytics';
 
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const session = await db.auth.getSession();
-      if (!session.data.session) {
-        throw new Error('Not authenticated');
-      }
+      const userType = this.determineUserType(profileData);
+      const completion = this.calculateProfileCompletion(profileData);
 
-      const userId = session.data.session.user.id;
+      const payload = {
+        email: profileData.email,
+        fullName: profileData.fullName,
+        username: profileData.username || null,
+        phone: profileData.phone || null,
+        bio: profileData.bio,
+        location: profileData.location,
+        website: profileData.website,
+        avatar: profileData.avatar,
+        influencerData: this.hasInfluencerContent(profileData.influencerData) ? profileData.influencerData : null,
+        advertiserData: this.hasAdvertiserContent(profileData.advertiserData) ? profileData.advertiserData : null,
+        userType,
+        profileCompletion: completion,
+      };
 
-      const { data, error } = await apiClient.get<any>(`/profiles/${userId}`);
+      const profile = await apiClient.post<UserProfile>('/profiles', payload);
 
-      if (error || !data) {
-        const { data: createdData, error: createError } = await db
-          .from('user_profiles')
-          .insert({
-            user_id: userId,
-            email: profileData.email || session.data.session.user.email || '',
-            full_name: profileData.fullName || 'User',
-            user_type: profileData.userType || 'influencer',
-            role: 'user',
-          })
-          .execute();
-
-        if (createError) {
-          throw new Error(createError.message);
-        }
-
-        const profileData = Array.isArray(createdData) ? createdData[0] : createdData;
-        return this.transformFromApi(profileData);
-      }
-
-      if (profileData.fullName || profileData.bio || profileData.location || profileData.phone) {
-        return await this.updateProfile(userId, profileData);
-      }
-
-      const profile = this.transformFromApi(data);
-
-      const completion = this.calculateProfileCompletion(profile);
-
-      await database
-        .from('user_profiles')
-        .update({
-          profile_completion_basic_info: completion.basicInfo,
-          profile_completion_influencer_setup: completion.influencerSetup,
-          profile_completion_advertiser_setup: completion.advertiserSetup,
-          profile_completion_overall_complete: completion.overallComplete,
-          profile_completion_percentage: completion.completionPercentage
-        })
-        .eq('user_id', userId);
-
-      profile.profileCompletion = completion;
+      analytics.track('profile_created', {
+        user_id: profile.userId,
+        completion_percentage: completion.completionPercentage
+      });
 
       return profile;
     } catch (error) {
@@ -64,40 +39,43 @@ export class ProfileService {
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const updatePayload: Record<string, unknown> = {};
-
-      if (updates.fullName !== undefined) updatePayload.full_name = updates.fullName;
-      if (updates.username !== undefined) updatePayload.username = updates.username;
-      if (updates.phone !== undefined) updatePayload.phone = updates.phone;
-      if (updates.bio !== undefined) updatePayload.bio = updates.bio;
-      if (updates.location !== undefined) updatePayload.location = updates.location;
-      if (updates.website !== undefined) updatePayload.website = updates.website;
-      if (updates.avatar !== undefined) updatePayload.avatar = updates.avatar;
-      if (updates.influencerData !== undefined) updatePayload.influencer_data = updates.influencerData;
-      if (updates.advertiserData !== undefined) updatePayload.advertiser_data = updates.advertiserData;
-
-      const { data, error } = await apiClient.patch<any>(`/profiles/${userId}`, updatePayload);
-
-      if (error) {
-        throw new Error(error.message);
+      const currentProfile = await this.getProfile(userId);
+      if (!currentProfile) {
+        throw new Error('Profile not found');
       }
 
-      const profile = this.transformFromApi(data);
+      const mergedProfile = { ...currentProfile, ...updates };
+      const userType = this.determineUserType(mergedProfile);
+      const completion = this.calculateProfileCompletion(mergedProfile);
 
-      const completion = this.calculateProfileCompletion(profile);
+      const payload: any = {
+        userType,
+        profileCompletion: completion,
+      };
 
-      await database
-        .from('user_profiles')
-        .update({
-          profile_completion_basic_info: completion.basicInfo,
-          profile_completion_influencer_setup: completion.influencerSetup,
-          profile_completion_advertiser_setup: completion.advertiserSetup,
-          profile_completion_overall_complete: completion.overallComplete,
-          profile_completion_percentage: completion.completionPercentage
-        })
-        .eq('user_id', userId);
+      if (updates.fullName !== undefined) payload.fullName = updates.fullName;
+      if (updates.email !== undefined) payload.email = updates.email;
+      if (updates.username !== undefined) payload.username = updates.username || null;
+      if (updates.phone !== undefined) payload.phone = updates.phone || null;
+      if (updates.bio !== undefined) payload.bio = updates.bio || null;
+      if (updates.location !== undefined) payload.location = updates.location || null;
+      if (updates.website !== undefined) payload.website = updates.website || null;
+      if (updates.avatar !== undefined) payload.avatar = updates.avatar || null;
 
-      profile.profileCompletion = completion;
+      if (updates.influencerData !== undefined) {
+        payload.influencerData = this.hasInfluencerContent(updates.influencerData) ? updates.influencerData : null;
+      }
+      if (updates.advertiserData !== undefined) {
+        payload.advertiserData = this.hasAdvertiserContent(updates.advertiserData) ? updates.advertiserData : null;
+      }
+
+      const profile = await apiClient.patch<UserProfile>(`/profiles/${userId}`, payload);
+
+      analytics.track('profile_updated', {
+        user_id: userId,
+        completion_percentage: completion.completionPercentage,
+        updated_sections: Object.keys(updates)
+      });
 
       return profile;
     } catch (error) {
@@ -108,83 +86,18 @@ export class ProfileService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
-      const { data, error } = await apiClient.get<any>(`/profiles/${userId}`);
-
-      if (error) {
-        if (error.status === 404) {
-          return null;
-        }
-        throw new Error(error.message);
-      }
-
-      return this.transformFromApi(data);
+      return await apiClient.get<UserProfile>(`/profiles/${userId}`);
     } catch (error) {
       console.error('Failed to get profile:', error);
-      throw error;
+      return null;
     }
   }
 
-  async getProfileCompletion(userId: string): Promise<{
-    basicInfo: boolean;
-    influencerSetup: boolean;
-    advertiserSetup: boolean;
-    overallComplete: boolean;
-    completionPercentage: number;
-  }> {
+  async uploadAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
     try {
-      const { data, error } = await apiClient.get<any>(`/profiles/${userId}/completion`);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return {
-        basicInfo: data?.basicInfo || false,
-        influencerSetup: data?.influencerSetup || false,
-        advertiserSetup: data?.advertiserSetup || false,
-        overallComplete: data?.overallComplete || false,
-        completionPercentage: data?.completionPercentage || 0,
-      };
-    } catch (error) {
-      console.error('Failed to get profile completion:', error);
-      return this.calculateProfileCompletion({});
-    }
-  }
-
-  async uploadAvatar(userId: string, file: File): Promise<string> {
-    try {
-      const { data, error } = await apiClient.uploadFile<{ avatarUrl: string }>(
-        `/profiles/${userId}/avatar`,
-        file
-      );
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data?.avatarUrl || '';
+      return await apiClient.uploadFile<{ avatarUrl: string }>(`/profiles/${userId}/avatar`, file, 'file');
     } catch (error) {
       console.error('Failed to upload avatar:', error);
-      throw error;
-    }
-  }
-
-  async searchProfiles(query: string, userType?: string, limit?: number): Promise<UserProfile[]> {
-    try {
-      const params = new URLSearchParams();
-      params.append('q', query);
-      if (userType) params.append('userType', userType);
-      if (limit) params.append('limit', limit.toString());
-
-      const { data, error } = await apiClient.get<any[]>(`/profiles?${params.toString()}`);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return (data || []).map(profile => this.transformFromApi(profile));
-    } catch (error) {
-      console.error('Failed to search profiles:', error);
       throw error;
     }
   }
@@ -205,11 +118,19 @@ export class ProfileService {
         updatedLinks = [...currentLinks, socialLink];
       }
 
+      const updatedInfluencerData = {
+        ...profile.influencerData,
+        socialMediaLinks: updatedLinks
+      };
+
       await this.updateProfile(userId, {
-        influencerData: {
-          ...profile.influencerData,
-          socialMediaLinks: updatedLinks
-        }
+        influencerData: updatedInfluencerData
+      });
+
+      analytics.track('social_media_linked', {
+        user_id: userId,
+        platform: socialLink.platform,
+        action: existingLinkIndex >= 0 ? 'updated' : 'added'
       });
     } catch (error) {
       console.error('Failed to link social media:', error);
@@ -225,11 +146,18 @@ export class ProfileService {
       const currentLinks = profile.influencerData?.socialMediaLinks || [];
       const updatedLinks = currentLinks.filter(link => link.platform !== platform);
 
+      const updatedInfluencerData = {
+        ...profile.influencerData,
+        socialMediaLinks: updatedLinks
+      };
+
       await this.updateProfile(userId, {
-        influencerData: {
-          ...profile.influencerData,
-          socialMediaLinks: updatedLinks
-        }
+        influencerData: updatedInfluencerData
+      });
+
+      analytics.track('social_media_unlinked', {
+        user_id: userId,
+        platform: platform
       });
     } catch (error) {
       console.error('Failed to unlink social media:', error);
@@ -256,10 +184,11 @@ export class ProfileService {
     let advertiserSetupComplete = false;
 
     if (profile.fullName?.trim() &&
-        profile.email?.trim() &&
-        profile.location?.trim() &&
-        profile.bio?.trim() &&
-        profile.bio.trim().length >= 50) {
+         profile.email?.trim() &&
+         profile.phone?.trim() &&
+         profile.location?.trim() &&
+         profile.bio?.trim() &&
+         profile.bio.trim().length >= 50) {
       basicInfoComplete = true;
     }
 
@@ -291,49 +220,13 @@ export class ProfileService {
     };
   }
 
-  private transformFromApi(apiData: any): UserProfile {
-    if (!apiData) return {} as UserProfile;
-
-    return {
-      userId: apiData.id || apiData.userId || apiData.user_id,
-      email: apiData.email,
-      fullName: apiData.fullName || apiData.full_name || '',
-      username: apiData.username || '',
-      phone: apiData.phone || '',
-      userType: apiData.userType || apiData.user_type,
-      avatar: apiData.avatar || apiData.avatarUrl,
-      bio: apiData.bio,
-      location: apiData.location,
-      website: apiData.website,
-      influencerData: apiData.influencerData || apiData.influencer_data,
-      advertiserData: apiData.advertiserData || apiData.advertiser_data,
-      profileCompletion: apiData.profileCompletion || apiData.profile_completion || {
-        basicInfo: apiData.profile_completion_basic_info ?? false,
-        influencerSetup: apiData.profile_completion_influencer_setup ?? false,
-        advertiserSetup: apiData.profile_completion_advertiser_setup ?? false,
-        overallComplete: apiData.profile_completion_overall_complete ?? false,
-        completionPercentage: apiData.profile_completion_percentage ?? 0
-      },
-      unifiedAccountInfo: {
-        isVerified: apiData.isVerified || false,
-        joinedAt: apiData.createdAt || apiData.created_at || new Date().toISOString(),
-        lastActive: apiData.updatedAt || apiData.updated_at || new Date().toISOString(),
-        accountType: apiData.userType || apiData.user_type || 'influencer',
-        completedDeals: apiData.completedDeals || 0,
-        totalReviews: apiData.totalReviews || 0,
-        averageRating: apiData.averageRating || 0,
-      },
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
-    };
-  }
-
   private hasInfluencerContent(influencerData: any): boolean {
     if (!influencerData || influencerData === null) return false;
 
     const hasMainSocialLink = influencerData.mainSocialLink && influencerData.mainSocialLink.trim() !== '';
     const hasCategory = influencerData.category && influencerData.category.trim() !== '';
     const hasPlatformName = influencerData.platformName && influencerData.platformName.trim() !== '';
+
     const hasLinks = influencerData.socialMediaLinks && influencerData.socialMediaLinks.length > 0;
     const hasMetrics = influencerData.metrics && influencerData.metrics.totalFollowers > 0;
     const hasCategories = influencerData.contentCategories && influencerData.contentCategories.length > 0;
@@ -348,11 +241,14 @@ export class ProfileService {
     const hasCompanyNameSimple = advertiserData.companyName && advertiserData.companyName.trim() !== '';
     const hasCompanyWebsite = advertiserData.companyWebsite && advertiserData.companyWebsite.trim() !== '';
     const hasCompanyDescription = advertiserData.companyDescription && advertiserData.companyDescription.trim() !== '';
+
     const hasCompanyInfo = (advertiserData.companyName && advertiserData.companyName.trim()) ||
                           (advertiserData.industry && advertiserData.industry.trim());
+
     const hasBudget = advertiserData.campaignPreferences &&
-                     (advertiserData.campaignPreferences.budgetRange?.min > 0 ||
-                      advertiserData.campaignPreferences.budgetRange?.max > 0);
+                     (advertiserData.campaignPreferences.budgetRange.min > 0 ||
+                      advertiserData.campaignPreferences.budgetRange.max > 0);
+
     const hasPreviousCampaigns = advertiserData.previousCampaigns > 0;
     const hasAverageBudget = advertiserData.averageBudget > 0;
 

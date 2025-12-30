@@ -106,10 +106,10 @@ export function OfferDetailsModal({
 
   const loadInitiatorProfile = async () => {
     try {
-      const { database } = await import('../../../core/database');
+      const { supabase } = await import('../../../core/supabase');
 
       // Получить профиль инициатора
-      const { data: profile, error: profileError } = await database
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', offer.initiatedBy)

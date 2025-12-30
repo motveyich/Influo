@@ -1,6 +1,4 @@
-import { database } from '../../../core/database';
-import { apiClient } from '../../../core/apiClient';
-import { showFeatureNotImplemented } from '../../../core/utils';
+import { apiClient } from '../../../core/api';
 import { AdvertiserCard } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
@@ -10,36 +8,28 @@ export class AdvertiserCardService {
       this.validateCardData(cardData);
 
       const payload = {
-        user_id: cardData.userId,
-        company_name: cardData.companyName,
-        campaign_title: cardData.campaignTitle,
-        campaign_description: cardData.campaignDescription,
+        companyName: cardData.companyName,
+        campaignTitle: cardData.campaignTitle,
+        campaignDescription: cardData.campaignDescription,
         platform: cardData.platform,
-        product_categories: cardData.productCategories,
+        productCategories: cardData.productCategories,
         budget: cardData.budget,
-        service_format: cardData.serviceFormat,
-        campaign_duration: cardData.campaignDuration,
-        influencer_requirements: cardData.influencerRequirements,
-        target_audience: cardData.targetAudience,
-        contact_info: cardData.contactInfo,
-        is_active: cardData.isActive !== undefined ? cardData.isActive : true,
+        serviceFormat: cardData.serviceFormat,
+        campaignDuration: cardData.campaignDuration,
+        influencerRequirements: cardData.influencerRequirements,
+        targetAudience: cardData.targetAudience,
+        contactInfo: cardData.contactInfo,
       };
 
-      const { data, error } = await database
-        .from('advertiser_cards')
-        .insert([payload])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const card = await apiClient.post<AdvertiserCard>('/advertiser-cards', payload);
 
       analytics.track('advertiser_card_created', {
         user_id: cardData.userId,
         company_name: cardData.companyName,
-        card_id: data.id
+        card_id: card.id
       });
 
-      return this.transformFromApi(data);
+      return card;
     } catch (error) {
       console.error('Failed to create advertiser card:', error);
       throw error;
@@ -50,23 +40,14 @@ export class AdvertiserCardService {
     try {
       this.validateCardData(updates, false);
 
-      const payload = this.transformToApiPayload(updates);
-
-      const { data, error } = await database
-        .from('advertiser_cards')
-        .update(payload)
-        .eq('id', cardId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const card = await apiClient.patch<AdvertiserCard>(`/advertiser-cards/${cardId}`, updates);
 
       analytics.track('advertiser_card_updated', {
         card_id: cardId,
         updated_fields: Object.keys(updates)
       });
 
-      return this.transformFromApi(data);
+      return card;
     } catch (error) {
       console.error('Failed to update advertiser card:', error);
       throw error;
@@ -75,88 +56,43 @@ export class AdvertiserCardService {
 
   async getCard(cardId: string): Promise<AdvertiserCard | null> {
     try {
-      const { data, error } = await database
-        .from('advertiser_cards')
-        .select('*')
-        .eq('id', cardId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return this.transformFromApi(data);
+      return await apiClient.get<AdvertiserCard>(`/advertiser-cards/${cardId}`);
     } catch (error) {
       console.error('Failed to get advertiser card:', error);
-      throw error;
+      return null;
     }
   }
 
-  async getUserCards(userId: string): Promise<AdvertiserCard[]> {
+  async getMyCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      const { data, error } = await database
-        .from('advertiser_cards')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return (data || []).map(card => this.transformFromApi(card));
+      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards?userId=${userId}`);
     } catch (error) {
       console.error('Failed to get user cards:', error);
       throw error;
     }
   }
 
-  async getAllCards(filters?: {
-    platform?: string;
-    minBudget?: number;
-    maxBudget?: number;
-    productCategories?: string[];
-    serviceFormats?: string[];
-    searchQuery?: string;
-    isActive?: boolean;
-  }): Promise<AdvertiserCard[]> {
+  async getCards(filters?: any): Promise<AdvertiserCard[]> {
     try {
-      let query = database.from('advertiser_cards').select('*');
-
-      if (filters?.isActive !== undefined) {
-        query = query.eq('is_active', filters.isActive);
+      const queryParams = new URLSearchParams();
+      if (filters) {
+        Object.keys(filters).forEach(key => {
+          if (filters[key] !== undefined) {
+            queryParams.append(key, String(filters[key]));
+          }
+        });
       }
-
-      if (filters?.platform && filters.platform !== 'all') {
-        query = query.eq('platform', filters.platform);
-      }
-
-      if (filters?.minBudget) {
-        query = query.gte('budget->>amount', filters.minBudget);
-      }
-
-      if (filters?.maxBudget) {
-        query = query.lte('budget->>amount', filters.maxBudget);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return (data || []).map(card => this.transformFromApi(card));
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards${queryString}`);
     } catch (error) {
-      console.error('Failed to get all advertiser cards:', error);
+      console.error('Failed to get cards:', error);
       throw error;
     }
   }
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const { error } = await database
-        .from('advertiser_cards')
-        .delete()
-        .eq('id', cardId);
-
-      if (error) throw error;
+      await apiClient.delete(`/advertiser-cards/${cardId}`);
 
       analytics.track('advertiser_card_deleted', {
         card_id: cardId
@@ -169,104 +105,19 @@ export class AdvertiserCardService {
 
   async toggleCardStatus(cardId: string, isActive: boolean): Promise<AdvertiserCard> {
     try {
-      const { data, error } = await database
-        .from('advertiser_cards')
-        .update({ is_active: isActive })
-        .eq('id', cardId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      analytics.track('advertiser_card_status_changed', {
-        card_id: cardId,
-        is_active: isActive
-      });
-
-      return this.transformFromApi(data);
+      return await apiClient.patch<AdvertiserCard>(`/advertiser-cards/${cardId}`, { isActive });
     } catch (error) {
       console.error('Failed to toggle card status:', error);
       throw error;
     }
   }
 
-  private validateCardData(cardData: Partial<AdvertiserCard>, isCreate: boolean = true): void {
-    const errors: string[] = [];
-
-    if (isCreate) {
-      if (!cardData.userId) errors.push('User ID is required');
-      if (!cardData.companyName?.trim()) errors.push('Company name is required');
-      if (!cardData.campaignTitle?.trim()) errors.push('Campaign title is required');
-    }
-
-    if (cardData.campaignDescription && cardData.campaignDescription.trim().length < 20) {
-      errors.push('Campaign description must be at least 20 characters');
-    }
-
-    if (cardData.productCategories && cardData.productCategories.length === 0) {
-      errors.push('At least one product category is required');
-    }
-
-    if (cardData.budget) {
-      if (!cardData.budget.amount || cardData.budget.amount <= 0) {
-        errors.push('Valid budget amount is required');
+  private validateCardData(cardData: Partial<AdvertiserCard>, requireAll: boolean = true): void {
+    if (requireAll) {
+      if (!cardData.companyName || !cardData.campaignTitle || !cardData.campaignDescription) {
+        throw new Error('Company name, campaign title, and description are required');
       }
     }
-
-    if (cardData.serviceFormat && cardData.serviceFormat.length === 0) {
-      errors.push('At least one service format is required');
-    }
-
-    if (cardData.contactInfo) {
-      if (!cardData.contactInfo.email?.trim()) {
-        errors.push('Contact email is required');
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new Error(errors.join('; '));
-    }
-  }
-
-  private transformFromApi(apiData: any): AdvertiserCard {
-    return {
-      id: apiData.id,
-      userId: apiData.userId || apiData.user_id,
-      companyName: apiData.companyName || apiData.company_name,
-      campaignTitle: apiData.campaignTitle || apiData.campaign_title,
-      campaignDescription: apiData.campaignDescription || apiData.campaign_description,
-      platform: apiData.platform,
-      productCategories: apiData.productCategories || apiData.product_categories || [],
-      budget: apiData.budget,
-      serviceFormat: apiData.serviceFormat || apiData.service_format,
-      campaignDuration: apiData.campaignDuration || apiData.campaign_duration,
-      influencerRequirements: apiData.influencerRequirements || apiData.influencer_requirements,
-      targetAudience: apiData.targetAudience || apiData.target_audience || { interests: [] },
-      contactInfo: apiData.contactInfo || apiData.contact_info,
-      campaignStats: apiData.campaignStats || apiData.campaign_stats,
-      isActive: apiData.isActive ?? apiData.is_active,
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
-    };
-  }
-
-  private transformToApiPayload(cardData: Partial<AdvertiserCard>): any {
-    const payload: any = {};
-
-    if (cardData.companyName) payload.company_name = cardData.companyName;
-    if (cardData.campaignTitle) payload.campaign_title = cardData.campaignTitle;
-    if (cardData.campaignDescription) payload.campaign_description = cardData.campaignDescription;
-    if (cardData.platform) payload.platform = cardData.platform;
-    if (cardData.productCategories) payload.product_categories = cardData.productCategories;
-    if (cardData.budget) payload.budget = cardData.budget;
-    if (cardData.serviceFormat) payload.service_format = cardData.serviceFormat;
-    if (cardData.campaignDuration) payload.campaign_duration = cardData.campaignDuration;
-    if (cardData.influencerRequirements) payload.influencer_requirements = cardData.influencerRequirements;
-    if (cardData.targetAudience) payload.target_audience = cardData.targetAudience;
-    if (cardData.contactInfo) payload.contact_info = cardData.contactInfo;
-    if (cardData.isActive !== undefined) payload.is_active = cardData.isActive;
-
-    return payload;
   }
 }
 

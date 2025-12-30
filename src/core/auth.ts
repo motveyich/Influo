@@ -1,12 +1,14 @@
-import { db } from '../api/database';
+import { apiClient } from './api';
 
 export interface User {
   id: string;
   email: string;
-  fullName?: string;
   userType?: string;
-  role?: string;
-  avatar?: string;
+  username?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface AuthState {
@@ -14,20 +16,10 @@ export interface AuthState {
   loading: boolean;
 }
 
-interface UserProfile {
-  user_id: string;
-  email: string;
-  full_name: string;
-  user_type: string;
-  role: string;
-  avatar: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-}
-
-interface AuthUser {
-  id: string;
-  email: string;
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
 }
 
 class AuthService {
@@ -39,62 +31,18 @@ class AuthService {
   }
 
   private async initialize() {
-    const { data: { session } } = await db.auth.getSession();
+    const token = apiClient.getAccessToken();
 
-    if (session?.user) {
-      await this.loadUserProfile(session.user);
+    if (token) {
+      try {
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
+      } catch (error) {
+        console.error('Failed to get current user:', error);
+        apiClient.setAccessToken(null);
+        this.currentState = { user: null, loading: false };
+      }
     } else {
-      this.currentState = { user: null, loading: false };
-    }
-
-    this.notifyListeners();
-
-    db.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await this.loadUserProfile(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        this.currentState = { user: null, loading: false };
-        this.notifyListeners();
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        await this.loadUserProfile(session.user);
-      }
-    });
-  }
-
-  private async loadUserProfile(authUser: AuthUser) {
-    try {
-      const { data: profile, error } = await db
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (profile && (profile.is_deleted || profile.deleted_at)) {
-        await db.auth.signOut();
-        this.currentState = { user: null, loading: false };
-        this.notifyListeners();
-        return;
-      }
-
-      if (profile) {
-        this.currentState = {
-          user: {
-            id: profile.user_id,
-            email: profile.email,
-            fullName: profile.full_name,
-            userType: profile.user_type,
-            role: profile.role,
-            avatar: profile.avatar || undefined,
-          },
-          loading: false,
-        };
-      } else {
-        this.currentState = { user: null, loading: false };
-      }
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
       this.currentState = { user: null, loading: false };
     }
 
@@ -114,140 +62,105 @@ class AuthService {
     this.listeners.forEach(listener => listener(this.currentState));
   }
 
-  async signUp(email: string, password: string, fullName?: string, userType: string = 'influencer') {
+  async signUp(email: string, password: string, userType: string = 'influencer') {
     try {
-      const { data: authData, error: authError } = await db.auth.signUp({
+      const response = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName || '',
-            fullName: fullName || '',
-            user_type: userType,
-            userType: userType,
-          },
-        },
+        userType,
       });
 
-      if (authError) {
-        return {
-          data: null,
-          error: {
-            message: authError.message,
-            name: 'SignupError'
-          }
-        };
-      }
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      if (authData.user) {
-        await this.loadUserProfile(authData.user);
-        return { data: { user: this.currentState.user }, error: null };
-      }
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
 
-      return { data: null, error: { message: 'Unknown error', name: 'SignupError' } };
-    } catch (error) {
-      console.error('Signup error:', error);
+      return { data: response, error: null };
+    } catch (error: any) {
       return {
         data: null,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          name: 'SignupError',
-        },
+          message: error.message || 'Failed to sign up',
+          name: 'SignUpError'
+        }
       };
     }
   }
 
   async signIn(email: string, password: string) {
     try {
-      const { data: authData, error: authError } = await db.auth.signInWithPassword({
+      const response = await apiClient.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
 
-      if (authError) {
-        let errorName = 'AuthError';
-        if (authError.message.includes('Invalid login credentials')) {
-          errorName = 'InvalidCredentialsError';
-        }
+      if (response.user.isDeleted) {
         return {
           data: null,
           error: {
-            message: authError.message,
-            name: errorName
+            message: 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для получения дополнительной информации.',
+            name: 'AccountBlockedError'
           }
         };
       }
 
-      if (authData.user) {
-        const { data: profile } = await db
-          .from('user_profiles')
-          .select('is_deleted, deleted_at')
-          .eq('user_id', authData.user.id)
-          .maybeSingle();
+      apiClient.setAccessToken(response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-        if (profile && (profile.is_deleted || profile.deleted_at)) {
-          await db.auth.signOut();
-          return {
-            data: null,
-            error: {
-              message: 'Ваш аккаунт заблокирован',
-              name: 'AccountBlockedError',
-            },
-          };
-        }
+      this.currentState = { user: response.user, loading: false };
+      this.notifyListeners();
 
-        await this.loadUserProfile(authData.user);
-        return { data: { user: this.currentState.user }, error: null };
-      }
-
-      return { data: null, error: { message: 'Unknown error', name: 'AuthError' } };
-    } catch (error) {
-      console.error('Sign in error:', error);
+      return { data: response, error: null };
+    } catch (error: any) {
       return {
         data: null,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          name: 'AuthError',
-        },
+          message: error.message || 'Failed to sign in',
+          name: 'SignInError'
+        }
       };
     }
   }
 
   async signOut() {
     try {
-      const { error } = await db.auth.signOut();
-      if (error) throw error;
-
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      apiClient.setAccessToken(null);
+      localStorage.removeItem('refreshToken');
       this.currentState = { user: null, loading: false };
       this.notifyListeners();
-      return { error: null };
-    } catch (error) {
-      console.error('Sign out error:', error);
-      return {
-        error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          name: 'SignOutError',
-        },
-      };
     }
+
+    return { error: null };
   }
 
-  getCurrentUser(): User | null {
+  getCurrentUser() {
     return this.currentState.user;
   }
 
-  isAuthenticated(): boolean {
+  isAuthenticated() {
     return !!this.currentState.user;
   }
 
-  isLoading(): boolean {
+  isLoading() {
     return this.currentState.loading;
   }
 
-  async refreshUserData() {
-    const { data: { user } } = await db.auth.getUser();
-    if (user) {
-      await this.loadUserProfile(user);
+  async refreshUser() {
+    const token = apiClient.getAccessToken();
+
+    if (token) {
+      try {
+        const user = await apiClient.get<User>('/auth/me');
+        this.currentState = { user, loading: false };
+        this.notifyListeners();
+      } catch (error) {
+        console.error('Failed to refresh user:', error);
+      }
     }
   }
 }

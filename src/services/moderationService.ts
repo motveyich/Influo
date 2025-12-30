@@ -1,27 +1,47 @@
-import { database } from '../core/database';
+import { supabase, TABLES } from '../core/supabase';
+import { isSupabaseConfigured } from '../core/supabase';
 import { ContentReport, ModerationQueueItem, ContentFilter, ReportType, ModerationStatus } from '../core/types';
+import { adminService } from './adminService';
+import { roleService } from './roleService';
 
 export class ModerationService {
   private contentFilters: ContentFilter[] = [];
 
   constructor() {
-    this.loadContentFilters();
+    // Only load filters if Supabase is configured
+    if (isSupabaseConfigured()) {
+      this.loadContentFilters();
+    }
   }
 
   async loadContentFilters(): Promise<void> {
     try {
-      const { data, error } = await database
-        .from('content_filters')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) {
-        console.warn('Content filters not available yet:', error);
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase не настроен. Content filters недоступны.');
         this.contentFilters = [];
         return;
       }
 
-      this.contentFilters = (data || []).map(filter => this.transformFilterFromDb(filter));
+      const { data, error } = await supabase
+        .from(TABLES.CONTENT_FILTERS)
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) {
+        if (error.code === '42P01') {
+          console.warn('Content filters table does not exist yet');
+          this.contentFilters = [];
+          return;
+        } else if (error.message?.includes('Failed to fetch')) {
+          console.warn('Supabase connection failed. Content filters недоступны.');
+          this.contentFilters = [];
+          return;
+        }
+        throw error;
+      }
+
+      this.contentFilters = data.map(filter => this.transformFilterFromDatabase(filter));
     } catch (error) {
       console.warn('Failed to load content filters, using empty filters:', error);
       this.contentFilters = [];
@@ -30,23 +50,38 @@ export class ModerationService {
 
   async createReport(reportData: Partial<ContentReport>): Promise<ContentReport> {
     try {
-      const { data, error } = await database
-        .from('content_reports')
-        .insert({
-          reporter_id: reportData.reporterId,
-          target_type: reportData.targetType,
-          target_id: reportData.targetId,
-          report_type: reportData.reportType,
-          description: reportData.description,
-          evidence: reportData.evidence || {},
-          metadata: reportData.metadata || {}
-        })
+      const newReport = {
+        reporter_id: reportData.reporterId,
+        target_type: reportData.targetType,
+        target_id: reportData.targetId,
+        report_type: reportData.reportType,
+        description: reportData.description,
+        evidence: reportData.evidence || {},
+        status: 'pending',
+        priority: this.calculateReportPriority(reportData.reportType!),
+        metadata: reportData.metadata || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.CONTENT_REPORTS)
+        .insert([newReport])
         .select()
         .single();
 
       if (error) throw error;
 
-      return this.transformReportFromDb(data);
+      // Add to moderation queue if high priority
+      if (newReport.priority >= 4) {
+        await this.addToModerationQueue(
+          reportData.targetType!,
+          reportData.targetId!,
+          { report_id: data.id, auto_flagged: false }
+        );
+      }
+
+      return this.transformReportFromDatabase(data);
     } catch (error) {
       console.error('Failed to create report:', error);
       throw error;
@@ -59,10 +94,9 @@ export class ModerationService {
     priority?: number;
   }): Promise<ContentReport[]> {
     try {
-      let query = database
-        .from('content_reports')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase
+        .from(TABLES.CONTENT_REPORTS)
+        .select('*');
 
       if (filters?.status) {
         query = query.eq('status', filters.status);
@@ -73,14 +107,17 @@ export class ModerationService {
       }
 
       if (filters?.priority) {
-        query = query.eq('priority', filters.priority);
+        query = query.gte('priority', filters.priority);
       }
+
+      query = query.order('priority', { ascending: false })
+                   .order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      return (data || []).map(report => this.transformReportFromDb(report));
+      return data.map(report => this.transformReportFromDatabase(report));
     } catch (error) {
       console.error('Failed to get reports:', error);
       throw error;
@@ -94,13 +131,20 @@ export class ModerationService {
     reviewedBy: string
   ): Promise<ContentReport> {
     try {
-      const { data, error } = await database
-        .from('content_reports')
+      // Check permissions
+      const hasPermission = await roleService.checkPermission(reviewedBy, 'moderator');
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const { data, error } = await supabase
+        .from(TABLES.CONTENT_REPORTS)
         .update({
           status: resolution,
-          resolution_notes: notes,
           reviewed_by: reviewedBy,
-          reviewed_at: new Date().toISOString()
+          reviewed_at: new Date().toISOString(),
+          resolution_notes: notes,
+          updated_at: new Date().toISOString()
         })
         .eq('id', reportId)
         .select()
@@ -108,7 +152,13 @@ export class ModerationService {
 
       if (error) throw error;
 
-      return this.transformReportFromDb(data);
+      // Log the action
+      await adminService.logAction(reviewedBy, 'report_resolved', 'content_report', reportId, {
+        resolution: resolution,
+        notes: notes
+      });
+
+      return this.transformReportFromDatabase(data);
     } catch (error) {
       console.error('Failed to resolve report:', error);
       throw error;
@@ -121,10 +171,9 @@ export class ModerationService {
     assignedModerator?: string;
   }): Promise<ModerationQueueItem[]> {
     try {
-      let query = database
-        .from('moderation_queue')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase
+        .from(TABLES.MODERATION_QUEUE)
+        .select('*');
 
       if (filters?.status) {
         query = query.eq('moderation_status', filters.status);
@@ -138,11 +187,14 @@ export class ModerationService {
         query = query.eq('assigned_moderator', filters.assignedModerator);
       }
 
+      query = query.order('priority', { ascending: false })
+                   .order('created_at', { ascending: true });
+
       const { data, error } = await query;
 
       if (error) throw error;
 
-      return (data || []).map(item => this.transformQueueItemFromDb(item));
+      return data.map(item => this.transformQueueItemFromDatabase(item));
     } catch (error) {
       console.error('Failed to get moderation queue:', error);
       throw error;
@@ -155,19 +207,32 @@ export class ModerationService {
     metadata?: Record<string, any>
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await database
-        .from('moderation_queue')
-        .insert({
-          content_type: contentType,
-          content_id: contentId,
-          metadata: metadata || {}
-        })
+      // Get content data
+      const contentData = await this.getContentData(contentType, contentId);
+
+      const queueItem = {
+        content_type: contentType,
+        content_id: contentId,
+        content_data: contentData,
+        moderation_status: 'pending' as ModerationStatus,
+        flagged_reasons: [],
+        auto_flagged: metadata?.auto_flagged || false,
+        filter_matches: metadata?.filter_matches || {},
+        priority: metadata?.priority || 1,
+        metadata: metadata || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.MODERATION_QUEUE)
+        .insert([queueItem])
         .select()
         .single();
 
       if (error) throw error;
 
-      return this.transformQueueItemFromDb(data);
+      return this.transformQueueItemFromDatabase(data);
     } catch (error) {
       console.error('Failed to add to moderation queue:', error);
       throw error;
@@ -181,13 +246,20 @@ export class ModerationService {
     moderatorId: string
   ): Promise<ModerationQueueItem> {
     try {
-      const { data, error } = await database
-        .from('moderation_queue')
+      // Check permissions
+      const hasPermission = await roleService.checkPermission(moderatorId, 'moderator');
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const { data, error } = await supabase
+        .from(TABLES.MODERATION_QUEUE)
         .update({
           moderation_status: decision,
-          review_notes: notes,
           assigned_moderator: moderatorId,
-          reviewed_at: new Date().toISOString()
+          reviewed_at: new Date().toISOString(),
+          review_notes: notes,
+          updated_at: new Date().toISOString()
         })
         .eq('id', queueItemId)
         .select()
@@ -195,7 +267,22 @@ export class ModerationService {
 
       if (error) throw error;
 
-      return this.transformQueueItemFromDb(data);
+      const queueItem = this.transformQueueItemFromDatabase(data);
+
+      // Update original content moderation status
+      await this.updateContentModerationStatus(
+        queueItem.contentType,
+        queueItem.contentId,
+        decision
+      );
+
+      // Log the action
+      await adminService.logAction(moderatorId, 'content_moderated', queueItem.contentType, queueItem.contentId, {
+        decision: decision,
+        notes: notes
+      });
+
+      return queueItem;
     } catch (error) {
       console.error('Failed to moderate content:', error);
       throw error;
@@ -230,7 +317,7 @@ export class ModerationService {
       return {
         hasViolations: matches.length > 0,
         matches: matches,
-        shouldFlag: maxSeverity >= 3
+        shouldFlag: maxSeverity >= 3 // Flag if severity is 3 or higher
       };
     } catch (error) {
       console.error('Failed to check content for violations:', error);
@@ -242,7 +329,94 @@ export class ModerationService {
     }
   }
 
-  private transformReportFromDb(dbData: any): ContentReport {
+  private async getContentData(contentType: string, contentId: string): Promise<any> {
+    try {
+      let table = '';
+      let idField = '';
+
+      switch (contentType) {
+        case 'user_profile':
+          table = TABLES.USER_PROFILES;
+          idField = 'user_id';
+          break;
+        case 'influencer_card':
+          table = TABLES.INFLUENCER_CARDS;
+          idField = 'id';
+          break;
+        case 'campaign':
+          table = TABLES.CAMPAIGNS;
+          idField = 'campaign_id';
+          break;
+        default:
+          throw new Error(`Unsupported content type: ${contentType}`);
+      }
+
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .eq(idField, contentId)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get content data:', error);
+      return {};
+    }
+  }
+
+  private async updateContentModerationStatus(
+    contentType: string,
+    contentId: string,
+    status: ModerationStatus
+  ): Promise<void> {
+    try {
+      let table = '';
+      let idField = '';
+
+      switch (contentType) {
+        case 'influencer_card':
+          table = TABLES.INFLUENCER_CARDS;
+          idField = 'id';
+          break;
+        case 'campaign':
+          table = TABLES.CAMPAIGNS;
+          idField = 'campaign_id';
+          break;
+        default:
+          return; // Skip for unsupported types
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .update({ moderation_status: status })
+        .eq(idField, contentId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to update content moderation status:', error);
+    }
+  }
+
+  private calculateReportPriority(reportType: ReportType): number {
+    switch (reportType) {
+      case 'harassment':
+        return 5;
+      case 'inappropriate':
+        return 4;
+      case 'fake':
+        return 3;
+      case 'spam':
+        return 2;
+      case 'copyright':
+        return 3;
+      default:
+        return 1;
+    }
+  }
+
+  private transformReportFromDatabase(dbData: any): ContentReport {
     return {
       id: dbData.id,
       reporterId: dbData.reporter_id,
@@ -262,7 +436,7 @@ export class ModerationService {
     };
   }
 
-  private transformQueueItemFromDb(dbData: any): ModerationQueueItem {
+  private transformQueueItemFromDatabase(dbData: any): ModerationQueueItem {
     return {
       id: dbData.id,
       contentType: dbData.content_type,
@@ -282,7 +456,7 @@ export class ModerationService {
     };
   }
 
-  private transformFilterFromDb(dbData: any): ContentFilter {
+  private transformFilterFromDatabase(dbData: any): ContentFilter {
     return {
       id: dbData.id,
       filterName: dbData.filter_name,

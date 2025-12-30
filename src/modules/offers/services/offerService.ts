@@ -1,6 +1,4 @@
-import { database } from '../../../core/database';
-import { apiClient } from '../../../core/apiClient';
-import { showFeatureNotImplemented } from '../../../core/utils';
+import { apiClient } from '../../../core/api';
 import { CollaborationOffer, OfferStatus, CollaborationStage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
@@ -12,330 +10,124 @@ export class OfferService {
       const payload = {
         influencerId: offerData.influencerId,
         advertiserId: offerData.advertiserId,
-        influencerCardId: offerData.influencerCardId,
-        campaignId: offerData.campaignId,
+        influencerCardId: offerData.influencerCardId || null,
+        campaignId: offerData.campaignId || null,
         initiatedBy: offerData.initiatedBy || offerData.influencerId,
         title: offerData.title,
         description: offerData.description,
         proposedRate: offerData.proposedRate,
-        currency: offerData.currency || 'RUB',
+        currency: offerData.currency || 'USD',
         deliverables: offerData.deliverables || [],
         timeline: offerData.timeline,
         metadata: offerData.metadata || {},
       };
 
-      const { data, error } = await apiClient.post<any>('/offers', payload);
-
-      if (error) throw new Error(error.message);
+      const offer = await apiClient.post<CollaborationOffer>('/offers', payload);
 
       analytics.track('collaboration_offer_created', {
-        offer_id: data.id,
+        offer_id: offer.id,
         influencer_id: offerData.influencerId,
         advertiser_id: offerData.advertiserId,
         proposed_rate: offerData.proposedRate
       });
 
-      return this.transformFromApi(data);
+      return offer;
     } catch (error) {
       console.error('Failed to create offer:', error);
       throw error;
     }
   }
 
-  async createOfferFromApplication(offerData: {
-    influencerId: string;
-    advertiserId: string;
-    applicationId: string;
-    applicantId: string;
-    title: string;
-    description: string;
-    proposedRate: number;
-    currency: string;
-    deliverables: string[];
-    timeline: string;
-    metadata?: Record<string, any>;
-  }): Promise<CollaborationOffer> {
+  async getOffers(params?: { status?: string; asInfluencer?: boolean }): Promise<CollaborationOffer[]> {
     try {
-      const payload = {
-        influencerId: offerData.influencerId,
-        advertiserId: offerData.advertiserId,
-        initiatedBy: offerData.applicantId,
-        title: offerData.title,
-        description: offerData.description,
-        proposedRate: offerData.proposedRate,
-        currency: offerData.currency,
-        deliverables: offerData.deliverables,
-        timeline: offerData.timeline,
-        metadata: {
-          ...offerData.metadata,
-          createdFromApplication: true,
-          applicationId: offerData.applicationId
-        },
-      };
+      let queryString = '';
+      if (params) {
+        const queryParams = new URLSearchParams();
+        if (params.status) queryParams.append('status', params.status);
+        if (params.asInfluencer !== undefined) queryParams.append('asInfluencer', String(params.asInfluencer));
+        queryString = `?${queryParams.toString()}`;
+      }
 
-      const { data, error } = await apiClient.post<any>('/offers', payload);
-
-      if (error) throw new Error(error.message);
-
-      analytics.track('collaboration_offer_auto_created', {
-        offer_id: data.id,
-        application_id: offerData.applicationId,
-        influencer_id: offerData.influencerId,
-        advertiser_id: offerData.advertiserId
-      });
-
-      return this.transformFromApi(data);
+      return await apiClient.get<CollaborationOffer[]>(`/offers${queryString}`);
     } catch (error) {
-      console.error('Failed to create offer from application:', error);
+      console.error('Failed to get offers:', error);
       throw error;
     }
   }
 
-  async updateOfferStatus(
-    offerId: string,
-    newStatus: OfferStatus,
-    userId: string,
-    additionalData?: any
-  ): Promise<CollaborationOffer> {
+  async getOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      let endpoint = '';
-      let payload: any = { userId };
-
-      switch (newStatus) {
-        case 'accepted':
-          endpoint = `/offers/${offerId}/accept`;
-          payload.acceptedRate = additionalData?.acceptedRate;
-          payload.finalTerms = additionalData?.finalTerms;
-          break;
-        case 'declined':
-          endpoint = `/offers/${offerId}/decline`;
-          break;
-        case 'in_progress':
-          endpoint = `/offers/${offerId}/in-progress`;
-          break;
-        case 'completed':
-          endpoint = `/offers/${offerId}/complete`;
-          break;
-        case 'terminated':
-          endpoint = `/offers/${offerId}/terminate`;
-          payload.reason = additionalData?.reason;
-          break;
-        case 'cancelled':
-          endpoint = `/offers/${offerId}/cancel`;
-          break;
-        default:
-          endpoint = `/offers/${offerId}`;
-          payload.status = newStatus;
-      }
-
-      const { data, error } = await apiClient.post<any>(endpoint, payload);
-
-      if (error) throw new Error(error.message);
-
-      analytics.track('collaboration_offer_status_updated', {
-        offer_id: offerId,
-        new_status: newStatus,
-        user_id: userId
-      });
-
-      return this.transformFromApi(data);
-    } catch (error) {
-      console.error('Failed to update offer status:', error);
-      throw error;
-    }
-  }
-
-  async getOffer(offerId: string): Promise<CollaborationOffer | null> {
-    try {
-      const { data, error } = await apiClient.get<any>(`/offers/${offerId}`);
-
-      if (error) {
-        if (error.status === 404) return null;
-        throw new Error(error.message);
-      }
-
-      return this.transformFromApi(data);
+      return await apiClient.get<CollaborationOffer>(`/offers/${offerId}`);
     } catch (error) {
       console.error('Failed to get offer:', error);
       throw error;
     }
   }
 
-  async getOfferById(offerId: string): Promise<CollaborationOffer | null> {
-    return this.getOffer(offerId);
-  }
-
-  async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
+  async updateOffer(offerId: string, updates: Partial<CollaborationOffer>): Promise<CollaborationOffer> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/offers?participantId=${userId}`);
-
-      if (error) throw new Error(error.message);
-
-      return (data || []).map(offer => this.transformFromApi(offer));
+      return await apiClient.patch<CollaborationOffer>(`/offers/${offerId}`, updates);
     } catch (error) {
-      console.error('Failed to get offers by participant:', error);
+      console.error('Failed to update offer:', error);
       throw error;
     }
   }
 
-  async getOffersByCampaign(campaignId: string): Promise<CollaborationOffer[]> {
+  async acceptOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      const { data, error } = await apiClient.get<any[]>(`/offers?campaignId=${campaignId}`);
-
-      if (error) throw new Error(error.message);
-
-      return (data || []).map(offer => this.transformFromApi(offer));
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/accept`);
     } catch (error) {
-      console.error('Failed to get offers by campaign:', error);
+      console.error('Failed to accept offer:', error);
       throw error;
     }
   }
 
-  async getUserProfile(userId: string): Promise<any> {
+  async declineOffer(offerId: string): Promise<CollaborationOffer> {
     try {
-      const { data, error } = await apiClient.get<any>(`/profiles/${userId}`);
-
-      if (error) throw new Error(error.message);
-
-      return data;
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/decline`);
     } catch (error) {
-      console.error('Failed to get user profile:', error);
-      return null;
-    }
-  }
-
-  async getOfferHistory(offerId: string): Promise<any[]> {
-    try {
-      const { data, error } = await apiClient.get<any[]>(`/offers/${offerId}/history`);
-
-      if (error) throw new Error(error.message);
-
-      return data || [];
-    } catch (error) {
-      console.error('Failed to get offer history:', error);
-      return [];
-    }
-  }
-
-  async confirmOfferTerms(offerId: string): Promise<void> {
-    try {
-      const { error } = await apiClient.post(`/offers/${offerId}/confirm-terms`);
-
-      if (error) throw new Error(error.message);
-    } catch (error) {
-      console.error('Failed to confirm offer terms:', error);
+      console.error('Failed to decline offer:', error);
       throw error;
     }
   }
 
-  async createAutoCampaignOffer(offerData: {
-    autoCampaignId: string;
-    influencerId: string;
-    advertiserId: string;
-    title: string;
-    description: string;
-    proposedRate: number;
-    currency: string;
-    deliverables: string[];
-    timeline: string;
-    platform: string;
-    contentType: string;
-    enableChat: boolean;
-  }): Promise<CollaborationOffer> {
+  async markInProgress(offerId: string): Promise<CollaborationOffer> {
     try {
-      const payload = {
-        influencerId: offerData.influencerId,
-        advertiserId: offerData.advertiserId,
-        initiatedBy: offerData.influencerId,
-        title: offerData.title,
-        description: offerData.description,
-        proposedRate: offerData.proposedRate,
-        currency: offerData.currency,
-        deliverables: offerData.deliverables,
-        timeline: offerData.timeline,
-        platform: offerData.platform,
-        contentType: offerData.contentType,
-        metadata: {
-          sourceType: 'auto_campaign',
-          autoCampaignId: offerData.autoCampaignId,
-          enableChat: offerData.enableChat,
-          createdFromAutoCampaign: true
-        },
-      };
-
-      const { data, error } = await apiClient.post<any>('/offers', payload);
-
-      if (error) throw new Error(error.message);
-
-      analytics.track('auto_campaign_offer_created', {
-        offer_id: data.id,
-        auto_campaign_id: offerData.autoCampaignId,
-        influencer_id: offerData.influencerId,
-        advertiser_id: offerData.advertiserId,
-        proposed_rate: offerData.proposedRate
-      });
-
-      return this.transformFromApi(data);
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/in-progress`);
     } catch (error) {
-      console.error('Failed to create auto-campaign offer:', error);
+      console.error('Failed to mark offer in progress:', error);
+      throw error;
+    }
+  }
+
+  async markCompleted(offerId: string): Promise<CollaborationOffer> {
+    try {
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/complete`);
+    } catch (error) {
+      console.error('Failed to mark offer completed:', error);
+      throw error;
+    }
+  }
+
+  async cancelOffer(offerId: string): Promise<CollaborationOffer> {
+    try {
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/cancel`);
+    } catch (error) {
+      console.error('Failed to cancel offer:', error);
       throw error;
     }
   }
 
   private validateOfferData(offerData: Partial<CollaborationOffer>): void {
-    const errors: string[] = [];
-
-    if (!offerData.influencerId) errors.push('Influencer ID is required');
-    if (!offerData.advertiserId) errors.push('Advertiser ID is required');
-    if (offerData.influencerId === offerData.advertiserId) errors.push('Cannot create offer to yourself');
-    if (!offerData.title?.trim()) errors.push('Title is required');
-    if (!offerData.description?.trim()) errors.push('Description is required');
-    if (!offerData.proposedRate || offerData.proposedRate <= 0) errors.push('Valid proposed rate is required');
-    if (!offerData.timeline?.trim()) errors.push('Timeline is required');
-    if (!offerData.deliverables || offerData.deliverables.length === 0) errors.push('At least one deliverable is required');
-
-    if (errors.length > 0) {
-      throw new Error(errors.join('; '));
+    if (!offerData.influencerId || !offerData.advertiserId) {
+      throw new Error('Influencer ID and Advertiser ID are required');
     }
-  }
-
-  private transformFromApi(apiData: any): CollaborationOffer {
-    const details = apiData.details || {};
-    return {
-      offer_id: apiData.offerId || apiData.offer_id || apiData.id,
-      id: apiData.offerId || apiData.offer_id || apiData.id,
-      influencerId: apiData.influencerId || apiData.influencer_id,
-      advertiserId: apiData.advertiserId || apiData.advertiser_id,
-      campaignId: apiData.campaignId || apiData.campaign_id,
-      influencerCardId: apiData.influencerCardId || apiData.influencer_card_id,
-      autoCampaignId: apiData.autoCampaignId || apiData.auto_campaign_id,
-      initiatedBy: apiData.initiatedBy || apiData.initiated_by,
-      title: apiData.title || details.title || '',
-      description: apiData.description || details.description || '',
-      proposedRate: apiData.proposedRate ? parseFloat(apiData.proposedRate) : (apiData.proposed_rate ? parseFloat(apiData.proposed_rate) : parseFloat(details.proposed_rate || 0)),
-      currency: apiData.currency || details.currency || 'RUB',
-      deliverables: apiData.deliverables || details.deliverables || [],
-      timeline: apiData.timeline || details.timeline || '',
-      platform: apiData.platform || details.platform,
-      integrationType: apiData.integrationType || details.integrationType,
-      contentType: apiData.contentType || details.contentType,
-      suggestedBudget: apiData.suggestedBudget ? parseFloat(apiData.suggestedBudget) : undefined,
-      status: apiData.status,
-      currentStage: apiData.currentStage || apiData.current_stage || 'negotiation',
-      acceptedAt: apiData.acceptedAt || details.accepted_at,
-      acceptedRate: apiData.acceptedRate ? parseFloat(apiData.acceptedRate) : (details.accepted_rate ? parseFloat(details.accepted_rate) : undefined),
-      finalTerms: apiData.finalTerms || apiData.final_terms || {},
-      completedAt: apiData.completedAt || details.completed_at,
-      terminatedAt: apiData.terminatedAt || details.terminated_at,
-      terminationReason: apiData.terminationReason || details.termination_reason,
-      influencerReviewed: apiData.influencerReviewed || apiData.influencer_reviewed || false,
-      advertiserReviewed: apiData.advertiserReviewed || apiData.advertiser_reviewed || false,
-      influencerResponse: apiData.influencerResponse || apiData.influencer_response || 'pending',
-      advertiserResponse: apiData.advertiserResponse || apiData.advertiser_response || 'pending',
-      metadata: apiData.metadata || {},
-      createdAt: apiData.createdAt || apiData.created_at,
-      updatedAt: apiData.updatedAt || apiData.updated_at
-    };
+    if (!offerData.title || !offerData.description) {
+      throw new Error('Title and description are required');
+    }
+    if (!offerData.proposedRate || offerData.proposedRate <= 0) {
+      throw new Error('Proposed rate must be greater than 0');
+    }
   }
 }
 

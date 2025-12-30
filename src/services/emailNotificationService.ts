@@ -1,4 +1,4 @@
-import { database } from '../core/database';
+import { supabase } from '../core/supabase';
 
 export interface EmailNotificationData {
   userName?: string;
@@ -17,17 +17,59 @@ class EmailNotificationService {
     subject: string,
     data: EmailNotificationData
   ): Promise<void> {
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('email, settings')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (userError || !userData?.email) {
+      console.error('Failed to get user email:', userError);
+      return;
+    }
+
+    const notificationTypeMapping: Record<NotificationType, keyof typeof userData.settings.notifications.email> = {
+      platform_update: 'marketing',
+      new_application: 'applications',
+      new_review: 'reviews',
+      new_message: 'messages'
+    };
+
+    const settingKey = notificationTypeMapping[type];
+    const emailEnabled = userData.settings?.notifications?.email?.[settingKey];
+
+    if (!emailEnabled) {
+      console.log(`Email notifications disabled for ${type} by user ${userId}`);
+      return;
+    }
+
     try {
-      await database.functions.invoke('send-email-notification', {
-        body: {
-          userId,
-          type,
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email-notification`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: userData.email,
           subject,
-          data
-        }
+          type,
+          data: {
+            ...data,
+            userName: userData.email.split('@')[0]
+          }
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email notification');
+      }
+
+      console.log(`Email notification sent to ${userData.email}`);
     } catch (error) {
-      console.error('Failed to send email notification:', error);
+      console.error('Error sending email notification:', error);
+      throw error;
     }
   }
 

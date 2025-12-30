@@ -1,4 +1,4 @@
-import { database, TABLES } from '../core/database';
+import { supabase, TABLES } from '../core/supabase';
 import { AIChatThread, AIChatMessage, ChatMessage } from '../core/types';
 import { analytics } from '../core/analytics';
 
@@ -30,11 +30,11 @@ export class AIChatService {
         }
       };
 
-      const { data, error } = await database
+      const { data, error } = await supabase
         .from(TABLES.AI_CHAT_THREADS)
-        .upsert([newThread], {
+        .upsert([newThread], { 
           onConflict: 'conversation_id',
-          ignoreDuplicates: false
+          ignoreDuplicates: false 
         })
         .select()
         .single();
@@ -61,7 +61,7 @@ export class AIChatService {
 
   async getThreadMessages(threadId: string): Promise<AIChatMessage[]> {
     try {
-      const { data, error } = await database
+      const { data, error } = await supabase
         .from(TABLES.AI_CHAT_MESSAGES)
         .select('*')
         .eq('thread_id', threadId)
@@ -177,7 +177,7 @@ export class AIChatService {
   private async getUserRoles(currentUserId: string, partnerId: string): Promise<{ currentUserRole: string; partnerRole: string; currentUserId: string; partnerId: string }> {
     try {
       // Get user profiles
-      const { data: profiles } = await database
+      const { data: profiles } = await supabase
         .from(TABLES.USER_PROFILES)
         .select('user_id, user_type, full_name')
         .in('user_id', [currentUserId, partnerId]);
@@ -228,7 +228,51 @@ export class AIChatService {
   }
 
   private async callDeepSeekAPI(request: AnalysisRequest): Promise<string> {
-    throw new Error('AI service is not available - database not configured');
+    try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || !supabaseUrl.includes('.supabase.co')) {
+        throw new Error('Supabase не настроен. AI-анализ недоступен. Нажмите "Connect to Supabase" в правом верхнем углу.');
+      }
+      
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-analysis`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Edge function error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'AI analysis failed');
+      }
+
+      return result.response;
+    } catch (error) {
+      console.error('Failed to call DeepSeek API:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Не удалось подключиться к AI-сервису. Проверьте настройки Supabase или попробуйте позже.');
+      }
+      
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      throw new Error('AI-анализ временно недоступен');
+    }
   }
 
   private async saveAIMessage(
@@ -250,7 +294,7 @@ export class AIChatService {
         created_at: new Date().toISOString()
       };
 
-      const { data, error } = await database
+      const { data, error } = await supabase
         .from(TABLES.AI_CHAT_MESSAGES)
         .insert([newMessage])
         .select()

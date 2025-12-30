@@ -68,7 +68,7 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       const { offerService } = await import('../../offers/services/offerService');
       const { paymentRequestService } = await import('../../offers/services/paymentRequestService');
       const { chatService } = await import('../../chat/services/chatService');
-      const { database } = await import('../../../core/database');
+      const { supabase } = await import('../../../core/supabase');
 
       const offer = await offerService.getOfferById(offerId);
 
@@ -79,13 +79,13 @@ export function ReportsManagement({ onStatsUpdate }: ReportsManagementProps) {
       const payments = await paymentRequestService.getPaymentRequestsForOffer(offerId).catch(() => []);
 
       // Получить информацию об участниках с email
-      const { data: influencerProfile } = await database
+      const { data: influencerProfile } = await supabase
         .from('user_profiles')
         .select('full_name, avatar, role, bio, website, user_id, email')
         .eq('user_id', offer.influencerId)
         .maybeSingle();
 
-      const { data: advertiserProfile } = await database
+      const { data: advertiserProfile } = await supabase
         .from('user_profiles')
         .select('full_name, avatar, role, bio, website, user_id, email')
         .eq('user_id', offer.advertiserId)

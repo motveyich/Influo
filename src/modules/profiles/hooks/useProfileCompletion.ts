@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
 import { profileService } from '../services/profileService';
-import { isDatabaseConfigured } from '../../../core/database';
+import { isSupabaseConfigured } from '../../../core/supabase';
 
 export function useProfileCompletion(userId: string) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -20,65 +20,72 @@ export function useProfileCompletion(userId: string) {
       setIsLoading(false);
       return;
     }
-
-    if (!isDatabaseConfigured()) {
-      setError('Database is not configured.');
+    
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection, or check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values.');
       setIsLoading(false);
       return;
     }
-
+    
     try {
       setIsLoading(true);
       setError(null);
-
-      if (!isDatabaseConfigured()) {
-        throw new Error('Database configuration is invalid.');
+      
+      // Double-check Supabase configuration before making database calls
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase configuration is invalid. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
       }
-
+      
       let userProfile;
       try {
         userProfile = await profileService.getProfile(userId);
       } catch (profileError: any) {
+        // Handle specific fetch errors that indicate Supabase connection issues
         if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
-          setError('Unable to connect to database.');
+          setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server with "npm run dev".');
           setProfile(null);
           return;
         } else if (profileError?.message?.includes('Failed to fetch') || profileError?.cause?.message === 'Failed to fetch') {
-          setError('Database connection failed.');
+          setError('Database connection failed. Please verify your Supabase configuration and restart the development server.');
           setProfile(null);
           return;
         } else {
-          setError(profileError.message || 'Failed to load profile.');
+          // For other errors, still set error but don't throw
+          setError(profileError.message || 'Failed to load profile. Please check your database connection.');
           setProfile(null);
           return;
         }
       }
-
+      
       if (!userProfile) {
+        // User doesn't have a profile yet, this is normal for new users
         setProfile(null);
         setError(null);
         return;
       }
-
+      
       setProfile(userProfile);
       setError(null);
     } catch (err: any) {
       console.warn('Failed to load profile, handling gracefully:', err);
-
+      
+      // Handle different types of errors with specific messages
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to database.');
-      } else if (err.message?.includes('Unable to connect') || err.message?.includes('Database connection failed')) {
+        setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner, or 2) Check that your .env file exists and contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
+      } else if (err.message?.includes('Unable to connect to Supabase') || err.message?.includes('Database connection failed')) {
         setError(err.message);
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
-        setError('Database tables are not set up.');
+        setError('Database tables are not set up. Please configure Supabase properly.');
       } else if (err.message?.includes('Invalid API key')) {
-        setError('Invalid API key.');
+        setError('Invalid Supabase API key. Please check your configuration.');
       } else if (err.message?.includes('Failed to fetch')) {
-        setError('Network connection failed.');
+        setError('Network connection failed. Please check your internet connection and Supabase configuration.');
       } else {
-        setError(err.message || 'Failed to load profile.');
+        setError(err.message || 'Failed to load profile. Please check your database connection.');
       }
-
+      
+      // Set profile to null to prevent further errors
       setProfile(null);
     } finally {
       setIsLoading(false);
@@ -86,19 +93,19 @@ export function useProfileCompletion(userId: string) {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!isDatabaseConfigured()) {
-      throw new Error('Database is not configured.');
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase is not configured. Please click "Connect to Supabase" or check your .env file configuration.');
     }
-
+    
     try {
       if (!profile) throw new Error('No profile loaded');
-
+      
       const updatedProfile = await profileService.updateProfile(userId, updates);
       setProfile(updatedProfile);
       return updatedProfile;
     } catch (err: any) {
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to database. Please ensure database is properly configured.');
+        setError('Unable to connect to database. Please ensure Supabase is properly configured.');
       } else {
         setError(err.message || 'Failed to update profile');
       }
