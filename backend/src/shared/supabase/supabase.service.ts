@@ -6,58 +6,57 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export class SupabaseService implements OnModuleInit {
   private readonly logger = new Logger(SupabaseService.name);
   private client: SupabaseClient;
-  private adminClient: SupabaseClient;
 
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseAnonKey = this.configService.get<string>('SUPABASE_ANON_KEY');
     const supabaseServiceKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase URL and Anon Key must be provided');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be provided');
     }
 
-    this.client = createClient(supabaseUrl, supabaseAnonKey, {
+    // Backend использует ТОЛЬКО Service Role Key для полного доступа
+    this.client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
-        autoRefreshToken: true,
+        autoRefreshToken: false,
         persistSession: false,
       },
     });
 
-    if (supabaseServiceKey) {
-      this.adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      });
-      this.logger.log('Supabase admin client initialized');
-    }
-
-    this.logger.log('Supabase client initialized successfully');
+    this.logger.log('✅ Supabase client initialized with Service Role Key');
+    this.logger.log(`📡 Connected to: ${supabaseUrl}`);
   }
 
   getClient(): SupabaseClient {
+    if (!this.client) {
+      throw new Error('Supabase client is not initialized');
+    }
     return this.client;
   }
 
+  /**
+   * @deprecated Use getClient() instead. Backend now uses only Service Role Key.
+   * This method is kept for backward compatibility.
+   */
   getAdminClient(): SupabaseClient {
-    if (!this.adminClient) {
-      throw new Error('Supabase admin client is not available. Please provide SUPABASE_SERVICE_ROLE_KEY');
-    }
-    return this.adminClient;
+    return this.getClient();
   }
 
   async healthCheck(): Promise<boolean> {
     try {
-      const { data, error } = await this.client
+      const { error } = await this.client
         .from('user_profiles')
         .select('user_id')
         .limit(1);
 
-      return !error;
+      if (error) {
+        this.logger.error('Health check failed:', error.message);
+        return false;
+      }
+
+      return true;
     } catch (error) {
       this.logger.error('Supabase health check failed:', error);
       return false;

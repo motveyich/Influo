@@ -8,12 +8,12 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'https://influo-seven.vercel.app',
+        target: 'http://localhost:3001',
         changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: false,
       },
     },
   },
