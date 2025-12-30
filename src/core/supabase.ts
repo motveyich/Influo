@@ -1,65 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+/**
+ * ⚠️ ВАЖНО: Frontend НЕ использует Supabase напрямую!
+ *
+ * Архитектура:
+ * - Frontend → Backend API → Supabase
+ * - Все запросы данных идут через backend
+ * - Используйте apiClient из './api.ts'
+ *
+ * Этот файл оставлен для обратной совместимости с legacy кодом.
+ * Все функции помечены как deprecated и будут удалены.
+ */
 
-// Get environment variables with validation
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Check if Supabase is properly configured
-export const isSupabaseConfigured = () => {
-  return supabaseUrl && 
-         supabaseAnonKey &&
-         supabaseUrl.startsWith('https://') &&
-         (supabaseUrl.includes('.supabase.co') || supabaseUrl.includes('.supabase.com')) &&
-         supabaseAnonKey.startsWith('eyJ') &&
-         supabaseAnonKey.length > 100; // Supabase anon keys are JWT tokens starting with 'eyJ' and longer than 100 chars
-};
-
-// Use actual values or throw error if not configured
-if (!isSupabaseConfigured()) {
-  console.error('❌ Supabase is not configured properly!');
-  console.error('Please set up your Supabase environment variables:');
-  console.error('1. Copy .env.example to .env');
-  console.error('2. Update VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with your actual values');
-  console.error('3. Restart the development server');
-  
-  // Show user-friendly error in the browser
-  if (typeof window !== 'undefined') {
-    setTimeout(() => {
-      alert('Supabase не настроен! Пожалуйста, настройте переменные окружения и перезапустите сервер.');
-    }, 1000);
-  }
-}
-
-// Use actual values or fallback to prevent errors
-const safeSupabaseUrl = supabaseUrl || 'https://placeholder.supabase.co';
-const safeSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
-
-export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
-
-// Add a helper function to check connection status
-export const checkSupabaseConnection = async () => {
-  if (!isSupabaseConfigured()) {
-    return { connected: false, error: 'Supabase not configured' };
-  }
-  
-  try {
-    const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
-    return { connected: !error, error: error?.message };
-  } catch (err) {
-    return { connected: false, error: (err as Error).message };
-  }
-};
-// Database tables
+// Database tables (только для reference, не используйте напрямую)
 export const TABLES = {
   USER_PROFILES: 'user_profiles',
   INFLUENCER_CARDS: 'influencer_cards',
@@ -88,8 +39,25 @@ export const TABLES = {
   COLLABORATION_REVIEWS: 'collaboration_reviews',
   OFFER_STATUS_HISTORY: 'offer_status_history',
   PAYMENT_STATUS_HISTORY: 'payment_status_history',
-  OFFERS: 'offers', // Унифицированная таблица предложений
-  COLLABORATION_OFFERS: 'collaboration_offers', // Deprecated - используйте OFFERS
+  OFFERS: 'offers',
+  COLLABORATION_OFFERS: 'collaboration_offers',
   USER_SETTINGS: 'user_settings',
   AUTO_CAMPAIGNS: 'auto_campaigns',
 } as const;
+
+/**
+ * @deprecated НЕ используйте! Frontend не имеет прямого доступа к Supabase.
+ */
+export const supabase = null;
+
+/**
+ * @deprecated НЕ используйте! Frontend не имеет прямого доступа к Supabase.
+ */
+export const isSupabaseConfigured = () => false;
+
+/**
+ * @deprecated НЕ используйте! Frontend не имеет прямого доступа к Supabase.
+ */
+export const checkSupabaseConnection = async () => {
+  throw new Error('Frontend не имеет прямого доступа к Supabase. Используйте backend API.');
+};
