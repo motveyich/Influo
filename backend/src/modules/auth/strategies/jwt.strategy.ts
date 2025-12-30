@@ -7,7 +7,7 @@ import { SupabaseService } from '../../../shared/supabase/supabase.service';
 export interface JwtPayload {
   sub: string;
   email: string;
-  userType: string;
+  userType: string | null;
   iat?: number;
   exp?: number;
 }

@@ -25,20 +25,24 @@ export class SignupDto {
 
   @ApiProperty({
     example: 'John Doe',
-    description: 'User full name',
+    description: 'User full name (optional)',
+    required: false,
   })
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  fullName: string;
+  fullName?: string;
 
   @ApiProperty({
     example: 'influencer',
     enum: UserType,
-    description: 'Type of user account',
+    description: 'Type of user account (optional)',
+    required: false,
   })
+  @IsOptional()
   @IsEnum(UserType)
-  userType: UserType;
+  userType?: UserType;
 
   @ApiProperty({
     example: 'johndoe',

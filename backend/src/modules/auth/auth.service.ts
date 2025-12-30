@@ -56,14 +56,13 @@ export class AuthService implements OnModuleInit {
       .insert({
         user_id: authData.user.id,
         email: signupDto.email,
-        full_name: signupDto.fullName,
-        user_type: signupDto.userType,
+        full_name: signupDto.fullName || null,
+        user_type: signupDto.userType || null,
         username: signupDto.username || null,
         unified_account_info: {
           isVerified: false,
           joinedAt: new Date().toISOString(),
           lastActive: new Date().toISOString(),
-          accountType: signupDto.userType,
         },
       });
 
@@ -80,15 +79,15 @@ export class AuthService implements OnModuleInit {
     const tokens = await this.generateTokens({
       sub: authData.user.id,
       email: signupDto.email,
-      userType: signupDto.userType,
+      userType: signupDto.userType || null,
     });
 
     return {
       user: {
         id: authData.user.id,
         email: signupDto.email,
-        fullName: signupDto.fullName,
-        userType: signupDto.userType,
+        fullName: signupDto.fullName || null,
+        userType: signupDto.userType || null,
       },
       ...tokens,
     };
@@ -179,7 +178,7 @@ export class AuthService implements OnModuleInit {
     const tokens = await this.generateTokens({
       sub: data.user.id,
       email: data.user.email!,
-      userType: profile?.user_type || 'influencer',
+      userType: profile?.user_type || null,
     });
 
     return tokens;

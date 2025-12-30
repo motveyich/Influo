@@ -62,19 +62,11 @@ class AuthService {
     this.listeners.forEach(listener => listener(this.currentState));
   }
 
-  async signUp(email: string, password: string, userType: string = 'influencer', fullName?: string) {
-=======
   async signUp(email: string, password: string) {
-
     try {
-      // Use email username as fullName if not provided
-      const defaultFullName = fullName || email.split('@')[0];
-
       const response = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
-        userType,
-        fullName: defaultFullName,
       });
 
       apiClient.setAccessToken(response.accessToken);
