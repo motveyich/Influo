@@ -22,7 +22,7 @@ export function useProfileCompletion(userId: string) {
     }
 
     if (!isDatabaseConfigured()) {
-      setError('Database is not configured. Please check your .env file contains valid VITE_DATABASE_URL and VITE_DATABASE_KEY values.');
+      setError('Database is not configured.');
       setIsLoading(false);
       return;
     }
@@ -40,15 +40,15 @@ export function useProfileCompletion(userId: string) {
         userProfile = await profileService.getProfile(userId);
       } catch (profileError: any) {
         if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
-          setError('Unable to connect to database. Please check your .env file contains valid configuration, then restart the dev server.');
+          setError('Unable to connect to database.');
           setProfile(null);
           return;
         } else if (profileError?.message?.includes('Failed to fetch') || profileError?.cause?.message === 'Failed to fetch') {
-          setError('Database connection failed. Please verify your configuration and restart the development server.');
+          setError('Database connection failed.');
           setProfile(null);
           return;
         } else {
-          setError(profileError.message || 'Failed to load profile. Please check your database connection.');
+          setError(profileError.message || 'Failed to load profile.');
           setProfile(null);
           return;
         }
@@ -66,17 +66,17 @@ export function useProfileCompletion(userId: string) {
       console.warn('Failed to load profile, handling gracefully:', err);
 
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to database. Please check that your .env file exists and contains valid configuration, then restart the dev server.');
+        setError('Unable to connect to database.');
       } else if (err.message?.includes('Unable to connect') || err.message?.includes('Database connection failed')) {
         setError(err.message);
       } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
-        setError('Database tables are not set up. Please configure your database properly.');
+        setError('Database tables are not set up.');
       } else if (err.message?.includes('Invalid API key')) {
-        setError('Invalid API key. Please check your configuration.');
+        setError('Invalid API key.');
       } else if (err.message?.includes('Failed to fetch')) {
-        setError('Network connection failed. Please check your internet connection and database configuration.');
+        setError('Network connection failed.');
       } else {
-        setError(err.message || 'Failed to load profile. Please check your database connection.');
+        setError(err.message || 'Failed to load profile.');
       }
 
       setProfile(null);
@@ -87,7 +87,7 @@ export function useProfileCompletion(userId: string) {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!isDatabaseConfigured()) {
-      throw new Error('Database is not configured. Please check your .env file configuration.');
+      throw new Error('Database is not configured.');
     }
 
     try {

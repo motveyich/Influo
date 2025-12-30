@@ -228,51 +228,7 @@ export class AIChatService {
   }
 
   private async callDeepSeekAPI(request: AnalysisRequest): Promise<string> {
-    try {
-      // Check if Database is configured
-      const databaseUrl = import.meta.env.VITE_DATABASE_URL;
-      const databaseKey = import.meta.env.VITE_DATABASE_KEY;
-
-      if (!databaseUrl || !databaseKey) {
-        throw new Error('Database не настроен. AI-анализ недоступен. Нажмите "Connect to Database" в правом верхнем углу.');
-      }
-
-      const apiUrl = `${import.meta.env.VITE_DATABASE_URL}/functions/v1/ai-chat-analysis`;
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_DATABASE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Edge function error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'AI analysis failed');
-      }
-
-      return result.response;
-    } catch (error) {
-      console.error('Failed to call DeepSeek API:', error);
-      
-      // Handle specific error types
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error('Не удалось подключиться к AI-сервису. Проверьте настройки Database или попробуйте позже.');
-      }
-      
-      if (error instanceof Error) {
-        throw error;
-      }
-      
-      throw new Error('AI-анализ временно недоступен');
-    }
+    throw new Error('AI service is not available - database not configured');
   }
 
   private async saveAIMessage(
