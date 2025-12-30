@@ -25,7 +25,6 @@ export function DemoLayout({ children }: DemoLayoutProps) {
   const navigation = [
     { name: 'Главная', href: '/', icon: Zap },
     { name: 'Инфлюенсеры', href: '/profiles', icon: Users },
-    { name: 'Кампании', href: '/campaigns', icon: Target },
     { name: 'Карточки', href: '/influencer-cards', icon: Grid },
     { name: 'Предложения', href: '/offers', icon: HandCoins },
     { name: 'Чат', href: '/chat', icon: MessageCircle },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Users,
   Target,
@@ -28,6 +28,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [showAuthModal, setShowAuthModal] = React.useState(false);
   const { user, loading, isAuthenticated, signOut, userRole, isModerator, isBlocked, blockCheckLoading } = useAuth();
@@ -87,11 +88,24 @@ export function Layout({ children }: LayoutProps) {
     console.log('🚨 [Layout] User is blocked, showing blocked notice');
     return <BlockedUserNotice />;
   }
-  
-  // Redirect to demo if not authenticated
+
+  // Redirect to landing page if not authenticated
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
+
+  // Show loading while redirecting
   if (!isAuthenticated) {
-    window.location.href = '/';
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
   }
 
   const getCurrentFeature = () => {
