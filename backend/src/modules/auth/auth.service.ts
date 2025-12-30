@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
@@ -6,7 +6,7 @@ import { SignupDto, LoginDto } from './dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
@@ -14,6 +14,21 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    if (!jwtSecret || !jwtRefreshSecret) {
+      this.logger.error('❌ CRITICAL: JWT_SECRET and JWT_REFRESH_SECRET must be configured!');
+      this.logger.error('Please add these environment variables to your Vercel deployment:');
+      this.logger.error('  - JWT_SECRET (minimum 32 characters)');
+      this.logger.error('  - JWT_REFRESH_SECRET (minimum 32 characters, different from JWT_SECRET)');
+      throw new Error('Missing required JWT configuration');
+    }
+
+    this.logger.log('✅ JWT configuration verified');
+  }
 
   async signup(signupDto: SignupDto) {
     const supabase = this.supabaseService.getClient();
@@ -54,7 +69,11 @@ export class AuthService {
 
     if (profileError) {
       this.logger.error(`Profile creation failed: ${profileError.message}`, profileError);
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      try {
+        await adminClient.auth.admin.deleteUser(authData.user.id);
+      } catch (deleteError) {
+        this.logger.error(`Failed to rollback user creation: ${deleteError}`);
+      }
       throw new ConflictException('Failed to create user profile');
     }
 
@@ -193,20 +212,33 @@ export class AuthService {
   }
 
   private async generateTokens(payload: JwtPayload) {
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '1h',
-    });
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
-    });
+    if (!jwtSecret || !jwtRefreshSecret) {
+      this.logger.error('JWT_SECRET or JWT_REFRESH_SECRET is not configured');
+      throw new Error('JWT configuration is missing. Please configure JWT_SECRET and JWT_REFRESH_SECRET environment variables.');
+    }
 
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: parseInt(this.configService.get<string>('JWT_EXPIRATION') || '3600'),
-    };
+    try {
+      const accessToken = this.jwtService.sign(payload, {
+        secret: jwtSecret,
+        expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '1h',
+      });
+
+      const refreshToken = this.jwtService.sign(payload, {
+        secret: jwtRefreshSecret,
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        expiresIn: parseInt(this.configService.get<string>('JWT_EXPIRATION') || '3600'),
+      };
+    } catch (error) {
+      this.logger.error('Failed to generate tokens:', error);
+      throw new Error('Failed to generate authentication tokens');
+    }
   }
 }
