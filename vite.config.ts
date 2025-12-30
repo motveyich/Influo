@@ -13,7 +13,7 @@ export default defineConfig({
         target: 'https://influo-seven.vercel.app',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // НЕ удаляем /api prefix - backend ожидает его в path
       },
     },
   },

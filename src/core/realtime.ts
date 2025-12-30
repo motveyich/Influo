@@ -1,74 +1,33 @@
-import { supabase } from './supabase';
+/**
+ * ⚠️ REALTIME ВРЕМЕННО ОТКЛЮЧЕН
+ *
+ * Frontend НЕ использует Supabase realtime напрямую.
+ * Realtime функциональность будет реализована через backend WebSockets/SSE позже.
+ *
+ * Этот файл содержит заглушки для обратной совместимости.
+ */
+
 import { RealtimeEvent } from './types';
-import { REALTIME_CONFIG } from './config';
 
 export class RealtimeService {
   private subscriptions = new Map();
-  private broadcastChannel: any;
 
   constructor() {
-    this.broadcastChannel = supabase.channel(REALTIME_CONFIG.BROADCAST_CHANNEL_NAME);
+    console.warn('[Realtime] Realtime функциональность временно отключена. Используйте polling через backend API.');
   }
 
   private sendEvent(event: RealtimeEvent) {
-    try {
-      this.broadcastChannel.send({
-        type: 'broadcast',
-        event: event.type,
-        payload: event,
-      });
-    } catch (error) {
-      console.error('Failed to send real-time event:', error);
-      throw error;
-    }
+    console.warn('[Realtime] sendEvent вызван, но realtime отключен:', event.type);
   }
 
   public subscribeToChatMessages(userId: string, callback: (message: any) => void) {
-    const channelName = `chat_${userId}`;
-    
-    if (this.subscriptions.has(channelName)) {
-      return this.subscriptions.get(channelName);
-    }
-
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `receiver_id=eq.${userId}`,
-      }, callback)
-      .subscribe();
-
-    this.subscriptions.set(channelName, channel);
-    return channel;
+    console.warn('[Realtime] subscribeToChatMessages вызван для userId:', userId);
+    return () => {};
   }
 
   public subscribeToOfferUpdates(userId: string, callback: (offer: any) => void) {
-    const channelName = `offers_${userId}`;
-    
-    if (this.subscriptions.has(channelName)) {
-      return this.subscriptions.get(channelName);
-    }
-
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'offers',
-        filter: `influencer_id=eq.${userId}`,
-      }, callback)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'offers',
-        filter: `advertiser_id=eq.${userId}`,
-      }, callback)
-      .subscribe();
-
-    this.subscriptions.set(channelName, channel);
-    return channel;
+    console.warn('[Realtime] subscribeToOfferUpdates вызван для userId:', userId);
+    return () => {};
   }
 
   public sendChatMessage(message: RealtimeEvent) {
@@ -96,22 +55,13 @@ export class RealtimeService {
   }
 
   public unsubscribe(channelName: string) {
-    const channel = this.subscriptions.get(channelName);
-    if (channel) {
-      supabase.removeChannel(channel);
-      this.subscriptions.delete(channelName);
-    }
+    console.warn('[Realtime] unsubscribe вызван для channel:', channelName);
+    this.subscriptions.delete(channelName);
   }
 
   public unsubscribeAll() {
-    this.subscriptions.forEach((channel, channelName) => {
-      supabase.removeChannel(channel);
-    });
+    console.warn('[Realtime] unsubscribeAll вызван');
     this.subscriptions.clear();
-    
-    if (this.broadcastChannel) {
-      supabase.removeChannel(this.broadcastChannel);
-    }
   }
 }
 
