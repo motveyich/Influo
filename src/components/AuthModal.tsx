@@ -4,7 +4,6 @@ import { X, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { profileService } from '../modules/profiles/services/profileService';
 import toast from 'react-hot-toast';
 
 interface AuthModalProps {
@@ -115,20 +114,6 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
             toast.error(error.message);
           }
         } else {
-          // Create profile entry for new user
-          if (data.user) {
-            try {
-              await profileService.createProfile({
-                userId: data.user.id,
-                email: data.user.email || email,
-                fullName: '',
-                userType: 'influencer'
-              });
-            } catch (profileError) {
-              console.error('Failed to create profile:', profileError);
-              // Don't show error to user as auth was successful
-            }
-          }
           toast.success(t('auth.accountCreated'));
           onClose();
           navigate('/app');
