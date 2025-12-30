@@ -33,14 +33,19 @@ export class AuthService implements OnModuleInit {
   async signup(signupDto: SignupDto) {
     const supabase = this.supabaseService.getClient();
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: signupDto.email,
       password: signupDto.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: signupDto.fullName,
+        user_type: signupDto.userType,
+      },
     });
 
     if (authError) {
       this.logger.error(`Signup failed: ${authError.message}`, authError);
-      if (authError.message.includes('already registered')) {
+      if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
         throw new ConflictException('User with this email already exists');
       }
       throw new UnauthorizedException(authError.message);
