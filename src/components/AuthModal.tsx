@@ -18,6 +18,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -40,6 +41,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
       case 'confirmPassword':
         if (mode === 'signup' && value !== password) return 'Пароли не совпадают';
         return '';
+      case 'username':
+        if (mode === 'signup' && !value.trim()) return 'Имя пользователя обязательно';
+        if (mode === 'signup' && value.length < 3) return 'Минимум 3 символа';
+        if (mode === 'signup' && value.length > 30) return 'Максимум 30 символов';
+        if (mode === 'signup' && !/^[a-zA-Z0-9_]+$/.test(value)) return 'Только буквы, цифры и _';
+        return '';
       default:
         return '';
     }
@@ -49,6 +56,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
     if (name === 'email') setEmail(value);
     else if (name === 'password') setPassword(value);
     else if (name === 'confirmPassword') setConfirmPassword(value);
+    else if (name === 'username') setUsername(value);
 
     if (touched[name]) {
       const error = validateField(name, value);
@@ -66,9 +74,17 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
     const newErrors: Record<string, string> = {};
     const newTouched: Record<string, boolean> = {};
 
-    ['email', 'password', mode === 'signup' ? 'confirmPassword' : ''].filter(Boolean).forEach(field => {
+    const fields = ['email', 'password'];
+    if (mode === 'signup') {
+      fields.push('confirmPassword', 'username');
+    }
+
+    fields.forEach(field => {
       newTouched[field] = true;
-      const value = field === 'email' ? email : field === 'password' ? password : confirmPassword;
+      const value = field === 'email' ? email
+        : field === 'password' ? password
+        : field === 'confirmPassword' ? confirmPassword
+        : username;
       const error = validateField(field, value);
       if (error) newErrors[field] = error;
     });
@@ -103,7 +119,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
           navigate('/app');
         }
       } else {
-        const { data, error } = await signUp(email, password);
+        const { data, error } = await signUp(email, password, username);
         if (error) {
           if (error.message.includes('User already registered')) {
             toast.error(t('auth.userAlreadyExists'));
@@ -131,7 +147,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setUsername('');
     setErrors({});
+    setTouched({});
   };
 
   const switchMode = () => {
@@ -183,6 +201,33 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
               </p>
             )}
           </div>
+
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Имя пользователя
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => handleFieldChange('username', e.target.value)}
+                  onBlur={(e) => handleBlur('username', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.username ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Введите имя пользователя"
+                />
+              </div>
+              {touched.username && errors.username && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.username}
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

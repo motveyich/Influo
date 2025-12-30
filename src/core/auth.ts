@@ -62,11 +62,12 @@ class AuthService {
     this.listeners.forEach(listener => listener(this.currentState));
   }
 
-  async signUp(email: string, password: string) {
+  async signUp(email: string, password: string, username?: string) {
     try {
       const response = await apiClient.post<AuthResponse>('/auth/signup', {
         email,
         password,
+        username,
       });
 
       apiClient.setAccessToken(response.accessToken);
