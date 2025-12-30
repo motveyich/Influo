@@ -31,26 +31,11 @@ export class RealtimeService {
 
   public subscribeToChatMessages(userId: string, callback: (message: any) => void) {
     console.warn('[RealtimeService] subscribeToChatMessages called but realtime is disabled');
-    return null;
-  }
-
-  public subscribeToOfferUpdates(userId: string, callback: (offer: any) => void) {
-    console.warn('[RealtimeService] subscribeToOfferUpdates called but realtime is disabled');
-    return null;
-    console.warn('[Realtime] Realtime функциональность временно отключена. Используйте polling через backend API.');
-  }
-
-  private sendEvent(event: RealtimeEvent) {
-    console.warn('[Realtime] sendEvent вызван, но realtime отключен:', event.type);
-  }
-
-  public subscribeToChatMessages(userId: string, callback: (message: any) => void) {
-    console.warn('[Realtime] subscribeToChatMessages вызван для userId:', userId);
     return () => {};
   }
 
   public subscribeToOfferUpdates(userId: string, callback: (offer: any) => void) {
-    console.warn('[Realtime] subscribeToOfferUpdates вызван для userId:', userId);
+    console.warn('[RealtimeService] subscribeToOfferUpdates called but realtime is disabled');
     return () => {};
   }
 
