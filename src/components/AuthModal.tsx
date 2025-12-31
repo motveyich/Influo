@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { X, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../hooks/useTranslation';
@@ -13,7 +12,6 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModalProps) {
-  const navigate = useNavigate();
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -116,7 +114,6 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
         } else {
           toast.success(t('auth.signInSuccess'));
           onClose();
-          navigate('/app');
         }
       } else {
         const { data, error } = await signUp(email, password, username);
@@ -132,7 +129,6 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
         } else {
           toast.success(t('auth.accountCreated'));
           onClose();
-          navigate('/app');
         }
       }
     } catch (error: any) {

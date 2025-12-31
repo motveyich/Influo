@@ -18,6 +18,28 @@ import { DemoInfluencerCardsPage } from './demo/pages/DemoInfluencerCardsPage';
 import { DemoOffersPage } from './demo/pages/DemoOffersPage';
 import { DemoChatPage } from './demo/pages/DemoChatPage';
 import { LandingPage } from './pages/LandingPage';
+import { useAuth } from './hooks/useAuth';
+
+function LandingPageGuard() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />;
+  }
+
+  return <LandingPage />;
+}
 
 function App() {
   return (
@@ -26,7 +48,7 @@ function App() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <Routes>
             {/* Landing Page */}
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<LandingPageGuard />} />
 
             {/* Demo Routes */}
             <Route path="/demo" element={

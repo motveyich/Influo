@@ -36,6 +36,7 @@ export function Layout({ children }: LayoutProps) {
   const currentUserId = user?.id || '';
   const { profile: currentUserProfile } = useProfileCompletion(currentUserId);
   const { settings } = useUserSettings(currentUserId);
+  const prevIsAuthenticatedRef = React.useRef<boolean | null>(null);
 
   const baseNavigation = [
     { name: t('nav.home'), href: '/app', icon: Zap },
@@ -62,10 +63,18 @@ export function Layout({ children }: LayoutProps) {
     }
   }, [settings?.interface]);
 
-  // Redirect to landing page if not authenticated
+  // Redirect to landing page only when user logs out (not on initial load)
   React.useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/', { replace: true });
+    if (!loading) {
+      const prevAuthenticated = prevIsAuthenticatedRef.current;
+
+      // Redirect only if user was previously authenticated and is now not authenticated (logout)
+      if (prevAuthenticated === true && !isAuthenticated) {
+        navigate('/', { replace: true });
+      }
+
+      // Update the ref with current authentication state
+      prevIsAuthenticatedRef.current = isAuthenticated;
     }
   }, [loading, isAuthenticated, navigate]);
 
