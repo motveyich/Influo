@@ -84,7 +84,14 @@ class ApiClient {
         return {} as T;
       }
 
-      return await response.json();
+      const jsonResponse = await response.json();
+
+      // If response has a wrapper structure with 'data' field, unwrap it
+      if (jsonResponse.success !== undefined && jsonResponse.data !== undefined) {
+        return jsonResponse.data as T;
+      }
+
+      return jsonResponse as T;
     } catch (error) {
       if (error instanceof Error) {
         throw error;

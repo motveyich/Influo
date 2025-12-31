@@ -95,6 +95,16 @@ class AuthService {
         password,
       });
 
+      if (!response || !response.user) {
+        return {
+          data: null,
+          error: {
+            message: 'Invalid response from server',
+            name: 'InvalidResponseError'
+          }
+        };
+      }
+
       if (response.user.isDeleted) {
         return {
           data: null,
