@@ -1,11 +1,12 @@
 import { Controller, Get, Put, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserSettingsService } from './user-settings.service';
 import { UpdateSettingsDto, ChangePasswordDto } from './dto';
 
 @Controller('user-settings')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class UserSettingsController {
   constructor(private readonly userSettingsService: UserSettingsService) {}
 

@@ -6,8 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('favorites')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 @Controller('favorites')
 export class FavoritesController {
   constructor(private favoritesService: FavoritesService) {}

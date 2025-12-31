@@ -22,16 +22,16 @@ import { CreateAutoCampaignDto, UpdateAutoCampaignDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('auto-campaigns')
 @Controller('auto-campaigns')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-auth')
 export class AutoCampaignsController {
   constructor(private autoCampaignsService: AutoCampaignsService) {}
 
   @Post()
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new auto campaign' })
   @ApiResponse({ status: 201, description: 'Campaign created successfully' })
   @ApiResponse({ status: 403, description: 'Only advertisers can create campaigns' })
@@ -44,6 +44,7 @@ export class AutoCampaignsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all auto campaigns with filters' })
   @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
@@ -62,6 +63,7 @@ export class AutoCampaignsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get auto campaign by ID' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign found' })
@@ -72,6 +74,7 @@ export class AutoCampaignsController {
 
   @Patch(':id')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign updated successfully' })
@@ -88,6 +91,7 @@ export class AutoCampaignsController {
 
   @Delete(':id')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign deleted successfully' })
@@ -101,6 +105,7 @@ export class AutoCampaignsController {
   }
 
   @Get(':id/matches')
+  @Public()
   @ApiOperation({ summary: 'Get matched influencers for campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'List of matched influencer cards' })
@@ -111,6 +116,7 @@ export class AutoCampaignsController {
 
   @Post(':id/pause')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Pause auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign paused successfully' })
@@ -125,6 +131,7 @@ export class AutoCampaignsController {
 
   @Post(':id/resume')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Resume auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
   @ApiResponse({ status: 200, description: 'Campaign resumed successfully' })

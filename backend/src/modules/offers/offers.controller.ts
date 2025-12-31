@@ -25,7 +25,6 @@ import { CurrentUser } from '../../common/decorators';
 
 @ApiTags('offers')
 @Controller('offers')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class OffersController {
   constructor(private offersService: OffersService) {}

@@ -6,8 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('blacklist')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 @Controller('blacklist')
 export class BlacklistController {
   constructor(private blacklistService: BlacklistService) {}

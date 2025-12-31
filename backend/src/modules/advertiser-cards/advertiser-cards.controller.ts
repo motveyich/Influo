@@ -23,16 +23,16 @@ import { CreateAdvertiserCardDto, UpdateAdvertiserCardDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('advertiser-cards')
 @Controller('advertiser-cards')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-auth')
 export class AdvertiserCardsController {
   constructor(private advertiserCardsService: AdvertiserCardsService) {}
 
   @Post()
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new advertiser card' })
   @ApiResponse({ status: 201, description: 'Card created successfully' })
   @ApiResponse({ status: 403, description: 'Only advertisers can create cards' })
@@ -45,6 +45,7 @@ export class AdvertiserCardsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all advertiser cards with filters' })
   @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'minBudget', required: false, description: 'Minimum budget' })
@@ -66,6 +67,7 @@ export class AdvertiserCardsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get advertiser card by ID' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card found' })
@@ -76,6 +78,7 @@ export class AdvertiserCardsController {
 
   @Patch(':id')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update advertiser card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card updated successfully' })
@@ -92,6 +95,7 @@ export class AdvertiserCardsController {
 
   @Delete(':id')
   @Roles('advertiser')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete advertiser card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card deleted successfully' })

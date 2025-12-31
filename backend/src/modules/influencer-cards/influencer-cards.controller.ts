@@ -23,16 +23,16 @@ import { CreateInfluencerCardDto, UpdateInfluencerCardDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('influencer-cards')
 @Controller('influencer-cards')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-auth')
 export class InfluencerCardsController {
   constructor(private influencerCardsService: InfluencerCardsService) {}
 
   @Post()
   @Roles('influencer')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new influencer card' })
   @ApiResponse({ status: 201, description: 'Card created successfully' })
   @ApiResponse({ status: 403, description: 'Only influencers can create cards' })
@@ -44,6 +44,7 @@ export class InfluencerCardsController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get all influencer cards with filters' })
   @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'minFollowers', required: false, description: 'Minimum followers' })
@@ -65,6 +66,7 @@ export class InfluencerCardsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Get influencer card by ID' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card found' })
@@ -75,6 +77,7 @@ export class InfluencerCardsController {
 
   @Patch(':id')
   @Roles('influencer')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update influencer card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card updated successfully' })
@@ -90,6 +93,7 @@ export class InfluencerCardsController {
 
   @Delete(':id')
   @Roles('influencer')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete influencer card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card deleted successfully' })
@@ -103,6 +107,7 @@ export class InfluencerCardsController {
   }
 
   @Get(':id/analytics')
+  @Public()
   @ApiOperation({ summary: 'Get card analytics' })
   @ApiParam({ name: 'id', description: 'Card ID' })
   @ApiResponse({ status: 200, description: 'Card analytics' })

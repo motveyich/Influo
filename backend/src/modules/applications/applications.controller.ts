@@ -23,7 +23,6 @@ import { CurrentUser } from '../../common/decorators';
 
 @ApiTags('applications')
 @Controller('applications')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class ApplicationsController {
   constructor(private applicationsService: ApplicationsService) {}

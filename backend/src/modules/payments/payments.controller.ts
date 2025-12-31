@@ -7,8 +7,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('payments')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 @Controller('payments')
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
