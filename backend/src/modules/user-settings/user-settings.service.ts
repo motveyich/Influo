@@ -7,7 +7,7 @@ export class UserSettingsService {
   constructor(private readonly supabase: SupabaseService) {}
 
   async getUserSettings(userId: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('user_settings')
       .select('*')
       .eq('user_id', userId)
@@ -32,7 +32,7 @@ export class UserSettingsService {
       updatedAt: new Date().toISOString()
     };
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('user_settings')
       .upsert([this.transformToDatabase(updatedSettings)], {
         onConflict: 'user_id'
@@ -49,14 +49,14 @@ export class UserSettingsService {
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     // Get user email
-    const { data: { user }, error: userError } = await this.supabase.client.auth.admin.getUserById(userId);
+    const { data: { user }, error: userError } = await this.supabase.getClient().auth.admin.getUserById(userId);
 
     if (userError || !user?.email) {
       throw new NotFoundException('User not found');
     }
 
     // Update password using Supabase Auth Admin API
-    const { error } = await this.supabase.client.auth.admin.updateUserById(
+    const { error } = await this.supabase.getClient().auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );
@@ -86,7 +86,7 @@ export class UserSettingsService {
 
   async deleteAccount(userId: string) {
     // Mark user profile as deleted
-    const { error } = await this.supabase.client
+    const { error } = await this.supabase.getClient()
       .from('user_profiles')
       .update({
         is_deleted: true,
@@ -103,7 +103,7 @@ export class UserSettingsService {
   private async createDefaultSettings(userId: string) {
     const defaultSettings = this.getDefaultSettings(userId);
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('user_settings')
       .insert([this.transformToDatabase(defaultSettings)])
       .select()

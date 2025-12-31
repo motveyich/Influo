@@ -7,7 +7,7 @@ export class RolesService {
 
   async getUserRole(userId: string): Promise<string> {
     // First check user_roles table for active role assignment
-    const { data: roleData } = await this.supabase.client
+    const { data: roleData } = await this.supabase.getClient()
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
@@ -19,7 +19,7 @@ export class RolesService {
     }
 
     // Fallback to role in user_profiles
-    const { data: profileData } = await this.supabase.client
+    const { data: profileData } = await this.supabase.getClient()
       .from('user_profiles')
       .select('role')
       .eq('user_id', userId)
@@ -36,7 +36,7 @@ export class RolesService {
     }
 
     // Deactivate existing role assignments
-    await this.supabase.client
+    await this.supabase.getClient()
       .from('user_roles')
       .update({ is_active: false })
       .eq('user_id', targetUserId);
@@ -51,7 +51,7 @@ export class RolesService {
       metadata: {}
     };
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('user_roles')
       .insert([newRole])
       .select()
@@ -62,7 +62,7 @@ export class RolesService {
     }
 
     // Update role in user_profiles for quick access
-    await this.supabase.client
+    await this.supabase.getClient()
       .from('user_profiles')
       .update({ role: role })
       .eq('user_id', targetUserId);
@@ -78,20 +78,20 @@ export class RolesService {
     }
 
     // Deactivate role assignments
-    await this.supabase.client
+    await this.supabase.getClient()
       .from('user_roles')
       .update({ is_active: false })
       .eq('user_id', targetUserId);
 
     // Reset to default user role
-    await this.supabase.client
+    await this.supabase.getClient()
       .from('user_profiles')
       .update({ role: 'user' })
       .eq('user_id', targetUserId);
   }
 
   async getUsersWithRoles() {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('user_roles')
       .select(`
         *,
