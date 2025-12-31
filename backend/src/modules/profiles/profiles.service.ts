@@ -213,6 +213,9 @@ export class ProfilesService {
       socialMediaLinks: profile.social_media_links || {},
       metrics: profile.metrics || {},
       unifiedAccountInfo: profile.unified_account_info || {},
+      isDeleted: profile.is_deleted || false,
+      deletedAt: profile.deleted_at || null,
+      deletedBy: profile.deleted_by || null,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     };
