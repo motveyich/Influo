@@ -208,6 +208,25 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('User not found');
     }
 
+    // Load user role
+    let role = 'user';
+    try {
+      const { data: roleData } = await adminClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (roleData) {
+        role = roleData.role;
+      } else if (profile.role) {
+        role = profile.role;
+      }
+    } catch (err) {
+      console.error('[AuthService] Failed to load user role:', err);
+    }
+
     return {
       id: profile.user_id,
       email: profile.email,
@@ -220,12 +239,17 @@ export class AuthService implements OnModuleInit {
       unifiedAccountInfo: profile.unified_account_info,
       isDeleted: profile.is_deleted || false,
       deletedAt: profile.deleted_at || null,
+      role: role,
     };
   }
 
   private async generateTokens(payload: JwtPayload) {
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
     const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    const jwtExpiration = this.configService.get<string>('JWT_EXPIRATION') || '86400'; // 24 hours default
+
+    console.log('🔐 [AuthService] Generating tokens with secret:', jwtSecret ? `${jwtSecret.substring(0, 4)}...` : 'UNDEFINED');
+    console.log('🔐 [AuthService] JWT_EXPIRATION:', jwtExpiration);
 
     if (!jwtSecret || !jwtRefreshSecret) {
       this.logger.error('JWT_SECRET or JWT_REFRESH_SECRET is not configured');
@@ -235,7 +259,7 @@ export class AuthService implements OnModuleInit {
     try {
       const accessToken = this.jwtService.sign(payload, {
         secret: jwtSecret,
-        expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '1h',
+        expiresIn: jwtExpiration,
       });
 
       const refreshToken = this.jwtService.sign(payload, {
@@ -243,10 +267,12 @@ export class AuthService implements OnModuleInit {
         expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
       });
 
+      console.log('✅ [AuthService] Tokens generated successfully for user:', payload.email);
+
       return {
         accessToken,
         refreshToken,
-        expiresIn: parseInt(this.configService.get<string>('JWT_EXPIRATION') || '3600'),
+        expiresIn: parseInt(jwtExpiration),
       };
     } catch (error) {
       this.logger.error('Failed to generate tokens:', error);

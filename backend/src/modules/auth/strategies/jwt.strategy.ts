@@ -26,7 +26,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    console.log('🔐 [JwtStrategy] Validating token with secret:', jwtSecret ? `${jwtSecret.substring(0, 4)}...` : 'UNDEFINED');
+    console.log('🔐 [JwtStrategy] Payload:', { sub: payload.sub, email: payload.email, exp: payload.exp });
+
     if (!payload.sub || !payload.email) {
+      console.error('❌ [JwtStrategy] Invalid token payload - missing sub or email');
       throw new UnauthorizedException('Invalid token payload');
     }
 
@@ -38,8 +43,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       .maybeSingle();
 
     if (error || !user) {
+      console.error('❌ [JwtStrategy] User not found:', payload.sub);
       throw new UnauthorizedException('User not found');
     }
+
+    console.log('✅ [JwtStrategy] Token validated successfully for user:', user.email);
 
     return {
       userId: user.user_id,

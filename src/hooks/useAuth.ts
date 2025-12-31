@@ -21,7 +21,9 @@ export function useAuth() {
 
   useEffect(() => {
     if (userId) {
-      loadUserRole();
+      // Get role from authState.user.role instead of separate API call
+      setUserRole((authState.user?.role as UserRole) || 'user');
+      setRoleLoading(false);
       checkUserStatus();
     } else {
       setUserRole('user');
@@ -29,7 +31,7 @@ export function useAuth() {
       setIsBlocked(false);
       setBlockCheckLoading(false);
     }
-  }, [userId]);
+  }, [userId, authState.user?.role]);
   
   const checkUserStatus = async () => {
     try {
@@ -96,14 +98,13 @@ export function useAuth() {
     }
   };
 
-  const loadUserRole = async () => {
+  const refreshRole = async () => {
     try {
       setRoleLoading(true);
-      const role = await roleService.getUserRole(authState.user!.id);
-      setUserRole(role);
+      // Refresh entire user object including role
+      await authService.refreshUser();
     } catch (error) {
-      console.error('Failed to load user role:', error);
-      setUserRole('user');
+      console.error('Failed to refresh user role:', error);
     } finally {
       setRoleLoading(false);
     }
@@ -122,7 +123,7 @@ export function useAuth() {
     signIn: authService.signIn.bind(authService),
     signUp: authService.signUp.bind(authService),
     signOut: authService.signOut.bind(authService),
-    refreshRole: loadUserRole,
+    refreshRole,
     checkUserStatus,
   };
 }

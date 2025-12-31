@@ -9,6 +9,7 @@ export interface User {
   avatarUrl?: string;
   isDeleted?: boolean;
   deletedAt?: string;
+  role?: string;
 }
 
 export interface AuthState {
@@ -70,7 +71,7 @@ class AuthService {
         username,
       });
 
-      apiClient.setAccessToken(response.accessToken);
+      apiClient.setAccessToken(response.accessToken, (response as any).expiresIn);
       localStorage.setItem('refreshToken', response.refreshToken);
 
       this.currentState = { user: response.user, loading: false };
@@ -115,7 +116,7 @@ class AuthService {
         };
       }
 
-      apiClient.setAccessToken(response.accessToken);
+      apiClient.setAccessToken(response.accessToken, (response as any).expiresIn);
       localStorage.setItem('refreshToken', response.refreshToken);
 
       this.currentState = { user: response.user, loading: false };

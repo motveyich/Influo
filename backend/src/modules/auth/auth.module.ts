@@ -15,7 +15,7 @@ import { SupabaseModule } from '../../shared/supabase/supabase.module';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '1h',
+          expiresIn: configService.get<string>('JWT_EXPIRATION') || '86400', // 24 hours default
         },
       }),
       inject: [ConfigService],

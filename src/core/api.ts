@@ -24,18 +24,30 @@ interface RequestOptions {
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private tokenExpiresAt: number | null = null;
+  private isRefreshing: boolean = false;
+  private refreshPromise: Promise<void> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     this.accessToken = localStorage.getItem('accessToken');
+    const expiresAt = localStorage.getItem('tokenExpiresAt');
+    this.tokenExpiresAt = expiresAt ? parseInt(expiresAt) : null;
   }
 
-  setAccessToken(token: string | null) {
+  setAccessToken(token: string | null, expiresIn?: number) {
     this.accessToken = token;
     if (token) {
       localStorage.setItem('accessToken', token);
+      if (expiresIn) {
+        const expiresAt = Date.now() + (expiresIn * 1000);
+        this.tokenExpiresAt = expiresAt;
+        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+      }
     } else {
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('tokenExpiresAt');
+      this.tokenExpiresAt = null;
     }
   }
 
@@ -43,7 +55,71 @@ class ApiClient {
     return this.accessToken || localStorage.getItem('accessToken');
   }
 
+  private async checkAndRefreshToken(): Promise<void> {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    // Refresh if token expires in less than 5 minutes
+    if (this.tokenExpiresAt && (this.tokenExpiresAt - now) < fiveMinutes) {
+      console.log('🔄 [ApiClient] Token expires soon, refreshing...');
+
+      this.isRefreshing = true;
+      this.refreshPromise = this.performTokenRefresh();
+
+      try {
+        await this.refreshPromise;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    }
+  }
+
+  private async performTokenRefresh(): Promise<void> {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      console.error('❌ [ApiClient] No refresh token available');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+      this.setAccessToken(data.accessToken, data.expiresIn);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+      console.log('✅ [ApiClient] Token refreshed successfully');
+    } catch (error) {
+      console.error('❌ [ApiClient] Token refresh failed:', error);
+      this.setAccessToken(null);
+      throw error;
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    // Check and refresh token if needed (unless this IS the refresh request)
+    if (!endpoint.includes('/auth/refresh') && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/signup')) {
+      try {
+        await this.checkAndRefreshToken();
+      } catch (error) {
+        console.log('🔄 [ApiClient] Token refresh failed, continuing with existing token');
+      }
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
     const token = this.getAccessToken();
 
@@ -71,6 +147,7 @@ class ApiClient {
       const response = await fetch(url, config);
 
       if (response.status === 401) {
+        console.error('❌ [ApiClient] 401 Unauthorized - token invalid');
         this.setAccessToken(null);
         throw new Error('Unauthorized');
       }
