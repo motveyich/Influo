@@ -93,6 +93,8 @@ export class AuthService implements OnModuleInit {
         email: signupDto.email,
         fullName: signupDto.fullName || null,
         userType: signupDto.userType || null,
+        isDeleted: false,
+        deletedAt: null,
       },
       ...tokens,
     };
@@ -145,6 +147,8 @@ export class AuthService implements OnModuleInit {
         fullName: profile.full_name,
         userType: profile.user_type,
         avatar: profile.avatar,
+        isDeleted: profile.is_deleted || false,
+        deletedAt: profile.deleted_at || null,
       },
       ...tokens,
     };
@@ -212,6 +216,8 @@ export class AuthService implements OnModuleInit {
       bio: profile.bio,
       location: profile.location,
       unifiedAccountInfo: profile.unified_account_info,
+      isDeleted: profile.is_deleted || false,
+      deletedAt: profile.deleted_at || null,
     };
   }
 

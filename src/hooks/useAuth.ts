@@ -67,15 +67,15 @@ export function useAuth() {
       console.log('✅ [useAuth] User status check result:', {
         userId: authState.user.id,
         profile,
-        isDeleted: profile?.is_deleted,
-        deletedAt: profile?.deleted_at
+        isDeleted: profile?.isDeleted,
+        deletedAt: profile?.deletedAt
       });
 
-      if (profile && profile.is_deleted === true) {
+      if (profile && profile.isDeleted === true) {
         console.error('🚨 [useAuth] LOGOUT REASON: User is DELETED/BLOCKED', {
           userId: authState.user.id,
-          isDeleted: profile.is_deleted,
-          deletedAt: profile.deleted_at,
+          isDeleted: profile.isDeleted,
+          deletedAt: profile.deletedAt,
           timestamp: new Date().toISOString()
         });
         setIsBlocked(true);
