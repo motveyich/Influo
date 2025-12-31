@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../core/supabase';
+import { apiClient } from '../core/api';
 import { UserSettings } from '../core/types';
 import { authService } from '../core/auth';
 import { analytics } from '../core/analytics';
@@ -13,21 +13,7 @@ export class UserSettingsService {
         return this.settingsCache.get(userId)!;
       }
 
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      let settings: UserSettings;
-      if (!data) {
-        // Create default settings for new user
-        settings = await this.createDefaultSettings(userId);
-      } else {
-        settings = this.transformFromDatabase(data);
-      }
+      const settings = await apiClient.get<UserSettings>(`/user-settings/${userId}`);
 
       // Cache the settings
       this.settingsCache.set(userId, settings);
@@ -40,27 +26,10 @@ export class UserSettingsService {
 
   async updateSettings(userId: string, updates: Partial<UserSettings>): Promise<UserSettings> {
     try {
-      const currentSettings = await this.getUserSettings(userId);
-      const updatedSettings = {
-        ...currentSettings,
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
+      const updatedSettings = await apiClient.put<UserSettings>(`/user-settings/${userId}`, updates);
 
-      const { data, error } = await supabase
-        .from('user_settings')
-        .upsert([this.transformToDatabase(updatedSettings)], {
-          onConflict: 'user_id'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const transformedSettings = this.transformFromDatabase(data);
-      
       // Update cache
-      this.settingsCache.set(userId, transformedSettings);
+      this.settingsCache.set(userId, updatedSettings);
 
       // Track settings change
       analytics.track('user_settings_updated', {
@@ -68,7 +37,7 @@ export class UserSettingsService {
         updated_sections: Object.keys(updates)
       });
 
-      return transformedSettings;
+      return updatedSettings;
     } catch (error) {
       console.error('Failed to update settings:', error);
       throw error;
@@ -77,25 +46,9 @@ export class UserSettingsService {
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     try {
-      // Verify current password by attempting to sign in
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user?.email) {
-        throw new Error('User email not found');
-      }
-
-      // Update password using Supabase Auth
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      // Update settings to track password change
-      await this.updateSettings(userId, {
-        security: {
-          ...((await this.getUserSettings(userId)).security),
-          passwordLastChanged: new Date().toISOString()
-        }
+      await apiClient.post(`/user-settings/${userId}/change-password`, {
+        currentPassword,
+        newPassword
       });
 
       // Track password change
@@ -155,8 +108,8 @@ export class UserSettingsService {
 
   async signOutAllDevices(userId: string): Promise<void> {
     try {
-      // Sign out from all sessions
-      await supabase.auth.signOut({ scope: 'global' });
+      // Sign out locally
+      await authService.signOut();
 
       // Clear active sessions in settings
       await this.updateSettings(userId, {
@@ -175,14 +128,7 @@ export class UserSettingsService {
 
   async deactivateAccount(userId: string, reason?: string): Promise<void> {
     try {
-      await this.updateSettings(userId, {
-        account: {
-          isActive: false,
-          isDeactivated: true,
-          deactivatedAt: new Date().toISOString(),
-          deactivationReason: reason
-        }
-      });
+      await apiClient.post(`/user-settings/${userId}/deactivate`, { reason });
 
       // Sign out user
       await authService.signOut();
@@ -203,17 +149,7 @@ export class UserSettingsService {
         throw new Error('Confirmation text must be "DELETE"');
       }
 
-      // Mark user profile as deleted
-      const { error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: userId
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
+      await apiClient.delete(`/user-settings/${userId}`);
 
       // Sign out user
       await authService.signOut();
@@ -225,24 +161,6 @@ export class UserSettingsService {
     }
   }
 
-  private async createDefaultSettings(userId: string): Promise<UserSettings> {
-    try {
-      const defaultSettings = this.getDefaultSettings(userId);
-      
-      const { data, error } = await supabase
-        .from('user_settings')
-        .insert([this.transformToDatabase(defaultSettings)])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return this.transformFromDatabase(data);
-    } catch (error) {
-      console.error('Failed to create default settings:', error);
-      return this.getDefaultSettings(userId);
-    }
-  }
 
   private getDefaultSettings(userId: string): UserSettings {
     return {
@@ -304,33 +222,6 @@ export class UserSettingsService {
     return secret;
   }
 
-  private transformFromDatabase(dbData: any): UserSettings {
-    return {
-      id: dbData.id,
-      userId: dbData.user_id,
-      security: dbData.security || {},
-      privacy: dbData.privacy || {},
-      notifications: dbData.notifications || {},
-      interface: dbData.interface || {},
-      account: dbData.account || {},
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
-    };
-  }
-
-  private transformToDatabase(settings: UserSettings): any {
-    return {
-      id: settings.id,
-      user_id: settings.userId,
-      security: settings.security,
-      privacy: settings.privacy,
-      notifications: settings.notifications,
-      interface: settings.interface,
-      account: settings.account,
-      created_at: settings.createdAt,
-      updated_at: settings.updatedAt
-    };
-  }
 }
 
 export const userSettingsService = new UserSettingsService();
