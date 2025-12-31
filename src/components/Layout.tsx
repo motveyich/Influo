@@ -62,6 +62,13 @@ export function Layout({ children }: LayoutProps) {
     }
   }, [settings?.interface]);
 
+  // Redirect to landing page if not authenticated
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
+
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
@@ -88,13 +95,6 @@ export function Layout({ children }: LayoutProps) {
     console.log('🚨 [Layout] User is blocked, showing blocked notice');
     return <BlockedUserNotice />;
   }
-
-  // Redirect to landing page if not authenticated
-  React.useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [loading, isAuthenticated, navigate]);
 
   // Show loading while redirecting
   if (!isAuthenticated) {

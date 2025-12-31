@@ -17,8 +17,10 @@ export function useAuth() {
     return unsubscribe;
   }, []);
 
+  const userId = authState.user?.id;
+
   useEffect(() => {
-    if (authState.user) {
+    if (userId) {
       loadUserRole();
       checkUserStatus();
     } else {
@@ -27,7 +29,7 @@ export function useAuth() {
       setIsBlocked(false);
       setBlockCheckLoading(false);
     }
-  }, [authState.user?.id]);
+  }, [userId]);
   
   const checkUserStatus = async () => {
     try {
@@ -38,8 +40,7 @@ export function useAuth() {
 
       let profile;
       try {
-        const response = await apiClient.get<{ success: boolean; data: any }>(`/profiles/${authState.user.id}`);
-        profile = response.data;
+        profile = await apiClient.get<any>(`/profiles/${authState.user.id}`);
       } catch (fetchError: any) {
         if (fetchError?.message === 'Unauthorized') {
           console.log('⚠️ [useAuth] User is not authenticated, assuming NOT blocked');
