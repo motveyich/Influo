@@ -30,9 +30,47 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+
+    // Миграция старых токенов из auth_session формата
+    this.migrateOldTokens();
+
     this.accessToken = localStorage.getItem('accessToken');
     const expiresAt = localStorage.getItem('tokenExpiresAt');
     this.tokenExpiresAt = expiresAt ? parseInt(expiresAt) : null;
+
+    console.log('🔧 [ApiClient] Initialized with token:', this.accessToken ? `${this.accessToken.substring(0, 10)}...` : 'NO TOKEN');
+  }
+
+  private migrateOldTokens() {
+    try {
+      const authSessionStr = localStorage.getItem('auth_session');
+
+      if (authSessionStr) {
+        console.log('🔄 [ApiClient] Found old auth_session format, migrating...');
+
+        const authSession = JSON.parse(authSessionStr);
+
+        if (authSession.access_token) {
+          localStorage.setItem('accessToken', authSession.access_token);
+          console.log('✅ [ApiClient] Migrated accessToken');
+        }
+
+        if (authSession.refresh_token) {
+          localStorage.setItem('refreshToken', authSession.refresh_token);
+          console.log('✅ [ApiClient] Migrated refreshToken');
+        }
+
+        if (authSession.expires_at) {
+          localStorage.setItem('tokenExpiresAt', authSession.expires_at.toString());
+          console.log('✅ [ApiClient] Migrated tokenExpiresAt');
+        }
+
+        localStorage.removeItem('auth_session');
+        console.log('✅ [ApiClient] Removed old auth_session');
+      }
+    } catch (error) {
+      console.error('❌ [ApiClient] Failed to migrate old tokens:', error);
+    }
   }
 
   setAccessToken(token: string | null, expiresIn?: number) {
@@ -52,7 +90,30 @@ class ApiClient {
   }
 
   getAccessToken(): string | null {
-    return this.accessToken || localStorage.getItem('accessToken');
+    // Сначала проверяем прямой ключ
+    let token = this.accessToken || localStorage.getItem('accessToken');
+
+    // Fallback: проверяем старый формат auth_session
+    if (!token) {
+      try {
+        const authSessionStr = localStorage.getItem('auth_session');
+        if (authSessionStr) {
+          const authSession = JSON.parse(authSessionStr);
+          token = authSession.access_token || null;
+
+          // Если нашли токен в старом формате, мигрируем автоматически
+          if (token) {
+            console.log('⚠️ [ApiClient] Found token in old format, migrating...');
+            this.migrateOldTokens();
+            token = localStorage.getItem('accessToken');
+          }
+        }
+      } catch (error) {
+        console.error('❌ [ApiClient] Error reading auth_session:', error);
+      }
+    }
+
+    return token;
   }
 
   private async checkAndRefreshToken(): Promise<void> {
@@ -123,6 +184,9 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const token = this.getAccessToken();
 
+    console.log(`🌐 [ApiClient] ${options.method || 'GET'} ${url}`);
+    console.log('🔑 [ApiClient] Token present:', !!token, token ? `(${token.substring(0, 20)}...)` : '');
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -130,6 +194,9 @@ class ApiClient {
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('✅ [ApiClient] Authorization header added');
+    } else {
+      console.warn('⚠️ [ApiClient] No token available, request will be unauthenticated');
     }
 
     const config: RequestInit = {
@@ -146,22 +213,27 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
 
+      console.log(`📥 [ApiClient] Response: ${response.status} ${response.statusText}`);
+
       if (response.status === 401) {
-        console.error('❌ [ApiClient] 401 Unauthorized - token invalid');
+        console.error('❌ [ApiClient] 401 Unauthorized - token invalid or expired');
         this.setAccessToken(null);
         throw new Error('Unauthorized');
       }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
+        console.error(`❌ [ApiClient] Request failed: ${error.message}`);
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
       if (response.status === 204) {
+        console.log('✅ [ApiClient] Request successful (no content)');
         return {} as T;
       }
 
       const jsonResponse = await response.json();
+      console.log('✅ [ApiClient] Request successful');
 
       // If response has a wrapper structure with 'data' field, unwrap it
       if (jsonResponse.success !== undefined && jsonResponse.data !== undefined) {
@@ -171,6 +243,7 @@ class ApiClient {
       return jsonResponse as T;
     } catch (error) {
       if (error instanceof Error) {
+        console.error(`❌ [ApiClient] Error:`, error.message);
         throw error;
       }
       throw new Error('Network request failed');
