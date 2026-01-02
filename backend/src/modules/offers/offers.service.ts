@@ -89,6 +89,27 @@ export class OffersService {
     return offers.map((offer) => this.transformOffer(offer));
   }
 
+  async findByParticipant(userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offers, error } = await supabase
+      .from('offers')
+      .select(`
+        *,
+        advertiser:user_profiles!offers_advertiser_id_fkey(*),
+        influencer:user_profiles!offers_influencer_id_fkey(*)
+      `)
+      .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch offers by participant: ${error.message}`, error);
+      return [];
+    }
+
+    return offers.map((offer) => this.transformOffer(offer));
+  }
+
   async findOne(id: string, userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 

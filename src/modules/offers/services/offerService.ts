@@ -55,6 +55,15 @@ export class OfferService {
     }
   }
 
+  async getOffersByParticipant(userId: string): Promise<CollaborationOffer[]> {
+    try {
+      return await apiClient.get<CollaborationOffer[]>(`/offers/participant/${userId}`);
+    } catch (error) {
+      console.error('Failed to get offers by participant:', error);
+      throw error;
+    }
+  }
+
   async getOffer(offerId: string): Promise<CollaborationOffer> {
     try {
       return await apiClient.get<CollaborationOffer>(`/offers/${offerId}`);

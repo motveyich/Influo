@@ -55,6 +55,21 @@ export class OffersController {
     return this.offersService.findAll(userId, { status, asInfluencer });
   }
 
+  @Get('participant/:userId')
+  @ApiOperation({ summary: 'Get all offers where user is a participant' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'List of offers where user is participant' })
+  @ApiResponse({ status: 403, description: 'You can only view your own offers' })
+  async findByParticipant(
+    @Param('userId') userId: string,
+    @CurrentUser('userId') currentUserId: string,
+  ) {
+    if (userId !== currentUserId) {
+      throw new Error('You can only view your own offers');
+    }
+    return this.offersService.findByParticipant(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get offer by ID' })
   @ApiParam({ name: 'id', description: 'Offer ID' })

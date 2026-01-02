@@ -198,6 +198,15 @@ class ApiClient {
   }
 
   async uploadFile<T>(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<T> {
+    // Check and refresh token if needed (unless this IS an auth request)
+    if (!endpoint.includes('/auth/')) {
+      try {
+        await this.checkAndRefreshToken();
+      } catch (error) {
+        console.log('🔄 [ApiClient] Token refresh failed during file upload, continuing with existing token');
+      }
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
     const token = this.getAccessToken();
 
@@ -225,6 +234,7 @@ class ApiClient {
       });
 
       if (response.status === 401) {
+        console.error('❌ [ApiClient] 401 Unauthorized during file upload - token invalid');
         this.setAccessToken(null);
         throw new Error('Unauthorized');
       }

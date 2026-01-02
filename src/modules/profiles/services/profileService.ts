@@ -95,7 +95,7 @@ export class ProfileService {
 
   async uploadAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
     try {
-      return await apiClient.uploadFile<{ avatarUrl: string }>(`/profiles/${userId}/avatar`, file, 'file');
+      return await apiClient.uploadFile<{ avatarUrl: string }>(`/profiles/${userId}/avatar`, file);
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       throw error;
