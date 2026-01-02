@@ -58,7 +58,7 @@ export class AuthService implements OnModuleInit {
     const adminClient = this.supabaseService.getAdminClient();
     const { error: profileError } = await adminClient
       .from('user_profiles')
-      .insert({
+      .upsert({
         user_id: authData.user.id,
         email: signupDto.email,
         full_name: signupDto.fullName || null,
@@ -69,16 +69,21 @@ export class AuthService implements OnModuleInit {
           joinedAt: new Date().toISOString(),
           lastActive: new Date().toISOString(),
         },
-      });
+      }, { onConflict: 'user_id' });
 
     if (profileError) {
       this.logger.error(`Profile creation failed: ${profileError.message}`, profileError);
+
+      if (profileError.code === '23505' && profileError.message.includes('username')) {
+        throw new ConflictException('Username already taken');
+      }
+
       try {
         await adminClient.auth.admin.deleteUser(authData.user.id);
       } catch (deleteError) {
         this.logger.error(`Failed to rollback user creation: ${deleteError}`);
       }
-      throw new ConflictException('Failed to create user profile');
+      throw new ConflictException(`Failed to create user profile: ${profileError.message}`);
     }
 
     const tokens = await this.generateTokens({

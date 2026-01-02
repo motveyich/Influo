@@ -1,12 +1,60 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
-import { UpdateProfileDto } from './dto';
+import { CreateProfileDto, UpdateProfileDto } from './dto';
 
 @Injectable()
 export class ProfilesService {
   private readonly logger = new Logger(ProfilesService.name);
 
   constructor(private supabaseService: SupabaseService) {}
+
+  async create(createProfileDto: CreateProfileDto) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    if (createProfileDto.username) {
+      const { data: existingUser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('username', createProfileDto.username)
+        .neq('user_id', createProfileDto.userId)
+        .maybeSingle();
+
+      if (existingUser) {
+        throw new ConflictException('Username already taken');
+      }
+    }
+
+    const profileData: any = {
+      user_id: createProfileDto.userId,
+      full_name: createProfileDto.fullName || null,
+      username: createProfileDto.username || null,
+      phone: createProfileDto.phone || null,
+      bio: createProfileDto.bio || null,
+      location: createProfileDto.location || null,
+      website: createProfileDto.website || null,
+      user_type: createProfileDto.userType || null,
+      social_media_links: createProfileDto.socialMediaLinks || {},
+      metrics: createProfileDto.metrics || {},
+      unified_account_info: {
+        isVerified: false,
+        joinedAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+      },
+    };
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .upsert(profileData, { onConflict: 'user_id' })
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to create profile: ${error.message}`, error);
+      throw new ConflictException('Failed to create profile');
+    }
+
+    return this.transformProfile(profile);
+  }
 
   async findOne(userId: string) {
     const supabase = this.supabaseService.getAdminClient();

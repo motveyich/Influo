@@ -16,7 +16,7 @@ export class UserSettingsController {
     @CurrentUser() user: any
   ) {
     // Users can only access their own settings unless they're admin
-    if (user.id !== userId && user.role !== 'admin') {
+    if (user.userId !== userId && user.role !== 'admin') {
       throw new Error('Unauthorized');
     }
 
@@ -30,7 +30,7 @@ export class UserSettingsController {
     @CurrentUser() user: any
   ) {
     // Users can only update their own settings
-    if (user.id !== userId) {
+    if (user.userId !== userId) {
       throw new Error('Unauthorized');
     }
 
@@ -44,7 +44,7 @@ export class UserSettingsController {
     @CurrentUser() user: any
   ) {
     // Users can only change their own password
-    if (user.id !== userId) {
+    if (user.userId !== userId) {
       throw new Error('Unauthorized');
     }
 
@@ -64,7 +64,7 @@ export class UserSettingsController {
     @CurrentUser() user: any
   ) {
     // Users can only deactivate their own account
-    if (user.id !== userId) {
+    if (user.userId !== userId) {
       throw new Error('Unauthorized');
     }
 
@@ -79,7 +79,7 @@ export class UserSettingsController {
     @CurrentUser() user: any
   ) {
     // Users can only delete their own account
-    if (user.id !== userId) {
+    if (user.userId !== userId) {
       throw new Error('Unauthorized');
     }
 

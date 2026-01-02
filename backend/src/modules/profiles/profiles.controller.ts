@@ -13,6 +13,8 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -26,7 +28,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service';
-import { UpdateProfileDto } from './dto';
+import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators';
 import { Public } from '../../common/decorators/public.decorator';
@@ -35,6 +37,23 @@ import { Public } from '../../common/decorators/public.decorator';
 @Controller('profiles')
 export class ProfilesController {
   constructor(private profilesService: ProfilesService) {}
+
+  @Post()
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create or update user profile' })
+  @ApiResponse({ status: 201, description: 'Profile created/updated successfully' })
+  @ApiResponse({ status: 409, description: 'Username already taken' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async create(
+    @Body() createProfileDto: CreateProfileDto,
+    @CurrentUser('userId') currentUserId: string,
+  ) {
+    if (createProfileDto.userId !== currentUserId) {
+      return { message: 'You can only create your own profile' };
+    }
+    return this.profilesService.create(createProfileDto);
+  }
 
   @Get(':id')
   @Public()
