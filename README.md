@@ -1,4 +1,4 @@
-# Influo MVP Platform
+                            # Influo MVP Platform
 
 A comprehensive influencer-advertiser collaboration platform built with React, TypeScript, Tailwind CSS, and Supabase.
 
