@@ -71,7 +71,7 @@ class AuthService {
         username,
       });
 
-      apiClient.setAccessToken(response.accessToken, (response as any).expiresIn);
+      apiClient.setAccessToken(response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
       this.currentState = { user: response.user, loading: false };
@@ -116,7 +116,7 @@ class AuthService {
         };
       }
 
-      apiClient.setAccessToken(response.accessToken, (response as any).expiresIn);
+      apiClient.setAccessToken(response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
       this.currentState = { user: response.user, loading: false };

@@ -1,3 +1,5 @@
+import {jwtDecode} from "jwt-decode";
+
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -73,14 +75,15 @@ class ApiClient {
     }
   }
 
-  setAccessToken(token: string | null, expiresIn?: number) {
+  setAccessToken(token: string | null) {
     this.accessToken = token;
     if (token) {
+      const decoded = jwtDecode(token);
       localStorage.setItem('accessToken', token);
-      if (expiresIn) {
-        const expiresAt = Date.now() + (expiresIn * 1000);
-        this.tokenExpiresAt = expiresAt;
-        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+      if (decoded.exp) {
+        const exp = decoded.exp * 1000;
+        this.tokenExpiresAt = exp;
+        localStorage.setItem('tokenExpiresAt', exp.toString());
       }
     } else {
       localStorage.removeItem('accessToken');
@@ -121,11 +124,8 @@ class ApiClient {
       return this.refreshPromise;
     }
 
-    const now = Date.now();
-    const fiveMinutes = 5 * 60 * 1000;
-
     // Refresh if token expires in less than 5 minutes
-    if (this.tokenExpiresAt && (this.tokenExpiresAt - now) < fiveMinutes) {
+    if (this.tokenExpiresAt && (this.tokenExpiresAt - Date.now()) < 0) {
       console.log('🔄 [ApiClient] Token expires soon, refreshing...');
 
       this.isRefreshing = true;
@@ -159,7 +159,7 @@ class ApiClient {
       }
 
       const data = await response.json();
-      this.setAccessToken(data.accessToken, data.expiresIn);
+      this.setAccessToken(data.accessToken);
       if (data.refreshToken) {
         localStorage.setItem('refreshToken', data.refreshToken);
       }
