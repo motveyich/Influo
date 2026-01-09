@@ -40,10 +40,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
         if (mode === 'signup' && value !== password) return 'Пароли не совпадают';
         return '';
       case 'username':
-        if (mode === 'signup' && !value.trim()) return 'Имя пользователя обязательно';
-        if (mode === 'signup' && value.length < 3) return 'Минимум 3 символа';
-        if (mode === 'signup' && value.length > 30) return 'Максимум 30 символов';
-        if (mode === 'signup' && !/^[a-zA-Z0-9_]+$/.test(value)) return 'Только буквы, цифры и _';
+        if (mode === 'signup' && !value.trim()) return 'Полное имя обязательно';
+        if (mode === 'signup' && value.length < 2) return 'Минимум 2 символа';
+        if (mode === 'signup' && value.length > 100) return 'Максимум 100 символов';
         return '';
       default:
         return '';
@@ -201,7 +200,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
           {mode === 'signup' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Имя пользователя
+                Полное имя
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -213,7 +212,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                   className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Введите имя пользователя"
+                  placeholder="Введите ваше полное имя"
                 />
               </div>
               {touched.username && errors.username && (
