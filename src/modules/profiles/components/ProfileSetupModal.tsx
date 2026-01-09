@@ -135,16 +135,35 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       setActiveTab(initialTab);
     }
 
+    console.log('[ProfileSetupModal] useEffect triggered:', {
+      isOpen,
+      hasCurrentProfile: !!currentProfile,
+      currentProfileData: {
+        userId: currentProfile?.userId,
+        fullName: currentProfile?.fullName,
+        email: currentProfile?.email
+      },
+      userData: {
+        userId: user?.id,
+        fullName: user?.fullName,
+        email: user?.email
+      }
+    });
+
     // Always initialize basicInfo with user context as fallback
     // Priority: currentProfile > user context > empty
-    setBasicInfo({
+    const newBasicInfo = {
       fullName: currentProfile?.fullName || user?.fullName || '',
       email: currentProfile?.email || user?.email || '',
       bio: currentProfile?.bio || '',
       location: currentProfile?.location || '',
       website: currentProfile?.website || '',
       avatar: currentProfile?.avatar || ''
-    });
+    };
+
+    console.log('[ProfileSetupModal] Setting basicInfo:', newBasicInfo);
+
+    setBasicInfo(newBasicInfo);
 
     if (currentProfile) {
       if (currentProfile.influencerData) {
@@ -251,6 +270,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   };
 
   const handleSaveProfile = async () => {
+    console.log('[ProfileSetupModal] handleSaveProfile called');
+    console.log('[ProfileSetupModal] Current state:', {
+      hasCurrentProfile: !!currentProfile,
+      currentProfileUserId: currentProfile?.userId,
+      userIdFromAuth: user?.id,
+      basicInfo
+    });
+
     if (!validateBasicInfo()) {
       setActiveTab('basic');
       return;
@@ -271,6 +298,13 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         influencerData: influencerData,
         advertiserData: advertiserData
       };
+
+      console.log('[ProfileSetupModal] Profile data to save:', {
+        userId: profileData.userId,
+        fullName: profileData.fullName,
+        email: profileData.email,
+        hasCurrentProfile: !!currentProfile
+      });
 
       let savedProfile: UserProfile;
 

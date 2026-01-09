@@ -135,20 +135,31 @@ export class ProfileService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
+      console.log('[ProfileService] 📡 Fetching profile for user:', userId);
       const profile = await apiClient.get<UserProfile>(`/profiles/${userId}`);
-      console.log('[ProfileService] Profile loaded successfully:', { userId, hasProfile: !!profile });
+
+      console.log('[ProfileService] ✅ Profile loaded successfully:', {
+        userId,
+        hasProfile: !!profile,
+        fullName: profile?.fullName,
+        email: profile?.email,
+        bio: profile?.bio,
+        profileData: profile
+      });
+
       return profile;
     } catch (error: any) {
-      console.error('[ProfileService] Failed to get profile:', {
+      console.error('[ProfileService] ❌ Failed to get profile:', {
         userId,
         error: error.message,
         status: error.status,
-        statusCode: error.statusCode
+        statusCode: error.statusCode,
+        fullError: error
       });
 
       // If profile not found (404), return null
       if (error.status === 404 || error.statusCode === 404 || error.message?.includes('not found')) {
-        console.warn('[ProfileService] Profile not found for user:', userId);
+        console.warn('[ProfileService] ⚠️ Profile not found for user:', userId);
         return null;
       }
 

@@ -20,26 +20,34 @@ export function useProfileCompletion(userId: string) {
       setIsLoading(false);
       return;
     }
-    
+
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
       setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection, or check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values.');
       setIsLoading(false);
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
+
+      console.log('[useProfileCompletion] Loading profile for user:', userId);
+
       // Double-check Supabase configuration before making database calls
       if (!isSupabaseConfigured()) {
         throw new Error('Supabase configuration is invalid. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
       }
-      
+
       let userProfile;
       try {
         userProfile = await profileService.getProfile(userId);
+        console.log('[useProfileCompletion] Profile loaded from API:', {
+          userId: userProfile?.userId,
+          fullName: userProfile?.fullName,
+          email: userProfile?.email,
+          hasProfile: !!userProfile
+        });
       } catch (profileError: any) {
         console.error('[useProfileCompletion] Error loading profile:', profileError);
 
@@ -66,46 +74,24 @@ export function useProfileCompletion(userId: string) {
       }
 
       if (!userProfile) {
-        // Profile not found - try to initialize it automatically
-        console.warn('[useProfileCompletion] Profile not found for user:', userId);
-        console.log('[useProfileCompletion] Attempting to auto-initialize profile...');
+        // Profile not found - this should NOT happen normally as profiles are created during registration
+        console.warn('[useProfileCompletion] ⚠️ Profile not found for user:', userId);
+        console.warn('[useProfileCompletion] This may indicate a registration issue or profile was not created properly');
 
-        try {
-          // Try to initialize a profile for this user
-          // The initialize endpoint will create it if it doesn't exist or return existing one
-          const initializedProfile = await profileService.initializeProfile(userId);
-          console.log('[useProfileCompletion] Profile auto-initialized successfully:', initializedProfile.userId);
-          setProfile(initializedProfile);
-          setError(null);
-          return;
-        } catch (initError: any) {
-          console.error('[useProfileCompletion] Failed to auto-initialize profile:', initError);
-
-          // If initialization failed, try the old method as fallback
-          try {
-            const minimalProfile = {
-              userId: userId,
-              email: '',
-              fullName: '',
-              bio: '',
-              location: '',
-              website: '',
-            };
-            const createdProfile = await profileService.createProfile(minimalProfile);
-            console.log('[useProfileCompletion] Profile created via fallback method:', createdProfile.userId);
-            setProfile(createdProfile);
-            setError(null);
-            return;
-          } catch (fallbackError: any) {
-            console.error('[useProfileCompletion] Fallback profile creation also failed:', fallbackError);
-            setProfile(null);
-            setError('Профиль не найден. Пожалуйста, заполните профиль чтобы продолжить.');
-            return;
-          }
-        }
+        // Don't try to auto-create - just set error state and let user know
+        setProfile(null);
+        setError('Профиль не найден. Пожалуйста, обратитесь в службу поддержки.');
+        return;
       }
 
-      console.log('[useProfileCompletion] Profile loaded:', { userId, profile: userProfile });
+      console.log('[useProfileCompletion] ✅ Profile loaded successfully:', {
+        userId: userProfile.userId,
+        fullName: userProfile.fullName,
+        email: userProfile.email,
+        hasInfluencerData: !!userProfile.influencerData,
+        hasAdvertiserData: !!userProfile.advertiserData
+      });
+
       setProfile(userProfile);
       setError(null);
     } catch (err: any) {
