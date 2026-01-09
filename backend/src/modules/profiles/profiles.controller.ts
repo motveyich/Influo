@@ -168,12 +168,6 @@ export class ProfilesController {
         userId: currentUserId,
         email: email,
         fullName: body?.fullName || email.split('@')[0] || 'User',
-        username: null,
-        phone: null,
-        bio: null,
-        location: null,
-        website: null,
-        userType: null,
       };
       return this.profilesService.create(createProfileDto);
     }

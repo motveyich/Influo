@@ -11,6 +11,10 @@ export class ProfilesService {
   async create(createProfileDto: CreateProfileDto) {
     const supabase = this.supabaseService.getAdminClient();
 
+    if (!createProfileDto.userId) {
+      throw new ConflictException('User ID is required to create a profile');
+    }
+
     this.logger.log(`Creating profile for user: ${createProfileDto.userId}`);
     this.logger.debug(`Profile data: ${JSON.stringify({
       email: createProfileDto.email,
