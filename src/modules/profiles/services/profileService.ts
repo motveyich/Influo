@@ -93,7 +93,6 @@ export class ProfileService {
       };
 
       if (updates.fullName !== undefined) payload.fullName = updates.fullName;
-      if (updates.email !== undefined) payload.email = updates.email;
       if (updates.username !== undefined) payload.username = updates.username || null;
       if (updates.phone !== undefined) payload.phone = updates.phone || null;
       if (updates.bio !== undefined) payload.bio = updates.bio || null;

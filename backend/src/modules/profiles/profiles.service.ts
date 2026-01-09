@@ -258,22 +258,6 @@ export class ProfilesService {
       }
     }
 
-    // Check if email is being changed and if it's already taken by another active user
-    if (updateProfileDto.email && updateProfileDto.email !== currentProfile.email) {
-      const { data: existingEmailUser } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('email', updateProfileDto.email)
-        .eq('is_deleted', false)
-        .neq('user_id', userId)
-        .maybeSingle();
-
-      if (existingEmailUser) {
-        this.logger.warn(`Email ${updateProfileDto.email} is already taken by another user`);
-        throw new ConflictException('Email already in use by another user');
-      }
-    }
-
     const updateData: any = {
       updated_at: new Date().toISOString(),
     };
@@ -283,9 +267,6 @@ export class ProfilesService {
     }
     if (updateProfileDto.username !== undefined) {
       updateData.username = updateProfileDto.username;
-    }
-    if (updateProfileDto.email !== undefined) {
-      updateData.email = updateProfileDto.email;
     }
     if (updateProfileDto.avatar !== undefined) {
       updateData.avatar = updateProfileDto.avatar;

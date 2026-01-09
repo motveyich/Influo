@@ -291,9 +291,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     setIsLoading(true);
     try {
       // Prepare profile data with proper structure including userId
+      // Exclude email as it's managed by auth system
+      const { email, ...basicInfoWithoutEmail } = basicInfo;
       const profileData: Partial<UserProfile> = {
         userId: user.id,
-        ...basicInfo,
+        ...basicInfoWithoutEmail,
         // Always include the data - service will handle null conversion
         influencerData: influencerData,
         advertiserData: advertiserData
@@ -302,7 +304,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       console.log('[ProfileSetupModal] Profile data to save:', {
         userId: profileData.userId,
         fullName: profileData.fullName,
-        email: profileData.email,
         hasCurrentProfile: !!currentProfile
       });
 
@@ -355,9 +356,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         // Profile not found during update - try creating instead
         toast.error('Профиль не найден. Попытка создания...');
         try {
+          const { email, ...basicInfoWithoutEmail } = basicInfo;
           const profileData: Partial<UserProfile> = {
             userId: user.id,
-            ...basicInfo,
+            ...basicInfoWithoutEmail,
             influencerData: influencerData,
             advertiserData: advertiserData
           };
