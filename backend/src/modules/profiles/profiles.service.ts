@@ -145,19 +145,34 @@ export class ProfilesService {
         // This means profile already exists despite our check - race condition
         this.logger.warn(`Race condition detected: profile created between check and insert for user ${createProfileDto.userId}. Attempting update instead.`);
 
-        // Try to update instead
-        try {
-          return await this.update(createProfileDto.userId, createProfileDto);
-        } catch (updateError) {
-          this.logger.error(`Failed to update profile after race condition: ${updateError.message}`);
-
-          if (error.message.includes('email')) {
-            throw new ConflictException('Email already in use');
-          } else if (error.message.includes('username')) {
-            throw new ConflictException('Username already taken');
-          }
-          throw new ConflictException('Profile with this information already exists');
+        // Determine which field caused the conflict
+        let conflictField = 'unknown';
+        if (error.message.includes('email') || error.detail?.includes('email')) {
+          conflictField = 'email';
+        } else if (error.message.includes('username') || error.detail?.includes('username')) {
+          conflictField = 'username';
+        } else if (error.message.includes('user_id') || error.detail?.includes('user_id')) {
+          conflictField = 'user_id';
         }
+
+        this.logger.log(`Conflict field detected: ${conflictField}`);
+
+        // If conflict is on user_id, try to update the existing profile
+        if (conflictField === 'user_id') {
+          try {
+            this.logger.log(`Attempting to update existing profile for user ${createProfileDto.userId}`);
+            return await this.update(createProfileDto.userId, createProfileDto);
+          } catch (updateError) {
+            this.logger.error(`Failed to update profile after race condition: ${updateError.message}`);
+            throw new ConflictException('Profile already exists and could not be updated');
+          }
+        } else if (conflictField === 'email') {
+          throw new ConflictException('Email already in use by another user');
+        } else if (conflictField === 'username') {
+          throw new ConflictException('Username already taken');
+        }
+
+        throw new ConflictException('Profile with this information already exists');
       }
 
       throw new ConflictException('Failed to create profile');
@@ -203,8 +218,26 @@ export class ProfilesService {
       fullName: updateProfileDto.fullName
     })}`);
 
+    // Get current profile to check if email/username actually changed
+    const { data: currentProfile, error: fetchError } = await supabase
+      .from('user_profiles')
+      .select('email, username')
+      .eq('user_id', userId)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    if (fetchError) {
+      this.logger.error(`Failed to fetch current profile: ${fetchError.message}`, fetchError);
+      throw new NotFoundException('Profile not found');
+    }
+
+    if (!currentProfile) {
+      this.logger.error(`Profile not found for user ${userId}`);
+      throw new NotFoundException('Profile not found');
+    }
+
     // Check if username is being changed and if it's already taken by another active user
-    if (updateProfileDto.username) {
+    if (updateProfileDto.username && updateProfileDto.username !== currentProfile.username) {
       const { data: existingUser } = await supabase
         .from('user_profiles')
         .select('user_id')
@@ -220,7 +253,7 @@ export class ProfilesService {
     }
 
     // Check if email is being changed and if it's already taken by another active user
-    if (updateProfileDto.email) {
+    if (updateProfileDto.email && updateProfileDto.email !== currentProfile.email) {
       const { data: existingEmailUser } = await supabase
         .from('user_profiles')
         .select('user_id')

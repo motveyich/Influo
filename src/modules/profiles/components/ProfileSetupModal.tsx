@@ -135,16 +135,18 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       setActiveTab(initialTab);
     }
 
-    if (currentProfile) {
-      setBasicInfo({
-        fullName: currentProfile.fullName || '',
-        email: currentProfile.email || user?.email || '',
-        bio: currentProfile.bio || '',
-        location: currentProfile.location || '',
-        website: currentProfile.website || '',
-        avatar: currentProfile.avatar || ''
-      });
+    // Always initialize basicInfo with user context as fallback
+    // Priority: currentProfile > user context > empty
+    setBasicInfo({
+      fullName: currentProfile?.fullName || user?.fullName || '',
+      email: currentProfile?.email || user?.email || '',
+      bio: currentProfile?.bio || '',
+      location: currentProfile?.location || '',
+      website: currentProfile?.website || '',
+      avatar: currentProfile?.avatar || ''
+    });
 
+    if (currentProfile) {
       if (currentProfile.influencerData) {
         setInfluencerData({
           socialMediaLinks: currentProfile.influencerData.socialMediaLinks || [],
@@ -188,15 +190,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         });
       }
     } else {
-      // Reset all data when no current profile, but keep email from auth
-      setBasicInfo({
-        fullName: '',
-        email: user?.email || '',
-        bio: '',
-        location: '',
-        website: '',
-        avatar: ''
-      });
+      // Reset influencer and advertiser data when no current profile
       setInfluencerData({
         socialMediaLinks: [],
         metrics: {
@@ -235,7 +229,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         }
       });
     }
-  }, [currentProfile, isOpen, initialTab, user?.email]);
+  }, [currentProfile, isOpen, initialTab, user?.email, user?.fullName]);
 
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
