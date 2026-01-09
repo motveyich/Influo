@@ -26,15 +26,20 @@ export class ProfilesService {
 
     const profileData: any = {
       user_id: createProfileDto.userId,
+      email: createProfileDto.email || null,
       full_name: createProfileDto.fullName || null,
       username: createProfileDto.username || null,
       phone: createProfileDto.phone || null,
+      avatar: createProfileDto.avatar || null,
       bio: createProfileDto.bio || null,
       location: createProfileDto.location || null,
       website: createProfileDto.website || null,
       user_type: createProfileDto.userType || null,
       social_media_links: createProfileDto.socialMediaLinks || {},
+      influencer_data: createProfileDto.influencerData || null,
+      advertiser_data: createProfileDto.advertiserData || null,
       metrics: createProfileDto.metrics || {},
+      profile_completion: createProfileDto.profileCompletion || null,
       unified_account_info: {
         isVerified: false,
         joinedAt: new Date().toISOString(),
@@ -103,6 +108,12 @@ export class ProfilesService {
     if (updateProfileDto.username !== undefined) {
       updateData.username = updateProfileDto.username;
     }
+    if (updateProfileDto.email !== undefined) {
+      updateData.email = updateProfileDto.email;
+    }
+    if (updateProfileDto.avatar !== undefined) {
+      updateData.avatar = updateProfileDto.avatar;
+    }
     if (updateProfileDto.phone !== undefined) {
       updateData.phone = updateProfileDto.phone;
     }
@@ -115,11 +126,23 @@ export class ProfilesService {
     if (updateProfileDto.website !== undefined) {
       updateData.website = updateProfileDto.website;
     }
+    if (updateProfileDto.userType !== undefined) {
+      updateData.user_type = updateProfileDto.userType;
+    }
     if (updateProfileDto.socialMediaLinks !== undefined) {
       updateData.social_media_links = updateProfileDto.socialMediaLinks;
     }
+    if (updateProfileDto.influencerData !== undefined) {
+      updateData.influencer_data = updateProfileDto.influencerData;
+    }
+    if (updateProfileDto.advertiserData !== undefined) {
+      updateData.advertiser_data = updateProfileDto.advertiserData;
+    }
     if (updateProfileDto.metrics !== undefined) {
       updateData.metrics = updateProfileDto.metrics;
+    }
+    if (updateProfileDto.profileCompletion !== undefined) {
+      updateData.profile_completion = updateProfileDto.profileCompletion;
     }
 
     const { data: updatedProfile, error } = await supabase
@@ -249,6 +272,7 @@ export class ProfilesService {
   private transformProfile(profile: any) {
     return {
       id: profile.user_id,
+      userId: profile.user_id,
       email: profile.email,
       fullName: profile.full_name,
       username: profile.username,
@@ -259,7 +283,10 @@ export class ProfilesService {
       website: profile.website,
       userType: profile.user_type,
       socialMediaLinks: profile.social_media_links || {},
+      influencerData: profile.influencer_data || null,
+      advertiserData: profile.advertiser_data || null,
       metrics: profile.metrics || {},
+      profileCompletion: profile.profile_completion || null,
       unifiedAccountInfo: profile.unified_account_info || {},
       isDeleted: profile.is_deleted || false,
       deletedAt: profile.deleted_at || null,

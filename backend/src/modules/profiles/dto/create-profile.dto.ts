@@ -16,10 +16,20 @@ export class CreateProfileDto {
   @IsOptional()
   username?: string;
 
+  @ApiPropertyOptional({ description: 'Email address' })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
   @ApiPropertyOptional({ description: 'Phone number' })
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @ApiPropertyOptional({ description: 'Avatar URL' })
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 
   @ApiPropertyOptional({ description: 'Bio' })
   @IsString()

@@ -25,6 +25,15 @@ export class UpdateProfileDto {
   username?: string;
 
   @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email address',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiProperty({
     example: '+1234567890',
     description: 'Phone number',
     required: false,
@@ -32,6 +41,15 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiProperty({
+    example: 'https://example.com/avatar.jpg',
+    description: 'Avatar URL',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
 
   @ApiProperty({
     example: 'Bio description',
@@ -85,4 +103,37 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsObject()
   metrics?: Record<string, any>;
+
+  @ApiProperty({
+    example: 'influencer',
+    description: 'User type',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  userType?: string;
+
+  @ApiProperty({
+    description: 'Influencer data',
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  influencerData?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Advertiser data',
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  advertiserData?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Profile completion',
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  profileCompletion?: Record<string, any>;
 }
