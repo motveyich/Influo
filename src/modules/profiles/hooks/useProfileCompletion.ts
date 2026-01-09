@@ -41,6 +41,8 @@ export function useProfileCompletion(userId: string) {
       try {
         userProfile = await profileService.getProfile(userId);
       } catch (profileError: any) {
+        console.error('[useProfileCompletion] Error loading profile:', profileError);
+
         // Handle specific fetch errors that indicate Supabase connection issues
         if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
           setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server with "npm run dev".');
@@ -50,21 +52,28 @@ export function useProfileCompletion(userId: string) {
           setError('Database connection failed. Please verify your Supabase configuration and restart the development server.');
           setProfile(null);
           return;
+        } else if (profileError?.message?.includes('account has been deleted')) {
+          setError('Your account has been deleted. Please contact support for assistance.');
+          setProfile(null);
+          return;
         } else {
-          // For other errors, still set error but don't throw
+          // For other errors, set a generic error message
+          console.error('[useProfileCompletion] Unexpected error:', profileError);
           setError(profileError.message || 'Failed to load profile. Please check your database connection.');
           setProfile(null);
           return;
         }
       }
-      
+
       if (!userProfile) {
-        // User doesn't have a profile yet, this is normal for new users
+        // Profile not found - this should not happen after registration
+        console.warn('[useProfileCompletion] Profile not found for user:', userId);
         setProfile(null);
-        setError(null);
+        setError('Profile not found. Please try logging out and back in, or contact support if the issue persists.');
         return;
       }
-      
+
+      console.log('[useProfileCompletion] Profile loaded:', { userId, profile: userProfile });
       setProfile(userProfile);
       setError(null);
     } catch (err: any) {

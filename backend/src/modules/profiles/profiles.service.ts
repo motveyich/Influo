@@ -18,7 +18,7 @@ export class ProfilesService {
       fullName: createProfileDto.fullName
     })}`);
 
-    // Check if profile already exists by user_id
+    // Check if profile already exists by user_id (including deleted profiles)
     const { data: existingProfileById, error: checkError } = await supabase
       .from('user_profiles')
       .select('*')
@@ -29,7 +29,40 @@ export class ProfilesService {
       this.logger.error(`Error checking existing profile: ${checkError.message}`, checkError);
     }
 
-    // If profile exists, update it instead
+    // If profile exists and is deleted, restore it
+    if (existingProfileById && existingProfileById.is_deleted) {
+      this.logger.log(`Profile exists but is deleted for user ${createProfileDto.userId}, restoring it`);
+      const restoreData: any = {
+        email: createProfileDto.email || existingProfileById.email,
+        full_name: createProfileDto.fullName || existingProfileById.full_name,
+        username: createProfileDto.username || existingProfileById.username,
+        is_deleted: false,
+        deleted_at: null,
+        deleted_by: null,
+        updated_at: new Date().toISOString(),
+        unified_account_info: {
+          ...existingProfileById.unified_account_info,
+          lastActive: new Date().toISOString(),
+        },
+      };
+
+      const { data: restoredProfile, error: restoreError } = await supabase
+        .from('user_profiles')
+        .update(restoreData)
+        .eq('user_id', createProfileDto.userId)
+        .select()
+        .single();
+
+      if (restoreError) {
+        this.logger.error(`Failed to restore profile: ${restoreError.message}`, restoreError);
+        throw new ConflictException('Failed to restore profile');
+      }
+
+      this.logger.log(`Successfully restored profile for user ${createProfileDto.userId}`);
+      return this.transformProfile(restoredProfile);
+    }
+
+    // If profile exists and is not deleted, update it instead
     if (existingProfileById) {
       this.logger.log(`Profile already exists for user ${createProfileDto.userId}, updating instead`);
       return this.update(createProfileDto.userId, createProfileDto);
@@ -37,12 +70,13 @@ export class ProfilesService {
 
     this.logger.log(`No existing profile found, creating new profile for user ${createProfileDto.userId}`);
 
-    // Check if username is already taken by another user
+    // Check if username is already taken by another active user
     if (createProfileDto.username) {
       const { data: existingUser } = await supabase
         .from('user_profiles')
         .select('user_id')
         .eq('username', createProfileDto.username)
+        .eq('is_deleted', false)
         .neq('user_id', createProfileDto.userId)
         .maybeSingle();
 
@@ -51,12 +85,13 @@ export class ProfilesService {
       }
     }
 
-    // Check if email is already taken by another user
+    // Check if email is already taken by another active user
     if (createProfileDto.email) {
       const { data: existingEmailUser } = await supabase
         .from('user_profiles')
         .select('user_id')
         .eq('email', createProfileDto.email)
+        .eq('is_deleted', false)
         .neq('user_id', createProfileDto.userId)
         .maybeSingle();
 
@@ -135,21 +170,26 @@ export class ProfilesService {
   async findOne(userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
+    this.logger.log(`Fetching profile for user: ${userId}`);
+
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
+      .eq('is_deleted', false)
       .maybeSingle();
 
     if (error) {
-      this.logger.error(`Failed to fetch profile: ${error.message}`, error);
+      this.logger.error(`Failed to fetch profile for user ${userId}: ${error.message}`, error);
       throw new NotFoundException('Profile not found');
     }
 
     if (!profile) {
+      this.logger.warn(`Profile not found or deleted for user ${userId}`);
       throw new NotFoundException('Profile not found');
     }
 
+    this.logger.log(`Successfully fetched profile for user ${userId}`);
     return this.transformProfile(profile);
   }
 
@@ -163,12 +203,13 @@ export class ProfilesService {
       fullName: updateProfileDto.fullName
     })}`);
 
-    // Check if username is being changed and if it's already taken
+    // Check if username is being changed and if it's already taken by another active user
     if (updateProfileDto.username) {
       const { data: existingUser } = await supabase
         .from('user_profiles')
         .select('user_id')
         .eq('username', updateProfileDto.username)
+        .eq('is_deleted', false)
         .neq('user_id', userId)
         .maybeSingle();
 
@@ -178,12 +219,13 @@ export class ProfilesService {
       }
     }
 
-    // Check if email is being changed and if it's already taken
+    // Check if email is being changed and if it's already taken by another active user
     if (updateProfileDto.email) {
       const { data: existingEmailUser } = await supabase
         .from('user_profiles')
         .select('user_id')
         .eq('email', updateProfileDto.email)
+        .eq('is_deleted', false)
         .neq('user_id', userId)
         .maybeSingle();
 
@@ -246,6 +288,7 @@ export class ProfilesService {
       .from('user_profiles')
       .update(updateData)
       .eq('user_id', userId)
+      .eq('is_deleted', false)
       .select()
       .single();
 
@@ -279,10 +322,16 @@ export class ProfilesService {
   async delete(userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
+    // Soft delete - mark as deleted instead of removing from database
     const { error } = await supabase
       .from('user_profiles')
-      .delete()
-      .eq('user_id', userId);
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('is_deleted', false);
 
     if (error) {
       this.logger.error(`Failed to delete profile: ${error.message}`, error);
@@ -351,6 +400,7 @@ export class ProfilesService {
       .from('user_profiles')
       .update({ avatar: avatarUrl })
       .eq('user_id', userId)
+      .eq('is_deleted', false)
       .select()
       .single();
 
@@ -368,6 +418,7 @@ export class ProfilesService {
     let queryBuilder = supabase
       .from('user_profiles')
       .select('*')
+      .eq('is_deleted', false)
       .or(`full_name.ilike.%${query}%,username.ilike.%${query}%,email.ilike.%${query}%`)
       .limit(limit);
 

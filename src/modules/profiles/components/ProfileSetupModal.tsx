@@ -267,6 +267,12 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       return;
     }
 
+    if (!currentProfile) {
+      console.error('No profile found for user:', user.id);
+      toast.error('Profile not found. Please refresh the page or contact support.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Prepare profile data with proper structure including userId
@@ -278,15 +284,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         advertiserData: advertiserData
       };
 
-      let updatedProfile: UserProfile;
-
-      if (currentProfile) {
-        updatedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
-        toast.success(t('profile.success.updated'));
-      } else {
-        updatedProfile = await profileService.createProfile(profileData);
-        toast.success(t('profile.success.created'));
-      }
+      // Always use update - profile should already exist after registration
+      const updatedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
+      toast.success(t('profile.success.updated'));
 
       onProfileUpdated(updatedProfile);
       onClose();

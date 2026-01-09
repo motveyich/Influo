@@ -56,20 +56,70 @@ export class AuthService implements OnModuleInit {
     }
 
     const adminClient = this.supabaseService.getAdminClient();
-    const { error: profileError } = await adminClient
+
+    // Check if profile already exists (including deleted ones)
+    const { data: existingProfile } = await adminClient
       .from('user_profiles')
-      .upsert({
-        user_id: authData.user.id,
-        email: signupDto.email,
-        full_name: signupDto.fullName || null,
-        user_type: signupDto.userType || null,
-        username: signupDto.username || null,
-        unified_account_info: {
-          isVerified: false,
-          joinedAt: new Date().toISOString(),
-          lastActive: new Date().toISOString(),
-        },
-      }, { onConflict: 'user_id' });
+      .select('*')
+      .eq('user_id', authData.user.id)
+      .maybeSingle();
+
+    let profileError;
+
+    if (existingProfile && existingProfile.is_deleted) {
+      // Restore deleted profile
+      this.logger.log(`Restoring deleted profile for user ${authData.user.id}`);
+      const { error } = await adminClient
+        .from('user_profiles')
+        .update({
+          email: signupDto.email,
+          full_name: signupDto.fullName || null,
+          user_type: signupDto.userType || null,
+          username: signupDto.username || null,
+          is_deleted: false,
+          deleted_at: null,
+          deleted_by: null,
+          unified_account_info: {
+            isVerified: false,
+            joinedAt: new Date().toISOString(),
+            lastActive: new Date().toISOString(),
+          },
+        })
+        .eq('user_id', authData.user.id);
+      profileError = error;
+    } else if (existingProfile) {
+      // Profile exists and is not deleted - update lastActive
+      this.logger.log(`Profile already exists for user ${authData.user.id}, updating lastActive`);
+      const { error } = await adminClient
+        .from('user_profiles')
+        .update({
+          unified_account_info: {
+            ...existingProfile.unified_account_info,
+            lastActive: new Date().toISOString(),
+          },
+        })
+        .eq('user_id', authData.user.id)
+        .eq('is_deleted', false);
+      profileError = error;
+    } else {
+      // Create new profile
+      this.logger.log(`Creating new profile for user ${authData.user.id}`);
+      const { error } = await adminClient
+        .from('user_profiles')
+        .insert({
+          user_id: authData.user.id,
+          email: signupDto.email,
+          full_name: signupDto.fullName || null,
+          user_type: signupDto.userType || null,
+          username: signupDto.username || null,
+          unified_account_info: {
+            isVerified: false,
+            joinedAt: new Date().toISOString(),
+            lastActive: new Date().toISOString(),
+          },
+        });
+      profileError = error;
+    }
 
     if (profileError) {
       this.logger.error(`Profile creation failed: ${profileError.message}`, profileError);
@@ -125,10 +175,16 @@ export class AuthService implements OnModuleInit {
       .from('user_profiles')
       .select('*')
       .eq('user_id', authData.user.id)
+      .eq('is_deleted', false)
       .maybeSingle();
 
     if (profileError || !profile) {
-      throw new UnauthorizedException('User profile not found');
+      throw new UnauthorizedException('User profile not found or account has been deleted');
+    }
+
+    // Check if profile is deleted (double check for safety)
+    if (profile.is_deleted) {
+      throw new UnauthorizedException('Account has been deleted. Please contact support.');
     }
 
     await adminClient
@@ -189,6 +245,7 @@ export class AuthService implements OnModuleInit {
       .from('user_profiles')
       .select('user_type')
       .eq('user_id', data.user.id)
+      .eq('is_deleted', false)
       .maybeSingle();
 
     const tokens = await this.generateTokens({
@@ -207,10 +264,15 @@ export class AuthService implements OnModuleInit {
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
+      .eq('is_deleted', false)
       .maybeSingle();
 
     if (error || !profile) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('User not found or account has been deleted');
+    }
+
+    if (profile.is_deleted) {
+      throw new UnauthorizedException('Account has been deleted. Please contact support.');
     }
 
     // Load user role
