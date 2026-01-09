@@ -267,12 +267,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       return;
     }
 
-    if (!currentProfile) {
-      console.error('No profile found for user:', user.id);
-      toast.error('Profile not found. Please refresh the page or contact support.');
-      return;
-    }
-
     setIsLoading(true);
     try {
       // Prepare profile data with proper structure including userId
@@ -284,11 +278,22 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         advertiserData: advertiserData
       };
 
-      // Always use update - profile should already exist after registration
-      const updatedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
-      toast.success(t('profile.success.updated'));
+      let savedProfile: UserProfile;
 
-      onProfileUpdated(updatedProfile);
+      // Determine if we need to create or update
+      if (!currentProfile) {
+        // No profile exists - create new one
+        console.log('[ProfileSetupModal] Creating new profile for user:', user.id);
+        savedProfile = await profileService.createProfile(profileData);
+        toast.success(t('profile.success.created') || 'Профиль успешно создан');
+      } else {
+        // Profile exists - update it
+        console.log('[ProfileSetupModal] Updating existing profile for user:', currentProfile.userId);
+        savedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
+        toast.success(t('profile.success.updated'));
+      }
+
+      onProfileUpdated(savedProfile);
       onClose();
     } catch (error: any) {
       console.error('Failed to save profile:', error);
@@ -308,6 +313,24 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         setTimeout(() => {
           window.location.reload();
         }, 1500);
+      } else if (error.message?.includes('Profile not found')) {
+        // Profile not found during update - try creating instead
+        toast.error('Профиль не найден. Попытка создания...');
+        try {
+          const profileData: Partial<UserProfile> = {
+            userId: user.id,
+            ...basicInfo,
+            influencerData: influencerData,
+            advertiserData: advertiserData
+          };
+          const newProfile = await profileService.createProfile(profileData);
+          toast.success('Профиль успешно создан');
+          onProfileUpdated(newProfile);
+          onClose();
+          return;
+        } catch (createError: any) {
+          toast.error('Не удалось создать профиль: ' + (createError.message || 'Неизвестная ошибка'));
+        }
       } else {
         toast.error(error.message || t('profile.errors.updateFailed'));
       }

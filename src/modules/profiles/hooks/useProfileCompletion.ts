@@ -66,11 +66,43 @@ export function useProfileCompletion(userId: string) {
       }
 
       if (!userProfile) {
-        // Profile not found - this should not happen after registration
+        // Profile not found - try to initialize it automatically
         console.warn('[useProfileCompletion] Profile not found for user:', userId);
-        setProfile(null);
-        setError('Profile not found. Please try logging out and back in, or contact support if the issue persists.');
-        return;
+        console.log('[useProfileCompletion] Attempting to auto-initialize profile...');
+
+        try {
+          // Try to initialize a profile for this user
+          // The initialize endpoint will create it if it doesn't exist or return existing one
+          const initializedProfile = await profileService.initializeProfile(userId);
+          console.log('[useProfileCompletion] Profile auto-initialized successfully:', initializedProfile.userId);
+          setProfile(initializedProfile);
+          setError(null);
+          return;
+        } catch (initError: any) {
+          console.error('[useProfileCompletion] Failed to auto-initialize profile:', initError);
+
+          // If initialization failed, try the old method as fallback
+          try {
+            const minimalProfile = {
+              userId: userId,
+              email: '',
+              fullName: '',
+              bio: '',
+              location: '',
+              website: '',
+            };
+            const createdProfile = await profileService.createProfile(minimalProfile);
+            console.log('[useProfileCompletion] Profile created via fallback method:', createdProfile.userId);
+            setProfile(createdProfile);
+            setError(null);
+            return;
+          } catch (fallbackError: any) {
+            console.error('[useProfileCompletion] Fallback profile creation also failed:', fallbackError);
+            setProfile(null);
+            setError('Профиль не найден. Пожалуйста, заполните профиль чтобы продолжить.');
+            return;
+          }
+        }
       }
 
       console.log('[useProfileCompletion] Profile loaded:', { userId, profile: userProfile });

@@ -136,6 +136,29 @@ export class AuthService implements OnModuleInit {
       throw new ConflictException(`Failed to create user profile: ${profileError.message}`);
     }
 
+    // Verify that profile was actually created successfully
+    const { data: verifyProfile, error: verifyError } = await adminClient
+      .from('user_profiles')
+      .select('user_id, email, full_name')
+      .eq('user_id', authData.user.id)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    if (verifyError || !verifyProfile) {
+      this.logger.error(`Profile verification failed after creation: ${verifyError?.message || 'Profile not found'}`);
+
+      // Rollback user creation
+      try {
+        await adminClient.auth.admin.deleteUser(authData.user.id);
+      } catch (deleteError) {
+        this.logger.error(`Failed to rollback user creation: ${deleteError}`);
+      }
+
+      throw new ConflictException('Failed to verify profile creation. Please try again.');
+    }
+
+    this.logger.log(`Profile verified successfully for user ${authData.user.id}`);
+
     const tokens = await this.generateTokens({
       sub: authData.user.id,
       email: signupDto.email,

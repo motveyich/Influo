@@ -147,6 +147,37 @@ export class ProfilesController {
     return this.profilesService.uploadAvatar(id, file);
   }
 
+  @Post('initialize')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Initialize profile if it does not exist' })
+  @ApiResponse({ status: 200, description: 'Profile initialized or already exists' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async initializeProfile(
+    @CurrentUser('userId') currentUserId: string,
+    @Body() body?: { email?: string; fullName?: string },
+  ) {
+    try {
+      // Try to get existing profile
+      const existingProfile = await this.profilesService.findOne(currentUserId);
+      return existingProfile;
+    } catch (error) {
+      // Profile not found, create minimal profile
+      const createProfileDto: CreateProfileDto = {
+        userId: currentUserId,
+        email: body?.email || '',
+        fullName: body?.fullName || null,
+        username: null,
+        phone: null,
+        bio: null,
+        location: null,
+        website: null,
+        userType: null,
+      };
+      return this.profilesService.create(createProfileDto);
+    }
+  }
+
   @Get()
   @Public()
   @ApiOperation({ summary: 'Search profiles' })

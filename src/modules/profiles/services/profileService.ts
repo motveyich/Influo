@@ -157,6 +157,28 @@ export class ProfileService {
     }
   }
 
+  async initializeProfile(userId: string, email?: string, fullName?: string): Promise<UserProfile> {
+    try {
+      console.log('[ProfileService] Initializing profile for user:', userId);
+
+      const profile = await apiClient.post<UserProfile>('/profiles/initialize', {
+        email,
+        fullName,
+      });
+
+      console.log('[ProfileService] Profile initialized successfully:', profile.userId);
+
+      analytics.track('profile_initialized', {
+        user_id: profile.userId,
+      });
+
+      return profile;
+    } catch (error: any) {
+      console.error('[ProfileService] Failed to initialize profile:', error);
+      throw error;
+    }
+  }
+
   async uploadAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
     try {
       return await apiClient.uploadFile<{ avatarUrl: string }>(`/profiles/${userId}/avatar`, file);
