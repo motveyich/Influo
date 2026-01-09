@@ -49,9 +49,10 @@ export class ProfilesController {
     @Body() createProfileDto: CreateProfileDto,
     @CurrentUser('userId') currentUserId: string,
   ) {
-    if (createProfileDto.userId !== currentUserId) {
+    if (createProfileDto.userId && createProfileDto.userId !== currentUserId) {
       return { message: 'You can only create your own profile' };
     }
+    createProfileDto.userId = currentUserId;
     return this.profilesService.create(createProfileDto);
   }
 

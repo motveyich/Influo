@@ -2,9 +2,10 @@ import { IsString, IsOptional, IsObject, IsEmail } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProfileDto {
-  @ApiProperty({ description: 'User ID from auth system' })
+  @ApiPropertyOptional({ description: 'User ID from auth system' })
   @IsString()
-  userId: string;
+  @IsOptional()
+  userId?: string;
 
   @ApiPropertyOptional({ description: 'User full name' })
   @IsString()
