@@ -194,15 +194,21 @@ export class AuthService implements OnModuleInit {
     }
 
     const adminClient = this.supabaseService.getAdminClient();
-    const { data: profile, error: profileError } = await adminClient
+    let { data: profile, error: profileError } = await adminClient
       .from('user_profiles')
       .select('*')
       .eq('user_id', authData.user.id)
       .eq('is_deleted', false)
       .maybeSingle();
 
+    // If profile not found, try to sync from auth.users metadata
     if (profileError || !profile) {
-      throw new UnauthorizedException('User profile not found or account has been deleted');
+      this.logger.warn(`Profile not found for user ${authData.user.id}, attempting to sync from auth.users`);
+      profile = await this.syncProfileFromAuth(authData.user.id);
+
+      if (!profile) {
+        throw new UnauthorizedException('User profile not found or account has been deleted');
+      }
     }
 
     // Check if profile is deleted (double check for safety)
@@ -210,15 +216,37 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Account has been deleted. Please contact support.');
     }
 
-    await adminClient
-      .from('user_profiles')
-      .update({
-        unified_account_info: {
-          ...profile.unified_account_info,
-          lastActive: new Date().toISOString(),
-        },
-      })
-      .eq('user_id', authData.user.id);
+    // Sync full_name from auth.users if missing in profile
+    if (!profile.full_name && authData.user.user_metadata?.full_name) {
+      this.logger.log(`Syncing full_name from auth.users metadata for user ${authData.user.id}`);
+      const { data: updatedProfile } = await adminClient
+        .from('user_profiles')
+        .update({
+          full_name: authData.user.user_metadata.full_name,
+          unified_account_info: {
+            ...profile.unified_account_info,
+            lastActive: new Date().toISOString(),
+          },
+        })
+        .eq('user_id', authData.user.id)
+        .select()
+        .maybeSingle();
+
+      if (updatedProfile) {
+        profile = updatedProfile;
+      }
+    } else {
+      // Just update lastActive
+      await adminClient
+        .from('user_profiles')
+        .update({
+          unified_account_info: {
+            ...profile.unified_account_info,
+            lastActive: new Date().toISOString(),
+          },
+        })
+        .eq('user_id', authData.user.id);
+    }
 
     const tokens = await this.generateTokens({
       sub: authData.user.id,
@@ -283,19 +311,45 @@ export class AuthService implements OnModuleInit {
   async getCurrentUser(userId: string) {
     const adminClient = this.supabaseService.getAdminClient();
 
-    const { data: profile, error } = await adminClient
+    let { data: profile, error } = await adminClient
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
       .eq('is_deleted', false)
       .maybeSingle();
 
+    // If profile not found, try to sync from auth.users
     if (error || !profile) {
-      throw new UnauthorizedException('User not found or account has been deleted');
+      this.logger.warn(`Profile not found for user ${userId} in getCurrentUser, attempting to sync`);
+      profile = await this.syncProfileFromAuth(userId);
+
+      if (!profile) {
+        throw new UnauthorizedException('User not found or account has been deleted');
+      }
     }
 
     if (profile.is_deleted) {
       throw new UnauthorizedException('Account has been deleted. Please contact support.');
+    }
+
+    // If full_name is missing, try to get it from auth.users
+    if (!profile.full_name) {
+      const supabase = this.supabaseService.getClient();
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+
+      if (authUser?.user?.user_metadata?.full_name) {
+        this.logger.log(`Syncing full_name for user ${userId} in getCurrentUser`);
+        const { data: updatedProfile } = await adminClient
+          .from('user_profiles')
+          .update({ full_name: authUser.user.user_metadata.full_name })
+          .eq('user_id', userId)
+          .select()
+          .maybeSingle();
+
+        if (updatedProfile) {
+          profile = updatedProfile;
+        }
+      }
     }
 
     // Load user role
@@ -331,6 +385,89 @@ export class AuthService implements OnModuleInit {
       deletedAt: profile.deleted_at || null,
       role: role,
     };
+  }
+
+  private async syncProfileFromAuth(userId: string): Promise<any> {
+    try {
+      const supabase = this.supabaseService.getClient();
+      const adminClient = this.supabaseService.getAdminClient();
+
+      // Get user data from auth.users
+      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+
+      if (authError || !authUser.user) {
+        this.logger.error(`Failed to get auth user: ${authError?.message}`);
+        return null;
+      }
+
+      const fullName = authUser.user.user_metadata?.full_name || null;
+      const userType = authUser.user.user_metadata?.user_type || null;
+
+      this.logger.log(`Syncing profile for user ${userId} from auth.users with full_name: ${fullName}`);
+
+      // Check if profile exists (including deleted)
+      const { data: existingProfile } = await adminClient
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Update existing profile
+        const { data: updatedProfile, error: updateError } = await adminClient
+          .from('user_profiles')
+          .update({
+            email: authUser.user.email,
+            full_name: fullName,
+            user_type: userType,
+            is_deleted: false,
+            deleted_at: null,
+            unified_account_info: {
+              ...existingProfile.unified_account_info,
+              lastActive: new Date().toISOString(),
+            },
+          })
+          .eq('user_id', userId)
+          .select()
+          .maybeSingle();
+
+        if (updateError) {
+          this.logger.error(`Failed to update profile: ${updateError.message}`);
+          return null;
+        }
+
+        this.logger.log(`Profile updated successfully for user ${userId}`);
+        return updatedProfile;
+      } else {
+        // Create new profile
+        const { data: newProfile, error: createError } = await adminClient
+          .from('user_profiles')
+          .insert({
+            user_id: userId,
+            email: authUser.user.email,
+            full_name: fullName,
+            user_type: userType,
+            unified_account_info: {
+              isVerified: false,
+              joinedAt: new Date().toISOString(),
+              lastActive: new Date().toISOString(),
+            },
+          })
+          .select()
+          .maybeSingle();
+
+        if (createError) {
+          this.logger.error(`Failed to create profile: ${createError.message}`);
+          return null;
+        }
+
+        this.logger.log(`Profile created successfully for user ${userId}`);
+        return newProfile;
+      }
+    } catch (error) {
+      this.logger.error(`Error syncing profile from auth: ${error}`);
+      return null;
+    }
   }
 
   private async generateTokens(payload: JwtPayload) {
