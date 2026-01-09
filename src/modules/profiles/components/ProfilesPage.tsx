@@ -168,9 +168,9 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
-                profile={currentUserProfile}
+                profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
               />
             )}
@@ -203,76 +203,54 @@ export function ProfilesPage() {
                 </button>
               </div>
 
-              {currentUserProfile ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.fullName')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
-                      {currentUserProfile.fullName || t('profile.notSpecified')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.email')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">{currentUserProfile.email}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.phone')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
-                      {currentUserProfile.phone || t('profile.notSpecified')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.location')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
-                      {currentUserProfile.location || t('profile.notSpecified')}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.bio')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
-                      {currentUserProfile.bio || t('profile.notSpecified')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('profile.fields.website')}
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
-                      {currentUserProfile.website || t('profile.notSpecified')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {t('profile.profileNotCreated')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {t('profile.createProfileDescription')}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.fullName')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {combinedProfile?.fullName || t('profile.notSpecified')}
                   </p>
-                  <button
-                    onClick={() => {
-                      setActiveModalTab('basic');
-                      setShowProfileModal(true);
-                    }}
-                    disabled={isUpdating}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('profile.createProfile')}
-                  </button>
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.email')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">{combinedProfile?.email || t('profile.notSpecified')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.phone')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {combinedProfile?.phone || t('profile.notSpecified')}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.location')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {combinedProfile?.location || t('profile.notSpecified')}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.bio')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {combinedProfile?.bio || t('profile.notSpecified')}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('profile.fields.website')}
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {combinedProfile?.website || t('profile.notSpecified')}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -281,9 +259,9 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
-                profile={currentUserProfile}
+                profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
               />
             )}
@@ -316,83 +294,61 @@ export function ProfilesPage() {
                 </button>
               </div>
 
-              {currentUserProfile?.influencerData ? (
-                <div className="space-y-6">
-                  {/* Social Networks */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.socialNetworks')}
-                    </h3>
-                    {currentUserProfile.influencerData.socialMediaLinks?.length > 0 ? (
-                      <div className="space-y-2">
-                        {currentUserProfile.influencerData.socialMediaLinks.map((link, index) => (
-                          <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
-                            {getSocialIcon(link.platform)}
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
-                              {link.platform}
-                            </span>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {link.username || link.url}
-                            </span>
-                            {link.verified && (
-                              <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
-                                {t('common.verified')}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {t('profile.socialNetworks')} {t('profile.notAdded')}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Content Categories */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.categories')}
-                    </h3>
-                    {currentUserProfile.influencerData.contentCategories?.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {currentUserProfile.influencerData.contentCategories.map((category, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
-                          >
-                            {category}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {t('profile.noCategoriesAdded')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {t('profile.influencerNotConfigured')}
+              <div className="space-y-6">
+                {/* Social Networks */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('profile.socialNetworks')}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {t('profile.setupInfluencerDescription')}
-                  </p>
-                  <button
-                    onClick={() => {
-                      setActiveModalTab('influencer');
-                      setShowProfileModal(true);
-                    }}
-                    disabled={isUpdating}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('profile.setupProfile')}
-                  </button>
+                  {combinedProfile?.influencerData?.socialMediaLinks?.length > 0 ? (
+                    <div className="space-y-2">
+                      {combinedProfile.influencerData.socialMediaLinks.map((link, index) => (
+                        <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-md">
+                          {getSocialIcon(link.platform)}
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+                            {link.platform}
+                          </span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {link.username || link.url}
+                          </span>
+                          {link.verified && (
+                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                              {t('common.verified')}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('profile.notSpecified')}
+                    </p>
+                  )}
                 </div>
-              )}
+
+                {/* Content Categories */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('profile.categories')}
+                  </h3>
+                  {combinedProfile?.influencerData?.contentCategories?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {combinedProfile.influencerData.contentCategories.map((category, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('profile.notSpecified')}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -401,9 +357,9 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {currentUserProfile && !currentUserProfile.profileCompletion.overallComplete && (
+            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
-                profile={currentUserProfile}
+                profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
               />
             )}
@@ -436,135 +392,121 @@ export function ProfilesPage() {
                 </button>
               </div>
 
-              {currentUserProfile?.advertiserData ? (
-                <div className="space-y-6">
-                  {/* Company Information */}
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                      {t('profile.companyInformation')}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('profile.fields.organizationName')}
-                        </label>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.advertiserData.companyName || t('profile.notSpecified')}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('profile.industry')}
-                        </label>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">
-                          {currentUserProfile.advertiserData.industry || t('profile.notSet')}
-                        </p>
-                      </div>
-                      {(currentUserProfile.advertiserData as any).organizationWebsite && (
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('profile.fields.organizationWebsite')}
-                          </label>
-                          <a 
-                            href={(currentUserProfile.advertiserData as any).organizationWebsite}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                          >
-                            {(currentUserProfile.advertiserData as any).organizationWebsite}
-                          </a>
-                        </div>
+              <div className="space-y-6">
+                {/* Company Information */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('profile.companyInformation')}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('profile.fields.organizationName')}
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">
+                        {combinedProfile?.advertiserData?.companyName || t('profile.notSpecified')}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('profile.industry')}
+                      </label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">
+                        {combinedProfile?.advertiserData?.industry || t('profile.notSpecified')}
+                      </p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('profile.fields.organizationWebsite')}
+                      </label>
+                      {(combinedProfile?.advertiserData as any)?.organizationWebsite ? (
+                        <a
+                          href={(combinedProfile.advertiserData as any).organizationWebsite}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        >
+                          {(combinedProfile.advertiserData as any).organizationWebsite}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-900 dark:text-gray-100">{t('profile.notSpecified')}</p>
                       )}
                     </div>
                   </div>
-                  
-                  {/* Budget Range */}
-                  {currentUserProfile.advertiserData.campaignPreferences?.budgetRange && (
-                    <div>
-                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                        {t('profile.budgetRange')}
-                      </h3>
-                      <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-                          <span className="text-sm text-gray-900 dark:text-gray-100">
-                            {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.min)} - 
-                            {formatCurrency(currentUserProfile.advertiserData.campaignPreferences.budgetRange.max)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Preferred Platforms */}
-                  {currentUserProfile.advertiserData.campaignPreferences?.preferredPlatforms?.length > 0 && (
-                    <div>
-                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                        {t('campaigns.platforms')}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {currentUserProfile.advertiserData.campaignPreferences.preferredPlatforms.map((platform, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm capitalize"
-                          >
-                            {platform}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Target Audience */}
-                  {currentUserProfile.advertiserData.campaignPreferences?.targetAudience && (
-                    <div>
-                      <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
-                        {t('campaigns.demographics')}
-                      </h3>
-                      <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.ageRange')}:</span>
-                          <span className="text-sm text-gray-900 dark:text-gray-100">
-                            {currentUserProfile.advertiserData.campaignPreferences.targetAudience.ageRange[0]} - 
-                            {currentUserProfile.advertiserData.campaignPreferences.targetAudience.ageRange[1]} {t('time.yearsAgo').replace(' назад', '').replace(' ago', '')}
-                          </span>
-                        </div>
-                        {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries?.length > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.targetCountries')}:</span>
-                            <span className="text-sm text-gray-900 dark:text-gray-100">
-                              {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.slice(0, 3).join(', ')}
-                              {currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.length > 3 && 
-                                ` +${currentUserProfile.advertiserData.campaignPreferences.targetAudience.countries.length - 3}`
-                              }
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {t('profile.advertiserNotConfigured')}
+
+                {/* Budget Range */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('profile.budgetRange')}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {t('profile.setupAdvertiserDescription')}
-                  </p>
-                  <button
-                    onClick={() => {
-                      setActiveModalTab('advertiser');
-                      setShowProfileModal(true);
-                    }}
-                    disabled={isUpdating}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('profile.setupProfile')}
-                  </button>
+                  {combinedProfile?.advertiserData?.campaignPreferences?.budgetRange ? (
+                    <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
+                          {formatCurrency(combinedProfile.advertiserData.campaignPreferences.budgetRange.min)} -
+                          {formatCurrency(combinedProfile.advertiserData.campaignPreferences.budgetRange.max)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.notSpecified')}</p>
+                  )}
                 </div>
-              )}
+
+                {/* Preferred Platforms */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('campaigns.platforms')}
+                  </h3>
+                  {combinedProfile?.advertiserData?.campaignPreferences?.preferredPlatforms?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {combinedProfile.advertiserData.campaignPreferences.preferredPlatforms.map((platform, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm capitalize"
+                        >
+                          {platform}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.notSpecified')}</p>
+                  )}
+                </div>
+
+                {/* Target Audience */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+                    {t('campaigns.demographics')}
+                  </h3>
+                  {combinedProfile?.advertiserData?.campaignPreferences?.targetAudience ? (
+                    <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.ageRange')}:</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
+                          {combinedProfile.advertiserData.campaignPreferences.targetAudience.ageRange[0]} -
+                          {combinedProfile.advertiserData.campaignPreferences.targetAudience.ageRange[1]} {t('time.yearsAgo').replace(' назад', '').replace(' ago', '')}
+                        </span>
+                      </div>
+                      {combinedProfile.advertiserData.campaignPreferences.targetAudience.countries?.length > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{t('campaigns.fields.targetCountries')}:</span>
+                          <span className="text-sm text-gray-900 dark:text-gray-100">
+                            {combinedProfile.advertiserData.campaignPreferences.targetAudience.countries.slice(0, 3).join(', ')}
+                            {combinedProfile.advertiserData.campaignPreferences.targetAudience.countries.length > 3 &&
+                              ` +${combinedProfile.advertiserData.campaignPreferences.targetAudience.countries.length - 3}`
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.notSpecified')}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         );
