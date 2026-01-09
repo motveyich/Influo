@@ -308,17 +308,27 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
       let savedProfile: UserProfile;
 
-      // Determine if we need to create or update
-      if (!currentProfile) {
-        // No profile exists - create new one
-        console.log('[ProfileSetupModal] Creating new profile for user:', user.id);
-        savedProfile = await profileService.createProfile(profileData);
-        toast.success(t('profile.success.created') || 'Профиль успешно создан');
+      // For authenticated users, ALWAYS try to update first, then create if not found
+      // This ensures we never try to create a duplicate profile
+      if (user?.id) {
+        try {
+          // Try to update the profile first
+          console.log('[ProfileSetupModal] Attempting to update profile for user:', user.id);
+          savedProfile = await profileService.updateProfile(user.id, profileData);
+          toast.success(t('profile.success.updated'));
+        } catch (updateError: any) {
+          // If profile not found (404), try to create it
+          if (updateError.status === 404 || updateError.statusCode === 404 || updateError.message?.includes('not found')) {
+            console.log('[ProfileSetupModal] Profile not found, creating new profile for user:', user.id);
+            savedProfile = await profileService.createProfile(profileData);
+            toast.success(t('profile.success.created') || 'Профиль успешно создан');
+          } else {
+            // Re-throw other errors
+            throw updateError;
+          }
+        }
       } else {
-        // Profile exists - update it
-        console.log('[ProfileSetupModal] Updating existing profile for user:', currentProfile.userId);
-        savedProfile = await profileService.updateProfile(currentProfile.userId, profileData);
-        toast.success(t('profile.success.updated'));
+        throw new Error('User ID is required');
       }
 
       onProfileUpdated(savedProfile);

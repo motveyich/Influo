@@ -41,8 +41,50 @@ export function ProfilesPage() {
   const { user, loading } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
-  const { profile: currentUserProfile, updateProfile, refresh: refreshProfile } = useProfileCompletion(currentUserId);
-  
+  const { profile: currentUserProfile, updateProfile, refresh: refreshProfile, isLoading: profileLoading, error: profileError } = useProfileCompletion(currentUserId);
+
+  // Create a combined profile object that falls back to auth data if profile is not loaded
+  const combinedProfile = React.useMemo(() => {
+    if (currentUserProfile) {
+      return currentUserProfile;
+    }
+
+    // If profile loading failed but we have user data, create a minimal profile object
+    if (user && !profileLoading) {
+      console.log('[ProfilesPage] Profile not found, using auth data as fallback:', {
+        userId: user.id,
+        fullName: user.fullName,
+        email: user.email
+      });
+
+      return {
+        userId: user.id,
+        email: user.email || '',
+        fullName: user.fullName || '',
+        username: user.username || null,
+        userType: user.userType || null,
+        avatar: user.avatar || null,
+        bio: null,
+        location: null,
+        website: null,
+        phone: null,
+        influencerData: null,
+        advertiserData: null,
+        profileCompletion: {
+          completionPercentage: 20,
+          basicInfo: false,
+          influencerSetup: false,
+          advertiserSetup: false,
+          missingFields: ['bio', 'location']
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as UserProfile;
+    }
+
+    return null;
+  }, [currentUserProfile, user, profileLoading]);
+
   // User settings hook
   const {
     settings,
@@ -636,7 +678,7 @@ export function ProfilesPage() {
           setShowProfileModal(false);
           setActiveModalTab('basic');
         }}
-        currentProfile={currentUserProfile}
+        currentProfile={combinedProfile}
         initialTab={activeModalTab}
         onProfileUpdated={handleProfileUpdated}
       />
