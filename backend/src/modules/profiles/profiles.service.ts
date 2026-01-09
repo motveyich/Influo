@@ -11,18 +11,31 @@ export class ProfilesService {
   async create(createProfileDto: CreateProfileDto) {
     const supabase = this.supabaseService.getAdminClient();
 
+    this.logger.log(`Creating profile for user: ${createProfileDto.userId}`);
+    this.logger.debug(`Profile data: ${JSON.stringify({
+      email: createProfileDto.email,
+      username: createProfileDto.username,
+      fullName: createProfileDto.fullName
+    })}`);
+
     // Check if profile already exists by user_id
-    const { data: existingProfileById } = await supabase
+    const { data: existingProfileById, error: checkError } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('user_id', createProfileDto.userId)
       .maybeSingle();
+
+    if (checkError) {
+      this.logger.error(`Error checking existing profile: ${checkError.message}`, checkError);
+    }
 
     // If profile exists, update it instead
     if (existingProfileById) {
       this.logger.log(`Profile already exists for user ${createProfileDto.userId}, updating instead`);
       return this.update(createProfileDto.userId, createProfileDto);
     }
+
+    this.logger.log(`No existing profile found, creating new profile for user ${createProfileDto.userId}`);
 
     // Check if username is already taken by another user
     if (createProfileDto.username) {
@@ -75,6 +88,8 @@ export class ProfilesService {
       },
     };
 
+    this.logger.log(`Inserting new profile into database for user ${createProfileDto.userId}`);
+
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .insert(profileData)
@@ -82,21 +97,38 @@ export class ProfilesService {
       .single();
 
     if (error) {
-      this.logger.error(`Failed to create profile: ${error.message}`, error);
+      this.logger.error(`Failed to create profile for user ${createProfileDto.userId}: ${error.message}`, {
+        error,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        userId: createProfileDto.userId
+      });
 
       // Check for specific constraint violations
       if (error.message.includes('unique') || error.code === '23505') {
-        if (error.message.includes('email')) {
-          throw new ConflictException('Email already in use');
-        } else if (error.message.includes('username')) {
-          throw new ConflictException('Username already taken');
+        // This means profile already exists despite our check - race condition
+        this.logger.warn(`Race condition detected: profile created between check and insert for user ${createProfileDto.userId}. Attempting update instead.`);
+
+        // Try to update instead
+        try {
+          return await this.update(createProfileDto.userId, createProfileDto);
+        } catch (updateError) {
+          this.logger.error(`Failed to update profile after race condition: ${updateError.message}`);
+
+          if (error.message.includes('email')) {
+            throw new ConflictException('Email already in use');
+          } else if (error.message.includes('username')) {
+            throw new ConflictException('Username already taken');
+          }
+          throw new ConflictException('Profile with this information already exists');
         }
-        throw new ConflictException('Profile with this information already exists');
       }
 
       throw new ConflictException('Failed to create profile');
     }
 
+    this.logger.log(`Successfully created profile for user ${createProfileDto.userId}`);
     return this.transformProfile(profile);
   }
 
@@ -124,6 +156,14 @@ export class ProfilesService {
   async update(userId: string, updateProfileDto: UpdateProfileDto) {
     const supabase = this.supabaseService.getAdminClient();
 
+    this.logger.log(`Updating profile for user: ${userId}`);
+    this.logger.debug(`Update data: ${JSON.stringify({
+      email: updateProfileDto.email,
+      username: updateProfileDto.username,
+      fullName: updateProfileDto.fullName
+    })}`);
+
+    // Check if username is being changed and if it's already taken
     if (updateProfileDto.username) {
       const { data: existingUser } = await supabase
         .from('user_profiles')
@@ -133,7 +173,23 @@ export class ProfilesService {
         .maybeSingle();
 
       if (existingUser) {
+        this.logger.warn(`Username ${updateProfileDto.username} is already taken by another user`);
         throw new ConflictException('Username already taken');
+      }
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (updateProfileDto.email) {
+      const { data: existingEmailUser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('email', updateProfileDto.email)
+        .neq('user_id', userId)
+        .maybeSingle();
+
+      if (existingEmailUser) {
+        this.logger.warn(`Email ${updateProfileDto.email} is already taken by another user`);
+        throw new ConflictException('Email already in use by another user');
       }
     }
 
@@ -184,6 +240,8 @@ export class ProfilesService {
       updateData.profile_completion = updateProfileDto.profileCompletion;
     }
 
+    this.logger.log(`Executing update query for user ${userId}`);
+
     const { data: updatedProfile, error } = await supabase
       .from('user_profiles')
       .update(updateData)
@@ -192,10 +250,29 @@ export class ProfilesService {
       .single();
 
     if (error) {
-      this.logger.error(`Failed to update profile: ${error.message}`, error);
+      this.logger.error(`Failed to update profile for user ${userId}: ${error.message}`, {
+        error,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        userId
+      });
+
+      // Check if profile doesn't exist
+      if (error.code === 'PGRST116' || error.message.includes('no rows')) {
+        this.logger.warn(`Profile not found for user ${userId}, cannot update`);
+        throw new NotFoundException('Profile not found');
+      }
+
       throw new ConflictException('Failed to update profile');
     }
 
+    if (!updatedProfile) {
+      this.logger.error(`Update returned no data for user ${userId}`);
+      throw new NotFoundException('Profile not found');
+    }
+
+    this.logger.log(`Successfully updated profile for user ${userId}`);
     return this.transformProfile(updatedProfile);
   }
 

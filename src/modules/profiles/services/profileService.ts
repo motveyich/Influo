@@ -43,11 +43,31 @@ export class ProfileService {
     } catch (error: any) {
       console.error('Failed to create profile:', error);
 
+      // Handle 409 Conflict - profile already exists
+      if (error.status === 409 || error.statusCode === 409) {
+        console.log('Profile already exists (409), attempting to fetch and update...');
+
+        try {
+          // Try to fetch the existing profile
+          const existingProfile = await this.getProfile(profileData.userId!);
+
+          if (existingProfile) {
+            console.log('Existing profile found, updating it instead');
+            // Profile exists, update it instead
+            return await this.updateProfile(profileData.userId!, profileData);
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch existing profile after 409:', fetchError);
+        }
+      }
+
       // Provide more helpful error messages
       if (error.message?.includes('Email already in use')) {
         throw new Error('This email is already registered with another account');
       } else if (error.message?.includes('Username already taken')) {
         throw new Error('This username is already taken. Please choose another one');
+      } else if (error.message?.includes('Conflict') || error.status === 409) {
+        throw new Error('Failed to create profile. Please try refreshing the page.');
       }
 
       throw error;

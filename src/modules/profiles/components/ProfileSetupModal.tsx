@@ -292,9 +292,22 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       onClose();
     } catch (error: any) {
       console.error('Failed to save profile:', error);
-      if (error.message.includes('email already exists') || error.message.includes('Username already taken')) {
-        setErrors({ email: t('profile.validation.emailExists') });
+
+      // Handle specific error cases
+      if (error.message?.includes('email is already registered')) {
+        setErrors({ email: 'This email is already in use by another account' });
         setActiveTab('basic');
+        toast.error('This email is already registered with another account');
+      } else if (error.message?.includes('Username already taken')) {
+        setErrors({ username: 'This username is already taken' });
+        setActiveTab('basic');
+        toast.error('This username is already taken. Please choose another one');
+      } else if (error.message?.includes('Conflict')) {
+        // Conflict error - try to reload profile
+        toast.error('Profile update conflict. Refreshing...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         toast.error(error.message || t('profile.errors.updateFailed'));
       }
