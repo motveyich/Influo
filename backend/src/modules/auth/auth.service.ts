@@ -73,7 +73,7 @@ export class AuthService implements OnModuleInit {
         .from('user_profiles')
         .update({
           email: signupDto.email,
-          full_name: signupDto.fullName || null,
+          full_name: signupDto.fullName || signupDto.email.split('@')[0],
           user_type: signupDto.userType || null,
           username: signupDto.username || null,
           is_deleted: false,
@@ -109,7 +109,7 @@ export class AuthService implements OnModuleInit {
         .insert({
           user_id: authData.user.id,
           email: signupDto.email,
-          full_name: signupDto.fullName || null,
+          full_name: signupDto.fullName || signupDto.email.split('@')[0],
           user_type: signupDto.userType || null,
           username: signupDto.username || null,
           unified_account_info: {

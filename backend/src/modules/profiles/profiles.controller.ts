@@ -163,10 +163,11 @@ export class ProfilesController {
       return existingProfile;
     } catch (error) {
       // Profile not found, create minimal profile
+      const email = body?.email || '';
       const createProfileDto: CreateProfileDto = {
         userId: currentUserId,
-        email: body?.email || '',
-        fullName: body?.fullName || null,
+        email: email,
+        fullName: body?.fullName || email.split('@')[0] || 'User',
         username: null,
         phone: null,
         bio: null,

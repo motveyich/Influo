@@ -147,22 +147,24 @@ export class ProfilesService {
 
         // Determine which field caused the conflict
         let conflictField = 'unknown';
-        if (error.message.includes('email') || error.detail?.includes('email')) {
+        if (error.message.includes('email') || error.details?.includes('email')) {
           conflictField = 'email';
-        } else if (error.message.includes('username') || error.detail?.includes('username')) {
+        } else if (error.message.includes('username') || error.details?.includes('username')) {
           conflictField = 'username';
-        } else if (error.message.includes('user_id') || error.detail?.includes('user_id')) {
+        } else if (error.message.includes('user_id') || error.details?.includes('user_id')) {
           conflictField = 'user_id';
         }
 
         this.logger.log(`Conflict field detected: ${conflictField}`);
 
         // If conflict is on user_id, try to update the existing profile
-        if (conflictField === 'user_id') {
+        if (conflictField === 'user_id' && createProfileDto.userId) {
           try {
             this.logger.log(`Attempting to update existing profile for user ${createProfileDto.userId}`);
-            return await this.update(createProfileDto.userId, createProfileDto);
-          } catch (updateError) {
+            // Convert CreateProfileDto to UpdateProfileDto (exclude userId field)
+            const { userId, ...updateDto } = createProfileDto;
+            return await this.update(userId, updateDto);
+          } catch (updateError: any) {
             this.logger.error(`Failed to update profile after race condition: ${updateError.message}`);
             throw new ConflictException('Profile already exists and could not be updated');
           }
@@ -338,6 +340,18 @@ export class ProfilesService {
       if (error.code === 'PGRST116' || error.message.includes('no rows')) {
         this.logger.warn(`Profile not found for user ${userId}, cannot update`);
         throw new NotFoundException('Profile not found');
+      }
+
+      // Check for unique constraint violations (23505 is PostgreSQL unique_violation error code)
+      if (error.code === '23505' || error.message.includes('unique') || error.message.includes('duplicate')) {
+        if (error.message.includes('email') || error.details?.includes('email')) {
+          this.logger.warn(`Email conflict for user ${userId}`);
+          throw new ConflictException('Email already in use by another user');
+        } else if (error.message.includes('username') || error.details?.includes('username')) {
+          this.logger.warn(`Username conflict for user ${userId}`);
+          throw new ConflictException('Username already taken');
+        }
+        throw new ConflictException('This information is already in use by another user');
       }
 
       throw new ConflictException('Failed to update profile');

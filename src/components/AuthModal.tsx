@@ -200,7 +200,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
           {mode === 'signup' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Полное имя
+                Полное имя <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -213,6 +213,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModal
                     errors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Введите ваше полное имя"
+                  required
                 />
               </div>
               {touched.username && errors.username && (
