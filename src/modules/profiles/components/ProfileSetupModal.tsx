@@ -32,6 +32,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   useBodyScrollLock(isOpen);
 
@@ -133,11 +134,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     if (isOpen) {
       setActiveTab(initialTab);
     }
-    
+
     if (currentProfile) {
       setBasicInfo({
         fullName: currentProfile.fullName || '',
-        email: currentProfile.email || '',
+        email: currentProfile.email || user?.email || '',
         bio: currentProfile.bio || '',
         location: currentProfile.location || '',
         website: currentProfile.website || '',
@@ -187,10 +188,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         });
       }
     } else {
-      // Reset all data when no current profile
+      // Reset all data when no current profile, but keep email from auth
       setBasicInfo({
         fullName: '',
-        email: '',
+        email: user?.email || '',
         bio: '',
         location: '',
         website: '',
@@ -234,7 +235,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         }
       });
     }
-  }, [currentProfile, isOpen, initialTab]);
+  }, [currentProfile, isOpen, initialTab, user?.email]);
 
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
@@ -243,11 +244,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       newErrors.fullName = t('profile.validation.fullNameRequired');
     }
 
-    if (!basicInfo.email.trim()) {
-      newErrors.email = t('profile.validation.emailRequired');
-    } else if (!/\S+@\S+\.\S+/.test(basicInfo.email)) {
-      newErrors.email = t('profile.validation.emailInvalid');
-    }
+    // Email validation removed - field is read-only and comes from auth
 
     if (!basicInfo.bio.trim()) {
       newErrors.bio = t('profile.validation.bioRequired');
@@ -550,18 +547,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   <input
                     type="email"
                     value={basicInfo.email}
-                    onChange={(e) => setBasicInfo(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.email ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    readOnly
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
                     placeholder={t('profile.placeholders.email')}
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {errors.email}
-                    </p>
-                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('profile.emailChangeNote') || 'Email можно изменить только в настройках безопасности'}
+                  </p>
                 </div>
 
                 <div>
