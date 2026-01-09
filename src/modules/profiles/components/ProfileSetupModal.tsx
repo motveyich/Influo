@@ -262,10 +262,16 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       return;
     }
 
+    if (!user?.id) {
+      toast.error(t('profile.errors.noUser'));
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Prepare profile data with proper structure
+      // Prepare profile data with proper structure including userId
       const profileData: Partial<UserProfile> = {
+        userId: user.id,
         ...basicInfo,
         // Always include the data - service will handle null conversion
         influencerData: influencerData,
@@ -286,7 +292,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       onClose();
     } catch (error: any) {
       console.error('Failed to save profile:', error);
-      if (error.message.includes('email already exists')) {
+      if (error.message.includes('email already exists') || error.message.includes('Username already taken')) {
         setErrors({ email: t('profile.validation.emailExists') });
         setActiveTab('basic');
       } else {

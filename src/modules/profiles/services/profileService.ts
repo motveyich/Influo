@@ -5,10 +5,15 @@ import { analytics } from '../../../core/analytics';
 export class ProfileService {
   async createProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
+      if (!profileData.userId) {
+        throw new Error('User ID is required to create a profile');
+      }
+
       const userType = this.determineUserType(profileData);
       const completion = this.calculateProfileCompletion(profileData);
 
       const payload = {
+        userId: profileData.userId,
         email: profileData.email,
         fullName: profileData.fullName,
         username: profileData.username || null,
@@ -23,7 +28,11 @@ export class ProfileService {
         profileCompletion: completion,
       };
 
+      console.log('Creating profile with userId:', payload.userId);
+
       const profile = await apiClient.post<UserProfile>('/profiles', payload);
+
+      console.log('Profile created successfully:', profile.userId);
 
       analytics.track('profile_created', {
         user_id: profile.userId,
@@ -31,14 +40,24 @@ export class ProfileService {
       });
 
       return profile;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create profile:', error);
+
+      // Provide more helpful error messages
+      if (error.message?.includes('Email already in use')) {
+        throw new Error('This email is already registered with another account');
+      } else if (error.message?.includes('Username already taken')) {
+        throw new Error('This username is already taken. Please choose another one');
+      }
+
       throw error;
     }
   }
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
+      console.log('Updating profile for userId:', userId);
+
       const currentProfile = await this.getProfile(userId);
       if (!currentProfile) {
         throw new Error('Profile not found');
@@ -71,6 +90,8 @@ export class ProfileService {
 
       const profile = await apiClient.patch<UserProfile>(`/profiles/${userId}`, payload);
 
+      console.log('Profile updated successfully:', profile.userId);
+
       analytics.track('profile_updated', {
         user_id: userId,
         completion_percentage: completion.completionPercentage,
@@ -78,8 +99,16 @@ export class ProfileService {
       });
 
       return profile;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update profile:', error);
+
+      // Provide more helpful error messages
+      if (error.message?.includes('Email already in use')) {
+        throw new Error('This email is already registered with another account');
+      } else if (error.message?.includes('Username already taken')) {
+        throw new Error('This username is already taken. Please choose another one');
+      }
+
       throw error;
     }
   }

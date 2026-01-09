@@ -11,6 +11,20 @@ export class ProfilesService {
   async create(createProfileDto: CreateProfileDto) {
     const supabase = this.supabaseService.getAdminClient();
 
+    // Check if profile already exists by user_id
+    const { data: existingProfileById } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', createProfileDto.userId)
+      .maybeSingle();
+
+    // If profile exists, update it instead
+    if (existingProfileById) {
+      this.logger.log(`Profile already exists for user ${createProfileDto.userId}, updating instead`);
+      return this.update(createProfileDto.userId, createProfileDto);
+    }
+
+    // Check if username is already taken by another user
     if (createProfileDto.username) {
       const { data: existingUser } = await supabase
         .from('user_profiles')
@@ -21,6 +35,20 @@ export class ProfilesService {
 
       if (existingUser) {
         throw new ConflictException('Username already taken');
+      }
+    }
+
+    // Check if email is already taken by another user
+    if (createProfileDto.email) {
+      const { data: existingEmailUser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('email', createProfileDto.email)
+        .neq('user_id', createProfileDto.userId)
+        .maybeSingle();
+
+      if (existingEmailUser) {
+        throw new ConflictException('Email already in use by another user');
       }
     }
 
@@ -49,12 +77,23 @@ export class ProfilesService {
 
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .upsert(profileData, { onConflict: 'user_id' })
+      .insert(profileData)
       .select()
       .single();
 
     if (error) {
       this.logger.error(`Failed to create profile: ${error.message}`, error);
+
+      // Check for specific constraint violations
+      if (error.message.includes('unique') || error.code === '23505') {
+        if (error.message.includes('email')) {
+          throw new ConflictException('Email already in use');
+        } else if (error.message.includes('username')) {
+          throw new ConflictException('Username already taken');
+        }
+        throw new ConflictException('Profile with this information already exists');
+      }
+
       throw new ConflictException('Failed to create profile');
     }
 
