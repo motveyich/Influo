@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUrl, MaxLength, MinLength, IsObject, ValidateIf } from 'class-validator';
+import { IsString, IsOptional, IsUrl, MaxLength, MinLength, IsObject, ValidateIf, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { InfluencerDataDto } from './influencer-data.dto';
+import { AdvertiserDataDto } from './advertiser-data.dto';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -108,21 +111,25 @@ export class UpdateProfileDto {
     description: 'Influencer data (object or null to clear)',
     required: false,
     nullable: true,
+    type: () => InfluencerDataDto,
   })
   @IsOptional()
   @ValidateIf((o) => o.influencerData !== null)
-  @IsObject()
-  influencerData?: Record<string, any> | null;
+  @ValidateNested()
+  @Type(() => InfluencerDataDto)
+  influencerData?: InfluencerDataDto | null;
 
   @ApiProperty({
     description: 'Advertiser data (object or null to clear)',
     required: false,
     nullable: true,
+    type: () => AdvertiserDataDto,
   })
   @IsOptional()
   @ValidateIf((o) => o.advertiserData !== null)
-  @IsObject()
-  advertiserData?: Record<string, any> | null;
+  @ValidateNested()
+  @Type(() => AdvertiserDataDto)
+  advertiserData?: AdvertiserDataDto | null;
 
   @ApiProperty({
     description: 'Profile completion',

@@ -76,7 +76,12 @@ export class ProfileService {
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      console.log('Updating profile for userId:', userId);
+      console.log('[ProfileService] 🔄 Updating profile for userId:', userId);
+      console.log('[ProfileService] 📦 Raw updates received:', {
+        keys: Object.keys(updates),
+        hasInfluencerData: !!updates.influencerData,
+        hasAdvertiserData: !!updates.advertiserData,
+      });
 
       const currentProfile = await this.getProfile(userId);
       if (!currentProfile) {
@@ -101,15 +106,42 @@ export class ProfileService {
       if (updates.avatar !== undefined) payload.avatar = updates.avatar || null;
 
       if (updates.influencerData !== undefined) {
+        console.log('[ProfileService] 📊 Processing influencerData:', {
+          type: typeof updates.influencerData,
+          isNull: updates.influencerData === null,
+          hasContent: this.hasInfluencerContent(updates.influencerData),
+          keys: updates.influencerData ? Object.keys(updates.influencerData) : [],
+        });
+
         const sanitizedInfluencerData = this.hasInfluencerContent(updates.influencerData)
           ? this.sanitizeInfluencerData(updates.influencerData)
           : null;
+
+        console.log('[ProfileService] ✨ Sanitized influencerData:', {
+          isNull: sanitizedInfluencerData === null,
+          keys: sanitizedInfluencerData ? Object.keys(sanitizedInfluencerData) : [],
+        });
+
         payload.influencerData = sanitizedInfluencerData;
       }
+
       if (updates.advertiserData !== undefined) {
+        console.log('[ProfileService] 📊 Processing advertiserData:', {
+          type: typeof updates.advertiserData,
+          isNull: updates.advertiserData === null,
+          hasContent: this.hasAdvertiserContent(updates.advertiserData),
+          keys: updates.advertiserData ? Object.keys(updates.advertiserData) : [],
+        });
+
         const sanitizedAdvertiserData = this.hasAdvertiserContent(updates.advertiserData)
           ? this.sanitizeAdvertiserData(updates.advertiserData)
           : null;
+
+        console.log('[ProfileService] ✨ Sanitized advertiserData:', {
+          isNull: sanitizedAdvertiserData === null,
+          keys: sanitizedAdvertiserData ? Object.keys(sanitizedAdvertiserData) : [],
+        });
+
         payload.advertiserData = sanitizedAdvertiserData;
       }
 
@@ -123,7 +155,14 @@ export class ProfileService {
       delete payload.deletedAt;
       delete payload.deletedBy;
 
-      console.log('[ProfileService] Sanitized payload:', JSON.stringify(payload, null, 2));
+      console.log('[ProfileService] 📤 Final payload to backend:', {
+        keys: Object.keys(payload),
+        payloadSize: JSON.stringify(payload).length,
+        hasInfluencerData: payload.influencerData !== undefined,
+        hasAdvertiserData: payload.advertiserData !== undefined,
+      });
+
+      console.log('[ProfileService] 📋 Complete payload:', JSON.stringify(payload, null, 2));
 
       const profile = await apiClient.patch<UserProfile>(`/profiles/${userId}`, payload);
 
@@ -137,21 +176,43 @@ export class ProfileService {
 
       return profile;
     } catch (error: any) {
-      console.error('Failed to update profile:', error);
+      console.error('[ProfileService] ❌ Failed to update profile:', {
+        message: error.message,
+        status: error.status || error.statusCode,
+        error: error,
+      });
+
+      // Log the full error for debugging
+      if (error.response) {
+        console.error('[ProfileService] 📋 Error response:', error.response);
+      }
 
       // Provide more helpful error messages based on the specific error
       if (error.message?.includes('Username already taken')) {
         throw new Error('Это имя пользователя уже занято. Пожалуйста, выберите другое');
-      } else if (error.message?.includes('Conflict') || error.statusCode === 409) {
+      } else if (error.message?.includes('Conflict') || error.statusCode === 409 || error.status === 409) {
         // Generic conflict error
         if (updates.username) {
           throw new Error('Это имя пользователя уже занято. Пожалуйста, выберите другое');
         }
         throw new Error('Не удалось обновить профиль. Пожалуйста, попробуйте еще раз');
-      } else if (error.message?.includes('Profile not found') || error.statusCode === 404) {
+      } else if (error.message?.includes('Profile not found') || error.statusCode === 404 || error.status === 404) {
         throw new Error('Профиль не найден. Пожалуйста, попробуйте войти снова');
-      } else if (error.message?.includes('Unauthorized') || error.statusCode === 401) {
+      } else if (error.message?.includes('Unauthorized') || error.statusCode === 401 || error.status === 401) {
         throw new Error('Вы не авторизованы. Пожалуйста, войдите в систему');
+      } else if (error.statusCode === 500 || error.status === 500) {
+        // Internal server error - provide detailed information
+        console.error('[ProfileService] 🔥 Server error 500:', {
+          message: error.message,
+          updates: Object.keys(updates),
+          hasInfluencerData: !!updates.influencerData,
+          hasAdvertiserData: !!updates.advertiserData,
+        });
+        throw new Error(`Ошибка сервера при обновлении профиля. Проверьте консоль для деталей. ${error.message || ''}`);
+      } else if (error.statusCode === 400 || error.status === 400) {
+        // Bad request - validation error
+        console.error('[ProfileService] ⚠️ Validation error:', error.message);
+        throw new Error(`Ошибка валидации данных: ${error.message || 'Проверьте правильность введенных данных'}`);
       }
 
       // Re-throw the original error if we couldn't handle it

@@ -329,15 +329,48 @@ export class ProfilesService {
     this.logger.log(`Executing update query for user ${userId}`);
     this.logger.debug(`Update payload keys: ${Object.keys(updateData).join(', ')}`);
 
+    // Sanitize JSON data before sending to Supabase
+    if (updateData.influencer_data !== undefined) {
+      try {
+        if (updateData.influencer_data === null) {
+          this.logger.log(`Setting influencer_data to null for user ${userId}`);
+        } else if (typeof updateData.influencer_data === 'object') {
+          updateData.influencer_data = this.sanitizeInfluencerData(updateData.influencer_data);
+          this.logger.log(`Sanitized influencer_data for user ${userId}`);
+        }
+      } catch (sanitizeError: any) {
+        this.logger.error(`Failed to sanitize influencer_data: ${sanitizeError.message}`, sanitizeError);
+        throw new InternalServerErrorException('Invalid influencer data format');
+      }
+    }
+
+    if (updateData.advertiser_data !== undefined) {
+      try {
+        if (updateData.advertiser_data === null) {
+          this.logger.log(`Setting advertiser_data to null for user ${userId}`);
+        } else if (typeof updateData.advertiser_data === 'object') {
+          updateData.advertiser_data = this.sanitizeAdvertiserData(updateData.advertiser_data);
+          this.logger.log(`Sanitized advertiser_data for user ${userId}`);
+        }
+      } catch (sanitizeError: any) {
+        this.logger.error(`Failed to sanitize advertiser_data: ${sanitizeError.message}`, sanitizeError);
+        throw new InternalServerErrorException('Invalid advertiser data format');
+      }
+    }
+
     // CRITICAL DEBUG: Log full updateData structure before sending to Supabase
-    console.log('=== PROFILE UPDATE DEBUG START ===');
-    console.log('userId:', userId);
-    console.log('updateData:', JSON.stringify(updateData, null, 2));
-    console.log('influencer_data type:', typeof updateData.influencer_data);
-    console.log('influencer_data value:', updateData.influencer_data);
-    console.log('advertiser_data type:', typeof updateData.advertiser_data);
-    console.log('advertiser_data value:', updateData.advertiser_data);
-    console.log('=== PROFILE UPDATE DEBUG END ===');
+    this.logger.debug('=== PROFILE UPDATE DEBUG START ===');
+    this.logger.debug(`userId: ${userId}`);
+    this.logger.debug(`updateData keys: ${Object.keys(updateData).join(', ')}`);
+    if (updateData.influencer_data !== undefined) {
+      this.logger.debug(`influencer_data type: ${typeof updateData.influencer_data}`);
+      this.logger.debug(`influencer_data: ${JSON.stringify(updateData.influencer_data, null, 2)}`);
+    }
+    if (updateData.advertiser_data !== undefined) {
+      this.logger.debug(`advertiser_data type: ${typeof updateData.advertiser_data}`);
+      this.logger.debug(`advertiser_data: ${JSON.stringify(updateData.advertiser_data, null, 2)}`);
+    }
+    this.logger.debug('=== PROFILE UPDATE DEBUG END ===');
 
     let updatedProfile;
     let error;
@@ -559,6 +592,146 @@ export class ProfilesService {
     }
 
     return profiles.map((profile) => this.transformProfile(profile));
+  }
+
+  private sanitizeInfluencerData(data: any): any {
+    if (!data || data === null) return null;
+
+    const sanitized: any = {};
+
+    if (data.socialMediaLinks !== undefined) {
+      sanitized.socialMediaLinks = Array.isArray(data.socialMediaLinks)
+        ? data.socialMediaLinks.filter((link: any) => link && typeof link === 'object')
+        : [];
+    }
+
+    if (data.metrics !== undefined && data.metrics !== null) {
+      sanitized.metrics = {
+        totalFollowers: this.toNumber(data.metrics.totalFollowers, 0),
+        engagementRate: this.toNumber(data.metrics.engagementRate, 0),
+        averageViews: this.toNumber(data.metrics.averageViews, 0),
+        monthlyGrowth: this.toNumber(data.metrics.monthlyGrowth, 0),
+      };
+    }
+
+    if (data.contentCategories !== undefined) {
+      sanitized.contentCategories = Array.isArray(data.contentCategories)
+        ? data.contentCategories.filter((cat: any) => typeof cat === 'string')
+        : [];
+    }
+
+    if (data.availableForCollabs !== undefined) {
+      sanitized.availableForCollabs = Boolean(data.availableForCollabs);
+    }
+
+    if (data.pricing !== undefined && data.pricing !== null) {
+      sanitized.pricing = {
+        post: this.toNumber(data.pricing.post, 0),
+        story: this.toNumber(data.pricing.story, 0),
+        reel: this.toNumber(data.pricing.reel, 0),
+        video: this.toNumber(data.pricing.video, 0),
+      };
+    }
+
+    if (data.mainSocialLink !== undefined) {
+      sanitized.mainSocialLink = String(data.mainSocialLink || '');
+    }
+
+    if (data.category !== undefined) {
+      sanitized.category = String(data.category || '');
+    }
+
+    if (data.platformName !== undefined) {
+      sanitized.platformName = String(data.platformName || '');
+    }
+
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+  }
+
+  private sanitizeAdvertiserData(data: any): any {
+    if (!data || data === null) return null;
+
+    const sanitized: any = {};
+
+    if (data.companyName !== undefined) {
+      sanitized.companyName = String(data.companyName || '');
+    }
+
+    if (data.industry !== undefined) {
+      sanitized.industry = String(data.industry || '');
+    }
+
+    if (data.companyWebsite !== undefined) {
+      sanitized.companyWebsite = String(data.companyWebsite || '');
+    }
+
+    if (data.companyDescription !== undefined) {
+      sanitized.companyDescription = String(data.companyDescription || '');
+    }
+
+    if (data.previousCampaigns !== undefined) {
+      sanitized.previousCampaigns = this.toNumber(data.previousCampaigns, 0);
+    }
+
+    if (data.averageBudget !== undefined) {
+      sanitized.averageBudget = this.toNumber(data.averageBudget, 0);
+    }
+
+    if (data.campaignPreferences !== undefined && data.campaignPreferences !== null) {
+      const prefs: any = {};
+
+      if (data.campaignPreferences.preferredPlatforms !== undefined) {
+        prefs.preferredPlatforms = Array.isArray(data.campaignPreferences.preferredPlatforms)
+          ? data.campaignPreferences.preferredPlatforms.filter((p: any) => typeof p === 'string')
+          : [];
+      }
+
+      if (data.campaignPreferences.budgetRange !== undefined && data.campaignPreferences.budgetRange !== null) {
+        prefs.budgetRange = {
+          min: this.toNumber(data.campaignPreferences.budgetRange.min, 0),
+          max: this.toNumber(data.campaignPreferences.budgetRange.max, 0),
+          currency: String(data.campaignPreferences.budgetRange.currency || 'USD'),
+        };
+      }
+
+      if (data.campaignPreferences.targetAudience !== undefined && data.campaignPreferences.targetAudience !== null) {
+        const audience = data.campaignPreferences.targetAudience;
+        prefs.targetAudience = {
+          ageRange: Array.isArray(audience.ageRange)
+            ? audience.ageRange.map((n: any) => this.toNumber(n, 18))
+            : [18, 65],
+          genders: Array.isArray(audience.genders)
+            ? audience.genders.filter((g: any) => typeof g === 'string')
+            : [],
+          countries: Array.isArray(audience.countries)
+            ? audience.countries.filter((c: any) => typeof c === 'string')
+            : [],
+          interests: Array.isArray(audience.interests)
+            ? audience.interests.filter((i: any) => typeof i === 'string')
+            : [],
+        };
+      }
+
+      if (data.campaignPreferences.campaignTypes !== undefined) {
+        prefs.campaignTypes = Array.isArray(data.campaignPreferences.campaignTypes)
+          ? data.campaignPreferences.campaignTypes.filter((t: any) => typeof t === 'string')
+          : [];
+      }
+
+      if (Object.keys(prefs).length > 0) {
+        sanitized.campaignPreferences = prefs;
+      }
+    }
+
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+  }
+
+  private toNumber(value: any, defaultValue: number = 0): number {
+    if (value === null || value === undefined || value === '') {
+      return defaultValue;
+    }
+    const parsed = Number(value);
+    return isNaN(parsed) ? defaultValue : parsed;
   }
 
   private transformProfile(profile: any) {
