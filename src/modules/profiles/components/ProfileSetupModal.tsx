@@ -130,19 +130,27 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     t('contentCategories.religionSpirituality'),
   ];
 
+  // Set active tab when modal opens
   useEffect(() => {
-    // Set active tab when modal opens
     if (isOpen) {
       setActiveTab(initialTab);
     }
+  }, [isOpen, initialTab]);
 
-    console.log('[ProfileSetupModal] useEffect triggered:', {
-      isOpen,
+  // Initialize form data when modal opens or currentProfile changes
+  useEffect(() => {
+    // Don't initialize if modal is not open
+    if (!isOpen) return;
+
+    console.log('[ProfileSetupModal] 🔄 Initializing form data:', {
       hasCurrentProfile: !!currentProfile,
       currentProfileData: {
         userId: currentProfile?.userId,
         fullName: currentProfile?.fullName,
-        email: currentProfile?.email
+        email: currentProfile?.email,
+        bio: currentProfile?.bio,
+        location: currentProfile?.location,
+        website: currentProfile?.website,
       },
       userData: {
         userId: user?.id,
@@ -151,24 +159,16 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       }
     });
 
-    // Always initialize basicInfo with user context as fallback
+    // Initialize basic info
     // Priority: currentProfile > user context > empty
-    console.log('[ProfileSetupModal] 📥 currentProfile data:', {
-      hasBio: !!currentProfile?.bio,
-      hasLocation: !!currentProfile?.location,
-      hasWebsite: !!currentProfile?.website,
-      bio: currentProfile?.bio,
-      location: currentProfile?.location,
-      website: currentProfile?.website,
-    });
-
+    // Use ?? instead of || to properly handle empty strings
     const newBasicInfo = {
-      fullName: currentProfile?.fullName || user?.fullName || '',
-      email: currentProfile?.email || user?.email || '',
-      bio: currentProfile?.bio || '',
-      location: currentProfile?.location || '',
-      website: currentProfile?.website || '',
-      avatar: currentProfile?.avatar || ''
+      fullName: currentProfile?.fullName ?? user?.fullName ?? '',
+      email: currentProfile?.email ?? user?.email ?? '',
+      bio: currentProfile?.bio ?? '',
+      location: currentProfile?.location ?? '',
+      website: currentProfile?.website ?? '',
+      avatar: currentProfile?.avatar ?? ''
     };
 
     console.log('[ProfileSetupModal] ✅ Setting basicInfo:', {
@@ -183,6 +183,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     setBasicInfo(newBasicInfo);
 
+    // Initialize influencer and advertiser data
     if (currentProfile) {
       if (currentProfile.influencerData) {
         setInfluencerData({
@@ -268,7 +269,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         averageBudget: 0
       });
     }
-  }, [currentProfile, isOpen, initialTab, user?.email, user?.fullName]);
+  }, [currentProfile, isOpen, user?.id, user?.fullName, user?.email]);
 
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
