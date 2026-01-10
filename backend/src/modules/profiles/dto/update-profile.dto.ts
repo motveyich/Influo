@@ -52,7 +52,8 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MinLength(20, { message: 'Bio must be at least 20 characters' })
+  @MaxLength(1500, { message: 'Bio must not exceed 1500 characters' })
   bio?: string;
 
   @ApiProperty({

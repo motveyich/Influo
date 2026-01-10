@@ -72,6 +72,11 @@ export class SocialMediaLinkDto {
   @IsNumber()
   @Min(0)
   followers?: number;
+
+  @ApiProperty({ example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  verified?: boolean;
 }
 
 export class InfluencerDataDto {

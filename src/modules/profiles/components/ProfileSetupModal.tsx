@@ -262,9 +262,12 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     // Email validation removed - field is read-only and comes from auth
 
-    // Bio is optional, but if provided, should have at least 20 characters
+    // Bio is optional, but if provided, should have at least 20 characters and max 1500
     if (basicInfo.bio.trim() && basicInfo.bio.length < 20) {
       newErrors.bio = 'Минимум 20 символов для био';
+    }
+    if (basicInfo.bio.length > 1500) {
+      newErrors.bio = 'Максимум 1500 символов для био';
     }
 
     setErrors(newErrors);
