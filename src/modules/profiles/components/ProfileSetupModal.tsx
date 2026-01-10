@@ -294,21 +294,33 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     setIsLoading(true);
     try {
-      // Prepare profile data
-      // Exclude email and userId as they're managed by auth/backend system
-      const { email, ...basicInfoWithoutEmail } = basicInfo;
-      const profileData: Partial<UserProfile> = {
-        ...basicInfoWithoutEmail,
-        // Always include the data - service will handle null conversion
-        influencerData: influencerData,
-        advertiserData: advertiserData
-      };
+      // Формируем payload ТОЛЬКО для текущей активной вкладки
+      let profileData: Partial<UserProfile> = {};
 
-      console.log('[ProfileSetupModal] Profile data to save:', {
-        fullName: profileData.fullName,
-        hasCurrentProfile: !!currentProfile,
+      if (activeTab === 'basic') {
+        // Вкладка "Основная информация" - отправляем только основные поля
+        const { email, ...basicInfoWithoutEmail } = basicInfo;
+        profileData = basicInfoWithoutEmail;
+
+      } else if (activeTab === 'influencer') {
+        // Вкладка "Инфлюенсер" - отправляем ТОЛЬКО influencerData
+        profileData = {
+          influencerData: influencerData
+        };
+
+      } else if (activeTab === 'advertiser') {
+        // Вкладка "Рекламодатель" - отправляем ТОЛЬКО advertiserData
+        profileData = {
+          advertiserData: advertiserData
+        };
+      }
+
+      console.log('[ProfileSetupModal] Profile data to save (activeTab: ' + activeTab + '):', {
+        activeTab,
+        dataKeys: Object.keys(profileData),
         hasInfluencerData: !!profileData.influencerData,
-        hasAdvertiserData: !!profileData.advertiserData
+        hasAdvertiserData: !!profileData.advertiserData,
+        hasBasicFields: !!(profileData.fullName || profileData.bio)
       });
 
       let savedProfile: UserProfile;
