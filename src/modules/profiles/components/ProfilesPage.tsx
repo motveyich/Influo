@@ -46,6 +46,17 @@ export function ProfilesPage() {
   // Create a combined profile object that falls back to auth data if profile is not loaded
   const combinedProfile = React.useMemo(() => {
     if (currentUserProfile) {
+      // DIAGNOSTIC: Log the profile data we're using
+      console.log('[ProfilesPage] ✅ Using loaded profile:', {
+        userId: currentUserProfile.userId,
+        fullName: currentUserProfile.fullName,
+        bio: currentUserProfile.bio,
+        location: currentUserProfile.location,
+        website: currentUserProfile.website,
+        hasBio: !!currentUserProfile.bio,
+        hasLocation: !!currentUserProfile.location,
+        hasWebsite: !!currentUserProfile.website,
+      });
       return currentUserProfile;
     }
 

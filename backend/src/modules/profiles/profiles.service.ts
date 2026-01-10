@@ -810,7 +810,17 @@ export class ProfilesService {
   private transformProfile(profile: any) {
     const profileCompletion = profile.profile_completion || this.calculateProfileCompletionData(profile);
 
-    return {
+    // DIAGNOSTIC LOGGING: Check if bio, location, website are present in DB
+    this.logger.debug(`[transformProfile] Raw DB data for user ${profile.user_id}:`, {
+      bio: profile.bio,
+      location: profile.location,
+      website: profile.website,
+      hasBio: !!profile.bio,
+      hasLocation: !!profile.location,
+      hasWebsite: !!profile.website,
+    });
+
+    const transformed = {
       id: profile.user_id,
       userId: profile.user_id,
       email: profile.email,
@@ -834,5 +844,13 @@ export class ProfilesService {
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     };
+
+    this.logger.debug(`[transformProfile] Transformed API response:`, {
+      bio: transformed.bio,
+      location: transformed.location,
+      website: transformed.website,
+    });
+
+    return transformed;
   }
 }

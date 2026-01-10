@@ -231,8 +231,15 @@ export class ProfileService {
         fullName: profile?.fullName,
         email: profile?.email,
         bio: profile?.bio,
-        profileData: profile
+        location: profile?.location,
+        website: profile?.website,
+        hasBio: !!profile?.bio,
+        hasLocation: !!profile?.location,
+        hasWebsite: !!profile?.website,
       });
+
+      // DIAGNOSTIC: Log full profile to see all fields
+      console.log('[ProfileService] 📋 Full profile data:', JSON.stringify(profile, null, 2));
 
       return profile;
     } catch (error: any) {

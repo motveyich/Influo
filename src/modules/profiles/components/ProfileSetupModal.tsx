@@ -153,6 +153,15 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     // Always initialize basicInfo with user context as fallback
     // Priority: currentProfile > user context > empty
+    console.log('[ProfileSetupModal] 📥 currentProfile data:', {
+      hasBio: !!currentProfile?.bio,
+      hasLocation: !!currentProfile?.location,
+      hasWebsite: !!currentProfile?.website,
+      bio: currentProfile?.bio,
+      location: currentProfile?.location,
+      website: currentProfile?.website,
+    });
+
     const newBasicInfo = {
       fullName: currentProfile?.fullName || user?.fullName || '',
       email: currentProfile?.email || user?.email || '',
@@ -162,7 +171,15 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       avatar: currentProfile?.avatar || ''
     };
 
-    console.log('[ProfileSetupModal] Setting basicInfo:', newBasicInfo);
+    console.log('[ProfileSetupModal] ✅ Setting basicInfo:', {
+      fullName: newBasicInfo.fullName,
+      bio: newBasicInfo.bio,
+      location: newBasicInfo.location,
+      website: newBasicInfo.website,
+      hasBio: !!newBasicInfo.bio,
+      hasLocation: !!newBasicInfo.location,
+      hasWebsite: !!newBasicInfo.website,
+    });
 
     setBasicInfo(newBasicInfo);
 
@@ -304,6 +321,19 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         // Вкладка "Основная информация" - отправляем только основные поля
         const { email, ...basicInfoWithoutEmail } = basicInfo;
         profileData = basicInfoWithoutEmail;
+
+        // DIAGNOSTIC: Log what we're about to send
+        console.log('[ProfileSetupModal] 📤 Sending basic info:', {
+          fullName: profileData.fullName,
+          username: profileData.username,
+          phone: profileData.phone,
+          bio: profileData.bio,
+          location: profileData.location,
+          website: profileData.website,
+          hasBio: !!profileData.bio,
+          hasLocation: !!profileData.location,
+          hasWebsite: !!profileData.website,
+        });
 
       } else if (activeTab === 'influencer') {
         // Вкладка "Инфлюенсер" - отправляем ТОЛЬКО influencerData
