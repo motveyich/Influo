@@ -376,7 +376,6 @@ export class ProfileService {
 
     if (profile.fullName?.trim() &&
          profile.email?.trim() &&
-         profile.phone?.trim() &&
          profile.location?.trim() &&
          profile.bio?.trim() &&
          profile.bio.trim().length >= 50) {
