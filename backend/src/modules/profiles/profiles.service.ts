@@ -751,7 +751,7 @@ export class ProfilesService {
     const hasLocation = profile.location && profile.location.trim() !== '';
     const hasBio = profile.bio && profile.bio.trim() !== '' && profile.bio.trim().length >= 50;
 
-    if (hasFullName && hasEmail && hasPhone && hasLocation && hasBio) {
+    if (hasFullName && hasEmail && hasLocation && hasBio) {
       basicInfoComplete = true;
     }
 
