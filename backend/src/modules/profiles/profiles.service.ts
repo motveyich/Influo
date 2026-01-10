@@ -119,13 +119,15 @@ export class ProfilesService {
       influencer_data: createProfileDto.influencerData || null,
       advertiser_data: createProfileDto.advertiserData || null,
       metrics: createProfileDto.metrics || {},
-      profile_completion: createProfileDto.profileCompletion || null,
       unified_account_info: {
         isVerified: false,
         joinedAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
       },
     };
+
+    const calculatedCompletion = this.calculateProfileCompletionData(profileData);
+    profileData.profile_completion = createProfileDto.profileCompletion || calculatedCompletion;
 
     this.logger.log(`Inserting new profile into database for user ${createProfileDto.userId}`);
 
@@ -232,10 +234,10 @@ export class ProfilesService {
       fullName: updateProfileDto.fullName
     })}`);
 
-    // Get current profile to check if username actually changed
+    // Get current profile to check if username actually changed and for calculating completion
     const { data: currentProfile, error: fetchError } = await supabase
       .from('user_profiles')
-      .select('username')
+      .select('*')
       .eq('user_id', userId)
       .eq('is_deleted', false)
       .maybeSingle();
@@ -325,6 +327,10 @@ export class ProfilesService {
     if (updateProfileDto.profileCompletion !== undefined) {
       updateData.profile_completion = updateProfileDto.profileCompletion;
     }
+
+    const mergedProfile = { ...currentProfile, ...updateData };
+    const calculatedCompletion = this.calculateProfileCompletionData(mergedProfile);
+    updateData.profile_completion = updateProfileDto.profileCompletion || calculatedCompletion;
 
     this.logger.log(`Executing update query for user ${userId}`);
     this.logger.debug(`Update payload keys: ${Object.keys(updateData).join(', ')}`);
@@ -734,7 +740,76 @@ export class ProfilesService {
     return isNaN(parsed) ? defaultValue : parsed;
   }
 
+  private calculateProfileCompletionData(profile: any) {
+    let basicInfoComplete = false;
+    let influencerSetupComplete = false;
+    let advertiserSetupComplete = false;
+
+    const hasFullName = profile.full_name && profile.full_name.trim() !== '';
+    const hasEmail = profile.email && profile.email.trim() !== '';
+    const hasPhone = profile.phone && profile.phone.trim() !== '';
+    const hasLocation = profile.location && profile.location.trim() !== '';
+    const hasBio = profile.bio && profile.bio.trim() !== '' && profile.bio.trim().length >= 50;
+
+    if (hasFullName && hasEmail && hasPhone && hasLocation && hasBio) {
+      basicInfoComplete = true;
+    }
+
+    const influencerData = profile.influencer_data;
+    if (influencerData && typeof influencerData === 'object') {
+      const hasMainSocialLink = influencerData.mainSocialLink && influencerData.mainSocialLink.trim() !== '';
+      const hasCategory = influencerData.category && influencerData.category.trim() !== '';
+      const hasPlatformName = influencerData.platformName && influencerData.platformName.trim() !== '';
+      const hasLinks = Array.isArray(influencerData.socialMediaLinks) && influencerData.socialMediaLinks.length > 0;
+      const hasMetrics = influencerData.metrics && influencerData.metrics.totalFollowers > 0;
+      const hasCategories = Array.isArray(influencerData.contentCategories) && influencerData.contentCategories.length > 0;
+      const hasPricing = influencerData.pricing && Object.values(influencerData.pricing).some((price: any) => price > 0);
+
+      influencerSetupComplete = hasMainSocialLink || hasCategory || hasPlatformName || hasLinks || hasMetrics || hasCategories || hasPricing;
+    }
+
+    const advertiserData = profile.advertiser_data;
+    if (advertiserData && typeof advertiserData === 'object') {
+      const hasCompanyName = advertiserData.companyName && advertiserData.companyName.trim() !== '';
+      const hasCompanyWebsite = advertiserData.companyWebsite && advertiserData.companyWebsite.trim() !== '';
+      const hasCompanyDescription = advertiserData.companyDescription && advertiserData.companyDescription.trim() !== '';
+      const hasIndustry = advertiserData.industry && advertiserData.industry.trim() !== '';
+      const hasBudget = advertiserData.campaignPreferences &&
+                       (advertiserData.campaignPreferences.budgetRange?.min > 0 ||
+                        advertiserData.campaignPreferences.budgetRange?.max > 0);
+      const hasPreviousCampaigns = advertiserData.previousCampaigns > 0;
+      const hasAverageBudget = advertiserData.averageBudget > 0;
+
+      advertiserSetupComplete = hasCompanyName || hasCompanyWebsite || hasCompanyDescription || hasIndustry || hasBudget || hasPreviousCampaigns || hasAverageBudget;
+    }
+
+    let completionPercentage = 0;
+    if (basicInfoComplete) completionPercentage += 50;
+    if (influencerSetupComplete) completionPercentage += 25;
+    if (advertiserSetupComplete) completionPercentage += 25;
+
+    const overallComplete = basicInfoComplete && influencerSetupComplete && advertiserSetupComplete;
+
+    const missingFields: string[] = [];
+    if (!hasFullName) missingFields.push('fullName');
+    if (!hasEmail) missingFields.push('email');
+    if (!hasPhone) missingFields.push('phone');
+    if (!hasLocation) missingFields.push('location');
+    if (!hasBio) missingFields.push('bio');
+
+    return {
+      basicInfo: basicInfoComplete,
+      influencerSetup: influencerSetupComplete,
+      advertiserSetup: advertiserSetupComplete,
+      overallComplete,
+      completionPercentage,
+      missingFields,
+    };
+  }
+
   private transformProfile(profile: any) {
+    const profileCompletion = profile.profile_completion || this.calculateProfileCompletionData(profile);
+
     return {
       id: profile.user_id,
       userId: profile.user_id,
@@ -751,7 +826,7 @@ export class ProfilesService {
       influencerData: profile.influencer_data || null,
       advertiserData: profile.advertiser_data || null,
       metrics: profile.metrics || {},
-      profileCompletion: profile.profile_completion || null,
+      profileCompletion,
       unifiedAccountInfo: profile.unified_account_info || {},
       isDeleted: profile.is_deleted || false,
       deletedAt: profile.deleted_at || null,

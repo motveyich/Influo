@@ -168,7 +168,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
+            {combinedProfile && combinedProfile.profileCompletion && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
@@ -259,7 +259,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
+            {combinedProfile && combinedProfile.profileCompletion && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
@@ -357,7 +357,7 @@ export function ProfilesPage() {
         return (
           <div className="space-y-6">
             {/* Profile Completion Banner */}
-            {combinedProfile && !combinedProfile.profileCompletion.overallComplete && (
+            {combinedProfile && combinedProfile.profileCompletion && !combinedProfile.profileCompletion.overallComplete && (
               <ProfileCompletionBanner
                 profile={combinedProfile}
                 onCompleteProfile={() => setShowProfileModal(true)}
