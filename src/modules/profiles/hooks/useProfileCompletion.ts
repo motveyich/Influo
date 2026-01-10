@@ -21,23 +21,11 @@ export function useProfileCompletion(userId: string) {
       return;
     }
 
-    // Check if Supabase is configured
-    if (!isSupabaseConfigured()) {
-      setError('Supabase is not configured. Please click "Connect to Supabase" in the top right corner to set up your database connection, or check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
       setIsLoading(true);
       setError(null);
 
       console.log('[useProfileCompletion] Loading profile for user:', userId);
-
-      // Double-check Supabase configuration before making database calls
-      if (!isSupabaseConfigured()) {
-        throw new Error('Supabase configuration is invalid. Please click "Connect to Supabase" in the top right corner to set up your database connection.');
-      }
 
       let userProfile;
       try {
