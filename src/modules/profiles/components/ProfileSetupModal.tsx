@@ -68,7 +68,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   // Advertiser data state
   const [advertiserData, setAdvertiserData] = useState({
     companyName: '',
-    organizationWebsite: '',
     industry: '',
     campaignPreferences: {
       preferredPlatforms: [],
@@ -84,7 +83,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         interests: []
       },
       campaignTypes: []
-    } as AdvertiserPreferences
+    } as AdvertiserPreferences,
+    previousCampaigns: 0,
+    averageBudget: 0
   });
 
   const [newSocialLink, setNewSocialLink] = useState({
@@ -189,7 +190,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       if (currentProfile.advertiserData) {
         setAdvertiserData({
           companyName: currentProfile.advertiserData.companyName || '',
-          organizationWebsite: (currentProfile.advertiserData as any).organizationWebsite || '',
           industry: currentProfile.advertiserData.industry || '',
           campaignPreferences: currentProfile.advertiserData.campaignPreferences || {
             preferredPlatforms: [],
@@ -205,7 +205,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               interests: []
             },
             campaignTypes: []
-          }
+          },
+          previousCampaigns: currentProfile.advertiserData.previousCampaigns || 0,
+          averageBudget: currentProfile.advertiserData.averageBudget || 0
         });
       }
     } else {
@@ -229,7 +231,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       });
       setAdvertiserData({
         companyName: '',
-        organizationWebsite: '',
         industry: '',
         campaignPreferences: {
           preferredPlatforms: [],
@@ -245,7 +246,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
             interests: []
           },
           campaignTypes: []
-        }
+        },
+        previousCampaigns: 0,
+        averageBudget: 0
       });
     }
   }, [currentProfile, isOpen, initialTab, user?.email, user?.fullName]);
@@ -291,11 +294,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     setIsLoading(true);
     try {
-      // Prepare profile data with proper structure including userId
-      // Exclude email as it's managed by auth system
+      // Prepare profile data
+      // Exclude email and userId as they're managed by auth/backend system
       const { email, ...basicInfoWithoutEmail } = basicInfo;
       const profileData: Partial<UserProfile> = {
-        userId: user.id,
         ...basicInfoWithoutEmail,
         // Always include the data - service will handle null conversion
         influencerData: influencerData,
@@ -303,9 +305,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       };
 
       console.log('[ProfileSetupModal] Profile data to save:', {
-        userId: profileData.userId,
         fullName: profileData.fullName,
-        hasCurrentProfile: !!currentProfile
+        hasCurrentProfile: !!currentProfile,
+        hasInfluencerData: !!profileData.influencerData,
+        hasAdvertiserData: !!profileData.advertiserData
       });
 
       let savedProfile: UserProfile;
@@ -482,7 +485,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   const clearAdvertiserData = () => {
     setAdvertiserData({
       companyName: '',
-      organizationWebsite: '',
       industry: '',
       campaignPreferences: {
         preferredPlatforms: [],
@@ -498,7 +500,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           interests: []
         },
         campaignTypes: []
-      }
+      },
+      previousCampaigns: 0,
+      averageBudget: 0
     });
   };
 
@@ -933,19 +937,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                     <option value="lifestyle">{t('industries.lifestyle')}</option>
                     <option value="other">{t('industries.other')}</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('profile.fields.organizationWebsite')}
-                  </label>
-                  <input
-                    type="url"
-                    value={advertiserData.organizationWebsite || ''}
-                    onChange={(e) => setAdvertiserData(prev => ({ ...prev, organizationWebsite: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={t('profile.placeholders.organizationWebsite')}
-                  />
                 </div>
               </div>
 

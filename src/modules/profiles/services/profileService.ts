@@ -101,11 +101,29 @@ export class ProfileService {
       if (updates.avatar !== undefined) payload.avatar = updates.avatar || null;
 
       if (updates.influencerData !== undefined) {
-        payload.influencerData = this.hasInfluencerContent(updates.influencerData) ? updates.influencerData : null;
+        const sanitizedInfluencerData = this.hasInfluencerContent(updates.influencerData)
+          ? this.sanitizeInfluencerData(updates.influencerData)
+          : null;
+        payload.influencerData = sanitizedInfluencerData;
       }
       if (updates.advertiserData !== undefined) {
-        payload.advertiserData = this.hasAdvertiserContent(updates.advertiserData) ? updates.advertiserData : null;
+        const sanitizedAdvertiserData = this.hasAdvertiserContent(updates.advertiserData)
+          ? this.sanitizeAdvertiserData(updates.advertiserData)
+          : null;
+        payload.advertiserData = sanitizedAdvertiserData;
       }
+
+      // Remove read-only fields that should never be sent to backend
+      delete payload.userId;
+      delete payload.email;
+      delete payload.id;
+      delete payload.createdAt;
+      delete payload.updatedAt;
+      delete payload.isDeleted;
+      delete payload.deletedAt;
+      delete payload.deletedBy;
+
+      console.log('[ProfileService] Sanitized payload:', JSON.stringify(payload, null, 2));
 
       const profile = await apiClient.patch<UserProfile>(`/profiles/${userId}`, payload);
 
@@ -358,6 +376,80 @@ export class ProfileService {
     const hasAverageBudget = advertiserData.averageBudget > 0;
 
     return hasCompanyNameSimple || hasCompanyWebsite || hasCompanyDescription || hasCompanyInfo || hasBudget || hasPreviousCampaigns || hasAverageBudget;
+  }
+
+  private sanitizeInfluencerData(data: any): any {
+    if (!data) return null;
+
+    // Ensure all numeric fields are actual numbers, not strings
+    const sanitized: any = {
+      ...data,
+      metrics: {
+        totalFollowers: Number(data.metrics?.totalFollowers || 0),
+        engagementRate: Number(data.metrics?.engagementRate || 0),
+        averageViews: Number(data.metrics?.averageViews || 0),
+        monthlyGrowth: Number(data.metrics?.monthlyGrowth || 0)
+      },
+      pricing: data.pricing ? {
+        post: Number(data.pricing.post || 0),
+        story: Number(data.pricing.story || 0),
+        reel: Number(data.pricing.reel || 0),
+        video: Number(data.pricing.video || 0)
+      } : undefined,
+      socialMediaLinks: Array.isArray(data.socialMediaLinks) ? data.socialMediaLinks : [],
+      contentCategories: Array.isArray(data.contentCategories) ? data.contentCategories : [],
+      availableForCollabs: Boolean(data.availableForCollabs)
+    };
+
+    // Remove undefined fields
+    Object.keys(sanitized).forEach(key => {
+      if (sanitized[key] === undefined) {
+        delete sanitized[key];
+      }
+    });
+
+    return sanitized;
+  }
+
+  private sanitizeAdvertiserData(data: any): any {
+    if (!data) return null;
+
+    // Ensure all numeric fields are actual numbers, not strings
+    const sanitized: any = {
+      ...data,
+      previousCampaigns: Number(data.previousCampaigns || 0),
+      averageBudget: Number(data.averageBudget || 0),
+      campaignPreferences: data.campaignPreferences ? {
+        ...data.campaignPreferences,
+        budgetRange: {
+          min: Number(data.campaignPreferences.budgetRange?.min || 0),
+          max: Number(data.campaignPreferences.budgetRange?.max || 0),
+          currency: data.campaignPreferences.budgetRange?.currency || 'USD'
+        },
+        preferredPlatforms: Array.isArray(data.campaignPreferences.preferredPlatforms)
+          ? data.campaignPreferences.preferredPlatforms
+          : [],
+        campaignTypes: Array.isArray(data.campaignPreferences.campaignTypes)
+          ? data.campaignPreferences.campaignTypes
+          : [],
+        targetAudience: data.campaignPreferences.targetAudience || {
+          ageRange: [18, 65],
+          genders: [],
+          countries: [],
+          interests: []
+        }
+      } : undefined
+    };
+
+    // Remove undefined fields and organizationWebsite if it exists
+    delete sanitized.organizationWebsite;
+    Object.keys(sanitized).forEach(key => {
+      if (sanitized[key] === undefined) {
+        delete sanitized[key];
+      }
+    });
+
+    return sanitized;
   }
 }
 

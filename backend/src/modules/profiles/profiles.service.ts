@@ -329,15 +329,51 @@ export class ProfilesService {
     this.logger.log(`Executing update query for user ${userId}`);
     this.logger.debug(`Update payload keys: ${Object.keys(updateData).join(', ')}`);
 
-    const { data: updatedProfile, error } = await supabase
-      .from('user_profiles')
-      .update(updateData)
-      .eq('user_id', userId)
-      .eq('is_deleted', false)
-      .select()
-      .single();
+    // CRITICAL DEBUG: Log full updateData structure before sending to Supabase
+    console.log('=== PROFILE UPDATE DEBUG START ===');
+    console.log('userId:', userId);
+    console.log('updateData:', JSON.stringify(updateData, null, 2));
+    console.log('influencer_data type:', typeof updateData.influencer_data);
+    console.log('influencer_data value:', updateData.influencer_data);
+    console.log('advertiser_data type:', typeof updateData.advertiser_data);
+    console.log('advertiser_data value:', updateData.advertiser_data);
+    console.log('=== PROFILE UPDATE DEBUG END ===');
+
+    let updatedProfile;
+    let error;
+
+    try {
+      const result = await supabase
+        .from('user_profiles')
+        .update(updateData)
+        .eq('user_id', userId)
+        .eq('is_deleted', false)
+        .select()
+        .single();
+
+      updatedProfile = result.data;
+      error = result.error;
+    } catch (syncError: any) {
+      console.error('=== SYNCHRONOUS ERROR CAUGHT ===');
+      console.error('Error message:', syncError.message);
+      console.error('Error stack:', syncError.stack);
+      console.error('Error object:', syncError);
+      console.error('=================================');
+      this.logger.error(`Synchronous error during profile update: ${syncError.message}`, syncError);
+      throw new InternalServerErrorException(`Profile update failed: ${syncError.message}`);
+    }
 
     if (error) {
+      // CRITICAL DEBUG: Log full error details
+      console.error('=== SUPABASE ERROR DETAILS ===');
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      console.error('Update data that caused error:', JSON.stringify(updateData, null, 2));
+      console.error('==============================');
+
       this.logger.error(`Failed to update profile for user ${userId}: ${error.message}`, {
         error,
         code: error.code,
