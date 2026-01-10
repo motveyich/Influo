@@ -259,10 +259,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     // Email validation removed - field is read-only and comes from auth
 
-    if (!basicInfo.bio.trim()) {
-      newErrors.bio = t('profile.validation.bioRequired');
-    } else if (basicInfo.bio.length < 50) {
-      newErrors.bio = t('profile.validation.bioTooShort');
+    // Bio is optional, but if provided, should have at least 20 characters
+    if (basicInfo.bio.trim() && basicInfo.bio.length < 20) {
+      newErrors.bio = 'Минимум 20 символов для био';
     }
 
     setErrors(newErrors);
@@ -275,11 +274,13 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       hasCurrentProfile: !!currentProfile,
       currentProfileUserId: currentProfile?.userId,
       userIdFromAuth: user?.id,
-      basicInfo
+      basicInfo,
+      activeTab
     });
 
-    if (!validateBasicInfo()) {
-      setActiveTab('basic');
+    // Validate only if editing basic info tab
+    // Profile already exists (created during registration), so other tabs can be saved independently
+    if (activeTab === 'basic' && !validateBasicInfo()) {
       return;
     }
 
@@ -316,7 +317,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           // Try to update the profile first
           console.log('[ProfileSetupModal] Attempting to update profile for user:', user.id);
           savedProfile = await profileService.updateProfile(user.id, profileData);
-          toast.success(t('profile.success.updated'));
+
+          // Show tab-specific success message
+          const successMessages = {
+            basic: 'Основная информация обновлена',
+            influencer: 'Настройки инфлюенсера сохранены',
+            advertiser: 'Настройки рекламодателя сохранены'
+          };
+          toast.success(successMessages[activeTab] || t('profile.success.updated'));
         } catch (updateError: any) {
           // If profile not found (404), try to create it
           if (updateError.status === 404 || updateError.statusCode === 404 || updateError.message?.includes('not found')) {
