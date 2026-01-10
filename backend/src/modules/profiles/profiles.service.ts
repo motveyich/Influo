@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
 import { CreateProfileDto, UpdateProfileDto } from './dto';
 
@@ -181,7 +181,16 @@ export class ProfilesService {
         throw new ConflictException('Profile with this information already exists');
       }
 
-      throw new ConflictException('Failed to create profile');
+      // Log the error with full details for debugging
+      this.logger.error('Unexpected error creating profile', {
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
+        errorHint: error.hint,
+        userId: createProfileDto.userId
+      });
+
+      throw new InternalServerErrorException('Failed to create profile. Please try again or contact support.');
     }
 
     this.logger.log(`Successfully created profile for user ${createProfileDto.userId}`);
@@ -242,6 +251,22 @@ export class ProfilesService {
       throw new NotFoundException('Profile not found');
     }
 
+    // Check if email is being changed and if it's already taken by another active user
+    if (updateProfileDto.email && updateProfileDto.email !== currentProfile.email) {
+      const { data: existingUser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('email', updateProfileDto.email)
+        .eq('is_deleted', false)
+        .neq('user_id', userId)
+        .maybeSingle();
+
+      if (existingUser) {
+        this.logger.warn(`Email ${updateProfileDto.email} is already in use by another user`);
+        throw new ConflictException('Email already in use by another user');
+      }
+    }
+
     // Check if username is being changed and if it's already taken by another active user
     if (updateProfileDto.username && updateProfileDto.username !== currentProfile.username) {
       const { data: existingUser } = await supabase
@@ -264,6 +289,9 @@ export class ProfilesService {
 
     if (updateProfileDto.fullName !== undefined) {
       updateData.full_name = updateProfileDto.fullName;
+    }
+    if (updateProfileDto.email !== undefined) {
+      updateData.email = updateProfileDto.email;
     }
     if (updateProfileDto.username !== undefined) {
       updateData.username = updateProfileDto.username;
@@ -290,10 +318,20 @@ export class ProfilesService {
       updateData.social_media_links = updateProfileDto.socialMediaLinks;
     }
     if (updateProfileDto.influencerData !== undefined) {
-      updateData.influencer_data = updateProfileDto.influencerData;
+      // Validate JSON data before saving
+      if (updateProfileDto.influencerData && typeof updateProfileDto.influencerData === 'object') {
+        updateData.influencer_data = updateProfileDto.influencerData;
+      } else {
+        this.logger.warn(`Invalid influencerData format for user ${userId}, skipping`);
+      }
     }
     if (updateProfileDto.advertiserData !== undefined) {
-      updateData.advertiser_data = updateProfileDto.advertiserData;
+      // Validate JSON data before saving
+      if (updateProfileDto.advertiserData && typeof updateProfileDto.advertiserData === 'object') {
+        updateData.advertiser_data = updateProfileDto.advertiserData;
+      } else {
+        this.logger.warn(`Invalid advertiserData format for user ${userId}, skipping`);
+      }
     }
     if (updateProfileDto.metrics !== undefined) {
       updateData.metrics = updateProfileDto.metrics;
@@ -303,6 +341,7 @@ export class ProfilesService {
     }
 
     this.logger.log(`Executing update query for user ${userId}`);
+    this.logger.debug(`Update payload keys: ${Object.keys(updateData).join(', ')}`);
 
     const { data: updatedProfile, error } = await supabase
       .from('user_profiles')
@@ -339,7 +378,28 @@ export class ProfilesService {
         throw new ConflictException('This information is already in use by another user');
       }
 
-      throw new ConflictException('Failed to update profile');
+      // Check for data type or validation errors
+      if (error.code === '22P02' || error.message.includes('invalid input syntax')) {
+        this.logger.error(`Invalid data format for user ${userId}: ${error.message}`);
+        throw new InternalServerErrorException('Invalid data format provided');
+      }
+
+      // Check for JSON parsing errors
+      if (error.message.includes('json') || error.message.includes('JSON')) {
+        this.logger.error(`JSON parsing error for user ${userId}: ${error.message}`);
+        throw new InternalServerErrorException('Invalid JSON data provided');
+      }
+
+      // Log unexpected errors with full details for debugging
+      this.logger.error(`Unexpected error updating profile for user ${userId}`, {
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
+        errorHint: error.hint,
+        updateData: JSON.stringify(updateData)
+      });
+
+      throw new InternalServerErrorException('Failed to update profile. Please try again or contact support.');
     }
 
     if (!updatedProfile) {
@@ -366,8 +426,11 @@ export class ProfilesService {
       .eq('is_deleted', false);
 
     if (error) {
-      this.logger.error(`Failed to delete profile: ${error.message}`, error);
-      throw new ConflictException('Failed to delete profile');
+      this.logger.error(`Failed to delete profile: ${error.message}`, {
+        error,
+        userId
+      });
+      throw new InternalServerErrorException('Failed to delete profile');
     }
 
     return { message: 'Profile deleted successfully' };
@@ -418,8 +481,12 @@ export class ProfilesService {
       });
 
     if (uploadError) {
-      this.logger.error(`Failed to upload avatar: ${uploadError.message}`, uploadError);
-      throw new ConflictException('Failed to upload avatar');
+      this.logger.error(`Failed to upload avatar: ${uploadError.message}`, {
+        uploadError,
+        userId,
+        filePath
+      });
+      throw new InternalServerErrorException('Failed to upload avatar');
     }
 
     const { data: urlData } = supabase.storage
@@ -437,8 +504,12 @@ export class ProfilesService {
       .single();
 
     if (updateError) {
-      this.logger.error(`Failed to update profile with avatar: ${updateError.message}`, updateError);
-      throw new ConflictException('Failed to update profile with avatar');
+      this.logger.error(`Failed to update profile with avatar: ${updateError.message}`, {
+        updateError,
+        userId,
+        avatarUrl
+      });
+      throw new InternalServerErrorException('Failed to update profile with avatar');
     }
 
     return this.transformProfile(updatedProfile);

@@ -223,8 +223,18 @@ class ApiClient {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        console.error(`❌ [ApiClient] Request failed: ${error.message}`);
-        throw new Error(error.message || `HTTP ${response.status}`);
+        console.error(`❌ [ApiClient] Request failed: ${error.message}`, {
+          status: response.status,
+          statusText: response.statusText,
+          error
+        });
+
+        // Create error with status information
+        const apiError: any = new Error(error.message || `HTTP ${response.status}`);
+        apiError.status = response.status;
+        apiError.statusCode = response.status;
+        apiError.statusText = response.statusText;
+        throw apiError;
       }
 
       if (response.status === 204) {
