@@ -228,15 +228,14 @@ export class ProfilesService {
 
     this.logger.log(`Updating profile for user: ${userId}`);
     this.logger.debug(`Update data: ${JSON.stringify({
-      email: updateProfileDto.email,
       username: updateProfileDto.username,
       fullName: updateProfileDto.fullName
     })}`);
 
-    // Get current profile to check if email/username actually changed
+    // Get current profile to check if username actually changed
     const { data: currentProfile, error: fetchError } = await supabase
       .from('user_profiles')
-      .select('email, username')
+      .select('username')
       .eq('user_id', userId)
       .eq('is_deleted', false)
       .maybeSingle();
@@ -249,22 +248,6 @@ export class ProfilesService {
     if (!currentProfile) {
       this.logger.error(`Profile not found for user ${userId}`);
       throw new NotFoundException('Profile not found');
-    }
-
-    // Check if email is being changed and if it's already taken by another active user
-    if (updateProfileDto.email && updateProfileDto.email !== currentProfile.email) {
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('email', updateProfileDto.email)
-        .eq('is_deleted', false)
-        .neq('user_id', userId)
-        .maybeSingle();
-
-      if (existingUser) {
-        this.logger.warn(`Email ${updateProfileDto.email} is already in use by another user`);
-        throw new ConflictException('Email already in use by another user');
-      }
     }
 
     // Check if username is being changed and if it's already taken by another active user
@@ -289,9 +272,6 @@ export class ProfilesService {
 
     if (updateProfileDto.fullName !== undefined) {
       updateData.full_name = updateProfileDto.fullName;
-    }
-    if (updateProfileDto.email !== undefined) {
-      updateData.email = updateProfileDto.email;
     }
     if (updateProfileDto.username !== undefined) {
       updateData.username = updateProfileDto.username;
@@ -318,16 +298,22 @@ export class ProfilesService {
       updateData.social_media_links = updateProfileDto.socialMediaLinks;
     }
     if (updateProfileDto.influencerData !== undefined) {
-      // Validate JSON data before saving
-      if (updateProfileDto.influencerData && typeof updateProfileDto.influencerData === 'object') {
+      // null = clear the field, object = update, undefined = don't change
+      if (updateProfileDto.influencerData === null) {
+        updateData.influencer_data = null;
+        this.logger.log(`Clearing influencerData for user ${userId}`);
+      } else if (typeof updateProfileDto.influencerData === 'object') {
         updateData.influencer_data = updateProfileDto.influencerData;
       } else {
         this.logger.warn(`Invalid influencerData format for user ${userId}, skipping`);
       }
     }
     if (updateProfileDto.advertiserData !== undefined) {
-      // Validate JSON data before saving
-      if (updateProfileDto.advertiserData && typeof updateProfileDto.advertiserData === 'object') {
+      // null = clear the field, object = update, undefined = don't change
+      if (updateProfileDto.advertiserData === null) {
+        updateData.advertiser_data = null;
+        this.logger.log(`Clearing advertiserData for user ${userId}`);
+      } else if (typeof updateProfileDto.advertiserData === 'object') {
         updateData.advertiser_data = updateProfileDto.advertiserData;
       } else {
         this.logger.warn(`Invalid advertiserData format for user ${userId}, skipping`);

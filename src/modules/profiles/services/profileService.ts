@@ -122,15 +122,11 @@ export class ProfileService {
       console.error('Failed to update profile:', error);
 
       // Provide more helpful error messages based on the specific error
-      if (error.message?.includes('Email already in use')) {
-        throw new Error('Этот email уже используется другим пользователем');
-      } else if (error.message?.includes('Username already taken')) {
+      if (error.message?.includes('Username already taken')) {
         throw new Error('Это имя пользователя уже занято. Пожалуйста, выберите другое');
       } else if (error.message?.includes('Conflict') || error.statusCode === 409) {
         // Generic conflict error
-        if (updates.email) {
-          throw new Error('Этот email уже используется другим пользователем');
-        } else if (updates.username) {
+        if (updates.username) {
           throw new Error('Это имя пользователя уже занято. Пожалуйста, выберите другое');
         }
         throw new Error('Не удалось обновить профиль. Пожалуйста, попробуйте еще раз');

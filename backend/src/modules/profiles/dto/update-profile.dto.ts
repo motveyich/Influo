@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUrl, MaxLength, MinLength, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsUrl, MaxLength, MinLength, IsObject, ValidateIf } from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -23,15 +23,6 @@ export class UpdateProfileDto {
   @MinLength(3)
   @MaxLength(30)
   username?: string;
-
-  @ApiProperty({
-    example: 'user@example.com',
-    description: 'Email address',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  email?: string;
 
   @ApiProperty({
     example: '+1234567890',
@@ -114,20 +105,24 @@ export class UpdateProfileDto {
   userType?: string;
 
   @ApiProperty({
-    description: 'Influencer data',
+    description: 'Influencer data (object or null to clear)',
     required: false,
+    nullable: true,
   })
   @IsOptional()
+  @ValidateIf((o) => o.influencerData !== null)
   @IsObject()
-  influencerData?: Record<string, any>;
+  influencerData?: Record<string, any> | null;
 
   @ApiProperty({
-    description: 'Advertiser data',
+    description: 'Advertiser data (object or null to clear)',
     required: false,
+    nullable: true,
   })
   @IsOptional()
+  @ValidateIf((o) => o.advertiserData !== null)
   @IsObject()
-  advertiserData?: Record<string, any>;
+  advertiserData?: Record<string, any> | null;
 
   @ApiProperty({
     description: 'Profile completion',
