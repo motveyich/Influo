@@ -67,7 +67,7 @@ export class AutoCampaignsService {
 
     let query = supabase
       .from('auto_campaigns')
-      .select('*, user_profiles!inner(*)');
+      .select('*, user_profiles!auto_campaigns_user_id_fkey(*)');
 
     if (filters?.platform) {
       query = query.eq('platform', filters.platform);
@@ -98,7 +98,7 @@ export class AutoCampaignsService {
 
     const { data: campaign, error } = await supabase
       .from('auto_campaigns')
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!auto_campaigns_user_id_fkey(*)')
       .eq('id', id)
       .maybeSingle();
 
@@ -164,7 +164,7 @@ export class AutoCampaignsService {
       .from('auto_campaigns')
       .update(updateData)
       .eq('id', id)
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!auto_campaigns_user_id_fkey(*)')
       .single();
 
     if (error) {
@@ -211,7 +211,7 @@ export class AutoCampaignsService {
 
     const { data: influencerCards, error } = await supabase
       .from('influencer_cards')
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
       .eq('platform', campaign.platform)
       .eq('is_active', true)
       .gte('reach->>followers', campaign.followerRange.min)

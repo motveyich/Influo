@@ -57,7 +57,7 @@ export class InfluencerCardsService {
 
     let query = supabase
       .from('influencer_cards')
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
       .eq('is_active', true);
 
     if (filters?.platform) {
@@ -91,7 +91,7 @@ export class InfluencerCardsService {
 
     const { data: card, error } = await supabase
       .from('influencer_cards')
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
       .eq('id', id)
       .maybeSingle();
 
@@ -143,7 +143,7 @@ export class InfluencerCardsService {
       .from('influencer_cards')
       .update(updateData)
       .eq('id', id)
-      .select('*, user_profiles!inner(*)')
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
       .single();
 
     if (error) {
