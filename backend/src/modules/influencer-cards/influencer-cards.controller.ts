@@ -50,18 +50,21 @@ export class InfluencerCardsController {
   @ApiQuery({ name: 'minFollowers', required: false, description: 'Minimum followers' })
   @ApiQuery({ name: 'maxFollowers', required: false, description: 'Maximum followers' })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
+  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
   @ApiResponse({ status: 200, description: 'List of influencer cards' })
   async findAll(
     @Query('platform') platform?: string,
     @Query('minFollowers', new ParseIntPipe({ optional: true })) minFollowers?: number,
     @Query('maxFollowers', new ParseIntPipe({ optional: true })) maxFollowers?: number,
     @Query('userId') userId?: string,
+    @Query('isActive') isActive?: string,
   ) {
     return this.influencerCardsService.findAll({
       platform,
       minFollowers,
       maxFollowers,
       userId,
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
     });
   }
 

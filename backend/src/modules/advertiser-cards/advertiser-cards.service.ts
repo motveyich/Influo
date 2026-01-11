@@ -68,19 +68,26 @@ export class AdvertiserCardsService {
     return this.transformCard(card);
   }
 
-  async findAll(filters?: { platform?: string; minBudget?: number; maxBudget?: number; userId?: string }) {
+  async findAll(filters?: { platform?: string; minBudget?: number; maxBudget?: number; userId?: string; isActive?: boolean }) {
     const supabase = this.supabaseService.getAdminClient();
 
     let query = supabase
       .from('advertiser_cards')
       .select('*, user_profiles!advertiser_cards_user_id_fkey(*)');
 
-    // Only filter by is_active and campaign dates when NOT fetching user's own cards
-    // When fetching user's cards, they should see all their cards (active, inactive, expired)
+    // Handle isActive filter:
+    // 1. If isActive is explicitly provided, use that value
+    // 2. If userId is NOT provided (public listing), default to is_active = true
+    // 3. If userId IS provided (user's own cards), show all cards
+    if (filters?.isActive !== undefined) {
+      query = query.eq('is_active', filters.isActive);
+    } else if (!filters?.userId) {
+      query = query.eq('is_active', true);
+    }
+
+    // Only filter by campaign dates when NOT fetching user's own cards
     if (!filters?.userId) {
-      query = query
-        .eq('is_active', true)
-        .gte('campaign_duration->>endDate', new Date().toISOString());
+      query = query.gte('campaign_duration->>endDate', new Date().toISOString());
     }
 
     if (filters?.platform) {

@@ -51,18 +51,21 @@ export class AdvertiserCardsController {
   @ApiQuery({ name: 'minBudget', required: false, description: 'Minimum budget' })
   @ApiQuery({ name: 'maxBudget', required: false, description: 'Maximum budget' })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
+  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
   @ApiResponse({ status: 200, description: 'List of advertiser cards' })
   async findAll(
     @Query('platform') platform?: string,
     @Query('minBudget', new ParseIntPipe({ optional: true })) minBudget?: number,
     @Query('maxBudget', new ParseIntPipe({ optional: true })) maxBudget?: number,
     @Query('userId') userId?: string,
+    @Query('isActive') isActive?: string,
   ) {
     return this.advertiserCardsService.findAll({
       platform,
       minBudget,
       maxBudget,
       userId,
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
     });
   }
 
