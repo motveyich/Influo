@@ -83,6 +83,14 @@ export class InfluencerCardService {
     }
   }
 
+  async getAllCards(filters?: any): Promise<InfluencerCard[]> {
+    return this.getCards(filters);
+  }
+
+  async getUserCards(userId: string): Promise<InfluencerCard[]> {
+    return this.getMyCards(userId);
+  }
+
   async deleteCard(cardId: string): Promise<void> {
     try {
       await apiClient.delete(`/influencer-cards/${cardId}`);

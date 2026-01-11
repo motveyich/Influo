@@ -57,8 +57,13 @@ export class InfluencerCardsService {
 
     let query = supabase
       .from('influencer_cards')
-      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
-      .eq('is_active', true);
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)');
+
+    // Only filter by is_active when NOT fetching user's own cards
+    // When fetching user's cards, they should see all their cards (active and inactive)
+    if (!filters?.userId) {
+      query = query.eq('is_active', true);
+    }
 
     if (filters?.platform) {
       query = query.eq('platform', filters.platform);

@@ -73,9 +73,15 @@ export class AdvertiserCardsService {
 
     let query = supabase
       .from('advertiser_cards')
-      .select('*, user_profiles!advertiser_cards_user_id_fkey(*)')
-      .eq('is_active', true)
-      .gte('campaign_duration->>endDate', new Date().toISOString());
+      .select('*, user_profiles!advertiser_cards_user_id_fkey(*)');
+
+    // Only filter by is_active and campaign dates when NOT fetching user's own cards
+    // When fetching user's cards, they should see all their cards (active, inactive, expired)
+    if (!filters?.userId) {
+      query = query
+        .eq('is_active', true)
+        .gte('campaign_duration->>endDate', new Date().toISOString());
+    }
 
     if (filters?.platform) {
       query = query.eq('platform', filters.platform);

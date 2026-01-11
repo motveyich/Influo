@@ -90,6 +90,14 @@ export class AdvertiserCardService {
     }
   }
 
+  async getAllCards(filters?: any): Promise<AdvertiserCard[]> {
+    return this.getCards(filters);
+  }
+
+  async getUserCards(userId: string): Promise<AdvertiserCard[]> {
+    return this.getMyCards(userId);
+  }
+
   async deleteCard(cardId: string): Promise<void> {
     try {
       await apiClient.delete(`/advertiser-cards/${cardId}`);
