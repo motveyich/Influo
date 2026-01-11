@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CollaborationOffer, OfferStatus } from '../../../core/types';
 import { offerService } from '../services/offerService';
+import { applicationService } from '../../applications/services/applicationService';
+import { CollaborationAdapter, UnifiedCollaboration } from '../services/collaborationAdapter';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -9,8 +11,8 @@ import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { 
-  Search, 
+import {
+  Search,
   Filter,
   Target,
   Users,
@@ -31,8 +33,8 @@ export function OffersPage() {
   const location = useLocation();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<OfferTab>('active');
-  const [offers, setOffers] = useState<CollaborationOffer[]>([]);
-  const [allOffers, setAllOffers] = useState<CollaborationOffer[]>([]);
+  const [collaborations, setCollaborations] = useState<UnifiedCollaboration[]>([]);
+  const [allCollaborations, setAllCollaborations] = useState<UnifiedCollaboration[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OfferStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -47,62 +49,63 @@ export function OffersPage() {
 
   useEffect(() => {
     if (currentUserId && !loading) {
-      loadOffers();
+      loadCollaborations();
     }
   }, [currentUserId, loading, activeTab, location.pathname]);
 
-  const loadOffers = async () => {
+  const loadCollaborations = async () => {
     try {
       setIsLoading(true);
 
-      // Загружаем все предложения, где пользователь является участником
-      const loadedOffers = await offerService.getOffersByParticipant(currentUserId);
-      setAllOffers(loadedOffers);
+      const [loadedApplications, loadedOffers] = await Promise.all([
+        applicationService.getApplicationsByParticipant(currentUserId).catch(() => []),
+        offerService.getOffersByParticipant(currentUserId).catch(() => [])
+      ]);
 
-      // Фильтруем по вкладке
-      const filteredByTab = loadedOffers.filter(offer => {
+      const unified = CollaborationAdapter.mergeAndSort(
+        loadedApplications,
+        loadedOffers,
+        currentUserId
+      );
+
+      setAllCollaborations(unified);
+
+      const filteredByTab = unified.filter(collab => {
         if (activeTab === 'active') {
-          return ['pending', 'accepted', 'in_progress'].includes(offer.status);
+          return CollaborationAdapter.isActiveStatus(collab.status);
         } else {
-          return ['completed', 'declined', 'cancelled', 'terminated'].includes(offer.status);
+          return CollaborationAdapter.isCompletedStatus(collab.status);
         }
       });
 
-      setOffers(filteredByTab);
+      setCollaborations(filteredByTab);
     } catch (error) {
-      console.error('Failed to load offers:', error);
+      console.error('Failed to load collaborations:', error);
       toast.error('Не удалось загрузить предложения');
-      setOffers([]);
-      setAllOffers([]);
+      setCollaborations([]);
+      setAllCollaborations([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
-    setOffers(prev => prev.map(offer =>
-      offer.id === updatedOffer.id ? updatedOffer : offer
-    ));
-    setAllOffers(prev => prev.map(offer =>
-      offer.id === updatedOffer.id ? updatedOffer : offer
-    ));
-    if (selectedOffer?.id === updatedOffer.id) {
-      setSelectedOffer(updatedOffer);
-    }
-    
-    // Если статус изменился так, что предложение перешло в другую категорию, перезагружаем
-    const isActiveStatus = ['pending', 'accepted', 'in_progress'].includes(updatedOffer.status);
-    const shouldRefresh = (activeTab === 'active' && !isActiveStatus) || 
+    const isActiveStatus = CollaborationAdapter.isActiveStatus(updatedOffer.status);
+    const shouldRefresh = (activeTab === 'active' && !isActiveStatus) ||
                          (activeTab === 'completed' && isActiveStatus);
-    
+
     if (shouldRefresh) {
-      loadOffers();
+      loadCollaborations();
     }
   };
 
-  const handleViewDetails = (offer: CollaborationOffer) => {
-    setSelectedOffer(offer);
-    setShowDetailsModal(true);
+  const handleViewDetails = (collab: UnifiedCollaboration) => {
+    if (collab.type === 'offer') {
+      setSelectedOffer(collab.originalData as CollaborationOffer);
+      setShowDetailsModal(true);
+    } else {
+      toast.info('Детали заявок скоро будут доступны');
+    }
   };
 
   const handleViewProfile = (userId: string) => {
@@ -110,13 +113,16 @@ export function OffersPage() {
     setShowProfileModal(true);
   };
 
-  const getUserRole = (offer: CollaborationOffer): 'influencer' | 'advertiser' => {
-    return offer.influencerId === currentUserId ? 'influencer' : 'advertiser';
+  const getUserRole = (collab: UnifiedCollaboration): 'influencer' | 'advertiser' => {
+    return collab.influencerId === currentUserId ? 'influencer' : 'advertiser';
   };
-  
-  const getUserRoleInOffer = (offer: CollaborationOffer) => {
-    const isInitiator = currentUserId === offer.initiatedBy;
-    const baseRole = getUserRole(offer);
+
+  const getUserRoleInOffer = (collab: UnifiedCollaboration) => {
+    const baseRole = getUserRole(collab);
+    const isInitiator = collab.type === 'application' ?
+      (collab.originalData as any).applicantId === currentUserId :
+      (collab.originalData as CollaborationOffer).initiatedBy === currentUserId;
+
     return {
       baseRole,
       isInitiator,
@@ -124,30 +130,30 @@ export function OffersPage() {
     };
   };
 
-  const filteredOffers = offers.filter(offer => {
-    const matchesSearch = offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         offer.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || offer.status === statusFilter;
-    
+  const filteredCollaborations = collaborations.filter(collab => {
+    const matchesSearch = collab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         collab.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' || collab.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
   const getOfferStats = () => {
-    const activeOffers = allOffers.filter(o => ['pending', 'accepted', 'in_progress'].includes(o.status));
-    const completedOffers = allOffers.filter(o => ['completed', 'declined', 'cancelled', 'terminated'].includes(o.status));
+    const activeCollabs = allCollaborations.filter(c => CollaborationAdapter.isActiveStatus(c.status));
+    const completedCollabs = allCollaborations.filter(c => CollaborationAdapter.isCompletedStatus(c.status));
 
     return {
-      total: allOffers.length,
-      pending: allOffers.filter(o => o.status === 'pending').length,
-      accepted: allOffers.filter(o => o.status === 'accepted').length,
-      inProgress: allOffers.filter(o => o.status === 'in_progress').length,
-      completed: allOffers.filter(o => o.status === 'completed').length,
-      totalValue: allOffers
-        .filter(o => ['accepted', 'in_progress', 'completed'].includes(o.status))
-        .reduce((sum, o) => sum + (o.acceptedRate || o.proposedRate), 0),
-      activeCount: activeOffers.length,
-      completedCount: completedOffers.length
+      total: allCollaborations.length,
+      pending: allCollaborations.filter(c => c.status === 'pending' || c.status === 'sent').length,
+      accepted: allCollaborations.filter(c => c.status === 'accepted').length,
+      inProgress: allCollaborations.filter(c => c.status === 'in_progress').length,
+      completed: allCollaborations.filter(c => c.status === 'completed').length,
+      totalValue: allCollaborations
+        .filter(c => ['accepted', 'in_progress', 'completed'].includes(c.status))
+        .reduce((sum, c) => sum + (c.proposedRate || 0), 0),
+      activeCount: activeCollabs.length,
+      completedCount: completedCollabs.length
     };
   };
 
@@ -366,7 +372,7 @@ export function OffersPage() {
                   </div>
                 ))}
               </div>
-            ) : filteredOffers.length === 0 ? (
+            ) : filteredCollaborations.length === 0 ? (
               <div className="text-center py-12">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {getEmptyStateMessage().title}
@@ -382,17 +388,34 @@ export function OffersPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredOffers.map((offer) => (
-                  <OfferCard
-                    key={offer.id}
-                    offer={offer}
-                    currentUserId={currentUserId}
-                    userRole={getUserRole(offer)}
-                    onOfferUpdated={handleOfferUpdated}
-                    onViewDetails={handleViewDetails}
-                    onViewProfile={handleViewProfile}
-                  />
-                ))}
+                {filteredCollaborations.map((collab) => {
+                  const offerData = collab.type === 'application'
+                    ? CollaborationAdapter.applicationToOfferFormat(
+                        collab.originalData as any,
+                        currentUserId
+                      )
+                    : (collab.originalData as CollaborationOffer);
+
+                  return (
+                    <div key={collab.id} className="relative">
+                      {collab.type === 'application' && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                            Заявка
+                          </span>
+                        </div>
+                      )}
+                      <OfferCard
+                        offer={offerData}
+                        currentUserId={currentUserId}
+                        userRole={getUserRole(collab)}
+                        onOfferUpdated={handleOfferUpdated}
+                        onViewDetails={() => handleViewDetails(collab)}
+                        onViewProfile={handleViewProfile}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

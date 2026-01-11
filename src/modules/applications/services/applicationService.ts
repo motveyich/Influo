@@ -41,15 +41,25 @@ export class ApplicationService {
     }
   }
 
-  async getApplications(params?: { status?: string }): Promise<Application[]> {
+  async getApplications(params?: { status?: string; asOwner?: boolean }): Promise<Application[]> {
     try {
-      let queryString = '';
-      if (params?.status) {
-        queryString = `?status=${params.status}`;
-      }
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.asOwner !== undefined) queryParams.append('asOwner', String(params.asOwner));
+
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       return await apiClient.get<Application[]>(`/applications${queryString}`);
     } catch (error) {
       console.error('Failed to get applications:', error);
+      throw error;
+    }
+  }
+
+  async getApplicationsByParticipant(userId: string): Promise<Application[]> {
+    try {
+      return await apiClient.get<Application[]>(`/applications`);
+    } catch (error) {
+      console.error('Failed to get applications by participant:', error);
       throw error;
     }
   }
