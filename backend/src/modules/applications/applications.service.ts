@@ -29,11 +29,30 @@ export class ApplicationsService {
       throw new ConflictException('Cannot apply to your own card');
     }
 
+    // Check rate limiting
+    const { data: isRateLimited, error: rateLimitError } = await supabase.rpc('is_rate_limited', {
+      p_user_id: userId,
+      p_target_user_id: card.user_id,
+      p_interaction_type: 'application',
+      p_card_id: createApplicationDto.cardId
+    });
+
+    if (rateLimitError) {
+      this.logger.error(`Rate limit check failed: ${rateLimitError.message}`, rateLimitError);
+    }
+
+    if (isRateLimited) {
+      throw new ConflictException('You have already applied to this card recently. Please try again later.');
+    }
+
+    // Convert cardType to target_type format (influencer -> influencer_card)
+    const targetType = `${createApplicationDto.cardType}_card`;
+
     const { data: existing } = await supabase
       .from('applications')
       .select('id')
-      .eq('user_id', userId)
-      .eq('card_id', createApplicationDto.cardId)
+      .eq('applicant_id', userId)
+      .eq('target_reference_id', createApplicationDto.cardId)
       .maybeSingle();
 
     if (existing) {
@@ -41,12 +60,14 @@ export class ApplicationsService {
     }
 
     const applicationData = {
-      user_id: userId,
-      card_id: createApplicationDto.cardId,
-      card_type: createApplicationDto.cardType,
-      card_owner_id: card.user_id,
-      message: createApplicationDto.message || '',
-      status: 'pending',
+      applicant_id: userId,
+      target_id: card.user_id,
+      target_type: targetType,
+      target_reference_id: createApplicationDto.cardId,
+      application_data: {
+        message: createApplicationDto.message || '',
+      },
+      status: 'sent',
       created_at: new Date().toISOString(),
     };
 
@@ -61,6 +82,14 @@ export class ApplicationsService {
       throw new ConflictException('Failed to create application');
     }
 
+    // Record rate limit interaction
+    await supabase.from('rate_limit_interactions').insert({
+      user_id: userId,
+      target_user_id: card.user_id,
+      interaction_type: 'application',
+      card_id: createApplicationDto.cardId,
+    });
+
     return this.transformApplication(application);
   }
 
@@ -69,12 +98,12 @@ export class ApplicationsService {
 
     let query = supabase
       .from('applications')
-      .select('*, user_profiles!applications_user_id_fkey(*)');
+      .select('*, user_profiles!applications_applicant_id_fkey(*)');
 
     if (filters?.asOwner) {
-      query = query.eq('card_owner_id', userId);
+      query = query.eq('target_id', userId);
     } else {
-      query = query.eq('user_id', userId);
+      query = query.eq('applicant_id', userId);
     }
 
     if (filters?.status) {
@@ -104,7 +133,7 @@ export class ApplicationsService {
 
     const { data: application } = await supabase
       .from('applications')
-      .select('card_owner_id, status')
+      .select('target_id, status')
       .eq('id', id)
       .maybeSingle();
 
@@ -112,11 +141,11 @@ export class ApplicationsService {
       throw new NotFoundException('Application not found');
     }
 
-    if (application.card_owner_id !== userId) {
+    if (application.target_id !== userId) {
       throw new ForbiddenException('Only card owner can change application status');
     }
 
-    if (application.status !== 'pending') {
+    if (application.status !== 'sent') {
       throw new ConflictException('Application already processed');
     }
 
@@ -135,13 +164,19 @@ export class ApplicationsService {
   }
 
   private transformApplication(application: any) {
+    // Convert target_type back to cardType (influencer_card -> influencer)
+    const cardType = application.target_type?.replace('_card', '') || '';
+
+    // Extract message from application_data
+    const message = application.application_data?.message || '';
+
     return {
       id: application.id,
-      userId: application.user_id,
-      cardId: application.card_id,
-      cardType: application.card_type,
-      cardOwnerId: application.card_owner_id,
-      message: application.message,
+      userId: application.applicant_id,
+      cardId: application.target_reference_id,
+      cardType: cardType,
+      cardOwnerId: application.target_id,
+      message: message,
       status: application.status,
       createdAt: application.created_at,
       updatedAt: application.updated_at,
