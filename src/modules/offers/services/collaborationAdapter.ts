@@ -47,13 +47,16 @@ export class CollaborationAdapter {
       'кампанию'
     }`;
 
+    const message = app.applicationData?.message;
+    const description = (message && typeof message === 'string') ? message : 'Нет описания';
+
     return {
       id: app.id,
       type: 'application',
       influencerId,
       advertiserId,
       title,
-      description: app.applicationData?.message || 'Нет описания',
+      description,
       status: app.status,
       proposedRate: app.applicationData?.proposedRate,
       currency: 'RUB',
@@ -88,6 +91,9 @@ export class CollaborationAdapter {
       'кампанию'
     }`;
 
+    const message = app.applicationData?.message;
+    const description = (message && typeof message === 'string') ? message : 'Нет описания';
+
     return {
       offer_id: app.id,
       id: app.id,
@@ -98,7 +104,7 @@ export class CollaborationAdapter {
       initiatedBy: app.applicantId,
 
       title,
-      description: app.applicationData?.message || 'Нет описания',
+      description,
       proposedRate: app.applicationData?.proposedRate || 0,
       currency: 'RUB',
       deliverables: app.applicationData?.deliverables || [],
@@ -123,13 +129,16 @@ export class CollaborationAdapter {
   }
 
   static offerToUnified(offer: CollaborationOffer): UnifiedCollaboration {
+    const title = (offer.title && typeof offer.title === 'string') ? offer.title : 'Без названия';
+    const description = (offer.description && typeof offer.description === 'string') ? offer.description : '';
+
     return {
       id: offer.offer_id || offer.id || '',
       type: 'offer',
       influencerId: offer.influencerId,
       advertiserId: offer.advertiserId,
-      title: offer.title || 'Без названия',
-      description: offer.description || '',
+      title,
+      description,
       status: offer.status,
       proposedRate: offer.proposedRate,
       currency: offer.currency || 'RUB',

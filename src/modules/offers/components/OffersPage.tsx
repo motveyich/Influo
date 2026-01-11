@@ -58,15 +58,30 @@ export function OffersPage() {
       setIsLoading(true);
 
       const [loadedApplications, loadedOffers] = await Promise.all([
-        applicationService.getApplicationsByParticipant(currentUserId).catch(() => []),
-        offerService.getOffersByParticipant(currentUserId).catch(() => [])
+        applicationService.getApplicationsByParticipant(currentUserId).catch((err) => {
+          console.error('Failed to load applications:', err);
+          return [];
+        }),
+        offerService.getOffersByParticipant(currentUserId).catch((err) => {
+          console.error('Failed to load offers:', err);
+          return [];
+        })
       ]);
+
+      console.log('Loaded data:', {
+        applications: loadedApplications.length,
+        offers: loadedOffers.length,
+        applicationsData: loadedApplications,
+        offersData: loadedOffers
+      });
 
       const unified = CollaborationAdapter.mergeAndSort(
         loadedApplications,
         loadedOffers,
         currentUserId
       );
+
+      console.log('Unified collaborations:', unified);
 
       setAllCollaborations(unified);
 
@@ -77,6 +92,8 @@ export function OffersPage() {
           return CollaborationAdapter.isCompletedStatus(collab.status);
         }
       });
+
+      console.log(`Filtered for ${activeTab} tab:`, filteredByTab);
 
       setCollaborations(filteredByTab);
     } catch (error) {
@@ -131,12 +148,21 @@ export function OffersPage() {
   };
 
   const filteredCollaborations = collaborations.filter(collab => {
-    const matchesSearch = collab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         collab.description.toLowerCase().includes(searchQuery.toLowerCase());
+    try {
+      const title = collab.title || '';
+      const description = collab.description || '';
+      const searchLower = searchQuery.toLowerCase();
 
-    const matchesStatus = statusFilter === 'all' || collab.status === statusFilter;
+      const matchesSearch = title.toLowerCase().includes(searchLower) ||
+                           description.toLowerCase().includes(searchLower);
 
-    return matchesSearch && matchesStatus;
+      const matchesStatus = statusFilter === 'all' || collab.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    } catch (error) {
+      console.error('Error filtering collaboration:', collab, error);
+      return false;
+    }
   });
 
   const getOfferStats = () => {
