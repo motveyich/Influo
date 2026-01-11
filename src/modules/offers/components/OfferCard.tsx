@@ -214,9 +214,11 @@ export function OfferCard({
   const handleStatusUpdate = async (newStatus: OfferStatus, additionalData?: any) => {
     setIsLoading(true);
     try {
+      console.log('[OfferCard] Updating offer:', { offerId: offer.id, newStatus, currentUserId });
       const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
+      console.log('[OfferCard] Updated offer:', updatedOffer);
       onOfferUpdated(updatedOffer);
-      
+
       const statusMessages = {
         'accepted': 'Предложение принято',
         'declined': 'Предложение отклонено',
@@ -224,11 +226,16 @@ export function OfferCard({
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
       };
-      
+
       toast.success(statusMessages[newStatus] || 'Статус обновлен');
     } catch (error: any) {
-      console.error('Failed to update offer status:', error);
-      toast.error(error.message || 'Не удалось обновить статус');
+      console.error('[OfferCard] Failed to update offer status:', error);
+
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error('Предложение не найдено. Пожалуйста, обновите страницу.');
+      } else {
+        toast.error(error.message || 'Не удалось обновить статус');
+      }
     } finally {
       setIsLoading(false);
     }

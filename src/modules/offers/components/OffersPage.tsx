@@ -70,7 +70,7 @@ export function OffersPage() {
         })
       ]);
 
-      console.log('Loaded data:', {
+      console.log('[OffersPage] Loaded data:', {
         applications: loadedApplications.length,
         offers: loadedOffers.length,
         applicationsData: loadedApplications,
@@ -99,7 +99,7 @@ export function OffersPage() {
 
       setCollaborations(filteredByTab);
     } catch (error) {
-      console.error('Failed to load collaborations:', error);
+      console.error('[OffersPage] Failed to load collaborations:', error);
       const errorMessage = error instanceof Error ? error.message : 'Не удалось загрузить предложения';
       setLoadError(errorMessage);
       toast.error(errorMessage);
