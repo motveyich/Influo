@@ -65,7 +65,7 @@ export class AdvertiserCardService {
 
   async getMyCards(userId: string): Promise<AdvertiserCard[]> {
     try {
-      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards?userId=${userId}`);
+      return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards?userId=${userId}&page=1&limit=100`);
     } catch (error) {
       console.error('Failed to get user cards:', error);
       throw error;
@@ -75,13 +75,20 @@ export class AdvertiserCardService {
   async getCards(filters?: any): Promise<AdvertiserCard[]> {
     try {
       const queryParams = new URLSearchParams();
-      if (filters) {
-        Object.keys(filters).forEach(key => {
-          if (filters[key] !== undefined) {
-            queryParams.append(key, String(filters[key]));
-          }
-        });
-      }
+
+      // Add default pagination if not provided
+      const filtersWithDefaults = {
+        page: 1,
+        limit: 100,
+        ...filters
+      };
+
+      Object.keys(filtersWithDefaults).forEach(key => {
+        if (filtersWithDefaults[key] !== undefined) {
+          queryParams.append(key, String(filtersWithDefaults[key]));
+        }
+      });
+
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       return await apiClient.get<AdvertiserCard[]>(`/advertiser-cards${queryString}`);
     } catch (error) {
