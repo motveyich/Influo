@@ -236,15 +236,26 @@ export function OfferCard({
 
   const getAvailableActions = () => {
     const actions = [];
-    
-    // Определяем роль пользователя в предложении
-    const isInitiator = currentUserId === offer.initiatedBy;
-    const isReceiver = !isInitiator && (currentUserId === offer.influencerId || currentUserId === offer.advertiserId);
+
+    // Определяем роль пользователя в предложении с безопасными проверками
+    const isInitiator = offer.initiatedBy ? currentUserId === offer.initiatedBy : false;
+    const isReceiver = offer.initiatedBy
+      ? !isInitiator && (currentUserId === offer.influencerId || currentUserId === offer.advertiserId)
+      : (currentUserId === offer.influencerId || currentUserId === offer.advertiserId);
+
+    // Проверяем, является ли текущий пользователь участником предложения
+    const isParticipant = currentUserId === offer.influencerId || currentUserId === offer.advertiserId;
+
+    if (!isParticipant) {
+      console.warn('Current user is not a participant in this offer');
+      return actions;
+    }
 
     // Pending status actions
     if (offer.status === 'pending') {
-      if (isReceiver) {
+      if (isReceiver || !offer.initiatedBy) {
         // Получатель может принять или отклонить
+        // Если initiatedBy отсутствует, показываем обе кнопки обеим сторонам
         actions.push(
           { label: 'Принять', action: 'accepted', style: 'success' },
           { label: 'Отклонить', action: 'declined', style: 'danger' }
@@ -255,6 +266,14 @@ export function OfferCard({
           { label: 'Отменить', action: 'cancelled', style: 'neutral' }
         );
       }
+    }
+
+    // Accepted status actions - обе стороны могут начать работу или расторгнуть
+    if (offer.status === 'accepted') {
+      actions.push(
+        { label: 'Начать работу', action: 'in_progress', style: 'success' },
+        { label: 'Расторгнуть', action: 'terminated', style: 'danger' }
+      );
     }
 
     // In progress actions (both roles)
@@ -269,16 +288,29 @@ export function OfferCard({
   };
 
   const getUserRoleInOffer = () => {
-    const isInitiator = currentUserId === offer.initiatedBy;
     const role = userRole === 'influencer' ? 'Инфлюенсер' : 'Рекламодатель';
+
+    if (!offer.initiatedBy) {
+      return role;
+    }
+
+    const isInitiator = currentUserId === offer.initiatedBy;
     const roleType = isInitiator ? 'Отправитель' : 'Получатель';
     return `${role} (${roleType})`;
   };
 
   const getPartnerInfo = () => {
-    const isInitiator = currentUserId === offer.initiatedBy;
     const partnerId = currentUserId === offer.influencerId ? offer.advertiserId : offer.influencerId;
     const partnerRole = currentUserId === offer.influencerId ? 'Рекламодатель' : 'Инфлюенсер';
+
+    if (!offer.initiatedBy) {
+      return {
+        label: partnerRole,
+        id: partnerId || 'unknown'
+      };
+    }
+
+    const isInitiator = currentUserId === offer.initiatedBy;
     const partnerType = isInitiator ? 'Получатель' : 'Отправитель';
 
     return {

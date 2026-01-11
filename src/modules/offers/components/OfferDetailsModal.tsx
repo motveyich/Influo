@@ -47,10 +47,10 @@ export function OfferDetailsModal({
 
   const isInfluencer = currentUserId === offer.influencerId;
   const isAdvertiser = currentUserId === offer.advertiserId;
-  const isInitiator = currentUserId === offer.initiatedBy;
-  const isReceiver = !isInitiator;
+  const isInitiator = offer.initiatedBy ? currentUserId === offer.initiatedBy : false;
+  const isReceiver = offer.initiatedBy ? !isInitiator : false;
   const userRole = isInfluencer ? 'influencer' : 'advertiser';
-  const roleInOffer = isInitiator ? 'Отправитель' : 'Получатель';
+  const roleInOffer = !offer.initiatedBy ? 'Участник' : (isInitiator ? 'Отправитель' : 'Получатель');
 
   const getPlatformIcon = (platform: string) => {
     const platformLower = platform?.toLowerCase() || '';
@@ -106,6 +106,11 @@ export function OfferDetailsModal({
 
   const loadInitiatorProfile = async () => {
     try {
+      if (!offer.initiatedBy) {
+        console.warn('Offer initiatedBy is not set, skipping initiator profile load');
+        return;
+      }
+
       const { supabase } = await import('../../../core/supabase');
 
       // Получить профиль инициатора
@@ -113,15 +118,20 @@ export function OfferDetailsModal({
         .from('user_profiles')
         .select('*')
         .eq('user_id', offer.initiatedBy)
-        .single();
+        .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error loading initiator profile:', profileError);
+        return;
+      }
 
-      setInitiatorProfile(profile);
+      if (profile) {
+        setInitiatorProfile(profile);
 
-      // Получить отзывы об инициаторе
-      const initiatorReviewsData = await reviewService.getUserReviews(offer.initiatedBy);
-      setInitiatorReviews(initiatorReviewsData);
+        // Получить отзывы об инициаторе
+        const initiatorReviewsData = await reviewService.getUserReviews(offer.initiatedBy);
+        setInitiatorReviews(initiatorReviewsData);
+      }
     } catch (error) {
       console.error('Failed to load initiator profile:', error);
     }

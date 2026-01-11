@@ -129,6 +129,11 @@ export function OffersPage() {
     }
   };
 
+  const handleViewOfferDetails = (offer: CollaborationOffer) => {
+    setSelectedOffer(offer);
+    setShowDetailsModal(true);
+  };
+
   const handleViewProfile = (userId: string) => {
     setProfileUserId(userId);
     setShowProfileModal(true);
@@ -478,7 +483,7 @@ export function OffersPage() {
                           currentUserId={currentUserId}
                           userRole={getUserRole(collab)}
                           onOfferUpdated={handleOfferUpdated}
-                          onViewDetails={() => handleViewDetails(collab)}
+                          onViewDetails={handleViewOfferDetails}
                           onViewProfile={handleViewProfile}
                         />
                       </div>
