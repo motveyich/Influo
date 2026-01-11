@@ -132,6 +132,14 @@ export class CollaborationAdapter {
     const title = (offer.title && typeof offer.title === 'string') ? offer.title : 'Без названия';
     const description = (offer.description && typeof offer.description === 'string') ? offer.description : '';
 
+    // Handle timeline - can be string or object
+    let timeline = '';
+    if (typeof offer.timeline === 'string') {
+      timeline = offer.timeline;
+    } else if (offer.timeline && typeof offer.timeline === 'object') {
+      timeline = offer.timeline.deadline || offer.timeline.startDate || '';
+    }
+
     return {
       id: offer.offer_id || offer.id || '',
       type: 'offer',
@@ -142,7 +150,7 @@ export class CollaborationAdapter {
       status: offer.status,
       proposedRate: offer.proposedRate,
       currency: offer.currency || 'RUB',
-      timeline: offer.timeline?.deadline || offer.timeline?.startDate || '',
+      timeline,
       deliverables: offer.deliverables || [],
       createdAt: offer.createdAt,
       updatedAt: offer.updatedAt || offer.createdAt,

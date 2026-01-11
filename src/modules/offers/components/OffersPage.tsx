@@ -38,6 +38,7 @@ export function OffersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OfferStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -56,6 +57,7 @@ export function OffersPage() {
   const loadCollaborations = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
 
       const [loadedApplications, loadedOffers] = await Promise.all([
         applicationService.getApplicationsByParticipant(currentUserId).catch((err) => {
@@ -98,7 +100,9 @@ export function OffersPage() {
       setCollaborations(filteredByTab);
     } catch (error) {
       console.error('Failed to load collaborations:', error);
-      toast.error('Не удалось загрузить предложения');
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось загрузить предложения';
+      setLoadError(errorMessage);
+      toast.error(errorMessage);
       setCollaborations([]);
       setAllCollaborations([]);
     } finally {
@@ -147,23 +151,27 @@ export function OffersPage() {
     };
   };
 
-  const filteredCollaborations = collaborations.filter(collab => {
-    try {
-      const title = collab.title || '';
-      const description = collab.description || '';
-      const searchLower = searchQuery.toLowerCase();
+  const filteredCollaborations = React.useMemo(() => {
+    return collaborations.filter(collab => {
+      try {
+        if (!collab) return false;
 
-      const matchesSearch = title.toLowerCase().includes(searchLower) ||
-                           description.toLowerCase().includes(searchLower);
+        const title = collab.title || '';
+        const description = collab.description || '';
+        const searchLower = searchQuery.toLowerCase();
 
-      const matchesStatus = statusFilter === 'all' || collab.status === statusFilter;
+        const matchesSearch = title.toLowerCase().includes(searchLower) ||
+                             description.toLowerCase().includes(searchLower);
 
-      return matchesSearch && matchesStatus;
-    } catch (error) {
-      console.error('Error filtering collaboration:', collab, error);
-      return false;
-    }
-  });
+        const matchesStatus = statusFilter === 'all' || collab.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      } catch (error) {
+        console.error('Error filtering collaboration:', collab, error);
+        return false;
+      }
+    });
+  }, [collaborations, searchQuery, statusFilter]);
 
   const getOfferStats = () => {
     const activeCollabs = allCollaborations.filter(c => CollaborationAdapter.isActiveStatus(c.status));
@@ -235,6 +243,29 @@ export function OffersPage() {
     }
   };
 
+  // Show error state if loading failed
+  if (loadError && !isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-red-900 mb-2">Ошибка загрузки</h3>
+              <p className="text-sm text-red-700 mb-4">{loadError}</p>
+              <button
+                onClick={() => loadCollaborations()}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <FeatureGate
       profile={currentUserProfile}
@@ -256,7 +287,7 @@ export function OffersPage() {
               <div>
                 <p className="text-xs font-medium text-blue-800">{t('offers.howToCreateOffers')}</p>
                 <p className="text-xs text-blue-700 mt-1">
-                  {t('offers.offersCreatedAutomatically')}
+                  {t('offers.offersCreatedManually')}
                 </p>
               </div>
             </div>
@@ -415,32 +446,47 @@ export function OffersPage() {
             ) : (
               <div className="space-y-4">
                 {filteredCollaborations.map((collab) => {
-                  const offerData = collab.type === 'application'
-                    ? CollaborationAdapter.applicationToOfferFormat(
-                        collab.originalData as any,
-                        currentUserId
-                      )
-                    : (collab.originalData as CollaborationOffer);
+                  try {
+                    if (!collab || !collab.id) {
+                      console.warn('Invalid collaboration data:', collab);
+                      return null;
+                    }
 
-                  return (
-                    <div key={collab.id} className="relative">
-                      {collab.type === 'application' && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                            Заявка
-                          </span>
-                        </div>
-                      )}
-                      <OfferCard
-                        offer={offerData}
-                        currentUserId={currentUserId}
-                        userRole={getUserRole(collab)}
-                        onOfferUpdated={handleOfferUpdated}
-                        onViewDetails={() => handleViewDetails(collab)}
-                        onViewProfile={handleViewProfile}
-                      />
-                    </div>
-                  );
+                    const offerData = collab.type === 'application'
+                      ? CollaborationAdapter.applicationToOfferFormat(
+                          collab.originalData as any,
+                          currentUserId
+                        )
+                      : (collab.originalData as CollaborationOffer);
+
+                    if (!offerData) {
+                      console.warn('Failed to convert collaboration to offer format:', collab);
+                      return null;
+                    }
+
+                    return (
+                      <div key={collab.id} className="relative">
+                        {collab.type === 'application' && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                              Заявка
+                            </span>
+                          </div>
+                        )}
+                        <OfferCard
+                          offer={offerData}
+                          currentUserId={currentUserId}
+                          userRole={getUserRole(collab)}
+                          onOfferUpdated={handleOfferUpdated}
+                          onViewDetails={() => handleViewDetails(collab)}
+                          onViewProfile={handleViewProfile}
+                        />
+                      </div>
+                    );
+                  } catch (error) {
+                    console.error('Error rendering collaboration card:', collab, error);
+                    return null;
+                  }
                 })}
               </div>
             )}

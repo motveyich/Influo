@@ -354,6 +354,15 @@ export function OfferDetailsModal({
     }).format(amount);
   };
 
+  const getTimelineDisplay = () => {
+    if (!offer.timeline) return 'Не указано';
+    if (typeof offer.timeline === 'string') return offer.timeline;
+    if (typeof offer.timeline === 'object') {
+      return (offer.timeline as any).deadline || (offer.timeline as any).startDate || 'Не указано';
+    }
+    return 'Не указано';
+  };
+
   const getStatusColor = (status: OfferStatus) => {
     switch (status) {
       case 'pending':
@@ -479,7 +488,7 @@ export function OfferDetailsModal({
                     <div className="flex items-center space-x-2">
                       <Calendar className="w-4 h-4 text-blue-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{offer.timeline}</p>
+                        <p className="text-sm font-medium text-gray-900">{getTimelineDisplay()}</p>
                         <p className="text-xs text-gray-600">Сроки</p>
                       </div>
                     </div>

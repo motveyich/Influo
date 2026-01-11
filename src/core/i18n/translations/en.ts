@@ -568,7 +568,7 @@ export const en: TranslationKeys = {
     active: 'Active',
     completed: 'Completed',
     howToCreateOffers: 'How to create offers?',
-    offersCreatedAutomatically: 'Offers are created automatically when responding to cards and campaigns',
+    offersCreatedManually: 'Offers are created when responding to cards and campaigns',
     allStatuses: 'All statuses',
     searchOffers: 'Search offers...',
     noActiveOffers: 'No active offers',
