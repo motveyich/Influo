@@ -485,6 +485,7 @@ export function OffersPage() {
                           onOfferUpdated={handleOfferUpdated}
                           onViewDetails={handleViewOfferDetails}
                           onViewProfile={handleViewProfile}
+                          collaborationType={collab.type}
                         />
                       </div>
                     );

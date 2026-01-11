@@ -1,6 +1,7 @@
 import React from 'react';
 import { CollaborationOffer, OfferStatus, PaymentRequest } from '../../../core/types';
 import { offerService } from '../services/offerService';
+import { applicationService } from '../../applications/services/applicationService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { supabase } from '../../../core/supabase';
@@ -37,6 +38,7 @@ interface OfferCardProps {
   onOfferUpdated: (offer: CollaborationOffer) => void;
   onViewDetails: (offer: CollaborationOffer) => void;
   onViewProfile?: (userId: string) => void;
+  collaborationType?: 'application' | 'offer';
 }
 
 export function OfferCard({
@@ -45,7 +47,8 @@ export function OfferCard({
   userRole,
   onOfferUpdated,
   onViewDetails,
-  onViewProfile
+  onViewProfile,
+  collaborationType = 'offer'
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
@@ -214,14 +217,36 @@ export function OfferCard({
   const handleStatusUpdate = async (newStatus: OfferStatus, additionalData?: any) => {
     setIsLoading(true);
     try {
-      console.log('[OfferCard] Updating offer:', { offerId: offer.id, newStatus, currentUserId });
-      const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
-      console.log('[OfferCard] Updated offer:', updatedOffer);
-      onOfferUpdated(updatedOffer);
+      console.log('[OfferCard] Updating collaboration:', {
+        id: offer.id,
+        newStatus,
+        currentUserId,
+        collaborationType
+      });
+
+      let updatedData: any;
+
+      if (collaborationType === 'application') {
+        if (newStatus === 'accepted') {
+          updatedData = await applicationService.acceptApplication(offer.id);
+          console.log('[OfferCard] Application accepted:', updatedData);
+        } else if (newStatus === 'declined') {
+          updatedData = await applicationService.rejectApplication(offer.id);
+          console.log('[OfferCard] Application rejected:', updatedData);
+        } else {
+          toast.error('Это действие доступно только для принятых заявок');
+          return;
+        }
+      } else {
+        updatedData = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
+        console.log('[OfferCard] Offer updated:', updatedData);
+      }
+
+      onOfferUpdated(updatedData);
 
       const statusMessages = {
-        'accepted': 'Предложение принято',
-        'declined': 'Предложение отклонено',
+        'accepted': collaborationType === 'application' ? 'Заявка принята' : 'Предложение принято',
+        'declined': collaborationType === 'application' ? 'Заявка отклонена' : 'Предложение отклонено',
         'cancelled': 'Предложение отменено',
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
@@ -229,7 +254,7 @@ export function OfferCard({
 
       toast.success(statusMessages[newStatus] || 'Статус обновлен');
     } catch (error: any) {
-      console.error('[OfferCard] Failed to update offer status:', error);
+      console.error('[OfferCard] Failed to update collaboration status:', error);
 
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         toast.error('Предложение не найдено. Пожалуйста, обновите страницу.');
@@ -255,6 +280,19 @@ export function OfferCard({
 
     if (!isParticipant) {
       console.warn('Current user is not a participant in this offer');
+      return actions;
+    }
+
+    // Для applications доступны только базовые действия
+    if (collaborationType === 'application') {
+      if (offer.status === 'pending' || offer.status === 'sent') {
+        if (isReceiver || !offer.initiatedBy) {
+          actions.push(
+            { label: 'Принять', action: 'accepted', style: 'success' },
+            { label: 'Отклонить', action: 'declined', style: 'danger' }
+          );
+        }
+      }
       return actions;
     }
 
