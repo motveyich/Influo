@@ -34,6 +34,7 @@ export class OffersService {
     const offerData = {
       advertiser_id: userId,
       influencer_id: createOfferDto.influencerId,
+      initiated_by: userId,
       title: createOfferDto.title,
       description: createOfferDto.description,
       amount: createOfferDto.amount,

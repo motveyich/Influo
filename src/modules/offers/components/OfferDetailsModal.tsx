@@ -47,10 +47,23 @@ export function OfferDetailsModal({
 
   const isInfluencer = currentUserId === offer.influencerId;
   const isAdvertiser = currentUserId === offer.advertiserId;
-  const isInitiator = offer.initiatedBy ? currentUserId === offer.initiatedBy : false;
-  const isReceiver = offer.initiatedBy ? !isInitiator : false;
+  const isInitiator = offer.initiatedBy ? currentUserId === offer.initiatedBy : (currentUserId === offer.advertiserId);
+  const isReceiver = offer.initiatedBy ? !isInitiator : (currentUserId === offer.influencerId);
   const userRole = isInfluencer ? 'influencer' : 'advertiser';
   const roleInOffer = !offer.initiatedBy ? 'Участник' : (isInitiator ? 'Отправитель' : 'Получатель');
+
+  console.log('🔍 [OfferDetailsModal] Role Detection:', {
+    offerId: offer.id,
+    currentUserId,
+    influencerId: offer.influencerId,
+    advertiserId: offer.advertiserId,
+    initiatedBy: offer.initiatedBy,
+    isInfluencer,
+    isAdvertiser,
+    isInitiator,
+    isReceiver,
+    status: offer.status
+  });
 
   const getPlatformIcon = (platform: string) => {
     const platformLower = platform?.toLowerCase() || '';
@@ -301,6 +314,14 @@ export function OfferDetailsModal({
         { label: 'Оспорить решение', action: 'dispute', style: 'warning', icon: AlertTriangle }
       );
     }
+
+    console.log('🎬 [OfferDetailsModal] Available Actions:', {
+      status: offer.status,
+      isReceiver,
+      isInitiator,
+      actionsCount: actions.length,
+      actions: actions.map(a => a.label)
+    });
 
     return actions;
   };
