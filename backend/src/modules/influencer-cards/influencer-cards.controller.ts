@@ -8,7 +8,6 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,10 +15,9 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { InfluencerCardsService } from './influencer-cards.service';
-import { CreateInfluencerCardDto, UpdateInfluencerCardDto } from './dto';
+import { CreateInfluencerCardDto, UpdateInfluencerCardDto, QueryInfluencerCardsDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators';
@@ -46,32 +44,9 @@ export class InfluencerCardsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get all influencer cards with filters' })
-  @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
-  @ApiQuery({ name: 'minFollowers', required: false, description: 'Minimum followers' })
-  @ApiQuery({ name: 'maxFollowers', required: false, description: 'Maximum followers' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
-  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page' })
   @ApiResponse({ status: 200, description: 'List of influencer cards' })
-  async findAll(
-    @Query('platform') platform?: string,
-    @Query('minFollowers', new ParseIntPipe({ optional: true })) minFollowers?: number,
-    @Query('maxFollowers', new ParseIntPipe({ optional: true })) maxFollowers?: number,
-    @Query('userId') userId?: string,
-    @Query('isActive') isActive?: string,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  ) {
-    return this.influencerCardsService.findAll({
-      platform,
-      minFollowers,
-      maxFollowers,
-      userId,
-      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-      page,
-      limit,
-    });
+  async findAll(@Query() query: QueryInfluencerCardsDto) {
+    return this.influencerCardsService.findAll(query);
   }
 
   @Get(':id')

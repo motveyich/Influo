@@ -75,6 +75,9 @@ export class AdvertiserCardsService {
       .from('advertiser_cards')
       .select('*, user_profiles!advertiser_cards_user_id_fkey(*)');
 
+    // Always filter out deleted cards
+    query = query.eq('is_deleted', false);
+
     // Handle isActive filter:
     // 1. If isActive is explicitly provided, use that value
     // 2. If userId is NOT provided (public listing), default to is_active = true
@@ -132,6 +135,7 @@ export class AdvertiserCardsService {
       .from('advertiser_cards')
       .select('*, user_profiles!advertiser_cards_user_id_fkey(*)')
       .eq('id', id)
+      .eq('is_deleted', false)
       .maybeSingle();
 
     if (error || !card) {

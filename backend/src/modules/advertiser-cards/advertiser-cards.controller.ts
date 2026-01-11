@@ -8,7 +8,6 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,10 +15,9 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { AdvertiserCardsService } from './advertiser-cards.service';
-import { CreateAdvertiserCardDto, UpdateAdvertiserCardDto } from './dto';
+import { CreateAdvertiserCardDto, UpdateAdvertiserCardDto, QueryAdvertiserCardsDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators';
@@ -47,32 +45,9 @@ export class AdvertiserCardsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get all advertiser cards with filters' })
-  @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
-  @ApiQuery({ name: 'minBudget', required: false, description: 'Minimum budget' })
-  @ApiQuery({ name: 'maxBudget', required: false, description: 'Maximum budget' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
-  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page' })
   @ApiResponse({ status: 200, description: 'List of advertiser cards' })
-  async findAll(
-    @Query('platform') platform?: string,
-    @Query('minBudget', new ParseIntPipe({ optional: true })) minBudget?: number,
-    @Query('maxBudget', new ParseIntPipe({ optional: true })) maxBudget?: number,
-    @Query('userId') userId?: string,
-    @Query('isActive') isActive?: string,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  ) {
-    return this.advertiserCardsService.findAll({
-      platform,
-      minBudget,
-      maxBudget,
-      userId,
-      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-      page,
-      limit,
-    });
+  async findAll(@Query() query: QueryAdvertiserCardsDto) {
+    return this.advertiserCardsService.findAll(query);
   }
 
   @Get(':id')
