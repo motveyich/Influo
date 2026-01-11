@@ -283,8 +283,8 @@ export function OfferDetailsModal({
   const getAvailableActions = () => {
     const actions = [];
 
-    // Pending status actions
-    if (offer.status === 'pending') {
+    // Pending/Sent status actions (treat 'sent' same as 'pending')
+    if (offer.status === 'pending' || offer.status === 'sent') {
       if (isReceiver) {
         // Получатель может принять или отклонить
         actions.push(
@@ -299,17 +299,32 @@ export function OfferDetailsModal({
       }
     }
 
-    // Accepted and In progress actions (both roles)
-    if (offer.status === 'accepted' || offer.status === 'in_progress') {
+    // Accepted status actions
+    if (offer.status === 'accepted') {
       actions.push(
-        { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy },
+        { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play },
         { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban },
-        { label: 'Пожаловаться на сотрудничество', action: 'report', style: 'warning', icon: AlertTriangle }
+        { label: 'Пожаловаться', action: 'report', style: 'warning', icon: AlertTriangle }
       );
     }
 
-    // Completed/Terminated - can dispute
-    if (offer.status === 'completed' || offer.status === 'terminated') {
+    // In progress actions
+    if (offer.status === 'in_progress') {
+      if (isReceiver) {
+        // Получатель может завершить
+        actions.push(
+          { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy }
+        );
+      }
+      // Обе стороны могут расторгнуть или пожаловаться
+      actions.push(
+        { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban },
+        { label: 'Пожаловаться', action: 'report', style: 'warning', icon: AlertTriangle }
+      );
+    }
+
+    // Completed/Terminated/Declined/Cancelled - can dispute
+    if (['completed', 'terminated', 'declined', 'cancelled'].includes(offer.status)) {
       actions.push(
         { label: 'Оспорить решение', action: 'dispute', style: 'warning', icon: AlertTriangle }
       );

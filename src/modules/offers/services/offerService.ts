@@ -127,6 +127,41 @@ export class OfferService {
     }
   }
 
+  async updateOfferStatus(
+    offerId: string,
+    newStatus: OfferStatus,
+    userId: string,
+    additionalData?: any
+  ): Promise<CollaborationOffer> {
+    try {
+      switch (newStatus) {
+        case 'accepted':
+          return await this.acceptOffer(offerId);
+
+        case 'declined':
+          return await this.declineOffer(offerId);
+
+        case 'cancelled':
+          return await this.cancelOffer(offerId);
+
+        case 'in_progress':
+          return await this.markInProgress(offerId);
+
+        case 'completed':
+          return await this.markCompleted(offerId);
+
+        case 'terminated':
+          return await this.cancelOffer(offerId);
+
+        default:
+          throw new Error(`Unsupported status transition: ${newStatus}`);
+      }
+    } catch (error) {
+      console.error(`Failed to update offer status to ${newStatus}:`, error);
+      throw error;
+    }
+  }
+
   private validateOfferData(offerData: Partial<CollaborationOffer>): void {
     if (!offerData.influencerId || !offerData.advertiserId) {
       throw new Error('Influencer ID and Advertiser ID are required');

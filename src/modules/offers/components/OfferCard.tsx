@@ -251,8 +251,8 @@ export function OfferCard({
       return actions;
     }
 
-    // Pending status actions
-    if (offer.status === 'pending') {
+    // Pending/Sent status actions (treat 'sent' same as 'pending')
+    if (offer.status === 'pending' || offer.status === 'sent') {
       if (isReceiver || !offer.initiatedBy) {
         // Получатель может принять или отклонить
         // Если initiatedBy отсутствует, показываем обе кнопки обеим сторонам
@@ -276,10 +276,16 @@ export function OfferCard({
       );
     }
 
-    // In progress actions (both roles)
+    // In progress actions
     if (offer.status === 'in_progress') {
+      if (isReceiver) {
+        // Получатель может завершить
+        actions.push(
+          { label: 'Завершить', action: 'completed', style: 'success' }
+        );
+      }
+      // Обе стороны могут расторгнуть
       actions.push(
-        { label: 'Завершить', action: 'completed', style: 'success' },
         { label: 'Расторгнуть', action: 'terminated', style: 'danger' }
       );
     }
