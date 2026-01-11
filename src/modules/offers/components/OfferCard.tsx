@@ -62,8 +62,13 @@ export function OfferCard({
   }, []);
 
   const loadPartnerProfile = async () => {
-    const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
     try {
+      const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+      if (!partnerId) {
+        console.warn('Partner ID is undefined');
+        return;
+      }
+
       const { data } = await supabase
         .from('user_profiles')
         .select('user_id, full_name, avatar')
@@ -266,10 +271,10 @@ export function OfferCard({
     const partnerId = currentUserId === offer.influencerId ? offer.advertiserId : offer.influencerId;
     const partnerRole = currentUserId === offer.influencerId ? 'Рекламодатель' : 'Инфлюенсер';
     const partnerType = isInitiator ? 'Получатель' : 'Отправитель';
-    
+
     return {
       label: `${partnerRole} (${partnerType})`,
-      id: partnerId
+      id: partnerId || 'unknown'
     };
   };
 
@@ -281,7 +286,12 @@ export function OfferCard({
       {/* Header */}
       <div className="flex items-start space-x-4 mb-4">
         <button
-          onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+          onClick={() => {
+            const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+            if (partnerId && onViewProfile) {
+              onViewProfile(partnerId);
+            }
+          }}
           className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <UserAvatar
@@ -292,14 +302,19 @@ export function OfferCard({
         </button>
         <div className="flex-1">
           <button
-            onClick={() => onViewProfile?.(userRole === 'influencer' ? offer.advertiserId : offer.influencerId)}
+            onClick={() => {
+              const partnerId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
+              if (partnerId && onViewProfile) {
+                onViewProfile(partnerId);
+              }
+            }}
             className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors mb-1 block"
           >
             {partnerProfile?.full_name || (userRole === 'influencer' ? 'Рекламодатель' : 'Инфлюенсер')}
           </button>
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
-              {offer.title}
+              {offer.title || 'Без названия'}
             </h3>
             {(offer as any).metadata?.isAutoCampaign && (
               <span className="px-3 py-1 text-sm font-medium rounded-full border bg-blue-100 text-blue-800 border-blue-200">
@@ -316,7 +331,7 @@ export function OfferCard({
               </div>
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
             <div className="flex items-center space-x-1">
               <User className="w-4 h-4" />
@@ -327,9 +342,9 @@ export function OfferCard({
               <span>{partnerInfo.label}: {partnerInfo.id.substring(0, 8)}...</span>
             </div>
           </div>
-          
+
           <p className="text-sm text-gray-600 line-clamp-2">
-            {offer.description}
+            {offer.description || 'Нет описания'}
           </p>
         </div>
       </div>
@@ -341,12 +356,12 @@ export function OfferCard({
           <div>
             <p className="text-sm font-medium text-gray-900">
               {formatCurrency(
-                offer.acceptedRate || offer.suggestedBudget || offer.proposedRate,
+                offer.acceptedRate || offer.suggestedBudget || offer.proposedRate || 0,
                 offer.currency
               )}
             </p>
             <p className="text-xs text-gray-600">
-              {offer.acceptedRate && offer.acceptedRate !== offer.proposedRate
+              {offer.acceptedRate && offer.acceptedRate !== (offer.proposedRate || 0)
                 ? 'Принятая ставка'
                 : 'Предложенная ставка'}
             </p>
@@ -543,7 +558,11 @@ export function OfferCard({
             <button
               onClick={() => {
                 const otherUserId = userRole === 'influencer' ? offer.advertiserId : offer.influencerId;
-                onViewProfile(otherUserId);
+                if (otherUserId) {
+                  onViewProfile(otherUserId);
+                } else {
+                  toast.error('Не удалось определить профиль пользователя');
+                }
               }}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors flex items-center space-x-1"
               title="Просмотр профиля"

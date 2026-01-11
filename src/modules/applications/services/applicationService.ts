@@ -6,6 +6,10 @@ export interface CreateApplicationParams {
   cardId: string;
   cardType: 'influencer' | 'advertiser';
   message?: string;
+  proposedRate?: number;
+  timeline?: string;
+  deliverables?: string[];
+  additionalInfo?: string;
 }
 
 export class ApplicationService {
@@ -15,6 +19,10 @@ export class ApplicationService {
         cardId: params.cardId,
         cardType: params.cardType,
         message: params.message || '',
+        proposedRate: params.proposedRate,
+        timeline: params.timeline,
+        deliverables: params.deliverables,
+        additionalInfo: params.additionalInfo,
       };
 
       const application = await apiClient.post<Application>('/applications', payload);

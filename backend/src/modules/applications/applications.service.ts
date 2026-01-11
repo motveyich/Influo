@@ -66,6 +66,10 @@ export class ApplicationsService {
       target_reference_id: createApplicationDto.cardId,
       application_data: {
         message: createApplicationDto.message || '',
+        proposedRate: createApplicationDto.proposedRate,
+        timeline: createApplicationDto.timeline,
+        deliverables: createApplicationDto.deliverables || [],
+        additionalInfo: createApplicationDto.additionalInfo,
       },
       status: 'sent',
       created_at: new Date().toISOString(),
@@ -100,10 +104,14 @@ export class ApplicationsService {
       .from('applications')
       .select('*, user_profiles!applications_applicant_id_fkey(*)');
 
-    if (filters?.asOwner) {
-      query = query.eq('target_id', userId);
+    if (filters?.asOwner !== undefined) {
+      if (filters.asOwner) {
+        query = query.eq('target_id', userId);
+      } else {
+        query = query.eq('applicant_id', userId);
+      }
     } else {
-      query = query.eq('applicant_id', userId);
+      query = query.or(`applicant_id.eq.${userId},target_id.eq.${userId}`);
     }
 
     if (filters?.status) {
@@ -164,19 +172,13 @@ export class ApplicationsService {
   }
 
   private transformApplication(application: any) {
-    // Convert target_type back to cardType (influencer_card -> influencer)
-    const cardType = application.target_type?.replace('_card', '') || '';
-
-    // Extract message from application_data
-    const message = application.application_data?.message || '';
-
     return {
       id: application.id,
-      userId: application.applicant_id,
-      cardId: application.target_reference_id,
-      cardType: cardType,
-      cardOwnerId: application.target_id,
-      message: message,
+      applicantId: application.applicant_id,
+      targetId: application.target_id,
+      targetType: application.target_type || '',
+      targetReferenceId: application.target_reference_id,
+      applicationData: application.application_data || {},
       status: application.status,
       createdAt: application.created_at,
       updatedAt: application.updated_at,

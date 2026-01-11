@@ -275,7 +275,7 @@ export interface Application {
   targetType: 'influencer_card' | 'advertiser_card' | 'campaign';
   targetReferenceId: string;
   applicationData: {
-    status: 'pending' | 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+    message?: string;
     proposedRate?: number;
     timeline?: string;
     deliverables?: string[];
@@ -287,14 +287,20 @@ export interface Application {
     counterOffer?: any;
     declineReason?: string;
   };
-  timeline: {
+  timeline?: {
     pendingAt: string;
     respondedAt?: string;
     completedAt?: string;
   };
-  metadata: {
+  metadata?: {
     viewCount: number;
     lastViewed?: string;
+  };
+  user?: {
+    id: string;
+    fullName: string;
+    username: string;
+    avatar?: string;
   };
   createdAt: string;
   updatedAt: string;
