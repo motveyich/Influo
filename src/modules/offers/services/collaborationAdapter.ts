@@ -60,7 +60,7 @@ export class CollaborationAdapter {
       timeline: app.applicationData?.timeline,
       deliverables: app.applicationData?.deliverables || [],
       createdAt: app.createdAt,
-      updatedAt: app.updatedAt,
+      updatedAt: app.updatedAt || app.createdAt,
       originalData: app,
     };
   }
@@ -118,7 +118,7 @@ export class CollaborationAdapter {
       advertiserResponse: 'pending',
 
       createdAt: app.createdAt,
-      updatedAt: app.updatedAt,
+      updatedAt: app.updatedAt || app.createdAt,
     } as CollaborationOffer;
   }
 
@@ -128,15 +128,15 @@ export class CollaborationAdapter {
       type: 'offer',
       influencerId: offer.influencerId,
       advertiserId: offer.advertiserId,
-      title: offer.title,
-      description: offer.description,
+      title: offer.title || 'Без названия',
+      description: offer.description || '',
       status: offer.status,
       proposedRate: offer.proposedRate,
       currency: offer.currency || 'RUB',
       timeline: offer.timeline?.deadline || offer.timeline?.startDate || '',
       deliverables: offer.deliverables || [],
       createdAt: offer.createdAt,
-      updatedAt: offer.updatedAt,
+      updatedAt: offer.updatedAt || offer.createdAt,
       originalData: offer,
     };
   }

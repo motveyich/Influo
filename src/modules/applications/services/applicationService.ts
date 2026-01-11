@@ -65,7 +65,7 @@ export class ApplicationService {
 
   async getApplicationsByParticipant(userId: string): Promise<Application[]> {
     try {
-      return await apiClient.get<Application[]>(`/applications`);
+      return this.getApplications();
     } catch (error) {
       console.error('Failed to get applications by participant:', error);
       throw error;

@@ -65,8 +65,8 @@ export class OffersService {
       .from('offers')
       .select(`
         *,
-        advertiser:user_profiles!offers_advertiser_id_fkey(*),
-        influencer:user_profiles!offers_influencer_id_fkey(*)
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
       `);
 
     if (filters?.asInfluencer) {
@@ -96,8 +96,8 @@ export class OffersService {
       .from('offers')
       .select(`
         *,
-        advertiser:user_profiles!offers_advertiser_id_fkey(*),
-        influencer:user_profiles!offers_influencer_id_fkey(*)
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
       `)
       .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`)
       .order('created_at', { ascending: false });
@@ -117,8 +117,8 @@ export class OffersService {
       .from('offers')
       .select(`
         *,
-        advertiser:user_profiles!offers_advertiser_id_fkey(*),
-        influencer:user_profiles!offers_influencer_id_fkey(*)
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
       `)
       .eq('id', id)
       .maybeSingle();
@@ -180,8 +180,8 @@ export class OffersService {
       .eq('id', id)
       .select(`
         *,
-        advertiser:user_profiles!offers_advertiser_id_fkey(*),
-        influencer:user_profiles!offers_influencer_id_fkey(*)
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
       `)
       .single();
 
@@ -251,8 +251,8 @@ export class OffersService {
       .eq('id', id)
       .select(`
         *,
-        advertiser:user_profiles!offers_advertiser_id_fkey(*),
-        influencer:user_profiles!offers_influencer_id_fkey(*)
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
       `)
       .single();
 
@@ -266,25 +266,44 @@ export class OffersService {
   private transformOffer(offer: any) {
     return {
       id: offer.id,
+      offer_id: offer.offer_id || offer.id,
       advertiserId: offer.advertiser_id,
       influencerId: offer.influencer_id,
-      title: offer.title,
-      description: offer.description,
-      amount: offer.amount,
-      currency: offer.currency,
-      contentType: offer.content_type,
-      deadline: offer.deadline,
+      campaignId: offer.campaign_id || null,
+      influencerCardId: offer.influencer_card_id || null,
+      initiatedBy: offer.initiated_by || offer.advertiser_id,
+
+      title: offer.title || 'Без названия',
+      description: offer.description || '',
+      proposedRate: offer.proposed_rate || offer.amount || 0,
+      currency: offer.currency || 'RUB',
+      deliverables: offer.deliverables || [],
+
       status: offer.status,
+      currentStage: offer.current_stage || 'negotiation',
+
+      timeline: offer.timeline || {
+        deadline: offer.deadline,
+        startDate: offer.created_at,
+      },
+
+      details: offer.details || {},
+      metadata: offer.metadata || { viewCount: 0 },
+
+      influencerResponse: offer.influencer_response || 'pending',
+      advertiserResponse: offer.advertiser_response || 'pending',
+
       createdAt: offer.created_at,
-      updatedAt: offer.updated_at,
+      updatedAt: offer.updated_at || offer.created_at,
+
       advertiser: offer.advertiser ? {
-        id: offer.advertiser.user_id,
+        id: offer.advertiser.user_id || offer.advertiser.id,
         fullName: offer.advertiser.full_name,
         username: offer.advertiser.username,
         avatar: offer.advertiser.avatar,
       } : undefined,
       influencer: offer.influencer ? {
-        id: offer.influencer.user_id,
+        id: offer.influencer.user_id || offer.influencer.id,
         fullName: offer.influencer.full_name,
         username: offer.influencer.username,
         avatar: offer.influencer.avatar,
