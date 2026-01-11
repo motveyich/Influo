@@ -7,7 +7,6 @@ import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
 import toast from 'react-hot-toast';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { supabase } from '../../../core/supabase';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AdvertiserCardDisplayProps {
@@ -70,17 +69,20 @@ export function AdvertiserCardDisplay({
         return;
       }
 
+      const budgetInfo = card.budget.type === 'fixed'
+        ? `${card.budget.amount || 1000} руб.`
+        : `${card.budget.min || 0} - ${card.budget.max || 0} руб.`;
+
+      const message = `Заинтересован в участии в кампании "${card.campaignTitle}"
+
+Бюджет: ${budgetInfo}
+Срок: 2 недели
+Готов предоставить: Участие в кампании`;
+
       await applicationService.createApplication({
-        applicantId: currentUserId,
-        targetId: card.userId,
-        targetType: 'advertiser_card',
-        targetReferenceId: card.id,
-        applicationData: {
-          message: `Заинтересован в участии в кампании "${card.campaignTitle}"`,
-          proposedRate: card.budget.type === 'fixed' ? (card.budget.amount || 1000) : (card.budget.min || 1000),
-          timeline: '2 недели',
-          deliverables: ['Участие в кампании']
-        }
+        cardId: card.id,
+        cardType: 'advertiser',
+        message: message,
       });
 
       await cardAnalyticsService.trackCardInteraction('advertiser', card.id, currentUserId!, 'application');

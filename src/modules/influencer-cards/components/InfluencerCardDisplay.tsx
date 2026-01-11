@@ -5,7 +5,7 @@ import { Star, MapPin, Clock, Users, TrendingUp, Eye, Edit, Trash2, ToggleLeft, 
 import { applicationService } from '../../applications/services/applicationService';
 import { favoriteService } from '../../favorites/services/favoriteService';
 import { cardAnalyticsService } from '../../card-analytics/services/cardAnalyticsService';
-import { supabase } from '../../../core/supabase';
+import { profileService } from '../../profiles/services/profileService';
 import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { InfluencerCardDetailsModal } from './InfluencerCardDetailsModal';
@@ -54,12 +54,14 @@ export function InfluencerCardDisplay({
 
   const loadUserProfile = async () => {
     try {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name, avatar')
-        .eq('user_id', card.userId)
-        .maybeSingle();
-      if (data) setUserProfile(data);
+      const profile = await profileService.getProfile(card.userId);
+      if (profile) {
+        setUserProfile({
+          user_id: profile.userId,
+          full_name: profile.fullName,
+          avatar: profile.avatar,
+        });
+      }
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
@@ -93,42 +95,24 @@ export function InfluencerCardDisplay({
   const handleIntegrationSubmit = async (integrationDetails: any) => {
     setIsLoading(true);
     try {
+      const message = `Заинтересован в сотрудничестве с вашей карточкой на платформе ${card.platform}.
 
-      // Check for existing application to this user
-      const { data: existingApplication } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('applicant_id', currentUserId)
-        .eq('target_reference_id', card.id)
-        .eq('target_type', 'influencer_card')
-        .not('status', 'in', '(cancelled,withdrawn)')
-        .maybeSingle();
+Ниша: ${integrationDetails.niche}
+Описание продукта: ${integrationDetails.productDescription}
+Параметры интеграции: ${integrationDetails.integrationParameters}
 
-      if (existingApplication) {
-        toast.error('Вы уже отправили заявку на эту карточку');
-        setIsLoading(false);
-        return;
-      }
+Предлагаемая ставка: ${card.serviceDetails.pricing.post || 1000} руб.
+Срок: 2 недели
+Результаты: Пост в ${card.platform}`;
 
       await applicationService.createApplication({
-        applicantId: currentUserId,
-        targetId: card.userId,
-        targetType: 'influencer_card',
-        targetReferenceId: card.id,
-        applicationData: {
-          message: `Заинтересован в сотрудничестве с вашей карточкой на платформе ${card.platform}`,
-          proposedRate: card.serviceDetails.pricing.post || 1000,
-          timeline: '2 недели',
-          deliverables: ['Пост в Instagram'],
-          integrationDetails: {
-            niche: integrationDetails.niche,
-            productDescription: integrationDetails.productDescription,
-            integrationParameters: integrationDetails.integrationParameters
-          }
-        }
+        cardId: card.id,
+        cardType: 'influencer',
+        message: message,
       });
 
       await cardAnalyticsService.trackCardInteraction('influencer', card.id, currentUserId!, 'application');
+      setShowIntegrationModal(false);
       toast.success('Заявка отправлена успешно!');
     } catch (error: any) {
       console.error('Failed to apply:', error);

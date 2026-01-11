@@ -2,29 +2,41 @@ import { apiClient } from '../../../core/api';
 import { Application } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
-export class ApplicationService {
-  async createApplication(applicationData: Partial<Application>): Promise<Application> {
-    try {
-      this.validateApplicationData(applicationData);
+export interface CreateApplicationParams {
+  cardId: string;
+  cardType: 'influencer' | 'advertiser';
+  message?: string;
+}
 
+export class ApplicationService {
+  async createApplication(params: CreateApplicationParams): Promise<Application> {
+    try {
       const payload = {
-        targetId: applicationData.targetId,
-        targetType: applicationData.targetType,
-        targetReferenceId: applicationData.targetReferenceId,
-        applicationData: applicationData.applicationData,
+        cardId: params.cardId,
+        cardType: params.cardType,
+        message: params.message || '',
       };
 
       const application = await apiClient.post<Application>('/applications', payload);
 
       analytics.track('application_created', {
         application_id: application.id,
-        target_type: applicationData.targetType,
-        target_id: applicationData.targetId
+        card_type: params.cardType,
+        card_id: params.cardId
       });
 
       return application;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create application:', error);
+
+      if (error.message?.includes('already applied')) {
+        throw new Error('Вы уже отправили заявку на эту карточку');
+      } else if (error.message?.includes('own card')) {
+        throw new Error('Нельзя откликнуться на свою карточку');
+      } else if (error.status === 409 || error.statusCode === 409) {
+        throw new Error('Вы уже отправили заявку на эту карточку');
+      }
+
       throw error;
     }
   }
@@ -66,15 +78,6 @@ export class ApplicationService {
     } catch (error) {
       console.error('Failed to reject application:', error);
       throw error;
-    }
-  }
-
-  private validateApplicationData(applicationData: Partial<Application>): void {
-    if (!applicationData.targetId || !applicationData.targetType) {
-      throw new Error('Target ID and type are required');
-    }
-    if (!applicationData.applicationData) {
-      throw new Error('Application data is required');
     }
   }
 }
