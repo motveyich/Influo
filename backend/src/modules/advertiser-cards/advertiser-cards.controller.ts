@@ -52,6 +52,8 @@ export class AdvertiserCardsController {
   @ApiQuery({ name: 'maxBudget', required: false, description: 'Maximum budget' })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
   @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page' })
   @ApiResponse({ status: 200, description: 'List of advertiser cards' })
   async findAll(
     @Query('platform') platform?: string,
@@ -59,6 +61,8 @@ export class AdvertiserCardsController {
     @Query('maxBudget', new ParseIntPipe({ optional: true })) maxBudget?: number,
     @Query('userId') userId?: string,
     @Query('isActive') isActive?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
   ) {
     return this.advertiserCardsService.findAll({
       platform,
@@ -66,6 +70,8 @@ export class AdvertiserCardsController {
       maxBudget,
       userId,
       isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+      page,
+      limit,
     });
   }
 

@@ -68,7 +68,7 @@ export class AdvertiserCardsService {
     return this.transformCard(card);
   }
 
-  async findAll(filters?: { platform?: string; minBudget?: number; maxBudget?: number; userId?: string; isActive?: boolean }) {
+  async findAll(filters?: { platform?: string; minBudget?: number; maxBudget?: number; userId?: string; isActive?: boolean; page?: number; limit?: number }) {
     const supabase = this.supabaseService.getAdminClient();
 
     let query = supabase
@@ -106,7 +106,16 @@ export class AdvertiserCardsService {
       query = query.eq('user_id', filters.userId);
     }
 
-    const { data: cards, error } = await query.order('created_at', { ascending: false });
+    query = query.order('created_at', { ascending: false });
+
+    // Apply pagination if provided
+    if (filters?.page && filters?.limit) {
+      const from = (filters.page - 1) * filters.limit;
+      const to = from + filters.limit - 1;
+      query = query.range(from, to);
+    }
+
+    const { data: cards, error } = await query;
 
     if (error) {
       this.logger.error(`Failed to fetch advertiser cards: ${error.message}`, error);
