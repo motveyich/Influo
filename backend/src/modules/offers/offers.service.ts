@@ -121,7 +121,7 @@ export class OffersService {
         advertiser:advertiser_id(*),
         influencer:influencer_id(*)
       `)
-      .eq('id', id)
+      .eq('offer_id', id)
       .maybeSingle();
 
     if (error || !offer) {
@@ -141,7 +141,7 @@ export class OffersService {
     const { data: existingOffer } = await supabase
       .from('offers')
       .select('advertiser_id, status')
-      .eq('id', id)
+      .eq('offer_id', id)
       .maybeSingle();
 
     if (!existingOffer) {
@@ -178,7 +178,7 @@ export class OffersService {
     const { data: updatedOffer, error } = await supabase
       .from('offers')
       .update(updateData)
-      .eq('id', id)
+      .eq('offer_id', id)
       .select(`
         *,
         advertiser:advertiser_id(*),
@@ -216,22 +216,37 @@ export class OffersService {
   private async updateStatus(id: string, userId: string, status: string, requiredRole: 'advertiser' | 'influencer') {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: offer } = await supabase
+    const { data: offer, error: fetchError } = await supabase
       .from('offers')
-      .select('advertiser_id, influencer_id, status')
-      .eq('id', id)
+      .select('advertiser_id, influencer_id, status, initiated_by')
+      .eq('offer_id', id)
       .maybeSingle();
 
-    if (!offer) {
+    if (fetchError || !offer) {
+      this.logger.error(`Offer not found: ${id}`, fetchError);
       throw new NotFoundException('Offer not found');
     }
 
-    const hasPermission = requiredRole === 'advertiser'
-      ? offer.advertiser_id === userId
-      : offer.influencer_id === userId;
+    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('You are not a participant of this offer');
+    }
 
-    if (!hasPermission) {
-      throw new ForbiddenException(`Only ${requiredRole} can perform this action`);
+    const initiatedBy = offer.initiated_by || offer.advertiser_id;
+    const isRecipient = userId !== initiatedBy;
+    const isSender = userId === initiatedBy;
+
+    if (status === 'accepted' && !isRecipient) {
+      throw new ForbiddenException('Only the recipient can accept the offer');
+    }
+
+    if (status === 'cancelled') {
+      if (requiredRole === 'advertiser' && !isSender) {
+        throw new ForbiddenException('Only the sender can cancel the offer');
+      }
+      if (requiredRole === 'influencer' && !isRecipient) {
+        throw new ForbiddenException('Only the recipient can decline the offer');
+      }
     }
 
     const validTransitions: Record<string, string[]> = {
@@ -249,7 +264,7 @@ export class OffersService {
     const { data: updated, error } = await supabase
       .from('offers')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('offer_id', id)
       .select(`
         *,
         advertiser:advertiser_id(*),
@@ -258,15 +273,17 @@ export class OffersService {
       .single();
 
     if (error) {
+      this.logger.error(`Failed to update offer status: ${error.message}`, error);
       throw new ConflictException('Failed to update offer status');
     }
 
+    this.logger.log(`Offer ${id} status updated to ${status} by user ${userId}`);
     return this.transformOffer(updated);
   }
 
   private transformOffer(offer: any) {
     return {
-      id: offer.id,
+      id: offer.offer_id || offer.id,
       offer_id: offer.offer_id || offer.id,
       advertiserId: offer.advertiser_id,
       influencerId: offer.influencer_id,

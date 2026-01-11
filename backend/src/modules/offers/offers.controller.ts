@@ -99,11 +99,10 @@ export class OffersController {
   }
 
   @Post(':id/accept')
-  @Roles('influencer')
   @ApiOperation({ summary: 'Accept an offer' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer accepted' })
-  @ApiResponse({ status: 403, description: 'Only influencer can accept' })
+  @ApiResponse({ status: 403, description: 'Only recipient can accept' })
   async accept(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
@@ -112,11 +111,10 @@ export class OffersController {
   }
 
   @Post(':id/decline')
-  @Roles('influencer')
   @ApiOperation({ summary: 'Decline an offer' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer declined' })
-  @ApiResponse({ status: 403, description: 'Only influencer can decline' })
+  @ApiResponse({ status: 403, description: 'Only recipient can decline' })
   async decline(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
@@ -125,7 +123,6 @@ export class OffersController {
   }
 
   @Post(':id/in-progress')
-  @Roles('influencer')
   @ApiOperation({ summary: 'Mark offer as in progress' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer marked as in progress' })
@@ -137,7 +134,6 @@ export class OffersController {
   }
 
   @Post(':id/complete')
-  @Roles('influencer')
   @ApiOperation({ summary: 'Mark offer as completed' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer marked as completed' })
@@ -149,11 +145,10 @@ export class OffersController {
   }
 
   @Post(':id/cancel')
-  @Roles('advertiser')
   @ApiOperation({ summary: 'Cancel an offer' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer cancelled' })
-  @ApiResponse({ status: 403, description: 'Only advertiser can cancel' })
+  @ApiResponse({ status: 403, description: 'Only sender can cancel' })
   async cancel(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
