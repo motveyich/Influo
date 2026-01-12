@@ -23,19 +23,29 @@ class BlacklistService {
 
   async addToBlacklist(blockedUserId: string, reason?: string): Promise<void> {
     try {
+      if (!blockedUserId || blockedUserId.trim() === '') {
+        throw new Error('ID пользователя не указан');
+      }
+
       await apiClient.post('/blacklist', { blockedUserId, reason });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to blacklist:', error);
-      throw error;
+      const errorMessage = error.response?.data?.message || error.message || 'Не удалось добавить пользователя в чёрный список';
+      throw new Error(errorMessage);
     }
   }
 
   async removeFromBlacklist(blockedUserId: string): Promise<void> {
     try {
+      if (!blockedUserId || blockedUserId.trim() === '') {
+        throw new Error('ID пользователя не указан');
+      }
+
       await apiClient.delete(`/blacklist/${blockedUserId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing from blacklist:', error);
-      throw error;
+      const errorMessage = error.response?.data?.message || error.message || 'Не удалось удалить пользователя из чёрного списка';
+      throw new Error(errorMessage);
     }
   }
 

@@ -40,6 +40,7 @@ export function OffersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
+  const [selectedCollaborationType, setSelectedCollaborationType] = useState<'application' | 'offer'>('offer');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
@@ -121,16 +122,14 @@ export function OffersPage() {
   };
 
   const handleViewDetails = (collab: UnifiedCollaboration) => {
-    if (collab.type === 'offer') {
-      setSelectedOffer(collab.originalData as CollaborationOffer);
-      setShowDetailsModal(true);
-    } else {
-      toast.info('Детали заявок скоро будут доступны');
-    }
+    setSelectedOffer(collab.originalData as CollaborationOffer);
+    setSelectedCollaborationType(collab.type);
+    setShowDetailsModal(true);
   };
 
-  const handleViewOfferDetails = (offer: CollaborationOffer) => {
+  const handleViewOfferDetails = (offer: CollaborationOffer, collaborationType: 'application' | 'offer' = 'offer') => {
     setSelectedOffer(offer);
+    setSelectedCollaborationType(collaborationType);
     setShowDetailsModal(true);
   };
 
@@ -510,6 +509,7 @@ export function OffersPage() {
             offer={selectedOffer}
             currentUserId={currentUserId}
             onOfferUpdated={handleOfferUpdated}
+            collaborationType={selectedCollaborationType}
           />
         )}
 

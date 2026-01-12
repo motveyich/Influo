@@ -58,11 +58,11 @@ export function OfferCard({
   const [partnerProfile, setPartnerProfile] = React.useState<any>(null);
 
   React.useEffect(() => {
-    if (!paymentWindowsLoaded) {
+    if (!paymentWindowsLoaded && collaborationType === 'offer') {
       loadPaymentWindows();
     }
     loadPartnerProfile();
-  }, []);
+  }, [collaborationType]);
 
   const loadPartnerProfile = async () => {
     try {
@@ -91,7 +91,6 @@ export function OfferCard({
       setPaymentWindowsLoaded(true);
     } catch (error) {
       console.error('Failed to load payment windows:', error);
-      toast.error('Не удалось загрузить окна оплаты');
     } finally {
       setPaymentWindowsLoading(false);
     }
@@ -543,97 +542,99 @@ export function OfferCard({
         </div>
       </div>
 
-      {/* Payment Windows Section */}
-      <div className="border-t border-gray-200 pt-4 mb-4">
-        <button
-          onClick={() => setShowPaymentWindows(!showPaymentWindows)}
-          className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <div className="flex items-center space-x-2">
-            <CreditCard className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-900">
-              Окна оплаты ({paymentRequests.length})
-            </span>
-          </div>
-          {showPaymentWindows ? (
-            <ChevronUp className="w-4 h-4 text-gray-600" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-600" />
-          )}
-        </button>
-
-        {showPaymentWindows && (
-          <div className="mt-3 space-y-2">
-            {paymentWindowsLoading ? (
-              <div className="flex items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-sm text-gray-600">Загрузка окон оплаты...</span>
-              </div>
-            ) : paymentRequests.length === 0 ? (
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <CreditCard className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Окна оплаты не созданы</p>
-                {userRole === 'influencer' && ['accepted', 'in_progress'].includes(offer.status) && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Вы можете создать окно оплаты в детальном просмотре
-                  </p>
-                )}
-              </div>
+      {/* Payment Windows Section - only for offers */}
+      {collaborationType === 'offer' && (
+        <div className="border-t border-gray-200 pt-4 mb-4">
+          <button
+            onClick={() => setShowPaymentWindows(!showPaymentWindows)}
+            className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-gray-900">
+                Окна оплаты ({paymentRequests.length})
+              </span>
+            </div>
+            {showPaymentWindows ? (
+              <ChevronUp className="w-4 h-4 text-gray-600" />
             ) : (
-              paymentRequests.map((payment) => (
-                <div key={payment.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatCurrency(payment.amount, payment.currency)}
-                        </p>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPaymentStatusColor(payment.status)}`}>
-                          {getPaymentStatusLabel(payment.status)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600">
-                        {payment.paymentType === 'prepay' ? 'Предоплата' : 
-                         payment.paymentType === 'postpay' ? 'Постоплата' : 'Полная оплата'} • 
-                        {payment.paymentMethod}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {formatDistanceToNow(parseISO(payment.createdAt), { addSuffix: true })}
-                    </span>
-                  </div>
-                  
-                  {payment.instructions && (
-                    <p className="text-xs text-gray-600 mt-2 p-2 bg-white rounded border">
-                      {payment.instructions}
+              <ChevronDown className="w-4 h-4 text-gray-600" />
+            )}
+          </button>
+
+          {showPaymentWindows && (
+            <div className="mt-3 space-y-2">
+              {paymentWindowsLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-gray-600">Загрузка окон оплаты...</span>
+                </div>
+              ) : paymentRequests.length === 0 ? (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <CreditCard className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Окна оплаты не созданы</p>
+                  {userRole === 'influencer' && ['accepted', 'in_progress'].includes(offer.status) && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Вы можете создать окно оплаты в детальном просмотре
                     </p>
                   )}
-
-                  {/* Payment Details */}
-                  {payment.paymentDetails && Object.keys(payment.paymentDetails).length > 0 && (
-                    <div className="mt-2 p-2 bg-white rounded border">
-                      <div className="grid grid-cols-1 gap-1 text-xs text-gray-700">
-                        {payment.paymentDetails.bankAccount && (
-                          <p><span className="font-medium">Счет:</span> {payment.paymentDetails.bankAccount}</p>
-                        )}
-                        {payment.paymentDetails.cardNumber && (
-                          <p><span className="font-medium">Карта:</span> {payment.paymentDetails.cardNumber}</p>
-                        )}
-                        {payment.paymentDetails.paypalEmail && (
-                          <p><span className="font-medium">PayPal:</span> {payment.paymentDetails.paypalEmail}</p>
-                        )}
-                        {payment.paymentDetails.accountHolder && (
-                          <p><span className="font-medium">Владелец:</span> {payment.paymentDetails.accountHolder}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+              ) : (
+                paymentRequests.map((payment) => (
+                  <div key={payment.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </p>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPaymentStatusColor(payment.status)}`}>
+                            {getPaymentStatusLabel(payment.status)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          {payment.paymentType === 'prepay' ? 'Предоплата' :
+                           payment.paymentType === 'postpay' ? 'Постоплата' : 'Полная оплата'} •
+                          {payment.paymentMethod}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {formatDistanceToNow(parseISO(payment.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+
+                    {payment.instructions && (
+                      <p className="text-xs text-gray-600 mt-2 p-2 bg-white rounded border">
+                        {payment.instructions}
+                      </p>
+                    )}
+
+                    {/* Payment Details */}
+                    {payment.paymentDetails && Object.keys(payment.paymentDetails).length > 0 && (
+                      <div className="mt-2 p-2 bg-white rounded border">
+                        <div className="grid grid-cols-1 gap-1 text-xs text-gray-700">
+                          {payment.paymentDetails.bankAccount && (
+                            <p><span className="font-medium">Счет:</span> {payment.paymentDetails.bankAccount}</p>
+                          )}
+                          {payment.paymentDetails.cardNumber && (
+                            <p><span className="font-medium">Карта:</span> {payment.paymentDetails.cardNumber}</p>
+                          )}
+                          {payment.paymentDetails.paypalEmail && (
+                            <p><span className="font-medium">PayPal:</span> {payment.paymentDetails.paypalEmail}</p>
+                          )}
+                          {payment.paymentDetails.accountHolder && (
+                            <p><span className="font-medium">Владелец:</span> {payment.paymentDetails.accountHolder}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">

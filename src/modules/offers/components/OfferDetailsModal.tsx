@@ -19,14 +19,16 @@ interface OfferDetailsModalProps {
   offer: CollaborationOffer;
   currentUserId: string;
   onOfferUpdated: (offer: CollaborationOffer) => void;
+  collaborationType?: 'application' | 'offer';
 }
 
-export function OfferDetailsModal({ 
-  isOpen, 
-  onClose, 
-  offer, 
-  currentUserId, 
-  onOfferUpdated 
+export function OfferDetailsModal({
+  isOpen,
+  onClose,
+  offer,
+  currentUserId,
+  onOfferUpdated,
+  collaborationType = 'offer'
 }: OfferDetailsModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -111,7 +113,6 @@ export function OfferDetailsModal({
       await loadInitiatorProfile();
     } catch (error) {
       console.error('Failed to load offer details:', error);
-      toast.error('Не удалось загрузить детали предложения');
     } finally {
       setIsLoading(false);
     }
@@ -164,6 +165,12 @@ export function OfferDetailsModal({
       return;
     }
 
+    // Applications cannot use status update beyond accept/decline
+    if (collaborationType === 'application' && !['accepted', 'declined'].includes(newStatus)) {
+      toast.error('Это действие недоступно для заявок');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
@@ -171,8 +178,8 @@ export function OfferDetailsModal({
       await loadOfferDetails();
 
       const statusMessages = {
-        'accepted': 'Предложение принято',
-        'declined': 'Предложение отклонено',
+        'accepted': collaborationType === 'application' ? 'Заявка принята' : 'Предложение принято',
+        'declined': collaborationType === 'application' ? 'Заявка отклонена' : 'Предложение отклонено',
         'cancelled': 'Предложение отменено',
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
@@ -283,6 +290,19 @@ export function OfferDetailsModal({
   const getAvailableActions = () => {
     const actions = [];
 
+    // For applications, only show basic accept/decline actions
+    if (collaborationType === 'application') {
+      if (offer.status === 'pending' || offer.status === 'sent') {
+        if (isReceiver) {
+          actions.push(
+            { label: 'Принять заявку', action: 'accepted', style: 'success', icon: CheckCircle },
+            { label: 'Отклонить', action: 'declined', style: 'danger', icon: XCircle }
+          );
+        }
+      }
+      return actions;
+    }
+
     // Pending/Sent status actions (treat 'sent' same as 'pending')
     if (offer.status === 'pending' || offer.status === 'sent') {
       if (isReceiver) {
@@ -334,6 +354,7 @@ export function OfferDetailsModal({
       status: offer.status,
       isReceiver,
       isInitiator,
+      collaborationType,
       actionsCount: actions.length,
       actions: actions.map(a => a.label)
     });
@@ -346,8 +367,9 @@ export function OfferDetailsModal({
   };
 
   const canCreatePaymentRequest = () => {
-    return isInfluencer && 
-           ['accepted', 'in_progress'].includes(offer.status) && 
+    return collaborationType === 'offer' &&
+           isInfluencer &&
+           ['accepted', 'in_progress'].includes(offer.status) &&
            !getActivePaymentRequest();
   };
 

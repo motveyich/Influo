@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../core/supabase';
+import { supabase, TABLES, isSupabaseConfigured } from '../core/supabase';
 import { ContentReport, ReportType } from '../core/types';
 import { moderationService } from './moderationService';
 import { analytics } from '../core/analytics';
@@ -13,8 +13,12 @@ export class ReportService {
     evidence?: Record<string, any>
   ): Promise<ContentReport> {
     try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('База данных не настроена');
+      }
+
       // Check for duplicate reports
-      const { data: existingReport } = await supabase
+      const { data: existingReport, error: checkError } = await supabase
         .from(TABLES.CONTENT_REPORTS)
         .select('id')
         .eq('reporter_id', reporterId)
@@ -22,6 +26,11 @@ export class ReportService {
         .eq('target_id', targetId)
         .eq('status', 'pending')
         .maybeSingle();
+
+      if (checkError) {
+        console.error('Failed to check for duplicate reports:', checkError);
+        throw new Error('Не удалось проверить существующие жалобы');
+      }
 
       if (existingReport) {
         throw new Error('Вы уже отправили жалобу на этот контент');
@@ -47,26 +56,34 @@ export class ReportService {
       });
 
       return report;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create report:', error);
-      throw error;
+      throw new Error(error.message || 'Не удалось отправить жалобу');
     }
   }
 
   async getUserReports(userId: string): Promise<ContentReport[]> {
     try {
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase не настроен. Reports недоступны.');
+        return [];
+      }
+
       const { data, error } = await supabase
         .from(TABLES.CONTENT_REPORTS)
         .select('*')
         .eq('reporter_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to get user reports:', error);
+        return [];
+      }
 
       return data.map(report => this.transformFromDatabase(report));
     } catch (error) {
       console.error('Failed to get user reports:', error);
-      throw error;
+      return [];
     }
   }
 
