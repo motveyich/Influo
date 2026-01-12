@@ -77,4 +77,52 @@ export class ApplicationsController {
   ) {
     return this.applicationsService.decline(id, userId);
   }
+
+  @Post(':id/in-progress')
+  @ApiOperation({ summary: 'Mark application as in progress' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Application marked as in progress' })
+  @ApiResponse({ status: 403, description: 'Not authorized to update this application' })
+  async markInProgress(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.markInProgress(id, userId);
+  }
+
+  @Post(':id/complete')
+  @ApiOperation({ summary: 'Mark application as completed' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Application marked as completed' })
+  @ApiResponse({ status: 403, description: 'Not authorized to update this application' })
+  async complete(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.complete(id, userId);
+  }
+
+  @Post(':id/terminate')
+  @ApiOperation({ summary: 'Terminate an application' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Application terminated' })
+  @ApiResponse({ status: 403, description: 'Not authorized to terminate this application' })
+  async terminate(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.terminate(id, userId);
+  }
+
+  @Post(':id/cancel')
+  @ApiOperation({ summary: 'Cancel an application' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Application cancelled' })
+  @ApiResponse({ status: 403, description: 'Only applicant can cancel' })
+  async cancel(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.cancel(id, userId);
+  }
 }

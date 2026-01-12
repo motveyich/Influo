@@ -130,6 +130,15 @@ export class OfferService {
     }
   }
 
+  async terminateOffer(offerId: string): Promise<CollaborationOffer> {
+    try {
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/terminate`);
+    } catch (error) {
+      console.error('Failed to terminate offer:', error);
+      throw error;
+    }
+  }
+
   async updateOfferStatus(
     offerId: string,
     newStatus: OfferStatus,
@@ -154,7 +163,7 @@ export class OfferService {
           return await this.markCompleted(offerId);
 
         case 'terminated':
-          return await this.cancelOffer(offerId);
+          return await this.terminateOffer(offerId);
 
         default:
           throw new Error(`Unsupported status transition: ${newStatus}`);

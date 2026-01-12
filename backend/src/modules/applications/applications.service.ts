@@ -129,19 +129,31 @@ export class ApplicationsService {
   }
 
   async accept(id: string, userId: string) {
-    return this.updateStatus(id, userId, 'accepted');
+    return this.updateStatus(id, userId, 'accepted', true);
   }
 
   async decline(id: string, userId: string) {
-    return this.updateStatus(id, userId, 'declined');
+    return this.updateStatus(id, userId, 'declined', true);
   }
 
-  private async updateStatus(id: string, userId: string, status: string) {
+  async markInProgress(id: string, userId: string) {
+    return this.updateStatus(id, userId, 'in_progress', false);
+  }
+
+  async complete(id: string, userId: string) {
+    return this.updateStatus(id, userId, 'completed', false);
+  }
+
+  async terminate(id: string, userId: string) {
+    return this.updateStatus(id, userId, 'cancelled', false);
+  }
+
+  async cancel(id: string, userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: application } = await supabase
       .from('applications')
-      .select('target_id, status')
+      .select('applicant_id, status')
       .eq('id', id)
       .maybeSingle();
 
@@ -149,12 +161,50 @@ export class ApplicationsService {
       throw new NotFoundException('Application not found');
     }
 
-    if (application.target_id !== userId) {
-      throw new ForbiddenException('Only card owner can change application status');
+    if (application.applicant_id !== userId) {
+      throw new ForbiddenException('Only applicant can cancel application');
     }
 
-    if (application.status !== 'sent') {
+    const { data: updated, error } = await supabase
+      .from('applications')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new ConflictException('Failed to cancel application');
+    }
+
+    return this.transformApplication(updated);
+  }
+
+  private async updateStatus(id: string, userId: string, status: string, requirePending = false) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: application } = await supabase
+      .from('applications')
+      .select('applicant_id, target_id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const isParticipant = application.target_id === userId || application.applicant_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this application');
+    }
+
+    if (requirePending && application.status !== 'sent') {
       throw new ConflictException('Application already processed');
+    }
+
+    if (status === 'accepted' || status === 'declined') {
+      if (application.target_id !== userId) {
+        throw new ForbiddenException('Only card owner can accept or decline');
+      }
     }
 
     const { data: updated, error } = await supabase

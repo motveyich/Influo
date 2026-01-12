@@ -209,11 +209,15 @@ export class OffersService {
     return this.updateStatus(id, userId, 'completed', 'influencer');
   }
 
+  async terminate(id: string, userId: string) {
+    return this.updateStatus(id, userId, 'terminated', null);
+  }
+
   async cancel(id: string, userId: string) {
     return this.updateStatus(id, userId, 'cancelled', 'advertiser');
   }
 
-  private async updateStatus(id: string, userId: string, status: string, requiredRole: 'advertiser' | 'influencer') {
+  private async updateStatus(id: string, userId: string, status: string, requiredRole: 'advertiser' | 'influencer' | null) {
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: offer, error: fetchError } = await supabase
@@ -250,11 +254,13 @@ export class OffersService {
     }
 
     const validTransitions: Record<string, string[]> = {
-      pending: ['accepted', 'cancelled'],
-      accepted: ['in_progress', 'cancelled'],
-      in_progress: ['completed', 'cancelled'],
+      pending: ['accepted', 'cancelled', 'declined'],
+      accepted: ['in_progress', 'cancelled', 'terminated'],
+      in_progress: ['completed', 'cancelled', 'terminated'],
       completed: [],
       cancelled: [],
+      terminated: [],
+      declined: [],
     };
 
     if (!validTransitions[offer.status]?.includes(status)) {

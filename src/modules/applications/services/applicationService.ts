@@ -92,9 +92,45 @@ export class ApplicationService {
 
   async rejectApplication(applicationId: string): Promise<Application> {
     try {
-      return await apiClient.post<Application>(`/applications/${applicationId}/reject`);
+      return await apiClient.post<Application>(`/applications/${applicationId}/decline`);
     } catch (error) {
       console.error('Failed to reject application:', error);
+      throw error;
+    }
+  }
+
+  async markInProgress(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/in-progress`);
+    } catch (error) {
+      console.error('Failed to mark application in progress:', error);
+      throw error;
+    }
+  }
+
+  async markCompleted(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/complete`);
+    } catch (error) {
+      console.error('Failed to mark application completed:', error);
+      throw error;
+    }
+  }
+
+  async terminateApplication(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/terminate`);
+    } catch (error) {
+      console.error('Failed to terminate application:', error);
+      throw error;
+    }
+  }
+
+  async cancelApplication(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/cancel`);
+    } catch (error) {
+      console.error('Failed to cancel application:', error);
       throw error;
     }
   }

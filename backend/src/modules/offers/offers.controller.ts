@@ -144,6 +144,18 @@ export class OffersController {
     return this.offersService.markCompleted(id, userId);
   }
 
+  @Post(':id/terminate')
+  @ApiOperation({ summary: 'Terminate an offer' })
+  @ApiParam({ name: 'id', description: 'Offer ID' })
+  @ApiResponse({ status: 200, description: 'Offer terminated' })
+  @ApiResponse({ status: 403, description: 'Not authorized to terminate this offer' })
+  async terminate(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.offersService.terminate(id, userId);
+  }
+
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancel an offer' })
   @ApiParam({ name: 'id', description: 'Offer ID' })

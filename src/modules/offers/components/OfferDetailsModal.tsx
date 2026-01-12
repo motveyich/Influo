@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CollaborationOffer, PaymentRequest, CollaborationReview, OfferStatus } from '../../../core/types';
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
@@ -31,6 +32,7 @@ export function OfferDetailsModal({
   onOfferUpdated,
   collaborationType = 'offer'
 }: OfferDetailsModalProps) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   useBodyScrollLock(isOpen);
@@ -168,19 +170,32 @@ export function OfferDetailsModal({
 
     // Handle applications separately
     if (collaborationType === 'application') {
-      if (!['accepted', 'declined'].includes(newStatus)) {
-        toast.error('Это действие недоступно для заявок');
-        return;
-      }
-
       try {
         setIsLoading(true);
         let updatedApplication;
 
-        if (newStatus === 'accepted') {
-          updatedApplication = await applicationService.acceptApplication(offer.id);
-        } else if (newStatus === 'declined') {
-          updatedApplication = await applicationService.rejectApplication(offer.id);
+        switch (newStatus) {
+          case 'accepted':
+            updatedApplication = await applicationService.acceptApplication(offer.id);
+            break;
+          case 'declined':
+            updatedApplication = await applicationService.rejectApplication(offer.id);
+            break;
+          case 'in_progress':
+            updatedApplication = await applicationService.markInProgress(offer.id);
+            break;
+          case 'completed':
+            updatedApplication = await applicationService.markCompleted(offer.id);
+            break;
+          case 'terminated':
+            updatedApplication = await applicationService.terminateApplication(offer.id);
+            break;
+          case 'cancelled':
+            updatedApplication = await applicationService.cancelApplication(offer.id);
+            break;
+          default:
+            toast.error('Это действие недоступно для заявок');
+            return;
         }
 
         onOfferUpdated(updatedApplication);
@@ -188,10 +203,24 @@ export function OfferDetailsModal({
 
         const statusMessages = {
           'accepted': 'Заявка принята',
-          'declined': 'Заявка отклонена'
+          'declined': 'Заявка отклонена',
+          'in_progress': 'Работа начата',
+          'completed': 'Сотрудничество завершено',
+          'terminated': 'Сотрудничество расторгнуто',
+          'cancelled': 'Заявка отменена'
         };
 
         toast.success(statusMessages[newStatus] || 'Статус обновлен');
+
+        if (newStatus === 'completed' || newStatus === 'terminated') {
+          const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId);
+          if (canLeaveReview) {
+            setCanReview(true);
+            setTimeout(() => {
+              setShowReviewModal(true);
+            }, 500);
+          }
+        }
       } catch (error: any) {
         console.error('Failed to update application status:', error);
         toast.error(error.message || 'Не удалось обновить статус');
@@ -1048,10 +1077,33 @@ export function OfferDetailsModal({
                 </div>
               )}
 
-              {/* Blacklist Action */}
+              {/* Universal Actions */}
               <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Управление</h3>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Управление</h3>
                 <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      const otherUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+                      navigate(`/app/chat?userId=${otherUserId}`);
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Перейти в чат</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const otherUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+                      setProfileUserId(otherUserId);
+                      setShowProfileModal(true);
+                    }}
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Просмотр профиля</span>
+                  </button>
+
                   <button
                     onClick={handleToggleBlacklist}
                     disabled={isLoading}
