@@ -80,6 +80,23 @@ export class BlacklistService {
     return { message: 'User unblocked successfully' };
   }
 
+  async unblockUserByUserId(userId: string, blockedUserId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: blacklist } = await supabase
+      .from('blacklist')
+      .select('id, blocker_id')
+      .eq('blocker_id', userId)
+      .eq('blocked_id', blockedUserId)
+      .maybeSingle();
+
+    if (!blacklist) {
+      throw new NotFoundException('Blacklist entry not found');
+    }
+
+    return this.unblockUser(userId, blacklist.id);
+  }
+
   async findAll(userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 

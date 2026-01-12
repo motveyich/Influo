@@ -41,7 +41,7 @@ class BlacklistService {
         throw new Error('ID пользователя не указан');
       }
 
-      await apiClient.delete(`/blacklist/${blockedUserId}`);
+      await apiClient.delete(`/blacklist/by-user/${blockedUserId}`);
     } catch (error: any) {
       console.error('Error removing from blacklist:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Не удалось удалить пользователя из чёрного списка';

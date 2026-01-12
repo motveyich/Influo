@@ -93,27 +93,42 @@ export function OfferDetailsModal({
     try {
       setIsLoading(true);
 
-      const [paymentData, reviewData, historyData, reviewPermission] = await Promise.all([
-        paymentRequestService.getOfferPaymentRequests(offer.id),
-        reviewService.getOfferReviews(offer.id),
-        offerService.getOfferHistory(offer.id),
-        reviewService.canUserReview(offer.id, currentUserId)
-      ]);
+      // For applications, only load blacklist status and initiator profile
+      // Don't load payment requests, reviews, or history as they use offer-specific endpoints
+      if (collaborationType === 'application') {
+        // Check blacklist status
+        const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+        if (targetUserId) {
+          const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
+          setIsBlacklisted(blacklisted);
+        }
 
-      setPaymentRequests(paymentData);
-      setReviews(reviewData);
-      setOfferHistory(historyData);
-      setCanReview(reviewPermission);
+        // Load initiator profile
+        await loadInitiatorProfile();
+      } else {
+        // For offers, load all details
+        const [paymentData, reviewData, historyData, reviewPermission] = await Promise.all([
+          paymentRequestService.getOfferPaymentRequests(offer.id),
+          reviewService.getOfferReviews(offer.id),
+          offerService.getOfferHistory(offer.id),
+          reviewService.canUserReview(offer.id, currentUserId)
+        ]);
 
-      // Check blacklist status
-      const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
-      if (targetUserId) {
-        const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
-        setIsBlacklisted(blacklisted);
+        setPaymentRequests(paymentData);
+        setReviews(reviewData);
+        setOfferHistory(historyData);
+        setCanReview(reviewPermission);
+
+        // Check blacklist status
+        const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+        if (targetUserId) {
+          const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
+          setIsBlacklisted(blacklisted);
+        }
+
+        // Load initiator profile
+        await loadInitiatorProfile();
       }
-
-      // Загрузить профиль инициатора (отправителя)
-      await loadInitiatorProfile();
     } catch (error) {
       console.error('Failed to load offer details:', error);
     } finally {
@@ -350,19 +365,57 @@ export function OfferDetailsModal({
   const getAvailableActions = () => {
     const actions = [];
 
-    // For applications, only show basic accept/decline actions
+    // For applications, show complete workflow actions
     if (collaborationType === 'application') {
+      // Pending/Sent status - receiver can accept/decline, initiator can cancel
       if (offer.status === 'pending' || offer.status === 'sent') {
         if (isReceiver) {
           actions.push(
             { label: 'Принять заявку', action: 'accepted', style: 'success', icon: CheckCircle },
             { label: 'Отклонить', action: 'declined', style: 'danger', icon: XCircle }
           );
+        } else if (isInitiator) {
+          actions.push(
+            { label: 'Отменить заявку', action: 'cancelled', style: 'neutral', icon: XCircle }
+          );
         }
       }
+
+      // Accepted status - can start work or terminate
+      if (offer.status === 'accepted') {
+        actions.push(
+          { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play },
+          { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
+        );
+      }
+
+      // In progress - receiver can complete, both can terminate
+      if (offer.status === 'in_progress') {
+        if (isReceiver) {
+          actions.push(
+            { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy }
+          );
+        }
+        actions.push(
+          { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
+        );
+      }
+
+      // Completed/Terminated/Declined/Cancelled - no actions for applications
+      // (applications don't have payment/review functionality)
+
+      console.log('🎬 [OfferDetailsModal] Application Actions:', {
+        status: offer.status,
+        isReceiver,
+        isInitiator,
+        actionsCount: actions.length,
+        actions: actions.map(a => a.label)
+      });
+
       return actions;
     }
 
+    // For offers, show full workflow with payments and reviews
     // Pending/Sent status actions (treat 'sent' same as 'pending')
     if (offer.status === 'pending' || offer.status === 'sent') {
       if (isReceiver) {
@@ -410,11 +463,10 @@ export function OfferDetailsModal({
       );
     }
 
-    console.log('🎬 [OfferDetailsModal] Available Actions:', {
+    console.log('🎬 [OfferDetailsModal] Offer Actions:', {
       status: offer.status,
       isReceiver,
       isInitiator,
-      collaborationType,
       actionsCount: actions.length,
       actions: actions.map(a => a.label)
     });
@@ -771,7 +823,8 @@ export function OfferDetailsModal({
                 </div>
               </div>
 
-              {/* Payment Windows Section */}
+              {/* Payment Windows Section - Only for offers, not applications */}
+              {collaborationType === 'offer' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Окна оплаты</h3>
@@ -919,9 +972,10 @@ export function OfferDetailsModal({
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Reviews */}
-              {reviews.length > 0 && (
+              {/* Reviews - Only for offers, not applications */}
+              {collaborationType === 'offer' && reviews.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Отзывы</h3>
                   <div className="space-y-3">
@@ -952,8 +1006,8 @@ export function OfferDetailsModal({
                 </div>
               )}
 
-              {/* Offer History */}
-              {offerHistory.length > 0 && (
+              {/* Offer History - Only for offers, not applications */}
+              {collaborationType === 'offer' && offerHistory.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">История изменений</h3>
                   <div className="space-y-2">

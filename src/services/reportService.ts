@@ -14,15 +14,9 @@ export class ReportService {
     try {
       const ticketData = {
         subject: `Жалоба: ${this.getReportTypeLabel(reportType)}`,
-        description: description,
-        category: 'complaint',
-        priority: 'medium',
-        metadata: {
-          reportType,
-          targetType,
-          targetId,
-          evidence: evidence || {}
-        }
+        message: description,
+        category: 'general',
+        priority: 'normal'
       };
 
       const ticket = await apiClient.post<any>('/support/tickets', ticketData);

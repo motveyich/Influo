@@ -22,11 +22,19 @@ export class BlacklistController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Unblock a user' })
+  @ApiOperation({ summary: 'Unblock a user by blacklist entry ID' })
   @ApiResponse({ status: 200, description: 'User unblocked successfully' })
   @ApiResponse({ status: 404, description: 'Blacklist entry not found' })
   unblockUser(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.blacklistService.unblockUser(userId, id);
+  }
+
+  @Delete('by-user/:blockedUserId')
+  @ApiOperation({ summary: 'Unblock a user by their user ID' })
+  @ApiResponse({ status: 200, description: 'User unblocked successfully' })
+  @ApiResponse({ status: 404, description: 'Blacklist entry not found' })
+  unblockUserByUserId(@Param('blockedUserId') blockedUserId: string, @CurrentUser('userId') userId: string) {
+    return this.blacklistService.unblockUserByUserId(userId, blockedUserId);
   }
 
   @Get()
