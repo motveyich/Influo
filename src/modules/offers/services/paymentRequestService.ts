@@ -11,10 +11,8 @@ export class PaymentRequestService {
         offerId: requestData.offerId,
         amount: requestData.amount,
         currency: requestData.currency || 'USD',
-        paymentType: requestData.paymentType,
+        description: requestData.instructions || '',
         paymentMethod: requestData.paymentMethod || 'bank_transfer',
-        paymentDetails: requestData.paymentDetails || {},
-        instructions: requestData.instructions,
       };
 
       const request = await apiClient.post<PaymentRequest>('/payments', payload);
@@ -91,9 +89,6 @@ export class PaymentRequestService {
   private validatePaymentRequestData(requestData: Partial<PaymentRequest>): void {
     if (!requestData.offerId || !requestData.amount || requestData.amount <= 0) {
       throw new Error('Offer ID and valid amount are required');
-    }
-    if (!requestData.paymentType) {
-      throw new Error('Payment type is required');
     }
   }
 }

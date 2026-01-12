@@ -1,6 +1,5 @@
-import { supabase, TABLES, isSupabaseConfigured } from '../core/supabase';
 import { ContentReport, ReportType } from '../core/types';
-import { moderationService } from './moderationService';
+import { apiClient } from '../core/api';
 import { analytics } from '../core/analytics';
 
 export class ReportService {
@@ -13,41 +12,21 @@ export class ReportService {
     evidence?: Record<string, any>
   ): Promise<ContentReport> {
     try {
-      if (!isSupabaseConfigured()) {
-        throw new Error('База данных не настроена');
-      }
-
-      // Check for duplicate reports
-      const { data: existingReport, error: checkError } = await supabase
-        .from(TABLES.CONTENT_REPORTS)
-        .select('id')
-        .eq('reporter_id', reporterId)
-        .eq('target_type', targetType)
-        .eq('target_id', targetId)
-        .eq('status', 'pending')
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Failed to check for duplicate reports:', checkError);
-        throw new Error('Не удалось проверить существующие жалобы');
-      }
-
-      if (existingReport) {
-        throw new Error('Вы уже отправили жалобу на этот контент');
-      }
-
-      const reportData: Partial<ContentReport> = {
-        reporterId,
-        targetType,
-        targetId,
-        reportType,
-        description,
-        evidence: evidence || {}
+      const ticketData = {
+        subject: `Жалоба: ${this.getReportTypeLabel(reportType)}`,
+        description: description,
+        category: 'complaint',
+        priority: 'medium',
+        metadata: {
+          reportType,
+          targetType,
+          targetId,
+          evidence: evidence || {}
+        }
       };
 
-      const report = await moderationService.createReport(reportData);
+      const ticket = await apiClient.post<any>('/support/tickets', ticketData);
 
-      // Track analytics
       analytics.track('content_reported', {
         reporter_id: reporterId,
         target_type: targetType,
@@ -55,56 +34,88 @@ export class ReportService {
         report_type: reportType
       });
 
-      return report;
+      return this.transformTicketToReport(ticket, reporterId, targetType, targetId, reportType);
     } catch (error: any) {
       console.error('Failed to create report:', error);
       throw new Error(error.message || 'Не удалось отправить жалобу');
     }
   }
 
+  private getReportTypeLabel(reportType: ReportType): string {
+    const labels: Record<ReportType, string> = {
+      scam: 'Мошенничество',
+      spam: 'Спам',
+      misleading: 'Введение в заблуждение',
+      harassment: 'Домогательства',
+      inappropriate: 'Неприемлемый контент',
+      other: 'Другое'
+    };
+    return labels[reportType] || 'Жалоба';
+  }
+
+  private transformTicketToReport(
+    ticket: any,
+    reporterId: string,
+    targetType: string,
+    targetId: string,
+    reportType: ReportType
+  ): ContentReport {
+    return {
+      id: ticket.id,
+      reporterId,
+      targetType,
+      targetId,
+      reportType,
+      description: ticket.description,
+      evidence: ticket.metadata?.evidence || {},
+      status: 'pending',
+      reviewedBy: null,
+      reviewedAt: null,
+      resolutionNotes: null,
+      priority: ticket.priority,
+      metadata: ticket.metadata || {},
+      createdAt: ticket.created_at,
+      updatedAt: ticket.updated_at
+    };
+  }
+
   async getUserReports(userId: string): Promise<ContentReport[]> {
     try {
-      if (!isSupabaseConfigured()) {
-        console.warn('Supabase не настроен. Reports недоступны.');
-        return [];
-      }
+      const tickets = await apiClient.get<any[]>('/support/tickets?category=complaint');
 
-      const { data, error } = await supabase
-        .from(TABLES.CONTENT_REPORTS)
-        .select('*')
-        .eq('reporter_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Failed to get user reports:', error);
-        return [];
-      }
-
-      return data.map(report => this.transformFromDatabase(report));
+      return tickets
+        .filter(ticket => ticket.metadata?.reportType)
+        .map(ticket => ({
+          id: ticket.id,
+          reporterId: ticket.user_id,
+          targetType: ticket.metadata?.targetType || 'unknown',
+          targetId: ticket.metadata?.targetId || '',
+          reportType: ticket.metadata?.reportType || 'other',
+          description: ticket.description,
+          evidence: ticket.metadata?.evidence || {},
+          status: this.mapTicketStatusToReportStatus(ticket.status),
+          reviewedBy: ticket.assigned_to || null,
+          reviewedAt: ticket.resolved_at || null,
+          resolutionNotes: ticket.resolution_notes || null,
+          priority: ticket.priority,
+          metadata: ticket.metadata || {},
+          createdAt: ticket.created_at,
+          updatedAt: ticket.updated_at
+        }));
     } catch (error) {
       console.error('Failed to get user reports:', error);
       return [];
     }
   }
 
-  private transformFromDatabase(dbData: any): ContentReport {
-    return {
-      id: dbData.id,
-      reporterId: dbData.reporter_id,
-      targetType: dbData.target_type,
-      targetId: dbData.target_id,
-      reportType: dbData.report_type,
-      description: dbData.description,
-      evidence: dbData.evidence || {},
-      status: dbData.status,
-      reviewedBy: dbData.reviewed_by,
-      reviewedAt: dbData.reviewed_at,
-      resolutionNotes: dbData.resolution_notes,
-      priority: dbData.priority,
-      metadata: dbData.metadata || {},
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+  private mapTicketStatusToReportStatus(ticketStatus: string): string {
+    const statusMap: Record<string, string> = {
+      'open': 'pending',
+      'in_progress': 'under_review',
+      'resolved': 'resolved',
+      'closed': 'resolved'
     };
+    return statusMap[ticketStatus] || 'pending';
   }
 }
 

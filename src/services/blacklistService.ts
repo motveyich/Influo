@@ -27,7 +27,7 @@ class BlacklistService {
         throw new Error('ID пользователя не указан');
       }
 
-      await apiClient.post('/blacklist', { blockedUserId, reason });
+      await apiClient.post('/blacklist', { blockedId: blockedUserId, reason });
     } catch (error: any) {
       console.error('Error adding to blacklist:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Не удалось добавить пользователя в чёрный список';

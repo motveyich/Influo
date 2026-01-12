@@ -3,6 +3,7 @@ import { CollaborationOffer, PaymentRequest, CollaborationReview, OfferStatus } 
 import { offerService } from '../services/offerService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { reviewService } from '../services/reviewService';
+import { applicationService } from '../../applications/services/applicationService';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
@@ -165,12 +166,42 @@ export function OfferDetailsModal({
       return;
     }
 
-    // Applications cannot use status update beyond accept/decline
-    if (collaborationType === 'application' && !['accepted', 'declined'].includes(newStatus)) {
-      toast.error('Это действие недоступно для заявок');
+    // Handle applications separately
+    if (collaborationType === 'application') {
+      if (!['accepted', 'declined'].includes(newStatus)) {
+        toast.error('Это действие недоступно для заявок');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        let updatedApplication;
+
+        if (newStatus === 'accepted') {
+          updatedApplication = await applicationService.acceptApplication(offer.id);
+        } else if (newStatus === 'declined') {
+          updatedApplication = await applicationService.rejectApplication(offer.id);
+        }
+
+        onOfferUpdated(updatedApplication);
+        await loadOfferDetails();
+
+        const statusMessages = {
+          'accepted': 'Заявка принята',
+          'declined': 'Заявка отклонена'
+        };
+
+        toast.success(statusMessages[newStatus] || 'Статус обновлен');
+      } catch (error: any) {
+        console.error('Failed to update application status:', error);
+        toast.error(error.message || 'Не удалось обновить статус');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
+    // Handle regular offers
     try {
       setIsLoading(true);
       const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
@@ -178,8 +209,8 @@ export function OfferDetailsModal({
       await loadOfferDetails();
 
       const statusMessages = {
-        'accepted': collaborationType === 'application' ? 'Заявка принята' : 'Предложение принято',
-        'declined': collaborationType === 'application' ? 'Заявка отклонена' : 'Предложение отклонено',
+        'accepted': 'Предложение принято',
+        'declined': 'Предложение отклонено',
         'cancelled': 'Предложение отменено',
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
@@ -935,6 +966,23 @@ export function OfferDetailsModal({
                   <p className="text-xs text-gray-500 text-center mt-1">
                     Автокомпания разрешает прямой контакт
                   </p>
+                </div>
+              )}
+
+              {/* Application Info Notice */}
+              {collaborationType === 'application' && availableActions.length === 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-900 mb-1">Это заявка на сотрудничество</h3>
+                      <p className="text-sm text-blue-700">
+                        {offer.status === 'accepted' && 'Заявка принята. Для управления сотрудничеством (начать работу, расторгнуть, создать окно оплаты) создайте полноценное предложение через чат с пользователем.'}
+                        {offer.status === 'declined' && 'Заявка была отклонена.'}
+                        {!['accepted', 'declined'].includes(offer.status) && 'Для управления сотрудничеством после принятия заявки создайте полноценное предложение через чат.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
