@@ -30,7 +30,7 @@ export function OfferDetailsModal({
   offer,
   currentUserId,
   onOfferUpdated,
-  collaborationType = 'offer'
+  collaborationType = 'application'
 }: OfferDetailsModalProps) {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);

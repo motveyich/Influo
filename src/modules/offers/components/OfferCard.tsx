@@ -48,7 +48,7 @@ export function OfferCard({
   onOfferUpdated,
   onViewDetails,
   onViewProfile,
-  collaborationType = 'offer'
+  collaborationType = 'application'
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
@@ -226,15 +226,34 @@ export function OfferCard({
       let updatedData: any;
 
       if (collaborationType === 'application') {
-        if (newStatus === 'accepted') {
-          updatedData = await applicationService.acceptApplication(offer.id);
-          console.log('[OfferCard] Application accepted:', updatedData);
-        } else if (newStatus === 'declined') {
-          updatedData = await applicationService.rejectApplication(offer.id);
-          console.log('[OfferCard] Application rejected:', updatedData);
-        } else {
-          toast.error('Это действие доступно только для принятых заявок');
-          return;
+        switch (newStatus) {
+          case 'accepted':
+            updatedData = await applicationService.acceptApplication(offer.id);
+            console.log('[OfferCard] Application accepted:', updatedData);
+            break;
+          case 'declined':
+            updatedData = await applicationService.rejectApplication(offer.id);
+            console.log('[OfferCard] Application rejected:', updatedData);
+            break;
+          case 'in_progress':
+            updatedData = await applicationService.markInProgress(offer.id);
+            console.log('[OfferCard] Application marked in progress:', updatedData);
+            break;
+          case 'completed':
+            updatedData = await applicationService.markCompleted(offer.id);
+            console.log('[OfferCard] Application completed:', updatedData);
+            break;
+          case 'terminated':
+            updatedData = await applicationService.terminateApplication(offer.id);
+            console.log('[OfferCard] Application terminated:', updatedData);
+            break;
+          case 'cancelled':
+            updatedData = await applicationService.cancelApplication(offer.id);
+            console.log('[OfferCard] Application cancelled:', updatedData);
+            break;
+          default:
+            toast.error('Это действие недоступно для заявок');
+            return;
         }
       } else {
         updatedData = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
@@ -246,7 +265,8 @@ export function OfferCard({
       const statusMessages = {
         'accepted': collaborationType === 'application' ? 'Заявка принята' : 'Предложение принято',
         'declined': collaborationType === 'application' ? 'Заявка отклонена' : 'Предложение отклонено',
-        'cancelled': 'Предложение отменено',
+        'in_progress': 'Работа начата',
+        'cancelled': collaborationType === 'application' ? 'Заявка отменена' : 'Предложение отменено',
         'completed': 'Сотрудничество завершено',
         'terminated': 'Сотрудничество расторгнуто'
       };
