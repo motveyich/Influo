@@ -145,7 +145,7 @@ export class ApplicationsService {
   }
 
   async terminate(id: string, userId: string) {
-    return this.updateStatus(id, userId, 'cancelled', false);
+    return this.updateStatus(id, userId, 'terminated', false);
   }
 
   async cancel(id: string, userId: string) {
@@ -205,6 +205,14 @@ export class ApplicationsService {
       if (application.target_id !== userId) {
         throw new ForbiddenException('Only card owner can accept or decline');
       }
+    }
+
+    if (status === 'in_progress' && application.status !== 'accepted') {
+      throw new ConflictException('Can only start work on accepted applications');
+    }
+
+    if ((status === 'completed' || status === 'terminated') && application.status !== 'in_progress') {
+      throw new ConflictException('Can only complete or terminate applications that are in progress');
     }
 
     const { data: updated, error } = await supabase
