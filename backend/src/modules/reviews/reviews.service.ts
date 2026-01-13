@@ -11,52 +11,73 @@ export class ReviewsService {
   async create(userId: string, createReviewDto: CreateReviewDto) {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: offer } = await supabase
-      .from('offers')
-      .select('advertiser_id, influencer_id, status')
-      .eq('id', createReviewDto.offerId)
-      .maybeSingle();
+    let collaboration: any;
+    let tableName: string;
 
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
+    if (createReviewDto.collaborationType === 'application') {
+      tableName = 'applications';
+      const { data } = await supabase
+        .from('applications')
+        .select('applicant_id, target_id, status')
+        .eq('id', createReviewDto.dealId)
+        .maybeSingle();
+      collaboration = data ? {
+        advertiser_id: data.target_id,
+        influencer_id: data.applicant_id,
+        status: data.status
+      } : null;
+    } else {
+      tableName = 'offers';
+      const { data } = await supabase
+        .from('offers')
+        .select('advertiser_id, influencer_id, status')
+        .eq('offer_id', createReviewDto.dealId)
+        .maybeSingle();
+      collaboration = data;
     }
 
-    if (offer.status !== 'completed') {
-      throw new BadRequestException('Can only review completed offers');
+    if (!collaboration) {
+      throw new NotFoundException(`${createReviewDto.collaborationType} not found`);
     }
 
-    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (collaboration.status !== 'completed') {
+      throw new BadRequestException(`Can only review completed ${createReviewDto.collaborationType}s`);
+    }
+
+    const isParticipant = collaboration.advertiser_id === userId || collaboration.influencer_id === userId;
     if (!isParticipant) {
-      throw new ForbiddenException('You can only review offers you participated in');
+      throw new ForbiddenException(`You can only review ${createReviewDto.collaborationType}s you participated in`);
     }
 
-    if (createReviewDto.reviewedUserId === userId) {
+    if (createReviewDto.revieweeId === userId) {
       throw new BadRequestException('Cannot review yourself');
     }
 
-    const validReviewedUser = offer.advertiser_id === createReviewDto.reviewedUserId ||
-                               offer.influencer_id === createReviewDto.reviewedUserId;
+    const validReviewedUser = collaboration.advertiser_id === createReviewDto.revieweeId ||
+                               collaboration.influencer_id === createReviewDto.revieweeId;
     if (!validReviewedUser) {
-      throw new BadRequestException('Reviewed user must be part of the offer');
+      throw new BadRequestException(`Reviewed user must be part of the ${createReviewDto.collaborationType}`);
     }
 
     const { data: existing } = await supabase
       .from('reviews')
       .select('id')
-      .eq('offer_id', createReviewDto.offerId)
+      .eq('deal_id', createReviewDto.dealId)
       .eq('reviewer_id', userId)
       .maybeSingle();
 
     if (existing) {
-      throw new ConflictException('You have already reviewed this offer');
+      throw new ConflictException(`You have already reviewed this ${createReviewDto.collaborationType}`);
     }
 
     const reviewData = {
-      offer_id: createReviewDto.offerId,
+      deal_id: createReviewDto.dealId,
       reviewer_id: userId,
-      reviewed_user_id: createReviewDto.reviewedUserId,
+      reviewee_id: createReviewDto.revieweeId,
       rating: createReviewDto.rating,
+      title: createReviewDto.title || 'Review',
       comment: createReviewDto.comment,
+      collaboration_type: createReviewDto.collaborationType,
       created_at: new Date().toISOString(),
     };
 
@@ -71,7 +92,7 @@ export class ReviewsService {
       throw new ConflictException('Failed to create review');
     }
 
-    await this.updateUserRating(createReviewDto.reviewedUserId);
+    await this.updateUserRating(createReviewDto.revieweeId);
 
     return this.transformReview(review);
   }
@@ -84,11 +105,11 @@ export class ReviewsService {
       .select(`
         *,
         reviewer:user_profiles!reviews_reviewer_id_fkey(*),
-        reviewed:user_profiles!reviews_reviewed_user_id_fkey(*)
+        reviewed:user_profiles!reviews_reviewee_id_fkey(*)
       `);
 
     if (userId) {
-      query = query.eq('reviewed_user_id', userId);
+      query = query.eq('reviewee_id', userId);
     }
 
     const { data: reviews, error } = await query.order('created_at', { ascending: false });
@@ -105,13 +126,83 @@ export class ReviewsService {
     return this.findAll(userId);
   }
 
+  async findByDeal(dealId: string, collaborationType: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: reviews, error } = await supabase
+      .from('reviews')
+      .select(`
+        *,
+        reviewer:user_profiles!reviews_reviewer_id_fkey(*),
+        reviewed:user_profiles!reviews_reviewee_id_fkey(*)
+      `)
+      .eq('deal_id', dealId)
+      .eq('collaboration_type', collaborationType)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch reviews for deal: ${error.message}`, error);
+      return [];
+    }
+
+    return reviews.map((review) => this.transformReview(review));
+  }
+
+  async canReview(dealId: string, userId: string, collaborationType: string): Promise<boolean> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    let collaboration: any;
+
+    if (collaborationType === 'application') {
+      const { data } = await supabase
+        .from('applications')
+        .select('applicant_id, target_id, status')
+        .eq('id', dealId)
+        .maybeSingle();
+      collaboration = data ? {
+        advertiser_id: data.target_id,
+        influencer_id: data.applicant_id,
+        status: data.status
+      } : null;
+    } else {
+      const { data } = await supabase
+        .from('offers')
+        .select('advertiser_id, influencer_id, status')
+        .eq('offer_id', dealId)
+        .maybeSingle();
+      collaboration = data;
+    }
+
+    if (!collaboration) {
+      return false;
+    }
+
+    if (collaboration.status !== 'completed') {
+      return false;
+    }
+
+    const isParticipant = collaboration.advertiser_id === userId || collaboration.influencer_id === userId;
+    if (!isParticipant) {
+      return false;
+    }
+
+    const { data: existing } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('deal_id', dealId)
+      .eq('reviewer_id', userId)
+      .maybeSingle();
+
+    return !existing;
+  }
+
   async getUserRating(userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: reviews, error } = await supabase
       .from('reviews')
       .select('rating')
-      .eq('reviewed_user_id', userId);
+      .eq('reviewee_id', userId);
 
     if (error || !reviews || reviews.length === 0) {
       return {
@@ -160,10 +251,12 @@ export class ReviewsService {
   private transformReview(review: any) {
     return {
       id: review.id,
-      offerId: review.offer_id,
+      dealId: review.deal_id,
+      collaborationType: review.collaboration_type,
       reviewerId: review.reviewer_id,
-      reviewedUserId: review.reviewed_user_id,
+      revieweeId: review.reviewee_id,
       rating: review.rating,
+      title: review.title,
       comment: review.comment,
       createdAt: review.created_at,
       reviewer: review.reviewer ? {

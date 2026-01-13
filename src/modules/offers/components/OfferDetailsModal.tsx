@@ -109,9 +109,9 @@ export function OfferDetailsModal({
         // For offers, load all details
         const [paymentData, reviewData, historyData, reviewPermission] = await Promise.all([
           paymentRequestService.getOfferPaymentRequests(offer.id),
-          reviewService.getOfferReviews(offer.id),
+          reviewService.getOfferReviews(offer.id, collaborationType),
           offerService.getOfferHistory(offer.id),
-          reviewService.canUserReview(offer.id, currentUserId)
+          reviewService.canUserReview(offer.id, currentUserId, collaborationType)
         ]);
 
         setPaymentRequests(paymentData);
@@ -228,7 +228,7 @@ export function OfferDetailsModal({
         toast.success(statusMessages[newStatus] || 'Статус обновлен');
 
         if (newStatus === 'completed' || newStatus === 'terminated') {
-          const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId);
+          const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId, collaborationType);
           if (canLeaveReview) {
             setCanReview(true);
             setTimeout(() => {
@@ -265,7 +265,7 @@ export function OfferDetailsModal({
       // Автоматически открыть окно отзыва после завершения или расторжения
       if (newStatus === 'completed' || newStatus === 'terminated') {
         // Проверяем, может ли пользователь оставить отзыв
-        const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId);
+        const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId, collaborationType);
         if (canLeaveReview) {
           setCanReview(true);
           setTimeout(() => {
@@ -1238,7 +1238,8 @@ export function OfferDetailsModal({
         <ReviewModal
           isOpen={showReviewModal}
           onClose={() => setShowReviewModal(false)}
-          offerId={offer.id}
+          dealId={offer.id}
+          collaborationType={collaborationType}
           reviewerId={currentUserId}
           revieweeId={isInfluencer ? offer.advertiserId : offer.influencerId}
           onReviewCreated={handleReviewCreated}

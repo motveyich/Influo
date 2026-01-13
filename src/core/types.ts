@@ -586,23 +586,24 @@ export interface PaymentRequest {
 
 export interface CollaborationReview {
   id: string;
-  offerId: string;
+  dealId: string;
+  collaborationType: 'application' | 'offer';
   reviewerId: string;
   revieweeId: string;
-  
+
   // Review content
   rating: number;
   title: string;
   comment: string;
-  
+
   // Review metadata
-  isPublic: boolean;
-  helpfulVotes: number;
-  metadata: Record<string, any>;
-  
+  isPublic?: boolean;
+  helpfulVotes?: number;
+  metadata?: Record<string, any>;
+
   // Timestamps
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface OfferStatusHistory {

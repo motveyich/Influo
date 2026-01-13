@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -62,5 +63,31 @@ export class ReviewsController {
   @ApiResponse({ status: 200, description: 'User rating statistics' })
   async getUserRating(@Param('userId') userId: string) {
     return this.reviewsService.getUserRating(userId);
+  }
+
+  @Get('deal/:dealId')
+  @Public()
+  @ApiOperation({ summary: 'Get reviews for a specific deal' })
+  @ApiParam({ name: 'dealId', description: 'Deal ID (Offer or Application ID)' })
+  @ApiResponse({ status: 200, description: 'List of deal reviews' })
+  async findByDeal(
+    @Param('dealId') dealId: string,
+    @Query('collaborationType') collaborationType: string,
+  ) {
+    return this.reviewsService.findByDeal(dealId, collaborationType);
+  }
+
+  @Get('can-review')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Check if user can review a deal' })
+  @ApiResponse({ status: 200, description: 'Can review status' })
+  async canReview(
+    @Query('dealId') dealId: string,
+    @Query('collaborationType') collaborationType: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    const canReview = await this.reviewsService.canReview(dealId, userId, collaborationType);
+    return { canReview };
   }
 }

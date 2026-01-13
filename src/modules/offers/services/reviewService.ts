@@ -8,20 +8,20 @@ export class ReviewService {
       this.validateReviewData(reviewData);
 
       const payload = {
-        offerId: reviewData.offerId,
+        dealId: reviewData.dealId,
+        collaborationType: reviewData.collaborationType || 'application',
         revieweeId: reviewData.revieweeId,
         rating: reviewData.rating,
         title: reviewData.title,
         comment: reviewData.comment,
-        isPublic: reviewData.isPublic ?? true,
-        metadata: reviewData.metadata || {},
       };
 
       const review = await apiClient.post<CollaborationReview>('/reviews', payload);
 
       analytics.track('collaboration_review_created', {
         review_id: review.id,
-        deal_id: reviewData.offerId,
+        deal_id: reviewData.dealId,
+        collaboration_type: reviewData.collaborationType,
         rating: reviewData.rating,
         reviewer_id: reviewData.reviewerId
       });
@@ -33,11 +33,22 @@ export class ReviewService {
     }
   }
 
-  async getReviews(userId: string): Promise<CollaborationReview[]> {
+  async getUserReviews(userId: string): Promise<CollaborationReview[]> {
     try {
-      return await apiClient.get<CollaborationReview[]>(`/reviews?userId=${userId}`);
+      return await apiClient.get<CollaborationReview[]>(`/reviews/user/${userId}`);
     } catch (error) {
-      console.error('Failed to get reviews:', error);
+      console.error('Failed to get user reviews:', error);
+      throw error;
+    }
+  }
+
+  async getOfferReviews(dealId: string, collaborationType: string = 'application'): Promise<CollaborationReview[]> {
+    try {
+      return await apiClient.get<CollaborationReview[]>(
+        `/reviews/deal/${dealId}?collaborationType=${collaborationType}`
+      );
+    } catch (error) {
+      console.error('Failed to get offer reviews:', error);
       throw error;
     }
   }
@@ -51,10 +62,10 @@ export class ReviewService {
     }
   }
 
-  async canReview(offerId: string, userId: string): Promise<boolean> {
+  async canUserReview(dealId: string, userId: string, collaborationType: string = 'application'): Promise<boolean> {
     try {
       const response = await apiClient.get<{ canReview: boolean }>(
-        `/reviews/can-review?offerId=${offerId}&userId=${userId}`
+        `/reviews/can-review?dealId=${dealId}&collaborationType=${collaborationType}`
       );
       return response.canReview;
     } catch (error) {
@@ -64,8 +75,8 @@ export class ReviewService {
   }
 
   private validateReviewData(reviewData: Partial<CollaborationReview>): void {
-    if (!reviewData.offerId || !reviewData.revieweeId) {
-      throw new Error('Offer ID and reviewee ID are required');
+    if (!reviewData.dealId || !reviewData.revieweeId) {
+      throw new Error('Deal ID and reviewee ID are required');
     }
     if (!reviewData.rating || reviewData.rating < 1 || reviewData.rating > 5) {
       throw new Error('Rating must be between 1 and 5');

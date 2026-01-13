@@ -8,19 +8,21 @@ import toast from 'react-hot-toast';
 interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  offerId: string;
+  dealId: string;
+  collaborationType: 'application' | 'offer';
   reviewerId: string;
   revieweeId: string;
   onReviewCreated: (review: CollaborationReview) => void;
 }
 
-export function ReviewModal({ 
-  isOpen, 
-  onClose, 
-  offerId, 
-  reviewerId, 
-  revieweeId, 
-  onReviewCreated 
+export function ReviewModal({
+  isOpen,
+  onClose,
+  dealId,
+  collaborationType,
+  reviewerId,
+  revieweeId,
+  onReviewCreated
 }: ReviewModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,10 +68,13 @@ export function ReviewModal({
     setIsLoading(true);
     try {
       const reviewData: Partial<CollaborationReview> = {
-        offerId,
+        dealId,
+        collaborationType,
         reviewerId,
         revieweeId,
-        ...formData
+        rating: formData.rating,
+        title: formData.title,
+        comment: formData.comment
       };
 
       const createdReview = await reviewService.createReview(reviewData);
