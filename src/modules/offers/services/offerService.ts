@@ -139,6 +139,15 @@ export class OfferService {
     }
   }
 
+  async getOfferHistory(offerId: string): Promise<any[]> {
+    try {
+      return await apiClient.get<any[]>(`/offers/${offerId}/history`);
+    } catch (error) {
+      console.error('Failed to get offer history:', error);
+      return [];
+    }
+  }
+
   async updateOfferStatus(
     offerId: string,
     newStatus: OfferStatus,

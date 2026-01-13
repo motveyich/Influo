@@ -36,7 +36,7 @@ interface OfferCardProps {
   currentUserId: string;
   userRole: 'influencer' | 'advertiser';
   onOfferUpdated: (offer: CollaborationOffer) => void;
-  onViewDetails: (offer: CollaborationOffer) => void;
+  onViewDetails: (offer: CollaborationOffer, collaborationType?: 'application' | 'offer') => void;
   onViewProfile?: (userId: string) => void;
   collaborationType?: 'application' | 'offer';
 }
@@ -660,7 +660,7 @@ export function OfferCard({
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => onViewDetails(offer)}
+            onClick={() => onViewDetails(offer, collaborationType)}
             className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors flex items-center space-x-1"
           >
             <Eye className="w-4 h-4" />

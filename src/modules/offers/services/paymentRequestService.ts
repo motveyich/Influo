@@ -86,6 +86,36 @@ export class PaymentRequestService {
     }
   }
 
+  async getOfferPaymentRequests(offerId: string): Promise<PaymentRequest[]> {
+    try {
+      return await this.getPaymentRequests(offerId);
+    } catch (error) {
+      console.error('Failed to get offer payment requests:', error);
+      throw error;
+    }
+  }
+
+  async updatePaymentStatus(paymentId: string, newStatus: string, userId: string): Promise<PaymentRequest> {
+    try {
+      return await apiClient.patch<PaymentRequest>(`/payments/${paymentId}/status`, {
+        status: newStatus,
+        userId
+      });
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      throw error;
+    }
+  }
+
+  async deletePaymentRequest(paymentId: string, userId: string): Promise<void> {
+    try {
+      await apiClient.delete(`/payments/${paymentId}`, { userId });
+    } catch (error) {
+      console.error('Failed to delete payment request:', error);
+      throw error;
+    }
+  }
+
   private validatePaymentRequestData(requestData: Partial<PaymentRequest>): void {
     if (!requestData.offerId || !requestData.amount || requestData.amount <= 0) {
       throw new Error('Offer ID and valid amount are required');
