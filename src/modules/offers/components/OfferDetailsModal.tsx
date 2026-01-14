@@ -412,7 +412,7 @@ export function OfferDetailsModal({
       // Pending completion - opposite party can confirm or reject
       if (offer.status === 'pending_completion') {
         const completionInitiator = (offer as any).completionInitiatedBy;
-        const isCompletionInitiator = completionInitiator === currentUser?.userId;
+        const isCompletionInitiator = completionInitiator === currentUserId;
 
         if (!isCompletionInitiator) {
           actions.push(
