@@ -141,7 +141,137 @@ export class ApplicationsService {
   }
 
   async complete(id: string, userId: string) {
-    return this.updateStatus(id, userId, 'completed', false);
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: application } = await supabase
+      .from('applications')
+      .select('applicant_id, target_id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const isParticipant = application.target_id === userId || application.applicant_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this application');
+    }
+
+    if (application.status !== 'in_progress') {
+      throw new ConflictException('Can only complete applications that are in progress');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('applications')
+      .update({
+        status: 'pending_completion',
+        completion_initiated_by: userId,
+        completion_requested_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to request completion: ${error.message}`, error);
+      throw new ConflictException('Failed to request completion');
+    }
+
+    return this.transformApplication(updated);
+  }
+
+  async confirmCompletion(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: application } = await supabase
+      .from('applications')
+      .select('applicant_id, target_id, status, completion_initiated_by')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const isParticipant = application.target_id === userId || application.applicant_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this application');
+    }
+
+    if (application.status !== 'pending_completion') {
+      throw new ConflictException('Application is not pending completion');
+    }
+
+    if (application.completion_initiated_by === userId) {
+      throw new ForbiddenException('Cannot confirm your own completion request');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('applications')
+      .update({
+        status: 'completed',
+        completion_initiated_by: null,
+        completion_requested_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to confirm completion: ${error.message}`, error);
+      throw new ConflictException('Failed to confirm completion');
+    }
+
+    return this.transformApplication(updated);
+  }
+
+  async rejectCompletion(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: application } = await supabase
+      .from('applications')
+      .select('applicant_id, target_id, status, completion_initiated_by')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const isParticipant = application.target_id === userId || application.applicant_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this application');
+    }
+
+    if (application.status !== 'pending_completion') {
+      throw new ConflictException('Application is not pending completion');
+    }
+
+    if (application.completion_initiated_by === userId) {
+      throw new ForbiddenException('Cannot reject your own completion request');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('applications')
+      .update({
+        status: 'in_progress',
+        completion_initiated_by: null,
+        completion_requested_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to reject completion: ${error.message}`, error);
+      throw new ConflictException('Failed to reject completion');
+    }
+
+    return this.transformApplication(updated);
   }
 
   async terminate(id: string, userId: string) {
@@ -238,6 +368,8 @@ export class ApplicationsService {
       targetReferenceId: application.target_reference_id,
       applicationData: application.application_data || {},
       status: application.status,
+      completionInitiatedBy: application.completion_initiated_by,
+      completionRequestedAt: application.completion_requested_at,
       createdAt: application.created_at,
       updatedAt: application.updated_at,
       user: application.user_profiles ? {

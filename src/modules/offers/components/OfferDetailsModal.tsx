@@ -202,6 +202,12 @@ export function OfferDetailsModal({
           case 'completed':
             updatedApplication = await applicationService.markCompleted(offer.id);
             break;
+          case 'confirm_completion':
+            updatedApplication = await applicationService.confirmCompletion(offer.id);
+            break;
+          case 'reject_completion':
+            updatedApplication = await applicationService.rejectCompletion(offer.id);
+            break;
           case 'terminated':
             updatedApplication = await applicationService.terminateApplication(offer.id);
             break;
@@ -220,7 +226,9 @@ export function OfferDetailsModal({
           'accepted': 'Заявка принята',
           'declined': 'Заявка отклонена',
           'in_progress': 'Работа начата',
-          'completed': 'Сотрудничество завершено',
+          'completed': 'Запрос на завершение отправлен',
+          'confirm_completion': 'Завершение подтверждено',
+          'reject_completion': 'Завершение отменено',
           'terminated': 'Сотрудничество расторгнуто',
           'cancelled': 'Заявка отменена'
         };
@@ -396,6 +404,23 @@ export function OfferDetailsModal({
             { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy }
           );
         }
+        actions.push(
+          { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
+        );
+      }
+
+      // Pending completion - opposite party can confirm or reject
+      if (offer.status === 'pending_completion') {
+        const completionInitiator = (offer as any).completionInitiatedBy;
+        const isCompletionInitiator = completionInitiator === currentUser?.userId;
+
+        if (!isCompletionInitiator) {
+          actions.push(
+            { label: 'Подтвердить завершение', action: 'confirm_completion', style: 'success', icon: CheckCircle },
+            { label: 'Отменить завершение', action: 'reject_completion', style: 'danger', icon: XCircle }
+          );
+        }
+
         actions.push(
           { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
         );

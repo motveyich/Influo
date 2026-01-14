@@ -104,6 +104,8 @@ export function OfferCard({
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending_completion':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'terminated':
@@ -125,6 +127,8 @@ export function OfferCard({
         return <CheckCircle className="w-4 h-4" />;
       case 'in_progress':
         return <Play className="w-4 h-4" />;
+      case 'pending_completion':
+        return <Clock className="w-4 h-4" />;
       case 'completed':
         return <Trophy className="w-4 h-4" />;
       case 'terminated':
@@ -146,6 +150,8 @@ export function OfferCard({
         return 'Принято';
       case 'in_progress':
         return 'В работе';
+      case 'pending_completion':
+        return 'Ожидает подтверждения';
       case 'completed':
         return 'Завершено';
       case 'terminated':

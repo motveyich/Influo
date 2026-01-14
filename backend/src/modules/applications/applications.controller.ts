@@ -91,15 +91,42 @@ export class ApplicationsController {
   }
 
   @Post(':id/complete')
-  @ApiOperation({ summary: 'Mark application as completed' })
+  @ApiOperation({ summary: 'Request completion of application (requires confirmation from partner)' })
   @ApiParam({ name: 'id', description: 'Application ID' })
-  @ApiResponse({ status: 200, description: 'Application marked as completed' })
+  @ApiResponse({ status: 200, description: 'Completion request sent, awaiting partner confirmation' })
   @ApiResponse({ status: 403, description: 'Not authorized to update this application' })
+  @ApiResponse({ status: 409, description: 'Can only complete applications that are in progress' })
   async complete(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
   ) {
     return this.applicationsService.complete(id, userId);
+  }
+
+  @Post(':id/confirm-completion')
+  @ApiOperation({ summary: 'Confirm completion of application' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Application marked as completed' })
+  @ApiResponse({ status: 403, description: 'Cannot confirm your own completion request' })
+  @ApiResponse({ status: 409, description: 'Application is not pending completion' })
+  async confirmCompletion(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.confirmCompletion(id, userId);
+  }
+
+  @Post(':id/reject-completion')
+  @ApiOperation({ summary: 'Reject completion request and return to in-progress' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({ status: 200, description: 'Completion request rejected, application back to in-progress' })
+  @ApiResponse({ status: 403, description: 'Cannot reject your own completion request' })
+  @ApiResponse({ status: 409, description: 'Application is not pending completion' })
+  async rejectCompletion(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.applicationsService.rejectCompletion(id, userId);
   }
 
   @Post(':id/terminate')

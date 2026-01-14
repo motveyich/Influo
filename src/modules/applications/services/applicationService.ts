@@ -117,6 +117,24 @@ export class ApplicationService {
     }
   }
 
+  async confirmCompletion(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/confirm-completion`);
+    } catch (error) {
+      console.error('Failed to confirm completion:', error);
+      throw error;
+    }
+  }
+
+  async rejectCompletion(applicationId: string): Promise<Application> {
+    try {
+      return await apiClient.post<Application>(`/applications/${applicationId}/reject-completion`);
+    } catch (error) {
+      console.error('Failed to reject completion:', error);
+      throw error;
+    }
+  }
+
   async terminateApplication(applicationId: string): Promise<Application> {
     try {
       return await apiClient.post<Application>(`/applications/${applicationId}/terminate`);

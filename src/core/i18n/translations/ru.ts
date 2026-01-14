@@ -599,6 +599,7 @@ export const ru: TranslationKeys = {
       completed: 'Завершено',
       terminated: 'Расторгнуто',
       inProgress: 'В работе',
+      pendingCompletion: 'Ожидает подтверждения завершения',
     },
     actions: {
       accept: 'Принять',
@@ -607,6 +608,9 @@ export const ru: TranslationKeys = {
       withdraw: 'Отозвать',
       requestInfo: 'Запросить информацию',
       sendCounterOffer: 'Отправить контрпредложение',
+      confirmCompletion: 'Подтвердить завершение',
+      rejectCompletion: 'Отменить завершение',
+      requestCompletion: 'Запросить завершение',
     },
     stats: {
       total: 'Всего',

@@ -281,7 +281,9 @@ export interface Application {
     deliverables?: string[];
     additionalInfo?: string;
   };
-  status: 'pending' | 'sent' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'sent' | 'accepted' | 'declined' | 'in_progress' | 'pending_completion' | 'completed' | 'cancelled' | 'terminated';
+  completionInitiatedBy?: string;
+  completionRequestedAt?: string;
   responseData?: {
     message?: string;
     counterOffer?: any;

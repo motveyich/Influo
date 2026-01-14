@@ -585,6 +585,7 @@ export const en: TranslationKeys = {
       completed: 'Completed',
       terminated: 'Terminated',
       inProgress: 'In progress',
+      pendingCompletion: 'Awaiting completion confirmation',
     },
     actions: {
       accept: 'Accept',
@@ -593,6 +594,9 @@ export const en: TranslationKeys = {
       withdraw: 'Withdraw',
       requestInfo: 'Request Info',
       sendCounterOffer: 'Send Counter Offer',
+      confirmCompletion: 'Confirm Completion',
+      rejectCompletion: 'Reject Completion',
+      requestCompletion: 'Request Completion',
     },
     stats: {
       total: 'Total',
