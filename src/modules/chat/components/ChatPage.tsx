@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChatMessage } from '../../../core/types';
 import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
@@ -33,6 +34,7 @@ interface Conversation {
 type ChatTab = 'main' | 'new' | 'restricted';
 
 export function ChatPage() {
+  const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -46,7 +48,7 @@ export function ChatPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [showAIPanel, setShowAIPanel] = useState(true);
-  
+
   const { user, loading } = useAuth();
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
@@ -57,6 +59,9 @@ export function ChatPage() {
     // Check for userId parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const userIdParam = urlParams.get('userId');
+
+    console.log('ChatPage useEffect - userIdParam:', userIdParam);
+
     if (userIdParam) {
       setTargetUserId(userIdParam);
       // Clear the URL parameter
@@ -65,6 +70,7 @@ export function ChatPage() {
 
     if (currentUserId && !loading) {
       const initializeChat = async () => {
+        console.log('Initializing chat with userId:', userIdParam);
         await loadBlockedUsers(); // Load blocked users first
         await loadConversations(userIdParam || undefined); // Pass userId directly to avoid race condition
       };
@@ -96,6 +102,31 @@ export function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Handle userId parameter changes in URL (for navigating from offers)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const userIdParam = urlParams.get('userId');
+
+    console.log('URL changed, userId param:', userIdParam);
+
+    if (userIdParam && currentUserId && conversations.length > 0) {
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/app/chat');
+
+      // Find existing conversation or create new one
+      const existingConversation = conversations.find(conv => conv.participantId === userIdParam);
+
+      console.log('Handling userId from URL - existing conversation:', existingConversation);
+
+      if (existingConversation) {
+        setSelectedConversation(existingConversation);
+        setActiveTab(existingConversation.chatType);
+      } else {
+        createNewConversation(userIdParam);
+      }
+    }
+  }, [location.search, currentUserId, conversations]);
+
   const loadBlockedUsers = async () => {
     try {
       // Load blocked users from blacklist service
@@ -112,6 +143,9 @@ export function ChatPage() {
     try {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
+
+      console.log('loadConversations - targetUserIdParam:', targetUserIdParam);
+      console.log('loadConversations - loaded conversations count:', loadedConversations.length);
 
       // Enhance conversations with chat type and restrictions
       const enhancedConversations = await Promise.all(
@@ -152,13 +186,19 @@ export function ChatPage() {
       // Use parameter if provided, otherwise use state
       const userIdToOpen = targetUserIdParam || targetUserId;
 
+      console.log('loadConversations - userIdToOpen:', userIdToOpen);
+
       // If we have a target user ID, try to find or create that conversation
       if (userIdToOpen) {
         const existingConversation = enhancedConversations.find(conv => conv.participantId === userIdToOpen);
+        console.log('loadConversations - existingConversation:', existingConversation);
+
         if (existingConversation) {
           setSelectedConversation(existingConversation);
           setActiveTab(existingConversation.chatType); // Switch to appropriate tab
+          console.log('loadConversations - selected existing conversation');
         } else {
+          console.log('loadConversations - creating new conversation for userId:', userIdToOpen);
           // Create a new conversation entry for the target user
           await createNewConversation(userIdToOpen);
         }
@@ -181,31 +221,53 @@ export function ChatPage() {
   const createNewConversation = async (userId: string) => {
     try {
       // Get user profile to create conversation entry
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('user_profiles')
         .select('user_id, full_name, avatar')
         .eq('user_id', userId)
-        .single();
-      
-      if (userProfile) {
-        const newConversation: Conversation = {
-          id: userId,
-          participantId: userId,
-          participantName: userProfile.full_name || 'Пользователь',
-          participantAvatar: userProfile.avatar,
-          unreadCount: 0,
-          isOnline: false,
-          chatType: 'new',
-          canSendMessage: true, // Can send initial message
-          isBlocked: false,
-          initiatedBy: currentUserId,
-          hasReceiverResponded: false
-        };
-        
-        setConversations(prev => [newConversation, ...prev]);
-        setSelectedConversation(newConversation);
-        setActiveTab('new'); // Switch to "new" tab for new conversations
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        toast.error('Не удалось загрузить профиль пользователя');
+        return;
       }
+
+      if (!userProfile) {
+        console.error('User profile not found for userId:', userId);
+        toast.error('Пользователь не найден');
+        return;
+      }
+
+      const newConversation: Conversation = {
+        id: userId,
+        participantId: userId,
+        participantName: userProfile.full_name || 'Пользователь',
+        participantAvatar: userProfile.avatar,
+        unreadCount: 0,
+        isOnline: false,
+        chatType: 'new',
+        canSendMessage: true, // Can send initial message
+        isBlocked: false,
+        initiatedBy: currentUserId,
+        hasReceiverResponded: false
+      };
+
+      // Add new conversation to list
+      setConversations(prev => {
+        // Check if conversation already exists
+        const exists = prev.find(c => c.participantId === userId);
+        if (exists) {
+          return prev;
+        }
+        return [newConversation, ...prev];
+      });
+
+      // Select the conversation and switch to new tab
+      setActiveTab('new');
+      setSelectedConversation(newConversation);
+
+      console.log('New conversation created and selected:', newConversation);
     } catch (error) {
       console.error('Failed to create new conversation:', error);
       toast.error('Не удалось создать диалог');
