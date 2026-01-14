@@ -62,15 +62,15 @@ export function ChatPage() {
       // Clear the URL parameter
       window.history.replaceState({}, '', '/app/chat');
     }
-    
+
     if (currentUserId && !loading) {
       const initializeChat = async () => {
         await loadBlockedUsers(); // Load blocked users first
-        await loadConversations(); // Then load conversations with correct blocked status
+        await loadConversations(userIdParam || undefined); // Pass userId directly to avoid race condition
       };
       initializeChat();
     }
-    
+
     // Subscribe to real-time chat messages
     if (currentUserId) {
       const subscription = realtimeService.subscribeToChatMessages(
@@ -108,18 +108,18 @@ export function ChatPage() {
     }
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (targetUserIdParam?: string) => {
     try {
       setIsLoading(true);
       const loadedConversations = await chatService.getUserConversations(currentUserId);
-      
+
       // Enhance conversations with chat type and restrictions
       const enhancedConversations = await Promise.all(
         loadedConversations.map(async (conv) => {
           const isBlocked = blockedUsers.has(conv.participantId);
           const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
           const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
-          
+
           let chatType: 'main' | 'new' | 'restricted' = 'main';
           let canSendMessage = true;
 
@@ -146,18 +146,21 @@ export function ChatPage() {
           };
         })
       );
-      
+
       setConversations(enhancedConversations);
-      
+
+      // Use parameter if provided, otherwise use state
+      const userIdToOpen = targetUserIdParam || targetUserId;
+
       // If we have a target user ID, try to find or create that conversation
-      if (targetUserId) {
-        const existingConversation = enhancedConversations.find(conv => conv.participantId === targetUserId);
+      if (userIdToOpen) {
+        const existingConversation = enhancedConversations.find(conv => conv.participantId === userIdToOpen);
         if (existingConversation) {
           setSelectedConversation(existingConversation);
           setActiveTab(existingConversation.chatType); // Switch to appropriate tab
         } else {
           // Create a new conversation entry for the target user
-          await createNewConversation(targetUserId);
+          await createNewConversation(userIdToOpen);
         }
         setTargetUserId(null); // Clear after processing
       } else if (!selectedConversation && enhancedConversations.length > 0) {
