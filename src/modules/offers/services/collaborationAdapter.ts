@@ -179,7 +179,7 @@ export class CollaborationAdapter {
   }
 
   static isActiveStatus(status: string): boolean {
-    return ['pending', 'sent', 'accepted', 'in_progress'].includes(status);
+    return ['pending', 'sent', 'accepted', 'in_progress', 'pending_completion'].includes(status);
   }
 
   static isCompletedStatus(status: string): boolean {

@@ -186,6 +186,7 @@ export function OffersPage() {
       pending: allCollaborations.filter(c => c.status === 'pending' || c.status === 'sent').length,
       accepted: allCollaborations.filter(c => c.status === 'accepted').length,
       inProgress: allCollaborations.filter(c => c.status === 'in_progress').length,
+      pendingCompletion: allCollaborations.filter(c => c.status === 'pending_completion').length,
       completed: allCollaborations.filter(c => c.status === 'completed').length,
       totalValue: allCollaborations
         .filter(c => ['accepted', 'in_progress', 'completed'].includes(c.status))
@@ -201,7 +202,8 @@ export function OffersPage() {
         { value: 'all', label: t('offers.allStatuses') },
         { value: 'pending', label: t('offers.status.pending') },
         { value: 'accepted', label: t('offers.status.accepted') },
-        { value: 'in_progress', label: t('offers.status.inProgress') }
+        { value: 'in_progress', label: t('offers.status.inProgress') },
+        { value: 'pending_completion', label: t('offers.status.pendingCompletion') }
       ];
     } else {
       return [
