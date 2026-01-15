@@ -41,7 +41,6 @@ export class OfferService {
   async createAutoCampaignOffer(offerData: {
     autoCampaignId: string;
     influencerId: string;
-    advertiserId: string;
     title: string;
     description: string;
     proposedRate: number;
@@ -62,9 +61,7 @@ export class OfferService {
 
       const payload = {
         influencerId: offerData.influencerId,
-        advertiserId: offerData.advertiserId,
         autoCampaignId: offerData.autoCampaignId,
-        initiatedBy: offerData.influencerId,
         title: offerData.title,
         description: offerData.description,
         amount: offerData.proposedRate,
@@ -80,7 +77,6 @@ export class OfferService {
         offer_id: offer.id,
         auto_campaign_id: offerData.autoCampaignId,
         influencer_id: offerData.influencerId,
-        advertiser_id: offerData.advertiserId,
         proposed_rate: offerData.proposedRate
       });
 

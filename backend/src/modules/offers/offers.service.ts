@@ -21,35 +21,69 @@ export class OffersService {
       throw new NotFoundException('User not found');
     }
 
-    const { data: targetUser } = await supabase
-      .from('user_profiles')
-      .select('user_id')
-      .eq('user_id', createOfferDto.influencerId)
-      .maybeSingle();
-
-    if (!targetUser) {
-      throw new NotFoundException('Target user not found');
-    }
+    let advertiserId: string;
+    let influencerId: string;
 
     if (createOfferDto.autoCampaignId) {
-      const { data: campaign } = await supabase
+      const { data: campaign, error: campaignError } = await supabase
         .from('auto_campaigns')
-        .select('id, status')
+        .select('id, status, advertiser_id')
         .eq('id', createOfferDto.autoCampaignId)
         .maybeSingle();
 
-      if (!campaign) {
+      if (campaignError || !campaign) {
         throw new NotFoundException('Auto campaign not found');
       }
 
       if (campaign.status === 'closed' || campaign.status === 'completed') {
         throw new BadRequestException('Cannot create offer for closed or completed campaign');
       }
+
+      if (campaign.status === 'paused') {
+        throw new BadRequestException('Cannot create offer for paused campaign');
+      }
+
+      influencerId = userId;
+      advertiserId = campaign.advertiser_id;
+
+      const { data: advertiser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', advertiserId)
+        .maybeSingle();
+
+      if (!advertiser) {
+        throw new NotFoundException('Campaign advertiser not found');
+      }
+
+      const { data: existingOffer } = await supabase
+        .from('offers')
+        .select('offer_id')
+        .eq('auto_campaign_id', createOfferDto.autoCampaignId)
+        .eq('influencer_id', userId)
+        .maybeSingle();
+
+      if (existingOffer) {
+        throw new ConflictException('You have already applied to this campaign');
+      }
+    } else {
+      influencerId = createOfferDto.influencerId;
+      advertiserId = userId;
+
+      const { data: targetUser } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', influencerId)
+        .maybeSingle();
+
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
+      }
     }
 
     const offerData = {
-      advertiser_id: userId,
-      influencer_id: createOfferDto.influencerId,
+      advertiser_id: advertiserId,
+      influencer_id: influencerId,
       initiated_by: userId,
       title: createOfferDto.title,
       description: createOfferDto.description,

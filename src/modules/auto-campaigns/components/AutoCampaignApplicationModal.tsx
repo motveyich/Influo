@@ -63,7 +63,6 @@ export function AutoCampaignApplicationModal({
       await offerService.createAutoCampaignOffer({
         autoCampaignId: campaign.id,
         influencerId,
-        advertiserId: campaign.advertiserId,
         title: `Отклик на автокампанию: ${campaign.title}`,
         description: formData.message,
         proposedRate: formData.proposedRate,
