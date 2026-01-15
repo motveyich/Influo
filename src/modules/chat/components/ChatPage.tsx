@@ -48,6 +48,7 @@ export function ChatPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [showAIPanel, setShowAIPanel] = useState(true);
+  const [showCollaborationModal, setShowCollaborationModal] = useState(false);
 
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -160,14 +161,10 @@ export function ChatPage() {
           if (isBlocked) {
             chatType = 'restricted';
             canSendMessage = false;
-          } else if (!hasReceiverResponded && initiatedBy !== currentUserId) {
-            // This is a new chat where current user is receiver and hasn't responded
+          } else if (!hasReceiverResponded) {
+            // This is a new chat - both sender and receiver can send messages freely
             chatType = 'new';
             canSendMessage = true;
-          } else if (!hasReceiverResponded && initiatedBy === currentUserId) {
-            // This is a new chat where current user initiated and receiver hasn't responded
-            chatType = 'new';
-            canSendMessage = false; // Can't send more messages until receiver responds
           }
 
           return {
@@ -346,14 +343,14 @@ export function ChatPage() {
   const updateConversationStatus = async (partnerId: string) => {
     try {
       const hasResponded = await chatService.hasReceiverResponded(currentUserId, partnerId);
-      
+
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === partnerId) {
           const newChatType = hasResponded ? 'main' : conv.chatType;
           return {
             ...conv,
             chatType: newChatType,
-            canSendMessage: !conv.isBlocked && (newChatType === 'main' || conv.initiatedBy !== currentUserId),
+            canSendMessage: !conv.isBlocked,
             hasReceiverResponded: hasResponded
           };
         }
@@ -466,13 +463,9 @@ export function ChatPage() {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
-    // Check if user can send message
+    // Check if user can send message (only blocked check)
     if (!selectedConversation.canSendMessage) {
-      if (selectedConversation.isBlocked) {
-        toast.error('Переписка с этим пользователем ограничена');
-      } else if (selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId) {
-        toast.error('Дождитесь ответа получателя перед отправкой следующего сообщения');
-      }
+      toast.error('Переписка с этим пользователем ограничена');
       return;
     }
 
@@ -494,23 +487,15 @@ export function ChatPage() {
 
     try {
       const sentMessage = await chatService.sendMessage(messageData);
-      
+
       // Optimistically add message
       setMessages(prev => [...prev, sentMessage]);
 
       // Update conversation
       updateConversationLastMessage(sentMessage);
-      
-      // If this was the first message from initiator, disable further messages until response
-      if (selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId) {
-        setSelectedConversation(prev => prev ? {
-          ...prev,
-          canSendMessage: false
-        } : null);
-      }
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      
+
       if (error.message.includes('Rate limit exceeded')) {
         setRateLimitWarning(true);
         setTimeout(() => setRateLimitWarning(false), 5000);
@@ -518,7 +503,7 @@ export function ChatPage() {
         setConnectionStatus('connecting');
         setTimeout(() => setConnectionStatus('connected'), 3000);
       }
-      
+
       console.warn('Message delivery issue:', error.message);
     }
   };
@@ -861,7 +846,7 @@ export function ChatPage() {
                       <div className="flex items-center space-x-1 mt-1">
                         <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                         <span className="text-xs text-yellow-600">
-                          {conversation.initiatedBy === currentUserId ? 'Ожидание ответа' : 'Новое предложение'}
+                          Новый чат
                         </span>
                       </div>
                     )}
@@ -992,16 +977,6 @@ export function ChatPage() {
               </div>
             )}
 
-            {/* Chat Restrictions Notice */}
-            {selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId && !selectedConversation.canSendMessage && (
-              <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
-                <div className="flex items-center space-x-2 text-sm text-blue-800">
-                  <Handshake className="w-4 h-4" />
-                  <span>Дождитесь ответа получателя перед отправкой следующего сообщения</span>
-                </div>
-              </div>
-            )}
-
             {selectedConversation.isBlocked && (
               <div className="px-4 py-2 bg-red-50 border-b border-red-200">
                 <div className="flex items-center space-x-2 text-sm text-red-800">
@@ -1032,11 +1007,7 @@ export function ChatPage() {
                 <div className="flex items-center space-x-3">
                   <input
                     type="text"
-                    placeholder={
-                      selectedConversation.chatType === 'new' && selectedConversation.initiatedBy === currentUserId
-                        ? "Отправьте приветственное сообщение..."
-                        : t('chat.typeMessage')
-                    }
+                    placeholder={t('chat.typeMessage')}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
@@ -1055,10 +1026,7 @@ export function ChatPage() {
                   <div className="bg-gray-100 rounded-lg p-4">
                     <Shield className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">
-                      {selectedConversation.isBlocked 
-                        ? 'Переписка ограничена'
-                        : 'Дождитесь ответа получателя'
-                      }
+                      Переписка ограничена
                     </p>
                   </div>
                 </div>
