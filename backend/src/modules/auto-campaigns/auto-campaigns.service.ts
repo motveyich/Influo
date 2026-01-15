@@ -240,7 +240,7 @@ export class AutoCampaignsService {
 
     const { data: campaign } = await supabase
       .from('auto_campaigns')
-      .select('advertiser_id, status')
+      .select('*')
       .eq('id', id)
       .maybeSingle();
 
@@ -265,7 +265,81 @@ export class AutoCampaignsService {
       throw new ConflictException('Failed to launch campaign');
     }
 
+    await this.sendOffersToMatchingInfluencers(id, campaign);
+
     return { message: 'Campaign launched successfully', status: 'active' };
+  }
+
+  private async sendOffersToMatchingInfluencers(campaignId: string, campaign: any) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: influencerCards, error } = await supabase
+      .from('influencer_cards')
+      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
+      .eq('is_active', true);
+
+    if (error || !influencerCards) {
+      this.logger.error(`Failed to find influencer cards: ${error?.message}`, error);
+      return;
+    }
+
+    const matchedCards = influencerCards.filter((card) => {
+      const reach = card.reach || {};
+      const followers = reach.followers || 0;
+
+      const matchesPlatform = campaign.platforms.includes(card.platform);
+      const matchesAudience = followers >= campaign.audience_min && followers <= campaign.audience_max;
+
+      return matchesPlatform && matchesAudience;
+    });
+
+    const { data: existingOffers } = await supabase
+      .from('offers')
+      .select('influencer_id')
+      .eq('auto_campaign_id', campaignId);
+
+    const existingInfluencerIds = new Set((existingOffers || []).map(o => o.influencer_id));
+
+    const availableCards = matchedCards.filter(card =>
+      !existingInfluencerIds.has(card.user_id)
+    );
+
+    const cardsToSend = availableCards.slice(0, campaign.target_influencers_count);
+
+    const avgBudget = (campaign.budget_min + campaign.budget_max) / 2;
+
+    const offersToCreate = cardsToSend.map(card => ({
+      advertiser_id: campaign.advertiser_id,
+      influencer_id: card.user_id,
+      initiated_by: campaign.advertiser_id,
+      auto_campaign_id: campaignId,
+      title: `Предложение о сотрудничестве: ${campaign.title}`,
+      description: campaign.description || 'Мы заинтересованы в сотрудничестве с вами.',
+      amount: avgBudget,
+      proposed_rate: avgBudget,
+      currency: 'RUB',
+      content_type: campaign.content_types[0] || 'post',
+      deliverables: campaign.content_types,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }));
+
+    if (offersToCreate.length > 0) {
+      const { error: insertError } = await supabase
+        .from('offers')
+        .insert(offersToCreate);
+
+      if (insertError) {
+        this.logger.error(`Failed to create offers: ${insertError.message}`, insertError);
+      } else {
+        await supabase
+          .from('auto_campaigns')
+          .update({ sent_offers_count: offersToCreate.length })
+          .eq('id', campaignId);
+
+        this.logger.log(`Created ${offersToCreate.length} offers for campaign ${campaignId}`);
+      }
+    }
   }
 
   async pauseCampaign(id: string, userId: string) {
@@ -332,6 +406,75 @@ export class AutoCampaignsService {
     }
 
     return { message: 'Campaign resumed successfully', status: 'active' };
+  }
+
+  async getCampaignOffers(campaignId: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: campaign } = await supabase
+      .from('auto_campaigns')
+      .select('advertiser_id')
+      .eq('id', campaignId)
+      .maybeSingle();
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+
+    if (campaign.advertiser_id !== userId) {
+      throw new ForbiddenException('You can only view offers for your own campaigns');
+    }
+
+    const { data: offers, error } = await supabase
+      .from('offers')
+      .select(`
+        *,
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
+      `)
+      .eq('auto_campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch campaign offers: ${error.message}`, error);
+      return [];
+    }
+
+    return offers.map((offer) => this.transformOffer(offer));
+  }
+
+  private transformOffer(offer: any) {
+    return {
+      id: offer.offer_id || offer.id,
+      offerId: offer.offer_id || offer.id,
+      advertiserId: offer.advertiser_id,
+      influencerId: offer.influencer_id,
+      initiatedBy: offer.initiated_by,
+      autoCampaignId: offer.auto_campaign_id,
+      title: offer.title,
+      description: offer.description,
+      proposedRate: offer.proposed_rate || offer.amount,
+      amount: offer.amount,
+      currency: offer.currency,
+      contentType: offer.content_type,
+      deliverables: offer.deliverables || [],
+      timeline: offer.timeline,
+      status: offer.status,
+      createdAt: offer.created_at,
+      updatedAt: offer.updated_at,
+      advertiser: offer.advertiser ? {
+        id: offer.advertiser.user_id,
+        fullName: offer.advertiser.full_name,
+        username: offer.advertiser.username,
+        avatar: offer.advertiser.avatar,
+      } : undefined,
+      influencer: offer.influencer ? {
+        id: offer.influencer.user_id,
+        fullName: offer.influencer.full_name,
+        username: offer.influencer.username,
+        avatar: offer.influencer.avatar,
+      } : undefined,
+    };
   }
 
   private transformCampaign(campaign: any) {

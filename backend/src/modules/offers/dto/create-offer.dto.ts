@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsEnum, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, IsArray, IsUUID, Min } from 'class-validator';
 
 export enum OfferStatus {
   PENDING = 'pending',
@@ -61,4 +61,32 @@ export class CreateOfferDto {
   @IsOptional()
   @IsString()
   deadline?: string;
+
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Auto campaign ID (if created from auto campaign)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  autoCampaignId?: string;
+
+  @ApiProperty({
+    example: ['1 Instagram post', '2 Stories', '1 Reel'],
+    description: 'List of deliverables',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  deliverables?: string[];
+
+  @ApiProperty({
+    example: '3-5 days',
+    description: 'Timeline for completion',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  timeline?: string;
 }

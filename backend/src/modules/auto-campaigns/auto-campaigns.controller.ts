@@ -107,6 +107,19 @@ export class AutoCampaignsController {
     return this.autoCampaignsService.getMatches(id);
   }
 
+  @Get(':id/offers')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get all offers for an auto campaign' })
+  @ApiParam({ name: 'id', description: 'Campaign ID' })
+  @ApiResponse({ status: 200, description: 'List of offers' })
+  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  async getCampaignOffers(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.autoCampaignsService.getCampaignOffers(id, userId);
+  }
+
   @Post(':id/launch')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Launch auto campaign' })

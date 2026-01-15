@@ -38,6 +38,59 @@ export class OfferService {
     }
   }
 
+  async createAutoCampaignOffer(offerData: {
+    autoCampaignId: string;
+    influencerId: string;
+    advertiserId: string;
+    title: string;
+    description: string;
+    proposedRate: number;
+    currency: string;
+    deliverables: string[];
+    timeline: string;
+    platform: string;
+    contentType: string;
+    enableChat: boolean;
+  }): Promise<CollaborationOffer> {
+    try {
+      if (!offerData.title || !offerData.description) {
+        throw new Error('Title and description are required');
+      }
+      if (!offerData.proposedRate || offerData.proposedRate <= 0) {
+        throw new Error('Proposed rate must be greater than 0');
+      }
+
+      const payload = {
+        influencerId: offerData.influencerId,
+        advertiserId: offerData.advertiserId,
+        autoCampaignId: offerData.autoCampaignId,
+        initiatedBy: offerData.influencerId,
+        title: offerData.title,
+        description: offerData.description,
+        amount: offerData.proposedRate,
+        currency: offerData.currency,
+        contentType: offerData.contentType,
+        deliverables: offerData.deliverables,
+        timeline: offerData.timeline,
+      };
+
+      const offer = await apiClient.post<CollaborationOffer>('/offers', payload);
+
+      analytics.track('auto_campaign_offer_created', {
+        offer_id: offer.id,
+        auto_campaign_id: offerData.autoCampaignId,
+        influencer_id: offerData.influencerId,
+        advertiser_id: offerData.advertiserId,
+        proposed_rate: offerData.proposedRate
+      });
+
+      return offer;
+    } catch (error) {
+      console.error('Failed to create auto campaign offer:', error);
+      throw error;
+    }
+  }
+
   async getOffers(params?: { status?: string; asInfluencer?: boolean }): Promise<CollaborationOffer[]> {
     try {
       let queryString = '';

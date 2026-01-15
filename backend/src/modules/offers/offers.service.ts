@@ -31,6 +31,22 @@ export class OffersService {
       throw new NotFoundException('Target user not found');
     }
 
+    if (createOfferDto.autoCampaignId) {
+      const { data: campaign } = await supabase
+        .from('auto_campaigns')
+        .select('id, status')
+        .eq('id', createOfferDto.autoCampaignId)
+        .maybeSingle();
+
+      if (!campaign) {
+        throw new NotFoundException('Auto campaign not found');
+      }
+
+      if (campaign.status === 'closed' || campaign.status === 'completed') {
+        throw new BadRequestException('Cannot create offer for closed or completed campaign');
+      }
+    }
+
     const offerData = {
       advertiser_id: userId,
       influencer_id: createOfferDto.influencerId,
@@ -38,9 +54,13 @@ export class OffersService {
       title: createOfferDto.title,
       description: createOfferDto.description,
       amount: createOfferDto.amount,
+      proposed_rate: createOfferDto.amount,
       currency: createOfferDto.currency,
       content_type: createOfferDto.contentType,
       deadline: createOfferDto.deadline,
+      auto_campaign_id: createOfferDto.autoCampaignId || null,
+      deliverables: createOfferDto.deliverables || [],
+      timeline: createOfferDto.timeline || null,
       status: 'pending',
       created_at: new Date().toISOString(),
     };
@@ -54,6 +74,21 @@ export class OffersService {
     if (error) {
       this.logger.error(`Failed to create offer: ${error.message}`, error);
       throw new ConflictException('Failed to create offer');
+    }
+
+    if (createOfferDto.autoCampaignId) {
+      const { data: campaign } = await supabase
+        .from('auto_campaigns')
+        .select('sent_offers_count')
+        .eq('id', createOfferDto.autoCampaignId)
+        .single();
+
+      if (campaign) {
+        await supabase
+          .from('auto_campaigns')
+          .update({ sent_offers_count: campaign.sent_offers_count + 1 })
+          .eq('id', createOfferDto.autoCampaignId);
+      }
     }
 
     return this.transformOffer(offer);
