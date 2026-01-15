@@ -1,17 +1,13 @@
-import { supabase, TABLES } from '../core/supabase';
-import { isSupabaseConfigured } from '../core/supabase';
+import { TABLES } from '../core/supabase';
 import { ContentReport, ModerationQueueItem, ContentFilter, ReportType, ModerationStatus } from '../core/types';
 import { adminService } from './adminService';
-import { roleService } from './roleService';
+import { apiClient } from '../core/api';
 
 export class ModerationService {
   private contentFilters: ContentFilter[] = [];
 
   constructor() {
-    // Only load filters if Supabase is configured
-    if (isSupabaseConfigured()) {
-      this.loadContentFilters();
-    }
+    // Content filters loaded via API when needed
   }
 
   async loadContentFilters(): Promise<void> {
@@ -94,28 +90,24 @@ export class ModerationService {
     priority?: number;
   }): Promise<ContentReport[]> {
     try {
-      let query = supabase
-        .from(TABLES.CONTENT_REPORTS)
-        .select('*');
+      const params = new URLSearchParams();
 
       if (filters?.status) {
-        query = query.eq('status', filters.status);
+        params.append('status', filters.status);
       }
 
       if (filters?.reportType) {
-        query = query.eq('report_type', filters.reportType);
+        params.append('type', filters.reportType);
       }
 
       if (filters?.priority) {
-        query = query.gte('priority', filters.priority);
+        params.append('priority', String(filters.priority));
       }
 
-      query = query.order('priority', { ascending: false })
-                   .order('created_at', { ascending: false });
+      const queryString = params.toString();
+      const endpoint = queryString ? `/moderation/reports?${queryString}` : '/moderation/reports';
 
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(report => this.transformReportFromDatabase(report));
     } catch (error) {
@@ -131,26 +123,10 @@ export class ModerationService {
     reviewedBy: string
   ): Promise<ContentReport> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(reviewedBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.CONTENT_REPORTS)
-        .update({
-          status: resolution,
-          reviewed_by: reviewedBy,
-          reviewed_at: new Date().toISOString(),
-          resolution_notes: notes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', reportId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.patch<any>(`/moderation/reports/${reportId}`, {
+        status: resolution,
+        resolution: notes
+      });
 
       // Log the action
       await adminService.logAction(reviewedBy, 'report_resolved', 'content_report', reportId, {
@@ -171,28 +147,24 @@ export class ModerationService {
     assignedModerator?: string;
   }): Promise<ModerationQueueItem[]> {
     try {
-      let query = supabase
-        .from(TABLES.MODERATION_QUEUE)
-        .select('*');
+      const params = new URLSearchParams();
 
       if (filters?.status) {
-        query = query.eq('moderation_status', filters.status);
+        params.append('status', filters.status);
       }
 
       if (filters?.contentType) {
-        query = query.eq('content_type', filters.contentType);
+        params.append('contentType', filters.contentType);
       }
 
       if (filters?.assignedModerator) {
-        query = query.eq('assigned_moderator', filters.assignedModerator);
+        params.append('assignedModerator', filters.assignedModerator);
       }
 
-      query = query.order('priority', { ascending: false })
-                   .order('created_at', { ascending: true });
+      const queryString = params.toString();
+      const endpoint = queryString ? `/moderation/queue?${queryString}` : '/moderation/queue';
 
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(item => this.transformQueueItemFromDatabase(item));
     } catch (error) {
@@ -246,35 +218,12 @@ export class ModerationService {
     moderatorId: string
   ): Promise<ModerationQueueItem> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(moderatorId, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.MODERATION_QUEUE)
-        .update({
-          moderation_status: decision,
-          assigned_moderator: moderatorId,
-          reviewed_at: new Date().toISOString(),
-          review_notes: notes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', queueItemId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.patch<any>(`/moderation/queue/${queueItemId}`, {
+        status: decision,
+        moderationNotes: notes
+      });
 
       const queueItem = this.transformQueueItemFromDatabase(data);
-
-      // Update original content moderation status
-      await this.updateContentModerationStatus(
-        queueItem.contentType,
-        queueItem.contentId,
-        decision
-      );
 
       // Log the action
       await adminService.logAction(moderatorId, 'content_moderated', queueItem.contentType, queueItem.contentId, {

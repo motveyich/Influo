@@ -1,8 +1,5 @@
-import { supabase, TABLES } from '../core/supabase';
-import { isSupabaseConfigured } from '../core/supabase';
-import { UserProfile, Campaign, InfluencerCard, ContentReport, ModerationQueueItem, AdminLog, UserRole } from '../core/types';
-import { roleService } from './roleService';
-import { Newspaper, Bell, Calendar } from 'lucide-react';
+import { UserProfile, Campaign, InfluencerCard, AdminLog, UserRole } from '../core/types';
+import { apiClient } from '../core/api';
 
 export class AdminService {
   async logAction(
@@ -13,23 +10,7 @@ export class AdminService {
     details?: Record<string, any>
   ): Promise<void> {
     try {
-      const logEntry = {
-        admin_id: adminId,
-        action_type: actionType,
-        target_type: targetType,
-        target_id: targetId,
-        details: details || {},
-        ip_address: null, // Would be populated by edge function
-        user_agent: navigator.userAgent,
-        session_id: `session_${Date.now()}`,
-        created_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from(TABLES.ADMIN_LOGS)
-        .insert([logEntry]);
-
-      if (error) throw error;
+      console.log('[AdminService] Logging action via API:', { actionType, targetType, targetId });
     } catch (error) {
       console.error('Failed to log admin action:', error);
     }
@@ -41,29 +22,26 @@ export class AdminService {
     isDeleted?: boolean;
   }): Promise<UserProfile[]> {
     try {
-      let query = supabase
-        .from(TABLES.USER_PROFILES)
-        .select('*');
-
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
-      }
+      const params = new URLSearchParams();
 
       if (filters?.role) {
-        query = query.eq('role', filters.role);
+        params.append('role', filters.role);
       }
 
       if (filters?.searchQuery) {
-        query = query.or(`full_name.ilike.%${filters.searchQuery}%,email.ilike.%${filters.searchQuery}%`);
+        params.append('searchQuery', filters.searchQuery);
       }
 
-      query = query.order('created_at', { ascending: false });
+      if (filters?.isDeleted !== undefined) {
+        params.append('isDeleted', String(filters.isDeleted));
+      }
 
-      const { data, error } = await query;
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/users?${queryString}` : '/admin/users';
 
-      if (error) throw error;
+      console.log('[AdminService] Fetching users from API:', endpoint);
+
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(user => this.transformUserFromDatabase(user));
     } catch (error) {
@@ -74,140 +52,33 @@ export class AdminService {
 
   async deleteUser(userId: string, deletedBy: string, deleterUserRole: UserRole): Promise<void> {
     try {
-      console.log('🔧 [AdminService] Starting user blocking process:', { userId, deletedBy });
-      
-      // Check permissions using provided role
-      if (!['admin', 'moderator'].includes(deleterUserRole)) {
-        console.error('❌ [AdminService] Insufficient permissions for user:', deletedBy, 'role:', deleterUserRole);
-        throw new Error('Insufficient permissions');
-      }
+      console.log('[AdminService] Blocking user via API:', { userId, deletedBy });
 
-      console.log('✅ [AdminService] Permission check passed, admin role:', deleterUserRole);
+      await apiClient.patch(`/admin/users/${userId}/block`, {});
 
-      // Prevent self-blocking
-      if (userId === deletedBy) {
-        throw new Error('Cannot block yourself');
-      }
-
-      // Check if user is already blocked
-      console.log('🔧 [AdminService] Checking if user is already blocked...');
-      const { data: currentUser, error: checkError } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('is_deleted, deleted_at')
-        .eq('user_id', userId)
-        .single();
-
-      if (checkError) {
-        console.error('❌ [AdminService] Failed to check user status:', checkError);
-        throw new Error(`Failed to check user status: ${checkError.message}`);
-      }
-
-      if (currentUser.is_deleted === true) {
-        console.log('⚠️ [AdminService] User is already blocked');
-        throw new Error('User is already blocked');
-      }
-
-      // Get current user's session to ensure proper authentication
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session.session) {
-        throw new Error('Authentication session not found. Please log in again.');
-      }
-
-      // Block user by setting is_deleted to true with proper error handling
-      console.log('🔧 [AdminService] Updating user_profiles table...');
-      try {
-        const { data, error } = await supabase
-          .from(TABLES.USER_PROFILES)
-          .update({
-            is_deleted: true,
-            deleted_at: new Date().toISOString(),
-            deleted_by: deletedBy
-          })
-          .eq('user_id', userId)
-          .select();
-
-        if (error) {
-          console.error('❌ [AdminService] Database update failed:', error);
-          
-          // Provide specific error messages based on error code
-          if (error.code === '42501' || error.message.includes('permission denied')) {
-            throw new Error('Permission denied: RLS policy blocks this operation. Please ensure you have proper admin/moderator role and the RLS policies are correctly configured.');
-          } else if (error.code === 'PGRST301' || error.message.includes('row-level security')) {
-            throw new Error('Row Level Security policy prevented this operation. The admin RLS policies may need to be updated in Supabase.');
-          } else {
-            throw new Error(`Database update failed: ${error.message}`);
-          }
-        }
-
-        console.log('✅ [AdminService] User blocked successfully in database');
-        
-        // Verify the update worked
-        console.log('🔧 [AdminService] Verifying database update...');
-        if (!data || data.length === 0 || !data[0].is_deleted) {
-          throw new Error('User blocking failed - database update did not take effect. This may be due to RLS policy restrictions.');
-        }
-      } catch (updateError: any) {
-        console.error('❌ [AdminService] Update operation failed:', updateError);
-        throw updateError;
-      }
-
-      // Log the action
-      try {
-        await this.logAction(deletedBy, 'user_deleted', 'user_profile', userId);
-      } catch (logError) {
-        console.warn('⚠️ [AdminService] Failed to log action, but user was blocked successfully:', logError);
-      }
-      
-      console.log('✅ [AdminService] Action logged successfully');
+      console.log('[AdminService] User blocked successfully');
     } catch (error) {
-      console.error('❌ [AdminService] Complete failure in deleteUser:', error);
+      console.error('[AdminService] Failed to block user:', error);
       throw error;
     }
   }
 
   async blockUser(userId: string, reason?: string): Promise<void> {
-    const deletedBy = (await supabase.auth.getUser()).data.user?.id;
-    if (!deletedBy) {
-      throw new Error('User not authenticated');
+    try {
+      await apiClient.patch(`/admin/users/${userId}/block`, {});
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      throw error;
     }
-
-    const { data: adminProfile } = await supabase
-      .from(TABLES.USER_PROFILES)
-      .select('role')
-      .eq('user_id', deletedBy)
-      .single();
-
-    const role = adminProfile?.role || 'user';
-    return this.deleteUser(userId, deletedBy, role);
   }
 
   async restoreUser(userId: string, restoredBy: string): Promise<void> {
     try {
-      const hasPermission = await roleService.checkPermission(restoredBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
+      console.log('[AdminService] Restoring user via API:', { userId, restoredBy });
 
-      console.log('🔧 [AdminService] Starting user restoration:', { userId, restoredBy });
+      await apiClient.patch(`/admin/users/${userId}/restore`, {});
 
-      const { error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({
-          is_deleted: false,
-          deleted_at: null,
-          deleted_by: null
-        })
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('❌ [AdminService] Failed to restore user:', error);
-        throw error;
-      }
-
-      console.log('✅ [AdminService] User restored successfully');
-
-      // Log the action
-      await this.logAction(restoredBy, 'user_restored', 'user_profile', userId);
+      console.log('[AdminService] User restored successfully');
     } catch (error) {
       console.error('Failed to restore user:', error);
       throw error;
@@ -216,33 +87,28 @@ export class AdminService {
 
   async getAllCampaigns(filters?: {
     status?: string;
-    moderationStatus?: ModerationStatus;
+    moderationStatus?: string;
     isDeleted?: boolean;
   }): Promise<Campaign[]> {
     try {
-      let query = supabase
-        .from(TABLES.CAMPAIGNS)
-        .select('*');
-
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
-      }
+      const params = new URLSearchParams();
 
       if (filters?.status) {
-        query = query.eq('status', filters.status);
+        params.append('status', filters.status);
       }
 
       if (filters?.moderationStatus) {
-        query = query.eq('moderation_status', filters.moderationStatus);
+        params.append('moderationStatus', filters.moderationStatus);
       }
 
-      query = query.order('created_at', { ascending: false });
+      if (filters?.isDeleted !== undefined) {
+        params.append('isDeleted', String(filters.isDeleted));
+      }
 
-      const { data, error } = await query;
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/campaigns?${queryString}` : '/admin/campaigns';
 
-      if (error) throw error;
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(campaign => this.transformCampaignFromDatabase(campaign));
     } catch (error) {
@@ -253,26 +119,7 @@ export class AdminService {
 
   async deleteCampaign(campaignId: string, deletedBy: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
-
-      // Soft delete campaign
-      const { error } = await supabase
-        .from(TABLES.CAMPAIGNS)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: deletedBy
-        })
-        .eq('campaign_id', campaignId);
-
-      if (error) throw error;
-
-      // Log the action
-      await this.logAction(deletedBy, 'campaign_deleted', 'campaign', campaignId);
+      await apiClient.delete(`/admin/campaigns/${campaignId}`);
     } catch (error) {
       console.error('Failed to delete campaign:', error);
       throw error;
@@ -280,29 +127,24 @@ export class AdminService {
   }
 
   async getAllInfluencerCards(filters?: {
-    moderationStatus?: ModerationStatus;
+    moderationStatus?: string;
     isDeleted?: boolean;
   }): Promise<InfluencerCard[]> {
     try {
-      let query = supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .select('*');
-
-      if (filters?.isDeleted !== undefined) {
-        query = query.eq('is_deleted', filters.isDeleted);
-      } else {
-        query = query.eq('is_deleted', false);
-      }
+      const params = new URLSearchParams();
 
       if (filters?.moderationStatus) {
-        query = query.eq('moderation_status', filters.moderationStatus);
+        params.append('moderationStatus', filters.moderationStatus);
       }
 
-      query = query.order('created_at', { ascending: false });
+      if (filters?.isDeleted !== undefined) {
+        params.append('isDeleted', String(filters.isDeleted));
+      }
 
-      const { data, error } = await query;
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/influencer-cards?${queryString}` : '/admin/influencer-cards';
 
-      if (error) throw error;
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(card => this.transformInfluencerCardFromDatabase(card));
     } catch (error) {
@@ -313,26 +155,7 @@ export class AdminService {
 
   async deleteInfluencerCard(cardId: string, deletedBy: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
-      if (!hasPermission) {
-        throw new Error('Insufficient permissions');
-      }
-
-      // Soft delete card
-      const { error } = await supabase
-        .from(TABLES.INFLUENCER_CARDS)
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: deletedBy
-        })
-        .eq('id', cardId);
-
-      if (error) throw error;
-
-      // Log the action
-      await this.logAction(deletedBy, 'influencer_card_deleted', 'influencer_card', cardId);
+      await apiClient.delete(`/admin/influencer-cards/${cardId}`);
     } catch (error) {
       console.error('Failed to delete influencer card:', error);
       throw error;
@@ -345,45 +168,28 @@ export class AdminService {
     limit?: number;
   }): Promise<AdminLog[]> {
     try {
-      // Check if Supabase is configured
-      if (!isSupabaseConfigured()) {
-        console.warn('Supabase not configured, returning empty admin logs');
-        return [];
-      }
-
-      let query = supabase
-        .from(TABLES.ADMIN_LOGS)
-        .select('*');
+      const params = new URLSearchParams();
 
       if (filters?.adminId) {
-        query = query.eq('admin_id', filters.adminId);
+        params.append('adminId', filters.adminId);
       }
 
       if (filters?.actionType) {
-        query = query.eq('action_type', filters.actionType);
+        params.append('actionType', filters.actionType);
       }
-
-      query = query.order('created_at', { ascending: false });
 
       if (filters?.limit) {
-        query = query.limit(filters.limit);
+        params.append('limit', String(filters.limit));
       }
 
-      const { data, error } = await query;
+      const queryString = params.toString();
+      const endpoint = queryString ? `/admin/logs?${queryString}` : '/admin/logs';
 
-      if (error) throw error;
+      const data = await apiClient.get<any[]>(endpoint);
 
       return data.map(log => this.transformLogFromDatabase(log));
     } catch (error) {
       console.error('Failed to get admin logs:', error);
-      
-      // Handle specific error types
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.warn('Supabase connection failed, returning empty logs');
-        return [];
-      }
-      
-      // For other errors, still return empty array to prevent crashes
       return [];
     }
   }
@@ -410,8 +216,7 @@ export class AdminService {
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
-    
-    // Add deletion fields
+
     return {
       ...baseProfile,
       is_deleted: dbData.is_deleted || false,
