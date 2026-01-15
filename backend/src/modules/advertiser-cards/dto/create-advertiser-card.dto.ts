@@ -1,20 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsArray, IsObject, IsEnum, IsDateString, Min } from 'class-validator';
-
-export enum AdvertiserPlatform {
-  VK = 'vk',
-  YOUTUBE = 'youtube',
-  INSTAGRAM = 'instagram',
-  TELEGRAM = 'telegram',
-  OK = 'ok',
-  FACEBOOK = 'facebook',
-  TWITTER = 'twitter',
-  TIKTOK = 'tiktok',
-  TWITCH = 'twitch',
-  RUTUBE = 'rutube',
-  YANDEX_ZEN = 'yandex_zen',
-  LIKEE = 'likee',
-}
+import { Platform } from '../../../common/constants';
 
 export class CreateAdvertiserCardDto {
   @ApiProperty({
@@ -40,11 +26,11 @@ export class CreateAdvertiserCardDto {
 
   @ApiProperty({
     example: 'instagram',
-    enum: AdvertiserPlatform,
+    enum: Platform,
     description: 'Target platform',
   })
-  @IsEnum(AdvertiserPlatform)
-  platform: AdvertiserPlatform;
+  @IsEnum(Platform)
+  platform: Platform;
 
   @ApiProperty({
     example: ['technology', 'lifestyle', 'education'],

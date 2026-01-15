@@ -3,6 +3,7 @@ import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { formatPlatform } from '../../../core/utils/platform-utils';
 import { Plus, Target, Users, DollarSign, CheckCircle, Clock, PlayCircle, XCircle, Edit, Eye, Calendar, Sparkles, Send, User, Pause, Play, Briefcase, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
 import { AutoCampaignModal } from './AutoCampaignModal';
 import { AutoCampaignDetailsModal } from './AutoCampaignDetailsModal';
@@ -402,10 +403,10 @@ export function AutoCampaignsPage() {
                     {campaign.platforms.slice(0, 4).map((platform) => (
                       <span
                         key={platform}
-                        className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md capitalize font-medium flex items-center space-x-1"
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md font-medium flex items-center space-x-1"
                       >
                         {getPlatformIcon(platform)}
-                        <span>{platform}</span>
+                        <span>{formatPlatform(platform)}</span>
                       </span>
                     ))}
                     {campaign.platforms.length > 4 && (

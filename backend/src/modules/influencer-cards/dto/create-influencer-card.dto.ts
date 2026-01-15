@@ -1,13 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsObject, IsEnum, IsBoolean, IsOptional, Min, Max } from 'class-validator';
-
-export enum Platform {
-  INSTAGRAM = 'instagram',
-  TIKTOK = 'tiktok',
-  YOUTUBE = 'youtube',
-  TWITTER = 'twitter',
-  MULTI = 'multi',
-}
+import { Platform } from '../../../common/constants';
 
 export class CreateInfluencerCardDto {
   @ApiProperty({

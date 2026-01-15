@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AutoCampaign, AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
-import { PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
+import { PRIMARY_PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
+import { formatPlatform } from '../../../core/utils/platform-utils';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
@@ -24,7 +25,7 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
     audienceMax: 10000,
     targetInfluencersCount: 10,
     contentTypes: ['post'],
-    platforms: ['Instagram'],
+    platforms: ['instagram'],
     targetCountries: [],
     targetAudienceInterests: [],
     productCategories: [],
@@ -376,7 +377,7 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
               Платформы *
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {PLATFORMS.map((platform) => (
+              {PRIMARY_PLATFORMS.map((platform) => (
                 <button
                   key={platform}
                   type="button"
@@ -387,7 +388,7 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {platform}
+                  {formatPlatform(platform)}
                 </button>
               ))}
             </div>

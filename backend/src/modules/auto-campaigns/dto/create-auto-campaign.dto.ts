@@ -1,19 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsArray, IsEnum, Min, IsOptional, IsDateString } from 'class-validator';
-
-export enum CampaignPlatform {
-  INSTAGRAM = 'instagram',
-  TIKTOK = 'tiktok',
-  YOUTUBE = 'youtube',
-  TWITTER = 'twitter',
-}
-
-export enum CampaignContentType {
-  POST = 'post',
-  STORY = 'story',
-  REEL = 'reel',
-  VIDEO = 'video',
-}
+import { Platform, ContentType } from '../../../common/constants';
 
 export class CreateAutoCampaignDto {
   @ApiProperty({
@@ -75,22 +62,22 @@ export class CreateAutoCampaignDto {
   @ApiProperty({
     example: ['post', 'story', 'reel'],
     description: 'Content types',
-    enum: CampaignContentType,
+    enum: ContentType,
     isArray: true,
   })
   @IsArray()
-  @IsEnum(CampaignContentType, { each: true })
-  contentTypes: CampaignContentType[];
+  @IsEnum(ContentType, { each: true })
+  contentTypes: ContentType[];
 
   @ApiProperty({
     example: ['instagram', 'tiktok'],
     description: 'Target platforms',
-    enum: CampaignPlatform,
+    enum: Platform,
     isArray: true,
   })
   @IsArray()
-  @IsEnum(CampaignPlatform, { each: true })
-  platforms: CampaignPlatform[];
+  @IsEnum(Platform, { each: true })
+  platforms: Platform[];
 
   @ApiProperty({
     example: '2024-06-01T00:00:00Z',

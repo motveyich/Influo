@@ -5,6 +5,7 @@ import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Bri
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { GENDER_LABELS } from '../../../core/constants';
+import { formatPlatform } from '../../../core/utils/platform-utils';
 
 interface AutoCampaignDetailsModalProps {
   isOpen: boolean;
@@ -117,7 +118,7 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
                 <div className="flex flex-wrap gap-2">
                   {campaign.platforms.map(platform => (
                     <span key={platform} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                      {platform}
+                      {formatPlatform(platform)}
                     </span>
                   ))}
                 </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Send, DollarSign, Calendar, FileText, Loader2 } from 'lucide-react';
 import { AutoCampaign } from '../../../core/types';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
+import { formatPlatform } from '../../../core/utils/platform-utils';
 import toast from 'react-hot-toast';
 
 interface AutoCampaignApplicationModalProps {
@@ -132,9 +133,9 @@ export function AutoCampaignApplicationModal({
             {campaign.platforms.slice(0, 3).map((platform) => (
               <span
                 key={platform}
-                className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 text-xs rounded-md capitalize"
+                className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 text-xs rounded-md"
               >
-                {platform}
+                {formatPlatform(platform)}
               </span>
             ))}
           </div>

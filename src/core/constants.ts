@@ -1,8 +1,28 @@
 // Shared constants across the application
 
-// Platforms
-export const PLATFORMS = ['Instagram', 'YouTube', 'TikTok', 'VK', 'Telegram', 'Twitter', 'Facebook'] as const;
+// Platforms (lowercase to match backend)
+export const PLATFORMS = ['instagram', 'youtube', 'tiktok', 'vk', 'telegram', 'twitter', 'facebook', 'ok', 'twitch', 'rutube', 'yandex_zen', 'likee', 'multi'] as const;
 export type Platform = typeof PLATFORMS[number];
+
+// Platform display names
+export const PLATFORM_LABELS: Record<Platform, string> = {
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  vk: 'VK',
+  telegram: 'Telegram',
+  twitter: 'Twitter',
+  facebook: 'Facebook',
+  ok: 'Одноклассники',
+  twitch: 'Twitch',
+  rutube: 'Rutube',
+  yandex_zen: 'Яндекс.Дзен',
+  likee: 'Likee',
+  multi: 'Несколько платформ',
+};
+
+// Primary platforms shown by default
+export const PRIMARY_PLATFORMS: Platform[] = ['instagram', 'youtube', 'tiktok', 'vk', 'telegram', 'twitter', 'facebook'];
 
 // Content types
 export const CONTENT_TYPES = ['post', 'story', 'reel', 'video', 'live', 'igtv', 'shorts'] as const;
