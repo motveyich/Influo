@@ -30,11 +30,9 @@ export class AutoCampaignsController {
   constructor(private autoCampaignsService: AutoCampaignsService) {}
 
   @Post()
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new auto campaign' })
   @ApiResponse({ status: 201, description: 'Campaign created successfully' })
-  @ApiResponse({ status: 403, description: 'Only advertisers can create campaigns' })
   @ApiResponse({ status: 400, description: 'Invalid follower range' })
   async create(
     @Body() createAutoCampaignDto: CreateAutoCampaignDto,
@@ -73,7 +71,6 @@ export class AutoCampaignsController {
   }
 
   @Patch(':id')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
@@ -90,7 +87,6 @@ export class AutoCampaignsController {
   }
 
   @Delete(':id')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
@@ -115,7 +111,6 @@ export class AutoCampaignsController {
   }
 
   @Post(':id/pause')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Pause auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })
@@ -130,7 +125,6 @@ export class AutoCampaignsController {
   }
 
   @Post(':id/resume')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Resume auto campaign' })
   @ApiParam({ name: 'id', description: 'Campaign ID' })

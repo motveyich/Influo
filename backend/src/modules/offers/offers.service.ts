@@ -11,24 +11,24 @@ export class OffersService {
   async create(userId: string, createOfferDto: CreateOfferDto) {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: advertiser } = await supabase
+    const { data: creator } = await supabase
       .from('user_profiles')
-      .select('user_type')
+      .select('user_id')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!advertiser || advertiser.user_type !== 'advertiser') {
-      throw new ForbiddenException('Only advertisers can create offers');
+    if (!creator) {
+      throw new NotFoundException('User not found');
     }
 
-    const { data: influencer } = await supabase
+    const { data: targetUser } = await supabase
       .from('user_profiles')
-      .select('user_type')
+      .select('user_id')
       .eq('user_id', createOfferDto.influencerId)
       .maybeSingle();
 
-    if (!influencer || influencer.user_type !== 'influencer') {
-      throw new NotFoundException('Influencer not found');
+    if (!targetUser) {
+      throw new NotFoundException('Target user not found');
     }
 
     const offerData = {

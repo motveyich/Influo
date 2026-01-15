@@ -29,11 +29,9 @@ export class InfluencerCardsController {
   constructor(private influencerCardsService: InfluencerCardsService) {}
 
   @Post()
-  @Roles('influencer')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new influencer card' })
   @ApiResponse({ status: 201, description: 'Card created successfully' })
-  @ApiResponse({ status: 403, description: 'Only influencers can create cards' })
   async create(
     @Body() createInfluencerCardDto: CreateInfluencerCardDto,
     @CurrentUser('userId') userId: string,
@@ -60,7 +58,6 @@ export class InfluencerCardsController {
   }
 
   @Patch(':id')
-  @Roles('influencer')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update influencer card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
@@ -76,7 +73,6 @@ export class InfluencerCardsController {
   }
 
   @Delete(':id')
-  @Roles('influencer')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete influencer card' })
   @ApiParam({ name: 'id', description: 'Card ID' })

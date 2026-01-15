@@ -30,11 +30,9 @@ export class OffersController {
   constructor(private offersService: OffersService) {}
 
   @Post()
-  @Roles('advertiser')
   @ApiOperation({ summary: 'Create a new offer' })
   @ApiResponse({ status: 201, description: 'Offer created successfully' })
-  @ApiResponse({ status: 403, description: 'Only advertisers can create offers' })
-  @ApiResponse({ status: 404, description: 'Influencer not found' })
+  @ApiResponse({ status: 404, description: 'Target user not found' })
   async create(
     @Body() createOfferDto: CreateOfferDto,
     @CurrentUser('userId') userId: string,
@@ -84,7 +82,6 @@ export class OffersController {
   }
 
   @Patch(':id')
-  @Roles('advertiser')
   @ApiOperation({ summary: 'Update offer' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer updated successfully' })

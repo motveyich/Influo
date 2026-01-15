@@ -13,16 +13,12 @@ export class InfluencerCardsService {
 
     const { data: user, error: userError } = await supabase
       .from('user_profiles')
-      .select('user_type')
+      .select('user_id')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (userError || !user) {
       throw new NotFoundException('User not found');
-    }
-
-    if (user.user_type !== 'influencer') {
-      throw new ForbiddenException('Only influencers can create influencer cards');
     }
 
     const cardData = {

@@ -13,16 +13,12 @@ export class AutoCampaignsService {
 
     const { data: user, error: userError } = await supabase
       .from('user_profiles')
-      .select('user_type')
+      .select('user_id')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (userError || !user) {
       throw new NotFoundException('User not found');
-    }
-
-    if (user.user_type !== 'advertiser') {
-      throw new ForbiddenException('Only advertisers can create auto campaigns');
     }
 
     if (createAutoCampaignDto.followerRange.max <= createAutoCampaignDto.followerRange.min) {

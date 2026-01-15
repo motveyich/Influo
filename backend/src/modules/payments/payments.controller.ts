@@ -13,11 +13,9 @@ export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post()
-  @Roles('influencer')
-  @ApiOperation({ summary: 'Create payment request (influencer only)' })
+  @ApiOperation({ summary: 'Create payment request' })
   @ApiResponse({ status: 201, description: 'Payment request created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid data or business logic error' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only influencers can create payment requests' })
   create(@CurrentUser('userId') userId: string, @Body() createDto: CreatePaymentRequestDto) {
     return this.paymentsService.createPaymentRequest(userId, createDto);
   }
@@ -39,8 +37,7 @@ export class PaymentsController {
   }
 
   @Get('statistics')
-  @Roles('influencer')
-  @ApiOperation({ summary: 'Get payment statistics for influencer' })
+  @ApiOperation({ summary: 'Get payment statistics' })
   @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
   getStatistics(@CurrentUser('userId') userId: string) {
     return this.paymentsService.getPaymentStatistics(userId);
@@ -55,10 +52,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/approve')
-  @Roles('advertiser')
-  @ApiOperation({ summary: 'Approve payment request (advertiser only)' })
+  @ApiOperation({ summary: 'Approve payment request' })
   @ApiResponse({ status: 200, description: 'Payment request approved successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only advertisers can approve' })
   approve(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
@@ -68,10 +63,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/reject')
-  @Roles('advertiser')
-  @ApiOperation({ summary: 'Reject payment request (advertiser only)' })
+  @ApiOperation({ summary: 'Reject payment request' })
   @ApiResponse({ status: 200, description: 'Payment request rejected successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only advertisers can reject' })
   reject(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
@@ -81,10 +74,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/mark-paid')
-  @Roles('advertiser')
-  @ApiOperation({ summary: 'Mark payment request as paid (advertiser only)' })
+  @ApiOperation({ summary: 'Mark payment request as paid' })
   @ApiResponse({ status: 200, description: 'Payment request marked as paid successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only advertisers can mark as paid' })
   markPaid(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
@@ -94,10 +85,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/cancel')
-  @Roles('influencer')
-  @ApiOperation({ summary: 'Cancel payment request (influencer only)' })
+  @ApiOperation({ summary: 'Cancel payment request' })
   @ApiResponse({ status: 200, description: 'Payment request cancelled successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only influencers can cancel' })
   cancel(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.paymentsService.cancel(id, userId);
   }

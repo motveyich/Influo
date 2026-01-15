@@ -29,11 +29,9 @@ export class AdvertiserCardsController {
   constructor(private advertiserCardsService: AdvertiserCardsService) {}
 
   @Post()
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new advertiser card' })
   @ApiResponse({ status: 201, description: 'Card created successfully' })
-  @ApiResponse({ status: 403, description: 'Only advertisers can create cards' })
   @ApiResponse({ status: 400, description: 'Invalid date range' })
   async create(
     @Body() createAdvertiserCardDto: CreateAdvertiserCardDto,
@@ -61,7 +59,6 @@ export class AdvertiserCardsController {
   }
 
   @Patch(':id')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update advertiser card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
@@ -78,7 +75,6 @@ export class AdvertiserCardsController {
   }
 
   @Delete(':id')
-  @Roles('advertiser')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete advertiser card' })
   @ApiParam({ name: 'id', description: 'Card ID' })
