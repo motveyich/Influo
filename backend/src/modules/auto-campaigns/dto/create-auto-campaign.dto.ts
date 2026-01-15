@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsArray, IsEnum, Min, IsOptional, IsDateString } from 'class-validator';
 
 export enum CampaignPlatform {
-  INSTAGRAM = 'Instagram',
-  TIKTOK = 'TikTok',
-  YOUTUBE = 'YouTube',
-  TWITTER = 'Twitter',
+  INSTAGRAM = 'instagram',
+  TIKTOK = 'tiktok',
+  YOUTUBE = 'youtube',
+  TWITTER = 'twitter',
 }
 
 export enum CampaignContentType {
@@ -83,7 +83,7 @@ export class CreateAutoCampaignDto {
   contentTypes: CampaignContentType[];
 
   @ApiProperty({
-    example: ['Instagram', 'TikTok'],
+    example: ['instagram', 'tiktok'],
     description: 'Target platforms',
     enum: CampaignPlatform,
     isArray: true,
