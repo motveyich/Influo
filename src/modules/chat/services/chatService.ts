@@ -225,6 +225,57 @@ export class ChatService {
     }
   }
 
+  async initializeConversation(userId1: string, userId2: string): Promise<boolean> {
+    try {
+      // Prevent creating conversation with self
+      if (userId1 === userId2) {
+        throw new Error('Cannot create conversation with yourself');
+      }
+
+      // Check if conversation already exists
+      const { data: existingMessages, error: checkError } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .select('id')
+        .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      // If conversation already exists, don't create init message
+      if (existingMessages && existingMessages.length > 0) {
+        console.log('Conversation already exists, skipping initialization');
+        return true;
+      }
+
+      // Create conversation initialization message
+      const initMessage = {
+        sender_id: userId1,
+        receiver_id: userId2,
+        message_content: '',
+        message_type: 'conversation_init',
+        timestamp: new Date().toISOString(),
+        is_read: false,
+        metadata: {
+          system_message: true,
+          conversation_started: true,
+          initiated_by: userId1
+        }
+      };
+
+      const { error: insertError } = await supabase
+        .from(TABLES.CHAT_MESSAGES)
+        .insert([initMessage]);
+
+      if (insertError) throw insertError;
+
+      console.log('Conversation initialized successfully between', userId1, 'and', userId2);
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize conversation:', error);
+      throw error;
+    }
+  }
+
   private checkRateLimit(userId: string): boolean {
     const now = Date.now();
     const userLimit = this.rateLimitMap.get(userId);
@@ -252,13 +303,17 @@ export class ChatService {
     if (!messageData.senderId) errors.push('Sender ID is required');
     if (!messageData.receiverId) errors.push('Receiver ID is required');
     if (messageData.senderId === messageData.receiverId) errors.push('Cannot send message to yourself');
-    if (!messageData.messageContent?.trim()) errors.push('Message content is required');
-    
+
+    // conversation_init messages don't require content
+    if (messageData.messageType !== 'conversation_init' && !messageData.messageContent?.trim()) {
+      errors.push('Message content is required');
+    }
+
     if (messageData.messageContent && messageData.messageContent.length > 1000) {
       errors.push('Message content cannot exceed 1000 characters');
     }
 
-    if (messageData.messageType && !['text', 'image', 'file', 'offer', 'payment_window', 'payment_confirmation'].includes(messageData.messageType)) {
+    if (messageData.messageType && !['text', 'image', 'file', 'offer', 'payment_window', 'payment_confirmation', 'conversation_init'].includes(messageData.messageType)) {
       errors.push('Invalid message type');
     }
 

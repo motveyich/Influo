@@ -220,6 +220,17 @@ export function ChatPage() {
 
   const createNewConversation = async (userId: string) => {
     try {
+      // Initialize conversation in database first
+      if (currentUserId) {
+        try {
+          await chatService.initializeConversation(currentUserId, userId);
+          console.log('Conversation initialized in database');
+        } catch (initError) {
+          console.error('Failed to initialize conversation in database:', initError);
+          // Continue anyway, conversation might already exist
+        }
+      }
+
       // Get user profile to create conversation entry
       const { data: userProfile, error: profileError } = await supabase
         .from('user_profiles')
@@ -959,14 +970,16 @@ export function ChatPage() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  currentUserId={currentUserId}
-                  onInteraction={handleMessageInteraction}
-                />
-              ))}
+              {messages
+                .filter((message) => message.messageType !== 'conversation_init')
+                .map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    currentUserId={currentUserId}
+                    onInteraction={handleMessageInteraction}
+                  />
+                ))}
               <div ref={messagesEndRef} />
             </div>
 
