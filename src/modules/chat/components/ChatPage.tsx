@@ -220,29 +220,36 @@ export function ChatPage() {
 
   const createNewConversation = async (userId: string) => {
     try {
+      console.log('[createNewConversation] Starting for userId:', userId);
+
       // Initialize conversation in database first
       if (currentUserId) {
         try {
           await chatService.initializeConversation(currentUserId, userId);
-          console.log('Conversation initialized in database');
+          console.log('[createNewConversation] Conversation initialized in database');
         } catch (initError) {
-          console.error('Failed to initialize conversation in database:', initError);
+          console.error('[createNewConversation] Failed to initialize conversation:', initError);
           // Continue anyway, conversation might already exist
         }
       }
 
       // Get user profile to create conversation entry
-      let userProfile;
+      let userProfile: any;
       try {
-        userProfile = await apiClient.get<{ user_id: string; full_name: string; avatar?: string }>(`/profiles/${userId}`);
-      } catch (profileError) {
-        console.error('Error fetching user profile:', profileError);
+        userProfile = await apiClient.get(`/profiles/${userId}`);
+        console.log('[createNewConversation] Profile fetched:', {
+          userId: userProfile?.userId,
+          fullName: userProfile?.fullName,
+          hasAvatar: !!userProfile?.avatar
+        });
+      } catch (profileError: any) {
+        console.error('[createNewConversation] Error fetching profile:', profileError);
         toast.error('Не удалось загрузить профиль пользователя');
         return;
       }
 
-      if (!userProfile) {
-        console.error('User profile not found for userId:', userId);
+      if (!userProfile || !userProfile.userId) {
+        console.error('[createNewConversation] Invalid profile data:', userProfile);
         toast.error('Пользователь не найден');
         return;
       }
@@ -250,24 +257,27 @@ export function ChatPage() {
       const newConversation: Conversation = {
         id: userId,
         participantId: userId,
-        participantName: userProfile.full_name || 'Пользователь',
-        participantAvatar: userProfile.avatar,
+        participantName: userProfile.fullName || userProfile.username || 'Пользователь',
+        participantAvatar: userProfile.avatar || undefined,
         unreadCount: 0,
         isOnline: false,
         chatType: 'new',
-        canSendMessage: true, // Can send initial message
+        canSendMessage: true,
         isBlocked: false,
         initiatedBy: currentUserId,
         hasReceiverResponded: false
       };
 
+      console.log('[createNewConversation] New conversation object:', newConversation);
+
       // Add new conversation to list
       setConversations(prev => {
-        // Check if conversation already exists
         const exists = prev.find(c => c.participantId === userId);
         if (exists) {
+          console.log('[createNewConversation] Conversation already exists');
           return prev;
         }
+        console.log('[createNewConversation] Adding new conversation to list');
         return [newConversation, ...prev];
       });
 
@@ -275,9 +285,9 @@ export function ChatPage() {
       setActiveTab('new');
       setSelectedConversation(newConversation);
 
-      console.log('New conversation created and selected:', newConversation);
-    } catch (error) {
-      console.error('Failed to create new conversation:', error);
+      console.log('[createNewConversation] Conversation created and selected successfully');
+    } catch (error: any) {
+      console.error('[createNewConversation] Unexpected error:', error);
       toast.error('Не удалось создать диалог');
     }
   };

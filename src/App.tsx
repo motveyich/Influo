@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProfilesPage } from './modules/profiles/components/ProfilesPage';
 import { ChatPage } from './modules/chat/components/ChatPage';
 import { InfluencerCardsPage } from './modules/influencer-cards/components/InfluencerCardsPage';
@@ -105,7 +106,9 @@ function App() {
             } />
             <Route path="/app/chat" element={
               <Layout>
-                <ChatPage />
+                <ErrorBoundary>
+                  <ChatPage />
+                </ErrorBoundary>
               </Layout>
             } />
             <Route path="/app/offers" element={
