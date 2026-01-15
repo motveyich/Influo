@@ -12,7 +12,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
 import { analytics } from '../../../core/analytics';
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
-import { supabase } from '../../../core/supabase';
+import { apiClient } from '../../../core/api';
 import { UserAvatar } from '../../../components/UserAvatar';
 import toast from 'react-hot-toast';
 
@@ -232,13 +232,10 @@ export function ChatPage() {
       }
 
       // Get user profile to create conversation entry
-      const { data: userProfile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name, avatar')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (profileError) {
+      let userProfile;
+      try {
+        userProfile = await apiClient.get<{ user_id: string; full_name: string; avatar?: string }>(`/profiles/${userId}`);
+      } catch (profileError) {
         console.error('Error fetching user profile:', profileError);
         toast.error('Не удалось загрузить профиль пользователя');
         return;

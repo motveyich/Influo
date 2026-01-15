@@ -1,8 +1,7 @@
-import { supabase, TABLES } from '../../../core/supabase';
+import { apiClient } from '../../../core/api';
 import { ChatMessage } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
-import { emailNotificationService } from '../../../services/emailNotificationService';
 
 export class ChatService {
   private messageQueue: ChatMessage[] = [];
@@ -12,81 +11,35 @@ export class ChatService {
 
   async sendMessage(messageData: Partial<ChatMessage>): Promise<ChatMessage> {
     try {
-      // Prevent sending messages to self
       if (messageData.senderId === messageData.receiverId) {
         throw new Error('Cannot send message to yourself');
       }
-      
-      // Rate limiting check
+
       if (!this.checkRateLimit(messageData.senderId!)) {
         throw new Error('Rate limit exceeded. Please wait before sending more messages.');
       }
 
-      // Validate message data
       this.validateMessageData(messageData);
 
-      const newMessage: Partial<ChatMessage> = {
-        sender_id: messageData.senderId,
-        receiver_id: messageData.receiverId,
-        message_content: messageData.messageContent,
-        message_type: messageData.messageType || 'text',
-        timestamp: new Date().toISOString(),
-        is_read: false,
+      const response = await apiClient.post<ChatMessage>('/chat/messages', {
+        receiverId: messageData.receiverId,
+        messageContent: messageData.messageContent,
+        messageType: messageData.messageType || 'text',
         metadata: messageData.metadata || {}
-      };
+      });
 
-      // Try to send via real-time first
-      try {
-        const { data, error } = await supabase
-          .from(TABLES.CHAT_MESSAGES)
-          .insert([newMessage])
-          .select()
-          .single();
+      const transformedMessage = this.transformFromApi(response);
 
-        if (error) throw error;
+      realtimeService.sendChatMessage({
+        type: 'chat_message',
+        data: transformedMessage,
+        userId: messageData.receiverId!,
+        timestamp: transformedMessage.timestamp
+      });
 
-        const transformedMessage = this.transformFromDatabase(data);
+      analytics.trackChatMessage(messageData.senderId!, messageData.receiverId!);
 
-        // Send real-time notification
-        realtimeService.sendChatMessage({
-          type: 'chat_message',
-          data: transformedMessage,
-          userId: messageData.receiverId!,
-          timestamp: transformedMessage.timestamp
-        });
-
-        // Track analytics
-        analytics.trackChatMessage(messageData.senderId!, messageData.receiverId!);
-
-        // Send email notification
-        try {
-          const { data: senderProfile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', messageData.senderId!)
-            .maybeSingle();
-
-          const senderName = senderProfile?.full_name || 'Пользователь';
-          const messagePreview = messageData.messageContent!.length > 100
-            ? messageData.messageContent!.substring(0, 100) + '...'
-            : messageData.messageContent!;
-
-          await emailNotificationService.sendNewMessageNotification(
-            messageData.receiverId!,
-            senderName,
-            messagePreview
-          );
-        } catch (error) {
-          console.error('Failed to send message notification email:', error);
-        }
-
-        return transformedMessage;
-      } catch (realtimeError) {
-        // Queue message if real-time fails
-        console.warn('Real-time delivery failed, queuing message:', realtimeError);
-        this.queueMessage(newMessage as ChatMessage);
-        throw new Error('Message queued due to delivery delay. The recipient will receive it shortly.');
-      }
+      return transformedMessage;
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
@@ -95,20 +48,12 @@ export class ChatService {
 
   async getConversation(userId1: string, userId2: string): Promise<ChatMessage[]> {
     try {
-      // Prevent getting conversation with self
       if (userId1 === userId2) {
         return [];
       }
-      
-      const { data, error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('*')
-        .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
-        .order('timestamp', { ascending: true });
 
-      if (error) throw error;
-
-      return data.map(message => this.transformFromDatabase(message));
+      const messages = await apiClient.get<ChatMessage[]>(`/chat/messages/${userId2}`);
+      return messages.map(msg => this.transformFromApi(msg));
     } catch (error) {
       console.error('Failed to get conversation:', error);
       throw error;
@@ -117,51 +62,8 @@ export class ChatService {
 
   async getUserConversations(userId: string): Promise<any[]> {
     try {
-      // Get latest message for each conversation
-      const { data, error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select(`
-          *,
-          sender:user_profiles!sender_id(user_id, full_name, avatar),
-          receiver:user_profiles!receiver_id(user_id, full_name, avatar)
-        `)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-
-      // Group by conversation partner
-      const conversationsMap = new Map();
-      
-      data.forEach(message => {
-        const partnerId = message.sender_id === userId ? message.receiver_id : message.sender_id;
-        const partner = message.sender_id === userId ? message.receiver : message.sender;
-        
-        // Skip if partner is the same as current user (self-conversation)
-        if (partnerId === userId) {
-          return;
-        }
-        
-        if (!conversationsMap.has(partnerId)) {
-          conversationsMap.set(partnerId, {
-            id: partnerId,
-            participantId: partnerId,
-            participantName: partner.full_name,
-            participantAvatar: partner.avatar,
-            lastMessage: this.transformFromDatabase(message),
-            unreadCount: 0,
-            isOnline: false // This would need real-time presence tracking
-          });
-        }
-        
-        // Count unread messages
-        if (message.receiver_id === userId && !message.is_read) {
-          const conversation = conversationsMap.get(partnerId);
-          conversation.unreadCount++;
-        }
-      });
-
-      return Array.from(conversationsMap.values());
+      const conversations = await apiClient.get<any[]>('/chat/conversations');
+      return conversations;
     } catch (error) {
       console.error('Failed to get user conversations:', error);
       throw error;
@@ -170,19 +72,20 @@ export class ChatService {
 
   async markMessagesAsRead(senderId: string, receiverId: string): Promise<void> {
     try {
-      // Prevent marking messages as read for self-conversation
       if (senderId === receiverId) {
         return;
       }
-      
-      const { error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .update({ is_read: true })
-        .eq('sender_id', senderId)
-        .eq('receiver_id', receiverId)
-        .eq('is_read', false);
 
-      if (error) throw error;
+      const messages = await this.getConversation(receiverId, senderId);
+      const unreadMessages = messages.filter(msg =>
+        msg.senderId === senderId &&
+        msg.receiverId === receiverId &&
+        !msg.isRead
+      );
+
+      for (const message of unreadMessages) {
+        await apiClient.patch(`/chat/messages/${message.id}/read`, {});
+      }
     } catch (error) {
       console.error('Failed to mark messages as read:', error);
       throw error;
@@ -191,16 +94,9 @@ export class ChatService {
 
   async hasReceiverResponded(userId1: string, userId2: string): Promise<boolean> {
     try {
-      // Check if the receiver (userId1) has sent any messages to the sender (userId2)
-      const { data, error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('id')
-        .eq('sender_id', userId1)
-        .eq('receiver_id', userId2)
-        .limit(1);
-
-      if (error) throw error;
-      return (data?.length || 0) > 0;
+      const messages = await this.getConversation(userId2, userId1);
+      const receiverMessages = messages.filter(msg => msg.senderId === userId1 && msg.receiverId === userId2);
+      return receiverMessages.length > 0;
     } catch (error) {
       console.error('Failed to check receiver response:', error);
       return false;
@@ -209,16 +105,8 @@ export class ChatService {
 
   async getConversationInitiator(userId1: string, userId2: string): Promise<string | null> {
     try {
-      // Get the first message in the conversation to determine who initiated
-      const { data, error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('sender_id')
-        .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
-        .order('timestamp', { ascending: true })
-        .limit(1);
-
-      if (error) throw error;
-      return data?.[0]?.sender_id || null;
+      const response = await apiClient.get<{ initiatedBy: string | null }>(`/chat/conversations/${userId2}/initiator`);
+      return response.initiatedBy;
     } catch (error) {
       console.error('Failed to get conversation initiator:', error);
       return null;
@@ -227,49 +115,16 @@ export class ChatService {
 
   async initializeConversation(userId1: string, userId2: string): Promise<boolean> {
     try {
-      // Prevent creating conversation with self
       if (userId1 === userId2) {
         throw new Error('Cannot create conversation with yourself');
       }
 
-      // Check if conversation already exists
-      const { data: existingMessages, error: checkError } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('id')
-        .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
-        .limit(1);
+      const response = await apiClient.post<{ success: boolean; conversationExists: boolean }>('/chat/conversations/initialize', {
+        participantId: userId2
+      });
 
-      if (checkError) throw checkError;
-
-      // If conversation already exists, don't create init message
-      if (existingMessages && existingMessages.length > 0) {
-        console.log('Conversation already exists, skipping initialization');
-        return true;
-      }
-
-      // Create conversation initialization message
-      const initMessage = {
-        sender_id: userId1,
-        receiver_id: userId2,
-        message_content: '',
-        message_type: 'conversation_init',
-        timestamp: new Date().toISOString(),
-        is_read: false,
-        metadata: {
-          system_message: true,
-          conversation_started: true,
-          initiated_by: userId1
-        }
-      };
-
-      const { error: insertError } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .insert([initMessage]);
-
-      if (insertError) throw insertError;
-
-      console.log('Conversation initialized successfully between', userId1, 'and', userId2);
-      return true;
+      console.log('Conversation initialized:', response);
+      return response.success;
     } catch (error) {
       console.error('Failed to initialize conversation:', error);
       throw error;
@@ -313,7 +168,7 @@ export class ChatService {
       errors.push('Message content cannot exceed 1000 characters');
     }
 
-    if (messageData.messageType && !['text', 'image', 'file', 'offer', 'payment_window', 'payment_confirmation', 'conversation_init'].includes(messageData.messageType)) {
+    if (messageData.messageType && !['text', 'image', 'file', 'offer', 'payment_window', 'payment_confirmation', 'conversation_init', 'collaboration_offer', 'collaboration_response', 'system'].includes(messageData.messageType)) {
       errors.push('Invalid message type');
     }
 
@@ -365,18 +220,18 @@ export class ChatService {
   public transformMessageFromDatabase(dbData: any): ChatMessage {
     return {
       id: dbData.id,
-      senderId: dbData.sender_id,
-      receiverId: dbData.receiver_id,
-      messageContent: dbData.message_content,
-      messageType: dbData.message_type,
+      senderId: dbData.senderId || dbData.sender_id,
+      receiverId: dbData.receiverId || dbData.receiver_id,
+      messageContent: dbData.messageContent || dbData.message_content,
+      messageType: dbData.messageType || dbData.message_type,
       timestamp: dbData.timestamp,
-      isRead: dbData.is_read,
+      isRead: dbData.isRead !== undefined ? dbData.isRead : dbData.is_read,
       metadata: dbData.metadata || {}
     };
   }
 
-  private transformFromDatabase(dbData: any): ChatMessage {
-    return this.transformMessageFromDatabase(dbData);
+  private transformFromApi(apiData: any): ChatMessage {
+    return this.transformMessageFromDatabase(apiData);
   }
 
   async getUserChats(userId: string): Promise<any[]> {
@@ -385,15 +240,8 @@ export class ChatService {
 
   async getChatMessages(chatId: string): Promise<ChatMessage[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.CHAT_MESSAGES)
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('timestamp', { ascending: true });
-
-      if (error) throw error;
-
-      return data.map(message => this.transformFromDatabase(message));
+      const messages = await apiClient.get<ChatMessage[]>(`/chat/messages/${chatId}`);
+      return messages.map(msg => this.transformFromApi(msg));
     } catch (error) {
       console.error('Failed to get chat messages:', error);
       return [];

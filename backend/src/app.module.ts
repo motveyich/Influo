@@ -19,6 +19,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { BlacklistModule } from './modules/blacklist/blacklist.module';
 import { UserSettingsModule } from './modules/user-settings/user-settings.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -51,6 +52,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     BlacklistModule,
     UserSettingsModule,
     RolesModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [
