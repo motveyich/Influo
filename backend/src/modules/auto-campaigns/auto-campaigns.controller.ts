@@ -44,17 +44,14 @@ export class AutoCampaignsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get all auto campaigns with filters' })
-  @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
   @ApiResponse({ status: 200, description: 'List of auto campaigns' })
   async findAll(
-    @Query('platform') platform?: string,
     @Query('status') status?: string,
     @Query('userId') userId?: string,
   ) {
     return this.autoCampaignsService.findAll({
-      platform,
       status,
       userId,
     });
