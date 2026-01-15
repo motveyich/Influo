@@ -636,17 +636,50 @@ export function ChatPage() {
 
   const tabCounts = getTabCounts();
 
-  const formatMessageTime = (timestamp: string) => {
-    const date = parseISO(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 24) {
-      return format(date, 'HH:mm');
-    } else if (diffInHours < 24 * 7) {
-      return format(date, 'EEE HH:mm');
-    } else {
-      return format(date, 'MMM dd');
+  const formatMessageTime = (timestamp: string | undefined) => {
+    if (!timestamp || timestamp.trim() === '') {
+      return '';
+    }
+
+    try {
+      const date = parseISO(timestamp);
+
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+
+      const now = new Date();
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+      if (diffInHours < 24) {
+        return format(date, 'HH:mm');
+      } else if (diffInHours < 24 * 7) {
+        return format(date, 'EEE HH:mm');
+      } else {
+        return format(date, 'MMM dd');
+      }
+    } catch (error) {
+      console.error('Error formatting message time:', error);
+      return '';
+    }
+  };
+
+  const formatLastSeen = (timestamp: string | undefined) => {
+    if (!timestamp || timestamp.trim() === '') {
+      return 'Нет сообщений';
+    }
+
+    try {
+      const date = parseISO(timestamp);
+
+      if (isNaN(date.getTime())) {
+        return 'Нет сообщений';
+      }
+
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      console.error('Error formatting last seen:', error);
+      return 'Нет сообщений';
     }
   };
 
@@ -889,7 +922,10 @@ export function ChatPage() {
                     )}
                   </div>
                   <p className="text-xs text-gray-600">
-                    {selectedConversation.isOnline ? t('common.online') : `${t('chat.lastSeen')} ${formatDistanceToNow(parseISO(selectedConversation.lastMessage?.timestamp || ''), { addSuffix: true })}`}
+                    {selectedConversation.isOnline
+                      ? t('common.online')
+                      : `${t('chat.lastSeen')} ${formatLastSeen(selectedConversation.lastMessage?.timestamp)}`
+                    }
                   </p>
                 </div>
               </div>

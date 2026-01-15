@@ -110,13 +110,23 @@ export class ChatService {
           ? firstRealMessage.sender_id === otherUserId
           : false;
 
+        const lastMessageObject = message.message_type === 'conversation_init' ? null : {
+          id: message.id,
+          senderId: message.sender_id,
+          receiverId: message.receiver_id,
+          messageContent: message.message_content,
+          messageType: message.message_type,
+          timestamp: message.timestamp,
+          isRead: message.is_read,
+          metadata: message.metadata || {}
+        };
+
         conversationsMap.set(otherUserId, {
           id: otherUserId,
           participantId: otherUserId,
           participantName: otherUser?.full_name || 'Unknown User',
           participantAvatar: otherUser?.avatar || null,
-          lastMessage: message.message_type === 'conversation_init' ? '' : message.message_content,
-          lastMessageTime: message.timestamp,
+          lastMessage: lastMessageObject,
           unreadCount,
           isOnline: false,
           chatType: firstRealMessage ? 'existing' : 'new',
@@ -128,9 +138,11 @@ export class ChatService {
       }
     }
 
-    return Array.from(conversationsMap.values()).sort((a, b) =>
-      new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-    );
+    return Array.from(conversationsMap.values()).sort((a, b) => {
+      const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 0;
+      const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 0;
+      return timeB - timeA;
+    });
   }
 
   async getMessages(userId: string, conversationId: string) {
