@@ -5,45 +5,27 @@ import { analytics } from '../../../core/analytics';
 export class AutoCampaignService {
   async createCampaign(advertiserId: string, data: AutoCampaignFormData): Promise<AutoCampaign> {
     try {
-      const platformMap: Record<string, string> = {
-        'Instagram': 'instagram',
-        'TikTok': 'tiktok',
-        'YouTube': 'youtube',
-        'Twitter': 'twitter',
-      };
-
-      const selectedPlatform = data.platforms[0] || 'Instagram';
-      const mappedPlatform = platformMap[selectedPlatform] || 'instagram';
-
       let enrichedDescription = data.description;
-      if (data.contentTypes.length > 0) {
-        enrichedDescription += `\n\nТипы контента: ${data.contentTypes.join(', ')}`;
-      }
       if (data.productCategories.length > 0) {
-        enrichedDescription += `\nКатегории товаров: ${data.productCategories.join(', ')}`;
+        enrichedDescription += `\n\nКатегории товаров: ${data.productCategories.join(', ')}`;
       }
-      if (data.startDate || data.endDate) {
-        enrichedDescription += `\nСроки: ${data.startDate || 'не указано'} - ${data.endDate || 'не указано'}`;
+      if (data.targetAudienceInterests.length > 0) {
+        enrichedDescription += `\nИнтересы аудитории: ${data.targetAudienceInterests.join(', ')}`;
       }
 
       const payload = {
         title: data.title,
         description: enrichedDescription,
-        platform: mappedPlatform,
-        maxInfluencers: data.targetInfluencersCount,
-        budget: {
-          amount: data.budgetMax,
-          currency: 'RUB'
-        },
-        followerRange: {
-          min: data.audienceMin,
-          max: data.audienceMax
-        },
-        minEngagementRate: 2.0,
-        targetInterests: data.targetAudienceInterests || [],
-        targetAgeGroups: {},
-        targetCountries: data.targetCountries || [],
-        enableChat: data.enableChat ?? true,
+        budgetMin: data.budgetMin,
+        budgetMax: data.budgetMax,
+        audienceMin: data.audienceMin,
+        audienceMax: data.audienceMax,
+        targetInfluencersCount: data.targetInfluencersCount,
+        contentTypes: data.contentTypes,
+        platforms: data.platforms,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
+        targetPricePerFollower: undefined,
       };
 
       const campaign = await apiClient.post<AutoCampaign>('/auto-campaigns', payload);

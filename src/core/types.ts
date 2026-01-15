@@ -713,7 +713,7 @@ export interface AutoCampaign {
   advertiserId: string;
   title: string;
   description?: string;
-  status: 'draft' | 'active' | 'in_progress' | 'paused' | 'closed' | 'completed';
+  status: 'draft' | 'active' | 'closed' | 'completed';
   budgetMin: number;
   budgetMax: number;
   audienceMin: number;
@@ -721,12 +721,6 @@ export interface AutoCampaign {
   targetInfluencersCount: number;
   contentTypes: string[];
   platforms: string[];
-  targetCountries: string[];
-  targetAgeGroups: string[];
-  targetGenders: string[];
-  targetAudienceInterests: string[];
-  productCategories: string[];
-  enableChat: boolean;
   startDate?: string;
   endDate?: string;
   targetPricePerFollower?: number;
@@ -735,6 +729,12 @@ export interface AutoCampaign {
   completedOffersCount: number;
   createdAt: string;
   updatedAt: string;
+  advertiser?: {
+    id: string;
+    fullName: string;
+    username: string;
+    avatar?: string;
+  };
   isParticipating?: boolean;
 }
 
