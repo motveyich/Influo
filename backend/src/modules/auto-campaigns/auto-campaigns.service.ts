@@ -235,6 +235,39 @@ export class AutoCampaignsService {
     return matchedCards.slice(0, remaining);
   }
 
+  async launchCampaign(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: campaign } = await supabase
+      .from('auto_campaigns')
+      .select('advertiser_id, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+
+    if (campaign.advertiser_id !== userId) {
+      throw new ForbiddenException('You can only launch your own campaigns');
+    }
+
+    if (campaign.status !== 'draft') {
+      throw new BadRequestException('Can only launch draft campaigns');
+    }
+
+    const { error } = await supabase
+      .from('auto_campaigns')
+      .update({ status: 'active' })
+      .eq('id', id);
+
+    if (error) {
+      throw new ConflictException('Failed to launch campaign');
+    }
+
+    return { message: 'Campaign launched successfully', status: 'active' };
+  }
+
   async pauseCampaign(id: string, userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 

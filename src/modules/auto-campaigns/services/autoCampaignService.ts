@@ -79,11 +79,36 @@ export class AutoCampaignService {
     }
   }
 
+  async launchCampaign(campaignId: string, userId: string): Promise<AutoCampaign> {
+    try {
+      const result = await apiClient.post<AutoCampaign>(`/auto-campaigns/${campaignId}/launch`);
+
+      analytics.track('auto_campaign_launched', {
+        campaignId,
+        userId
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Failed to launch campaign:', error);
+      throw error;
+    }
+  }
+
   async pauseCampaign(campaignId: string): Promise<AutoCampaign> {
     try {
       return await apiClient.post<AutoCampaign>(`/auto-campaigns/${campaignId}/pause`);
     } catch (error) {
       console.error('Failed to pause campaign:', error);
+      throw error;
+    }
+  }
+
+  async resumeCampaign(campaignId: string): Promise<AutoCampaign> {
+    try {
+      return await apiClient.post<AutoCampaign>(`/auto-campaigns/${campaignId}/resume`);
+    } catch (error) {
+      console.error('Failed to resume campaign:', error);
       throw error;
     }
   }
@@ -101,7 +126,7 @@ export class AutoCampaignService {
     }
   }
 
-  async getActiveCampaigns(): Promise<AutoCampaign[]> {
+  async getActiveCampaigns(userId?: string): Promise<AutoCampaign[]> {
     try {
       return await apiClient.get<AutoCampaign[]>('/auto-campaigns?status=active');
     } catch (error) {

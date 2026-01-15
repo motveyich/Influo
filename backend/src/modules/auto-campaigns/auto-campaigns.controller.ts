@@ -107,6 +107,20 @@ export class AutoCampaignsController {
     return this.autoCampaignsService.getMatches(id);
   }
 
+  @Post(':id/launch')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Launch auto campaign' })
+  @ApiParam({ name: 'id', description: 'Campaign ID' })
+  @ApiResponse({ status: 200, description: 'Campaign launched successfully' })
+  @ApiResponse({ status: 403, description: 'You can only launch your own campaigns' })
+  @ApiResponse({ status: 400, description: 'Can only launch draft campaigns' })
+  async launch(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.autoCampaignsService.launchCampaign(id, userId);
+  }
+
   @Post(':id/pause')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Pause auto campaign' })
