@@ -5,8 +5,37 @@ import { CreateAutoCampaignDto, UpdateAutoCampaignDto } from './dto';
 @Injectable()
 export class AutoCampaignsService {
   private readonly logger = new Logger(AutoCampaignsService.name);
+  private readonly OVERBOOKING_PERCENTAGE = 0.25;
+  private readonly OFFER_RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 
   constructor(private supabaseService: SupabaseService) {}
+
+  // Helper functions for matching
+  private normalizeString(str: string): string {
+    return str.trim().toLowerCase();
+  }
+
+  private normalizeArray(arr: string[]): string[] {
+    return arr.map(s => this.normalizeString(s));
+  }
+
+  private arraysOverlap(arr1: string[], arr2: string[]): boolean {
+    const normalized1 = this.normalizeArray(arr1);
+    const normalized2 = this.normalizeArray(arr2);
+    return normalized1.some(item => normalized2.includes(item));
+  }
+
+  private findPriceForFormat(pricing: Record<string, number>, format: string): number | null {
+    const normalizedFormat = this.normalizeString(format);
+
+    for (const [key, value] of Object.entries(pricing)) {
+      if (this.normalizeString(key) === normalizedFormat) {
+        return value;
+      }
+    }
+
+    return null;
+  }
 
   async create(userId: string, createAutoCampaignDto: CreateAutoCampaignDto) {
     const supabase = this.supabaseService.getAdminClient();
@@ -280,8 +309,12 @@ export class AutoCampaignsService {
     this.logger.log(`📊 Campaign criteria:`);
     this.logger.log(`   - Platforms: [${campaign.platforms}]`);
     this.logger.log(`   - Audience: ${campaign.audience_min}-${campaign.audience_max}`);
+    this.logger.log(`   - Budget: ${campaign.budget_min}-${campaign.budget_max} RUB`);
     this.logger.log(`   - Target count: ${campaign.target_influencers_count}`);
     this.logger.log(`   - Content types: [${campaign.content_types}]`);
+    this.logger.log(`   - Target countries: ${campaign.target_countries?.length > 0 ? campaign.target_countries : '(not set)'}`);
+    this.logger.log(`   - Target interests: ${campaign.target_audience_interests?.length > 0 ? campaign.target_audience_interests : '(not set)'}`);
+    this.logger.log(`   - Product categories: ${campaign.product_categories?.length > 0 ? campaign.product_categories : '(not set)'}`);
 
     if (!campaign.platforms || campaign.platforms.length === 0) {
       this.logger.error(`❌ Campaign ${campaignId} has no platforms specified`);
@@ -298,128 +331,344 @@ export class AutoCampaignsService {
       return;
     }
 
+    // Fetch active influencer cards with platform filter
+    const platformsLowercase = campaign.platforms.map((p: string) => p.toLowerCase());
+    this.logger.log(`\n📋 Querying database for active cards...`);
+    this.logger.log(`   - Platforms: [${platformsLowercase}]`);
+    this.logger.log(`   - is_active = true`);
+    this.logger.log(`   - is_deleted = false`);
+
     const { data: influencerCards, error } = await supabase
       .from('influencer_cards')
-      .select('*, user_profiles!influencer_cards_user_id_fkey(*)')
-      .eq('is_active', true);
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .neq('user_id', campaign.advertiser_id)
+      .in('platform', platformsLowercase);
 
-    if (error || !influencerCards) {
-      this.logger.error(`❌ Failed to find influencer cards: ${error?.message}`, error);
+    if (error) {
+      this.logger.error(`❌ Failed to query influencer cards: ${error.message}`, error);
       return;
     }
 
-    this.logger.log(`✅ Found ${influencerCards.length} active influencer cards in database`);
-
-    // Log sample cards for debugging
-    if (influencerCards.length > 0 && influencerCards.length <= 3) {
-      this.logger.log(`📋 Sample cards in DB:`);
-      influencerCards.forEach((card, idx) => {
-        this.logger.log(`   ${idx + 1}. Platform: ${card.platform}, Followers: ${card.reach?.followers || 'N/A'}, Active: ${card.is_active}`);
-      });
+    if (!influencerCards || influencerCards.length === 0) {
+      this.logger.warn(`⚠️ No active influencer cards found with platforms: [${platformsLowercase}]`);
+      return;
     }
 
-    const campaignPlatformsLower = campaign.platforms.map((p: string) => p.toLowerCase());
-    this.logger.log(`🔍 Searching for platforms: [${campaignPlatformsLower}]`);
+    this.logger.log(`✅ Found ${influencerCards.length} active influencer cards`);
 
-    const matchedCards = influencerCards.filter((card) => {
-      const reach = card.reach || {};
-      const followers = reach.followers || 0;
+    // Group cards by influencer
+    const cardsByInfluencer = new Map<string, any[]>();
+    for (const card of influencerCards) {
+      const influencerId = card.user_id;
+      if (!cardsByInfluencer.has(influencerId)) {
+        cardsByInfluencer.set(influencerId, []);
+      }
+      const influencerCardsList = cardsByInfluencer.get(influencerId);
+      if (influencerCardsList) {
+        influencerCardsList.push(card);
+      }
+    }
 
-      const matchesPlatform = campaignPlatformsLower.includes(card.platform.toLowerCase());
-      const matchesAudience = followers >= campaign.audience_min && followers <= campaign.audience_max;
+    this.logger.log(`✓ Grouped into ${cardsByInfluencer.size} unique influencers\n`);
 
-      // Log why cards don't match (for first few)
-      if (!matchesPlatform || !matchesAudience) {
-        const reasons = [];
-        if (!matchesPlatform) reasons.push(`platform mismatch: ${card.platform} not in [${campaignPlatformsLower}]`);
-        if (!matchesAudience) reasons.push(`audience mismatch: ${followers} not in range ${campaign.audience_min}-${campaign.audience_max}`);
+    // Filter and match influencers
+    interface MatchedInfluencer {
+      influencerId: string;
+      cardId: string;
+      platform: string;
+      followers: number;
+      selectedFormat: string;
+      selectedPrice: number;
+      pricePerFollower: number;
+    }
 
-        if (influencerCards.indexOf(card) < 3) {
-          this.logger.debug(`   ⚠️ Card ${card.id}: ${reasons.join(', ')}`);
+    const matched: MatchedInfluencer[] = [];
+    let stats = {
+      filteredByAudience: 0,
+      filteredByContentTypes: 0,
+      filteredByBudget: 0,
+      filteredByCountries: 0,
+      filteredByInterests: 0,
+      filteredByCategories: 0
+    };
+
+    // Process each influencer
+    for (const [influencerId, influencerCards] of cardsByInfluencer.entries()) {
+      let bestMatch: MatchedInfluencer | null = null;
+      let bestPrice = Infinity;
+
+      for (const card of influencerCards) {
+        try {
+          const reach = card.reach || {};
+          const serviceDetails = card.service_details || {};
+          const audienceDemographics = card.audience_demographics || {};
+          const followers = reach.followers || 0;
+          const pricing = serviceDetails.pricing || {};
+          const contentTypes = serviceDetails.contentTypes || [];
+
+          // 1. Filter by audience (REQUIRED)
+          if (followers < campaign.audience_min || followers > campaign.audience_max) {
+            stats.filteredByAudience++;
+            continue;
+          }
+
+          // 2. Filter by content types (REQUIRED) - case-insensitive
+          const matchingContentTypes: string[] = [];
+          for (const campaignType of campaign.content_types || []) {
+            for (const cardType of contentTypes) {
+              if (this.normalizeString(campaignType) === this.normalizeString(cardType)) {
+                matchingContentTypes.push(cardType);
+                break;
+              }
+            }
+          }
+
+          if (matchingContentTypes.length === 0) {
+            stats.filteredByContentTypes++;
+            continue;
+          }
+
+          // 3. Filter by countries (if specified) - case-insensitive
+          if (campaign.target_countries && campaign.target_countries.length > 0) {
+            let cardCountries: string[] = [];
+            const topCountries = audienceDemographics.topCountries;
+            if (topCountries) {
+              if (Array.isArray(topCountries)) {
+                cardCountries = topCountries.map((c: any) => typeof c === 'string' ? c : c.country);
+              } else if (typeof topCountries === 'object') {
+                cardCountries = Object.keys(topCountries);
+              }
+            }
+
+            if (!this.arraysOverlap(campaign.target_countries, cardCountries)) {
+              stats.filteredByCountries++;
+              continue;
+            }
+          }
+
+          // 4. Filter by interests (if specified) - case-insensitive
+          if (campaign.target_audience_interests && campaign.target_audience_interests.length > 0) {
+            let cardInterests: string[] = [];
+            const interestsData = audienceDemographics.interests;
+            if (Array.isArray(interestsData)) {
+              cardInterests = interestsData;
+            } else if (interestsData && typeof interestsData === 'object') {
+              cardInterests = Object.keys(interestsData);
+            }
+
+            if (!this.arraysOverlap(campaign.target_audience_interests, cardInterests)) {
+              stats.filteredByInterests++;
+              continue;
+            }
+          }
+
+          // 5. Filter by product categories (blacklist check) - case-insensitive
+          if (campaign.product_categories && campaign.product_categories.length > 0) {
+            const blacklistedCategories = serviceDetails.blacklistedProductCategories || [];
+            if (this.arraysOverlap(campaign.product_categories, blacklistedCategories)) {
+              stats.filteredByCategories++;
+              continue;
+            }
+          }
+
+          // 6. Find matching formats with prices in budget - case-insensitive
+          const matchingFormats: Array<{format: string, price: number}> = [];
+          for (const format of matchingContentTypes) {
+            const price = this.findPriceForFormat(pricing, format);
+            if (price && price > 0 && price >= campaign.budget_min && price <= campaign.budget_max) {
+              matchingFormats.push({ format, price });
+            }
+          }
+
+          if (matchingFormats.length === 0) {
+            stats.filteredByBudget++;
+            continue;
+          }
+
+          // Select cheapest format
+          const cheapest = matchingFormats.reduce((min, curr) => curr.price < min.price ? curr : min);
+
+          // Compare with best match for this influencer
+          if (cheapest.price < bestPrice) {
+            bestPrice = cheapest.price;
+            const pricePerFollower = followers > 0 ? cheapest.price / followers : Infinity;
+
+            bestMatch = {
+              influencerId,
+              cardId: card.id,
+              platform: card.platform,
+              followers,
+              selectedFormat: cheapest.format,
+              selectedPrice: cheapest.price,
+              pricePerFollower
+            };
+          }
+        } catch (err) {
+          this.logger.error(`Error processing card ${card.id}:`, err);
+          continue;
         }
       }
 
-      return matchesPlatform && matchesAudience;
-    });
+      if (bestMatch) {
+        matched.push(bestMatch);
+      }
+    }
 
-    this.logger.log(`✅ Matched ${matchedCards.length} cards after filtering`);
+    this.logger.log(`\n📊 Filtering results:`);
+    this.logger.log(`   Total cards: ${influencerCards.length}`);
+    this.logger.log(`   Filtered by audience: ${stats.filteredByAudience}`);
+    this.logger.log(`   Filtered by content types: ${stats.filteredByContentTypes}`);
+    this.logger.log(`   Filtered by budget: ${stats.filteredByBudget}`);
+    if (stats.filteredByCountries > 0) this.logger.log(`   Filtered by countries: ${stats.filteredByCountries}`);
+    if (stats.filteredByInterests > 0) this.logger.log(`   Filtered by interests: ${stats.filteredByInterests}`);
+    if (stats.filteredByCategories > 0) this.logger.log(`   Filtered by blacklisted categories: ${stats.filteredByCategories}`);
+    this.logger.log(`   ✅ Final matches: ${matched.length} influencers\n`);
 
-    if (matchedCards.length === 0) {
-      this.logger.warn(`⚠️ No matching cards found for campaign ${campaignId}.`);
-      this.logger.warn(`   Check: platforms=[${campaign.platforms}], audience range=${campaign.audience_min}-${campaign.audience_max}`);
+    if (matched.length === 0) {
+      this.logger.warn(`⚠️ No matching influencers found after filtering`);
       return;
     }
 
-    const { data: existingOffers } = await supabase
+    // Sort by price per follower (best value first)
+    matched.sort((a, b) => a.pricePerFollower - b.pricePerFollower);
+
+    // Apply overbooking
+    const target = campaign.target_influencers_count;
+    const overbookTarget = Math.ceil(target * (1 + this.OVERBOOKING_PERCENTAGE));
+    const invitesToSend = Math.min(overbookTarget, matched.length);
+
+    this.logger.log(`📈 Overbooking calculation:`);
+    this.logger.log(`   Target: ${target} influencers`);
+    this.logger.log(`   With overbooking (+${this.OVERBOOKING_PERCENTAGE * 100}%): ${overbookTarget}`);
+    this.logger.log(`   Available: ${matched.length}`);
+    this.logger.log(`   Will invite: ${invitesToSend}\n`);
+
+    const influencersToInvite = matched.slice(0, invitesToSend);
+
+    // Send offers with rate limit check
+    let sentCount = 0;
+    let skippedRateLimit = 0;
+    let failedCount = 0;
+
+    this.logger.log(`📤 Sending offers...`);
+
+    for (const match of influencersToInvite) {
+      try {
+        // Check rate limit
+        const canSend = await this.checkRateLimit(campaign.advertiser_id, match.influencerId);
+        if (!canSend) {
+          this.logger.log(`   ⏱️ Rate limit: skipping influencer ${match.influencerId}`);
+          skippedRateLimit++;
+          continue;
+        }
+
+        // Create offer
+        await this.createAutoCampaignOffer(campaign, match, campaignId);
+        sentCount++;
+        this.logger.log(`   ✅ Sent offer #${sentCount} to influencer ${match.influencerId} (${match.selectedFormat} @ ${match.selectedPrice} RUB)`);
+      } catch (error) {
+        this.logger.error(`   ❌ Failed to send offer to influencer ${match.influencerId}:`, error);
+        failedCount++;
+      }
+    }
+
+    this.logger.log(`\n📊 Final results:`);
+    this.logger.log(`   ✅ Sent: ${sentCount}`);
+    this.logger.log(`   ⏱️ Skipped (rate limit): ${skippedRateLimit}`);
+    this.logger.log(`   ❌ Failed: ${failedCount}`);
+
+    // Update campaign counters
+    if (sentCount > 0) {
+      const { error: updateError } = await supabase
+        .from('auto_campaigns')
+        .update({ sent_offers_count: sentCount })
+        .eq('id', campaignId);
+
+      if (updateError) {
+        this.logger.error(`❌ Failed to update campaign counters:`, updateError);
+      } else {
+        this.logger.log(`\n✅ Campaign counters updated: ${sentCount} offers sent`);
+      }
+    }
+
+    this.logger.log(`========================================\n`);
+  }
+
+  private async checkRateLimit(senderId: string, receiverId: string): Promise<boolean> {
+    const supabase = this.supabaseService.getAdminClient();
+    const oneHourAgo = new Date(Date.now() - this.OFFER_RATE_LIMIT_MS).toISOString();
+
+    const { data, error } = await supabase
       .from('offers')
-      .select('influencer_id')
-      .eq('auto_campaign_id', campaignId);
+      .select('offer_id')
+      .eq('advertiser_id', senderId)
+      .eq('influencer_id', receiverId)
+      .gte('created_at', oneHourAgo)
+      .in('status', ['pending', 'accepted'])
+      .limit(1);
 
-    const existingInfluencerIds = new Set((existingOffers || []).map(o => o.influencer_id));
-
-    const availableCards = matchedCards.filter(card =>
-      !existingInfluencerIds.has(card.user_id)
-    );
-
-    this.logger.log(`Available cards after excluding existing offers: ${availableCards.length} (excluded ${existingInfluencerIds.size} already contacted)`);
-
-    const cardsToSend = availableCards.slice(0, campaign.target_influencers_count);
-
-    if (cardsToSend.length === 0) {
-      this.logger.warn(`No cards available to send offers for campaign ${campaignId}. All matching influencers already received offers.`);
-      return;
+    if (error) {
+      this.logger.error('Rate limit check error:', error);
+      return true; // Allow sending on error
     }
 
-    this.logger.log(`📝 Will create ${cardsToSend.length} offers`);
+    return !data || data.length === 0;
+  }
 
-    const avgBudget = (campaign.budget_min + campaign.budget_max) / 2;
-    this.logger.log(`💰 Offer budget: ${avgBudget} RUB (average of ${campaign.budget_min}-${campaign.budget_max})`);
+  private async createAutoCampaignOffer(campaign: any, match: any, campaignId: string): Promise<void> {
+    const supabase = this.supabaseService.getAdminClient();
 
-    const offersToCreate = cardsToSend.map(card => ({
+    const newOffer = {
+      influencer_id: match.influencerId,
       advertiser_id: campaign.advertiser_id,
-      influencer_id: card.user_id,
-      initiated_by: campaign.advertiser_id,
+      influencer_card_id: match.cardId,
       auto_campaign_id: campaignId,
+      initiated_by: campaign.advertiser_id,
       title: `Предложение о сотрудничестве: ${campaign.title}`,
       description: campaign.description || 'Мы заинтересованы в сотрудничестве с вами.',
-      amount: avgBudget,
-      proposed_rate: avgBudget,
+      amount: match.selectedPrice,
+      proposed_rate: match.selectedPrice,
       currency: 'RUB',
-      content_type: campaign.content_types[0] || 'post',
-      deliverables: campaign.content_types,
+      content_type: match.selectedFormat,
+      deliverables: [match.selectedFormat],
       status: 'pending',
-      created_at: new Date().toISOString(),
-    }));
+      current_stage: 'negotiation',
+      influencer_response: 'pending',
+      advertiser_response: 'pending',
+      enable_chat: campaign.enable_chat !== false,
+      details: {
+        title: campaign.title,
+        description: campaign.description,
+        proposed_rate: match.selectedPrice,
+        currency: 'RUB',
+        deliverables: [match.selectedFormat],
+        platform: match.platform,
+        timeline: {
+          start_date: campaign.start_date,
+          end_date: campaign.end_date
+        }
+      },
+      metadata: {
+        isAutoCampaign: true,
+        autoCampaignId: campaignId,
+        sourceType: 'auto_campaign',
+        selectedFormat: match.selectedFormat,
+        calculatedPrice: match.selectedPrice,
+        pricePerFollower: match.pricePerFollower,
+        enableChat: campaign.enable_chat !== false
+      },
+      created_at: new Date().toISOString()
+    };
 
-    this.logger.log(`📤 Inserting ${offersToCreate.length} offers into database...`);
-
-    const { error: insertError } = await supabase
+    const { error } = await supabase
       .from('offers')
-      .insert(offersToCreate);
+      .insert(newOffer);
 
-    if (insertError) {
-      this.logger.error(`❌ Failed to create offers: ${insertError.message}`, insertError);
-      return;
+    if (error) {
+      throw new Error(`Failed to create offer: ${error.message}`);
     }
-
-    this.logger.log(`✅ Offers inserted successfully`);
-
-    const { data: currentCampaign } = await supabase
-      .from('auto_campaigns')
-      .select('sent_offers_count')
-      .eq('id', campaignId)
-      .maybeSingle();
-
-    const newSentCount = (currentCampaign?.sent_offers_count || 0) + offersToCreate.length;
-
-    await supabase
-      .from('auto_campaigns')
-      .update({ sent_offers_count: newSentCount })
-      .eq('id', campaignId);
-
-    this.logger.log(`✅ Successfully created ${offersToCreate.length} offers for campaign ${campaignId}`);
-    this.logger.log(`📊 Total offers sent: ${newSentCount}`);
-    this.logger.log(`========================================`);
   }
 
   async pauseCampaign(id: string, userId: string) {
