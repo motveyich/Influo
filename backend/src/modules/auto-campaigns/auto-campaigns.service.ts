@@ -73,6 +73,10 @@ export class AutoCampaignsService {
       start_date: createAutoCampaignDto.startDate || null,
       end_date: createAutoCampaignDto.endDate || null,
       target_price_per_follower: createAutoCampaignDto.targetPricePerFollower || null,
+      target_countries: createAutoCampaignDto.targetCountries || [],
+      target_audience_interests: createAutoCampaignDto.targetAudienceInterests || [],
+      product_categories: createAutoCampaignDto.productCategories || [],
+      enable_chat: createAutoCampaignDto.enableChat !== false,
       sent_offers_count: 0,
       accepted_offers_count: 0,
       completed_offers_count: 0,
@@ -183,6 +187,10 @@ export class AutoCampaignsService {
       startDate: 'start_date',
       endDate: 'end_date',
       targetPricePerFollower: 'target_price_per_follower',
+      targetCountries: 'target_countries',
+      targetAudienceInterests: 'target_audience_interests',
+      productCategories: 'product_categories',
+      enableChat: 'enable_chat',
     };
 
     Object.entries(fieldMappings).forEach(([dtoKey, dbKey]) => {
@@ -623,34 +631,35 @@ export class AutoCampaignsService {
     const newOffer = {
       influencer_id: match.influencerId,
       advertiser_id: campaign.advertiser_id,
-      influencer_card_id: match.cardId,
+      campaign_id: null,
       auto_campaign_id: campaignId,
       initiated_by: campaign.advertiser_id,
-      title: `Предложение о сотрудничестве: ${campaign.title}`,
-      description: campaign.description || 'Мы заинтересованы в сотрудничестве с вами.',
-      amount: match.selectedPrice,
-      proposed_rate: match.selectedPrice,
-      currency: 'RUB',
-      content_type: match.selectedFormat,
-      deliverables: [match.selectedFormat],
       status: 'pending',
-      current_stage: 'negotiation',
-      influencer_response: 'pending',
-      advertiser_response: 'pending',
-      enable_chat: campaign.enable_chat !== false,
       details: {
-        title: campaign.title,
-        description: campaign.description,
+        title: `Предложение о сотрудничестве: ${campaign.title}`,
+        description: campaign.description || 'Мы заинтересованы в сотрудничестве с вами.',
         proposed_rate: match.selectedPrice,
         currency: 'RUB',
+        content_type: match.selectedFormat,
         deliverables: [match.selectedFormat],
         platform: match.platform,
+        influencer_card_id: match.cardId,
+        current_stage: 'negotiation',
+        influencer_response: 'pending',
+        advertiser_response: 'pending',
+        enable_chat: campaign.enable_chat !== false,
         timeline: {
           start_date: campaign.start_date,
           end_date: campaign.end_date
         }
       },
+      timeline: {
+        created_at: new Date().toISOString(),
+        start_date: campaign.start_date,
+        end_date: campaign.end_date
+      },
       metadata: {
+        viewCount: 0,
         isAutoCampaign: true,
         autoCampaignId: campaignId,
         sourceType: 'auto_campaign',
@@ -658,8 +667,7 @@ export class AutoCampaignsService {
         calculatedPrice: match.selectedPrice,
         pricePerFollower: match.pricePerFollower,
         enableChat: campaign.enable_chat !== false
-      },
-      created_at: new Date().toISOString()
+      }
     };
 
     const { error } = await supabase
@@ -823,6 +831,10 @@ export class AutoCampaignsService {
       startDate: campaign.start_date,
       endDate: campaign.end_date,
       targetPricePerFollower: campaign.target_price_per_follower,
+      targetCountries: campaign.target_countries || [],
+      targetAudienceInterests: campaign.target_audience_interests || [],
+      productCategories: campaign.product_categories || [],
+      enableChat: campaign.enable_chat !== false,
       sentOffersCount: campaign.sent_offers_count,
       acceptedOffersCount: campaign.accepted_offers_count,
       completedOffersCount: campaign.completed_offers_count,

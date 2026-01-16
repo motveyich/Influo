@@ -106,4 +106,39 @@ export class CreateAutoCampaignDto {
   @IsNumber()
   @Min(0)
   targetPricePerFollower?: number;
+
+  @ApiProperty({
+    example: ['Russia', 'USA'],
+    description: 'Target countries',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  targetCountries?: string[];
+
+  @ApiProperty({
+    example: ['Fashion', 'Technology'],
+    description: 'Target audience interests',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  targetAudienceInterests?: string[];
+
+  @ApiProperty({
+    example: ['Electronics', 'Clothing'],
+    description: 'Product categories',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  productCategories?: string[];
+
+  @ApiProperty({
+    example: true,
+    description: 'Enable chat for this campaign',
+    required: false,
+  })
+  @IsOptional()
+  enableChat?: boolean;
 }

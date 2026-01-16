@@ -724,6 +724,10 @@ export interface AutoCampaign {
   startDate?: string;
   endDate?: string;
   targetPricePerFollower?: number;
+  targetCountries?: string[];
+  targetAudienceInterests?: string[];
+  productCategories?: string[];
+  enableChat?: boolean;
   sentOffersCount: number;
   acceptedOffersCount: number;
   completedOffersCount: number;
