@@ -125,8 +125,18 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
         await autoCampaignService.updateCampaign(editingCampaign.id, formData);
         toast.success('Автокампания обновлена!');
       } else {
-        await autoCampaignService.createCampaign(advertiserId, formData);
+        // Create campaign
+        const newCampaign = await autoCampaignService.createCampaign(advertiserId, formData);
         toast.success('Автокампания создана!');
+
+        // Auto-launch the campaign to trigger influencer matching
+        try {
+          await autoCampaignService.launchCampaign(newCampaign.id, advertiserId);
+          toast.success('Автоматический подбор инфлюенсеров запущен!');
+        } catch (launchError) {
+          console.error('Failed to auto-launch campaign:', launchError);
+          toast.error('Кампания создана, но автоматический запуск не удался. Запустите вручную.');
+        }
       }
       onSuccess();
     } catch (error) {

@@ -275,21 +275,26 @@ export class AutoCampaignsService {
   private async sendOffersToMatchingInfluencers(campaignId: string, campaign: any) {
     const supabase = this.supabaseService.getAdminClient();
 
-    this.logger.log(`Starting auto-offer distribution for campaign ${campaignId}`);
-    this.logger.log(`Campaign criteria: platforms=[${campaign.platforms}], audience=${campaign.audience_min}-${campaign.audience_max}, target=${campaign.target_influencers_count}`);
+    this.logger.log(`========================================`);
+    this.logger.log(`🚀 Starting auto-offer distribution for campaign ${campaignId}`);
+    this.logger.log(`📊 Campaign criteria:`);
+    this.logger.log(`   - Platforms: [${campaign.platforms}]`);
+    this.logger.log(`   - Audience: ${campaign.audience_min}-${campaign.audience_max}`);
+    this.logger.log(`   - Target count: ${campaign.target_influencers_count}`);
+    this.logger.log(`   - Content types: [${campaign.content_types}]`);
 
     if (!campaign.platforms || campaign.platforms.length === 0) {
-      this.logger.error(`Campaign ${campaignId} has no platforms specified`);
+      this.logger.error(`❌ Campaign ${campaignId} has no platforms specified`);
       return;
     }
 
     if (!campaign.audience_min || !campaign.audience_max) {
-      this.logger.error(`Campaign ${campaignId} has invalid audience range`);
+      this.logger.error(`❌ Campaign ${campaignId} has invalid audience range`);
       return;
     }
 
     if (!campaign.target_influencers_count || campaign.target_influencers_count <= 0) {
-      this.logger.error(`Campaign ${campaignId} has invalid target influencers count`);
+      this.logger.error(`❌ Campaign ${campaignId} has invalid target influencers count`);
       return;
     }
 
@@ -299,13 +304,22 @@ export class AutoCampaignsService {
       .eq('is_active', true);
 
     if (error || !influencerCards) {
-      this.logger.error(`Failed to find influencer cards: ${error?.message}`, error);
+      this.logger.error(`❌ Failed to find influencer cards: ${error?.message}`, error);
       return;
     }
 
-    this.logger.log(`Found ${influencerCards.length} active influencer cards`);
+    this.logger.log(`✅ Found ${influencerCards.length} active influencer cards in database`);
+
+    // Log sample cards for debugging
+    if (influencerCards.length > 0 && influencerCards.length <= 3) {
+      this.logger.log(`📋 Sample cards in DB:`);
+      influencerCards.forEach((card, idx) => {
+        this.logger.log(`   ${idx + 1}. Platform: ${card.platform}, Followers: ${card.reach?.followers || 'N/A'}, Active: ${card.is_active}`);
+      });
+    }
 
     const campaignPlatformsLower = campaign.platforms.map((p: string) => p.toLowerCase());
+    this.logger.log(`🔍 Searching for platforms: [${campaignPlatformsLower}]`);
 
     const matchedCards = influencerCards.filter((card) => {
       const reach = card.reach || {};
@@ -314,13 +328,25 @@ export class AutoCampaignsService {
       const matchesPlatform = campaignPlatformsLower.includes(card.platform.toLowerCase());
       const matchesAudience = followers >= campaign.audience_min && followers <= campaign.audience_max;
 
+      // Log why cards don't match (for first few)
+      if (!matchesPlatform || !matchesAudience) {
+        const reasons = [];
+        if (!matchesPlatform) reasons.push(`platform mismatch: ${card.platform} not in [${campaignPlatformsLower}]`);
+        if (!matchesAudience) reasons.push(`audience mismatch: ${followers} not in range ${campaign.audience_min}-${campaign.audience_max}`);
+
+        if (influencerCards.indexOf(card) < 3) {
+          this.logger.debug(`   ⚠️ Card ${card.id}: ${reasons.join(', ')}`);
+        }
+      }
+
       return matchesPlatform && matchesAudience;
     });
 
-    this.logger.log(`Matched ${matchedCards.length} cards after platform and audience filtering`);
+    this.logger.log(`✅ Matched ${matchedCards.length} cards after filtering`);
 
     if (matchedCards.length === 0) {
-      this.logger.warn(`No matching cards found for campaign ${campaignId}. Check platforms and audience criteria.`);
+      this.logger.warn(`⚠️ No matching cards found for campaign ${campaignId}.`);
+      this.logger.warn(`   Check: platforms=[${campaign.platforms}], audience range=${campaign.audience_min}-${campaign.audience_max}`);
       return;
     }
 
@@ -344,9 +370,10 @@ export class AutoCampaignsService {
       return;
     }
 
-    this.logger.log(`Will create ${cardsToSend.length} offers`);
+    this.logger.log(`📝 Will create ${cardsToSend.length} offers`);
 
     const avgBudget = (campaign.budget_min + campaign.budget_max) / 2;
+    this.logger.log(`💰 Offer budget: ${avgBudget} RUB (average of ${campaign.budget_min}-${campaign.budget_max})`);
 
     const offersToCreate = cardsToSend.map(card => ({
       advertiser_id: campaign.advertiser_id,
@@ -364,14 +391,18 @@ export class AutoCampaignsService {
       created_at: new Date().toISOString(),
     }));
 
+    this.logger.log(`📤 Inserting ${offersToCreate.length} offers into database...`);
+
     const { error: insertError } = await supabase
       .from('offers')
       .insert(offersToCreate);
 
     if (insertError) {
-      this.logger.error(`Failed to create offers: ${insertError.message}`, insertError);
+      this.logger.error(`❌ Failed to create offers: ${insertError.message}`, insertError);
       return;
     }
+
+    this.logger.log(`✅ Offers inserted successfully`);
 
     const { data: currentCampaign } = await supabase
       .from('auto_campaigns')
@@ -386,7 +417,9 @@ export class AutoCampaignsService {
       .update({ sent_offers_count: newSentCount })
       .eq('id', campaignId);
 
-    this.logger.log(`Successfully created ${offersToCreate.length} offers for campaign ${campaignId}. Total sent: ${newSentCount}`);
+    this.logger.log(`✅ Successfully created ${offersToCreate.length} offers for campaign ${campaignId}`);
+    this.logger.log(`📊 Total offers sent: ${newSentCount}`);
+    this.logger.log(`========================================`);
   }
 
   async pauseCampaign(id: string, userId: string) {
