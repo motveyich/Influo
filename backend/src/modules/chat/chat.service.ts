@@ -106,9 +106,11 @@ export class ChatService {
                 (m.sender_id === otherUserId && m.receiver_id === userId))
         );
 
-        const hasReceiverResponded = firstRealMessage
-          ? firstRealMessage.sender_id === otherUserId
-          : false;
+        const hasReceiverResponded = messages.some(
+          m => m.message_type !== 'conversation_init' &&
+               m.sender_id === otherUserId &&
+               m.receiver_id === userId
+        );
 
         const lastMessageObject = message.message_type === 'conversation_init' ? null : {
           id: message.id,
