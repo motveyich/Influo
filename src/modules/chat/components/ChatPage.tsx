@@ -195,12 +195,6 @@ export function ChatPage() {
           await createNewConversation(userIdToOpen);
         }
         setTargetUserId(null); // Clear after processing
-      } else if (!selectedConversation && enhancedConversations.length > 0) {
-        // Auto-select first conversation in current tab
-        const tabConversations = enhancedConversations.filter(conv => conv.chatType === activeTab);
-        if (tabConversations.length > 0) {
-          setSelectedConversation(tabConversations[0]);
-        }
       }
     } catch (error) {
       console.error('Failed to load conversations:', error);
