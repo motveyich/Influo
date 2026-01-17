@@ -322,6 +322,10 @@ export class OffersService {
       }
     }
 
+    if (status === 'in_progress' && !isRecipient) {
+      throw new ForbiddenException('Only the recipient can start work');
+    }
+
     const validTransitions: Record<string, string[]> = {
       pending: ['accepted', 'cancelled', 'declined'],
       accepted: ['in_progress', 'cancelled', 'terminated'],

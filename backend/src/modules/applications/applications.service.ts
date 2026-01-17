@@ -337,8 +337,13 @@ export class ApplicationsService {
       }
     }
 
-    if (status === 'in_progress' && application.status !== 'accepted') {
-      throw new ConflictException('Can only start work on accepted applications');
+    if (status === 'in_progress') {
+      if (application.status !== 'accepted') {
+        throw new ConflictException('Can only start work on accepted applications');
+      }
+      if (application.target_id !== userId) {
+        throw new ForbiddenException('Only the recipient can start work');
+      }
     }
 
     if ((status === 'completed' || status === 'terminated') && application.status !== 'in_progress') {

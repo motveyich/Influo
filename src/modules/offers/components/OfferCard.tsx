@@ -365,10 +365,16 @@ export function OfferCard({
       }
     }
 
-    // Accepted status actions - обе стороны могут начать работу или расторгнуть
+    // Accepted status actions - только получатель может начать работу
     if (offer.status === 'accepted') {
+      if (isReceiver) {
+        // Только получатель может начать работу
+        actions.push(
+          { label: 'Начать работу', action: 'in_progress', style: 'success' }
+        );
+      }
+      // Обе стороны могут расторгнуть
       actions.push(
-        { label: 'Начать работу', action: 'in_progress', style: 'success' },
         { label: 'Расторгнуть', action: 'terminated', style: 'danger' }
       );
     }
