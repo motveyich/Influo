@@ -29,8 +29,29 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
     try {
       setIsLoading(true);
 
+      console.log('Loading profile for userId:', userId);
+
       // Load profile data
       const profileData = await profileService.getProfile(userId);
+      console.log('Profile loaded:', profileData ? 'success' : 'null');
+
+      if (!profileData) {
+        console.error('Profile data is null');
+        toast.error('Профиль не найден');
+        return;
+      }
+
+      // Ensure unifiedAccountInfo exists with default values
+      if (!profileData.unifiedAccountInfo) {
+        profileData.unifiedAccountInfo = {
+          completedDeals: 0,
+          totalReviews: 0,
+          averageRating: 0,
+          isVerified: false,
+          joinedAt: profileData.createdAt || '',
+          lastActive: ''
+        };
+      }
 
       // Load settings only for own profile (to avoid 500 error from backend)
       let settingsData = null;
@@ -44,31 +65,13 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
         }
       }
 
-      if (profileData) {
-        // Метрики теперь хранятся непосредственно в user_profiles
-        // и обновляются автоматически через триггеры БД
-        const { supabase } = await import('../../../core/supabase');
-
-        const { data: profileMetrics } = await supabase
-          .from('user_profiles')
-          .select('completed_deals_count, total_reviews_count, average_rating')
-          .eq('user_id', userId)
-          .single();
-
-        // Обновляем данные профиля с метриками из БД
-        profileData.unifiedAccountInfo = {
-          ...profileData.unifiedAccountInfo,
-          completedDeals: profileMetrics?.completed_deals_count || 0,
-          totalReviews: profileMetrics?.total_reviews_count || 0,
-          averageRating: profileMetrics?.average_rating || 0
-        };
-      }
-
       setProfile(profileData);
       setSettings(settingsData);
+      console.log('Profile and settings set successfully');
     } catch (error) {
       console.error('Failed to load profile:', error);
       toast.error('Не удалось загрузить профиль');
+      setProfile(null);
     } finally {
       setIsLoading(false);
     }

@@ -134,6 +134,11 @@ export function OffersPage() {
   };
 
   const handleViewProfile = (userId: string) => {
+    if (!userId) {
+      toast.error('ID пользователя не найден');
+      return;
+    }
+    console.log('Opening profile for user:', userId);
     setProfileUserId(userId);
     setShowProfileModal(true);
   };

@@ -190,6 +190,11 @@ export function AutoCampaignsPage() {
   };
 
   const handleViewAdvertiserProfile = (campaign: AutoCampaign) => {
+    if (!campaign.advertiserId) {
+      toast.error('ID рекламодателя не найден');
+      return;
+    }
+    console.log('Opening profile for advertiser:', campaign.advertiserId);
     setSelectedAdvertiserId(campaign.advertiserId);
     setShowProfileModal(true);
   };
