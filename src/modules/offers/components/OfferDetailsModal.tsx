@@ -391,8 +391,12 @@ export function OfferDetailsModal({
 
       // Accepted status - can start work or terminate
       if (offer.status === 'accepted') {
+        if (isReceiver) {
+          actions.push(
+            { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play }
+          );
+        }
         actions.push(
-          { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play },
           { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban }
         );
       }
@@ -459,8 +463,12 @@ export function OfferDetailsModal({
 
     // Accepted status actions
     if (offer.status === 'accepted') {
+      if (isReceiver) {
+        actions.push(
+          { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play }
+        );
+      }
       actions.push(
-        { label: 'Начать работу', action: 'in_progress', style: 'success', icon: Play },
         { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban },
         { label: 'Пожаловаться', action: 'report', style: 'warning', icon: AlertTriangle }
       );
