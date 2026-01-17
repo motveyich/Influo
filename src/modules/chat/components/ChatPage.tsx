@@ -319,19 +319,38 @@ export function ChatPage() {
     }
   };
 
-  const handleNewMessage = (message: any) => {
+  const handleNewMessage = async (message: any) => {
     console.log('New message received:', message);
     // Update messages list and conversations
     if (message.new) {
       const transformedMessage = chatService.transformMessageFromDatabase(message.new);
-      setMessages(prev => [...prev, transformedMessage]);
-      updateConversationLastMessage(transformedMessage);
 
-      // Update conversation status for both sender and receiver
+      // Determine who the other participant is
       const partnerId = transformedMessage.senderId === currentUserId
         ? transformedMessage.receiverId
         : transformedMessage.senderId;
 
+      // Check if this message is in the currently open conversation
+      const isActiveConversation = selectedConversation?.participantId === partnerId;
+      const isIncomingMessage = transformedMessage.senderId !== currentUserId;
+
+      // If the conversation is open and it's an incoming message, mark it as read immediately
+      if (isActiveConversation && isIncomingMessage) {
+        console.log('Auto-marking message as read in active conversation');
+        await markConversationAsRead(partnerId);
+        // Don't increment unread count since we're marking as read
+        updateConversationLastMessage(transformedMessage, false);
+      } else {
+        // Otherwise, update normally (will increment unread count for incoming messages)
+        updateConversationLastMessage(transformedMessage, true);
+      }
+
+      // Add message to the list if it's for the current conversation
+      if (isActiveConversation) {
+        setMessages(prev => [...prev, transformedMessage]);
+      }
+
+      // Update conversation status for both sender and receiver
       updateConversationStatus(partnerId);
     }
   };
@@ -360,13 +379,13 @@ export function ChatPage() {
     }
   };
 
-  const updateConversationLastMessage = (message: ChatMessage) => {
+  const updateConversationLastMessage = (message: ChatMessage, shouldIncrementUnread: boolean = true) => {
     setConversations(prev => prev.map(conv => {
       if (conv.participantId === message.senderId || conv.participantId === message.receiverId) {
         return {
           ...conv,
           lastMessage: message,
-          unreadCount: message.senderId !== currentUserId ? conv.unreadCount + 1 : conv.unreadCount
+          unreadCount: shouldIncrementUnread && message.senderId !== currentUserId ? conv.unreadCount + 1 : conv.unreadCount
         };
       }
       return conv;
