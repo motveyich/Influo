@@ -92,16 +92,6 @@ export class ChatService {
     }
   }
 
-  async hasReceiverResponded(userId1: string, userId2: string): Promise<boolean> {
-    try {
-      const messages = await this.getConversation(userId2, userId1);
-      const receiverMessages = messages.filter(msg => msg.senderId === userId1 && msg.receiverId === userId2);
-      return receiverMessages.length > 0;
-    } catch (error) {
-      console.error('Failed to check receiver response:', error);
-      return false;
-    }
-  }
 
   async getConversationInitiator(userId1: string, userId2: string): Promise<string | null> {
     try {

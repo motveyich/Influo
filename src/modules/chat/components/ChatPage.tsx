@@ -149,34 +149,29 @@ export function ChatPage() {
       console.log('loadConversations - loaded conversations count:', loadedConversations.length);
 
       // Enhance conversations with chat type and restrictions
-      const enhancedConversations = await Promise.all(
-        loadedConversations.map(async (conv) => {
-          const isBlocked = blockedUsers.has(conv.participantId);
-          const hasReceiverResponded = await chatService.hasReceiverResponded(currentUserId, conv.participantId);
-          const initiatedBy = await chatService.getConversationInitiator(currentUserId, conv.participantId);
+      const enhancedConversations = loadedConversations.map((conv) => {
+        const isBlocked = blockedUsers.has(conv.participantId);
+        const hasReceiverResponded = conv.hasReceiverResponded || false;
 
-          let chatType: 'main' | 'new' | 'restricted' = 'main';
-          let canSendMessage = true;
+        let chatType: 'main' | 'new' | 'restricted' = 'main';
+        let canSendMessage = true;
 
-          if (isBlocked) {
-            chatType = 'restricted';
-            canSendMessage = false;
-          } else if (!hasReceiverResponded) {
-            // This is a new chat - both sender and receiver can send messages freely
-            chatType = 'new';
-            canSendMessage = true;
-          }
+        if (isBlocked) {
+          chatType = 'restricted';
+          canSendMessage = false;
+        } else if (!hasReceiverResponded) {
+          chatType = 'new';
+          canSendMessage = true;
+        }
 
-          return {
-            ...conv,
-            chatType,
-            canSendMessage,
-            isBlocked,
-            initiatedBy,
-            hasReceiverResponded
-          };
-        })
-      );
+        return {
+          ...conv,
+          chatType,
+          canSendMessage,
+          isBlocked,
+          hasReceiverResponded
+        };
+      });
 
       setConversations(enhancedConversations);
 
@@ -331,18 +326,22 @@ export function ChatPage() {
       const transformedMessage = chatService.transformMessageFromDatabase(message.new);
       setMessages(prev => [...prev, transformedMessage]);
       updateConversationLastMessage(transformedMessage);
-      
-      // Check if this moves conversation from 'new' to 'main'
-      if (transformedMessage.receiverId === currentUserId) {
-        // Current user received a message, check if this should move chat to main
-        updateConversationStatus(transformedMessage.senderId);
-      }
+
+      // Update conversation status for both sender and receiver
+      const partnerId = transformedMessage.senderId === currentUserId
+        ? transformedMessage.receiverId
+        : transformedMessage.senderId;
+
+      updateConversationStatus(partnerId);
     }
   };
 
   const updateConversationStatus = async (partnerId: string) => {
     try {
-      const hasResponded = await chatService.hasReceiverResponded(currentUserId, partnerId);
+      const allMessages = await chatService.getConversation(currentUserId, partnerId);
+
+      const realMessages = allMessages.filter(msg => msg.messageType !== 'conversation_init');
+      const hasResponded = realMessages.some(msg => msg.senderId === partnerId);
 
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === partnerId) {
@@ -493,6 +492,9 @@ export function ChatPage() {
 
       // Update conversation
       updateConversationLastMessage(sentMessage);
+
+      // Update conversation status (move from 'new' to 'main' if needed)
+      await updateConversationStatus(selectedConversation.participantId);
     } catch (error: any) {
       console.error('Failed to send message:', error);
 
