@@ -4,7 +4,6 @@ import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { GENDER_LABELS } from '../../../core/constants';
 import { formatPlatform } from '../../../core/utils/platform-utils';
 
 interface AutoCampaignDetailsModalProps {
@@ -137,42 +136,18 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
           </div>
 
           {/* Demographics */}
-          {(campaign.targetAgeGroups.length > 0 || campaign.targetGenders.length > 0 || campaign.targetCountries.length > 0 || campaign.targetAudienceInterests.length > 0) && (
+          {((campaign.targetCountries?.length ?? 0) > 0 || (campaign.targetAudienceInterests?.length ?? 0) > 0) && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <Globe className="w-5 h-5 mr-2 text-green-600" />
                 Демография и интересы аудитории
               </h3>
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                {campaign.targetAgeGroups.length > 0 && (
-                  <div>
-                    <div className="text-sm text-gray-600 mb-2">Возрастные группы</div>
-                    <div className="flex flex-wrap gap-2">
-                      {campaign.targetAgeGroups.map(age => (
-                        <span key={age} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                          {age}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {campaign.targetGenders.length > 0 && (
-                  <div>
-                    <div className="text-sm text-gray-600 mb-2">Гендеры</div>
-                    <div className="flex flex-wrap gap-2">
-                      {campaign.targetGenders.map(gender => (
-                        <span key={gender} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                          {GENDER_LABELS[gender as keyof typeof GENDER_LABELS] || gender}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {campaign.targetCountries.length > 0 && (
+                {(campaign.targetCountries?.length ?? 0) > 0 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-2">Страны</div>
                     <div className="flex flex-wrap gap-2">
-                      {campaign.targetCountries.map(country => (
+                      {campaign.targetCountries!.map(country => (
                         <span key={country} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                           {country}
                         </span>
@@ -180,11 +155,11 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
                     </div>
                   </div>
                 )}
-                {campaign.targetAudienceInterests.length > 0 && (
+                {(campaign.targetAudienceInterests?.length ?? 0) > 0 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-2">Интересы аудитории</div>
                     <div className="flex flex-wrap gap-2">
-                      {campaign.targetAudienceInterests.map(interest => (
+                      {campaign.targetAudienceInterests!.map(interest => (
                         <span key={interest} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
                           {interest}
                         </span>
@@ -197,7 +172,7 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
           )}
 
           {/* Product Categories */}
-          {campaign.productCategories.length > 0 && (
+          {(campaign.productCategories?.length ?? 0) > 0 && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <Briefcase className="w-5 h-5 mr-2 text-purple-600" />
@@ -205,7 +180,7 @@ export function AutoCampaignDetailsModal({ isOpen, onClose, campaign }: AutoCamp
               </h3>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex flex-wrap gap-2">
-                  {campaign.productCategories.map(category => (
+                  {campaign.productCategories!.map(category => (
                     <span key={category} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                       {category}
                     </span>

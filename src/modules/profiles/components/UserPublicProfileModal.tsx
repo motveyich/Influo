@@ -29,10 +29,20 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
     try {
       setIsLoading(true);
 
-      const [profileData, settingsData] = await Promise.all([
-        profileService.getProfile(userId),
-        userSettingsService.getUserSettings(userId)
-      ]);
+      // Load profile data
+      const profileData = await profileService.getProfile(userId);
+
+      // Load settings only for own profile (to avoid 500 error from backend)
+      let settingsData = null;
+      if (isOwnProfile) {
+        try {
+          settingsData = await userSettingsService.getUserSettings(userId);
+        } catch (error) {
+          console.error('Failed to load user settings:', error);
+          // Use default settings if loading fails
+          settingsData = null;
+        }
+      }
 
       if (profileData) {
         // Метрики теперь хранятся непосредственно в user_profiles

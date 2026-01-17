@@ -290,6 +290,7 @@ export function AutoCampaignCollaborationsModal({
           isOpen={showOfferDetails}
           offer={selectedOffer}
           currentUserId={currentUserId}
+          collaborationType="offer"
           onClose={() => {
             setShowOfferDetails(false);
             setSelectedOffer(null);
