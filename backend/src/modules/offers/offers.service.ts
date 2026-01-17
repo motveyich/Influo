@@ -291,7 +291,7 @@ export class OffersService {
 
     const { data: offer, error: fetchError } = await supabase
       .from('offers')
-      .select('advertiser_id, influencer_id, status, initiated_by')
+      .select('advertiser_id, influencer_id, status, initiated_by, auto_campaign_id')
       .eq('offer_id', id)
       .maybeSingle();
 
@@ -308,6 +308,11 @@ export class OffersService {
     const initiatedBy = offer.initiated_by || offer.advertiser_id;
     const isRecipient = userId !== initiatedBy;
     const isSender = userId === initiatedBy;
+    const isInfluencer = userId === offer.influencer_id;
+    const isAdvertiser = userId === offer.advertiser_id;
+    const isAutoCampaignApplication = !!offer.auto_campaign_id;
+
+    this.logger.log(`Status update request for offer ${id}: status=${status}, userId=${userId}, isInfluencer=${isInfluencer}, isAdvertiser=${isAdvertiser}, isRecipient=${isRecipient}, isSender=${isSender}, isAutoCampaignApplication=${isAutoCampaignApplication}`);
 
     if (status === 'accepted' && !isRecipient) {
       throw new ForbiddenException('Only the recipient can accept the offer');
@@ -322,8 +327,25 @@ export class OffersService {
       }
     }
 
-    if (status === 'in_progress' && !isRecipient) {
-      throw new ForbiddenException('Only the recipient can start work');
+    if (status === 'in_progress') {
+      if (isAutoCampaignApplication) {
+        // Для заявок на авто-кампании: только инфлюенсер может начать работу
+        if (!isInfluencer) {
+          throw new ForbiddenException('Only the influencer can start work on this application');
+        }
+      } else {
+        // Для обычных предложений: только получатель может начать работу
+        if (!isRecipient) {
+          throw new ForbiddenException('Only the recipient can start work');
+        }
+      }
+    }
+
+    // Для terminate: обе стороны могут расторгнуть сотрудничество
+    if (status === 'terminated') {
+      if (!isParticipant) {
+        throw new ForbiddenException('Only participants can terminate the collaboration');
+      }
     }
 
     const validTransitions: Record<string, string[]> = {
