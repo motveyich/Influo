@@ -561,10 +561,37 @@ export function OfferDetailsModal({
 
   const getTimelineDisplay = () => {
     if (!offer.timeline) return 'Не указано';
+
     if (typeof offer.timeline === 'string') return offer.timeline;
+
     if (typeof offer.timeline === 'object') {
-      return (offer.timeline as any).deadline || (offer.timeline as any).startDate || 'Не указано';
+      const timeline = offer.timeline as any;
+      const startDate = timeline.start_date || timeline.startDate;
+      const endDate = timeline.end_date || timeline.endDate;
+      const deadline = timeline.deadline;
+
+      try {
+        if (startDate && endDate) {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          return `${start.toLocaleDateString('ru-RU')} - ${end.toLocaleDateString('ru-RU')}`;
+        } else if (endDate) {
+          const end = new Date(endDate);
+          return `До ${end.toLocaleDateString('ru-RU')}`;
+        } else if (startDate) {
+          const start = new Date(startDate);
+          return `С ${start.toLocaleDateString('ru-RU')}`;
+        } else if (deadline) {
+          const deadlineDate = new Date(deadline);
+          return `До ${deadlineDate.toLocaleDateString('ru-RU')}`;
+        }
+      } catch (e) {
+        console.error('Error formatting timeline:', e);
+      }
+
+      return deadline || startDate || 'Не указано';
     }
+
     return 'Не указано';
   };
 

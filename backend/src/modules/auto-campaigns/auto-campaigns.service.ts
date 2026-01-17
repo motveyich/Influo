@@ -666,7 +666,20 @@ export class AutoCampaignsService {
         selectedFormat: match.selectedFormat,
         calculatedPrice: match.selectedPrice,
         pricePerFollower: match.pricePerFollower,
-        enableChat: campaign.enable_chat !== false
+        enableChat: campaign.enable_chat !== false,
+        campaignTitle: campaign.title,
+        campaignDescription: campaign.description,
+        budgetMin: campaign.budget_min,
+        budgetMax: campaign.budget_max,
+        audienceMin: campaign.audience_min,
+        audienceMax: campaign.audience_max,
+        targetAudienceInterests: campaign.target_audience_interests || [],
+        targetCountries: campaign.target_countries || [],
+        productCategories: campaign.product_categories || [],
+        contentTypes: campaign.content_types || [],
+        platforms: campaign.platforms || [],
+        influencerFollowers: match.followers,
+        influencerPlatform: match.platform
       }
     };
 
@@ -781,6 +794,9 @@ export class AutoCampaignsService {
   }
 
   private transformOffer(offer: any) {
+    const details = offer.details || {};
+    const metadata = offer.metadata || {};
+
     return {
       id: offer.offer_id || offer.id,
       offerId: offer.offer_id || offer.id,
@@ -788,15 +804,19 @@ export class AutoCampaignsService {
       influencerId: offer.influencer_id,
       initiatedBy: offer.initiated_by,
       autoCampaignId: offer.auto_campaign_id,
-      title: offer.title,
-      description: offer.description,
-      proposedRate: offer.proposed_rate || offer.amount,
+      title: details.title || offer.title || 'Без названия',
+      description: details.description || offer.description || '',
+      proposedRate: details.proposed_rate || offer.proposed_rate || offer.amount || 0,
       amount: offer.amount,
-      currency: offer.currency,
-      contentType: offer.content_type,
-      deliverables: offer.deliverables || [],
-      timeline: offer.timeline,
+      currency: details.currency || offer.currency || 'RUB',
+      contentType: details.content_type || offer.content_type || null,
+      deliverables: details.deliverables || offer.deliverables || [],
+      timeline: details.timeline || offer.timeline || null,
+      platform: details.platform || offer.platform || null,
+      integrationType: details.integration_type || offer.integration_type || null,
       status: offer.status,
+      currentStage: details.current_stage || offer.current_stage || 'negotiation',
+      metadata: metadata,
       createdAt: offer.created_at,
       updatedAt: offer.updated_at,
       advertiser: offer.advertiser ? {

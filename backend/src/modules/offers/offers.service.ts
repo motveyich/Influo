@@ -357,34 +357,40 @@ export class OffersService {
   }
 
   private transformOffer(offer: any) {
+    const details = offer.details || {};
+
     return {
       id: offer.offer_id || offer.id,
       offer_id: offer.offer_id || offer.id,
       advertiserId: offer.advertiser_id,
       influencerId: offer.influencer_id,
       campaignId: offer.campaign_id || null,
+      autoCampaignId: offer.auto_campaign_id || null,
       influencerCardId: offer.influencer_card_id || null,
       initiatedBy: offer.initiated_by || offer.advertiser_id,
 
-      title: offer.title || 'Без названия',
-      description: offer.description || '',
-      proposedRate: offer.proposed_rate || offer.amount || 0,
-      currency: offer.currency || 'RUB',
-      deliverables: offer.deliverables || [],
+      title: details.title || offer.title || 'Без названия',
+      description: details.description || offer.description || '',
+      proposedRate: details.proposed_rate || offer.proposed_rate || offer.amount || 0,
+      currency: details.currency || offer.currency || 'RUB',
+      deliverables: details.deliverables || offer.deliverables || [],
+      platform: details.platform || offer.platform || null,
+      contentType: details.content_type || offer.content_type || null,
+      integrationType: details.integration_type || offer.integration_type || null,
 
       status: offer.status,
-      currentStage: offer.current_stage || 'negotiation',
+      currentStage: details.current_stage || offer.current_stage || 'negotiation',
 
-      timeline: offer.timeline || {
+      timeline: details.timeline || offer.timeline || {
         deadline: offer.deadline,
         startDate: offer.created_at,
       },
 
-      details: offer.details || {},
+      details: details,
       metadata: offer.metadata || { viewCount: 0 },
 
-      influencerResponse: offer.influencer_response || 'pending',
-      advertiserResponse: offer.advertiser_response || 'pending',
+      influencerResponse: details.influencer_response || offer.influencer_response || 'pending',
+      advertiserResponse: details.advertiser_response || offer.advertiser_response || 'pending',
 
       createdAt: offer.created_at,
       updatedAt: offer.updated_at || offer.created_at,
