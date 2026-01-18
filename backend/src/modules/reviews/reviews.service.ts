@@ -247,13 +247,13 @@ export class ReviewsService {
 
     const currentInfo = currentProfile?.unified_account_info || {};
 
-    const { data: completedOffersCount } = await supabase
+    const { count: completedOffersCount } = await supabase
       .from('offers')
       .select('offer_id', { count: 'exact', head: true })
       .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`)
       .eq('status', 'completed');
 
-    const { data: completedApplicationsCount } = await supabase
+    const { count: completedApplicationsCount } = await supabase
       .from('applications')
       .select('id', { count: 'exact', head: true })
       .or(`applicant_id.eq.${userId},target_id.eq.${userId}`)
