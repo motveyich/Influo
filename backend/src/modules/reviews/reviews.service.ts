@@ -237,29 +237,46 @@ export class ReviewsService {
   private async updateUserRating(userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
-    const ratingData = await this.getUserRating(userId);
+    this.logger.debug(`Updating rating for user ${userId}`);
 
-    const { data: currentProfile } = await supabase
+    const ratingData = await this.getUserRating(userId);
+    this.logger.debug(`Rating data: ${JSON.stringify(ratingData)}`);
+
+    const { data: currentProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('unified_account_info')
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (profileError) {
+      this.logger.error(`Failed to fetch profile for user ${userId}: ${profileError.message}`, profileError);
+      throw new Error('Failed to fetch user profile');
+    }
+
     const currentInfo = currentProfile?.unified_account_info || {};
 
-    const { count: completedOffersCount } = await supabase
+    const { count: completedOffersCount, error: offersError } = await supabase
       .from('offers')
       .select('offer_id', { count: 'exact', head: true })
-      .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`);
 
-    const { count: completedApplicationsCount } = await supabase
+    if (offersError) {
+      this.logger.warn(`Failed to count completed offers for user ${userId}: ${offersError.message}`);
+    }
+
+    const { count: completedApplicationsCount, error: applicationsError } = await supabase
       .from('applications')
       .select('id', { count: 'exact', head: true })
-      .or(`applicant_id.eq.${userId},target_id.eq.${userId}`)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .or(`applicant_id.eq.${userId},target_id.eq.${userId}`);
+
+    if (applicationsError) {
+      this.logger.warn(`Failed to count completed applications for user ${userId}: ${applicationsError.message}`);
+    }
 
     const completedDeals = (completedOffersCount || 0) + (completedApplicationsCount || 0);
+    this.logger.debug(`Completed deals count: ${completedDeals} (offers: ${completedOffersCount}, applications: ${completedApplicationsCount})`);
 
     const updatedInfo = {
       ...currentInfo,
@@ -268,14 +285,22 @@ export class ReviewsService {
       completedDeals: completedDeals,
     };
 
-    await supabase
+    this.logger.debug(`Updating profile with: ${JSON.stringify(updatedInfo)}`);
+
+    const { data: updatedProfile, error: updateError } = await supabase
       .from('user_profiles')
       .update({
         unified_account_info: updatedInfo,
       })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .select();
 
-    this.logger.log(`Updated rating for user ${userId}: ${ratingData.averageRating} (${ratingData.totalReviews} reviews, ${completedDeals} deals)`);
+    if (updateError) {
+      this.logger.error(`Failed to update profile for user ${userId}: ${updateError.message}`, updateError);
+      throw new Error('Failed to update user profile');
+    }
+
+    this.logger.log(`Successfully updated rating for user ${userId}: ${ratingData.averageRating} (${ratingData.totalReviews} reviews, ${completedDeals} deals)`);
   }
 
   private transformReview(review: any) {
