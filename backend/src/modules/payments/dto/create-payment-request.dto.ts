@@ -1,4 +1,4 @@
-import { IsUUID, IsNumber, IsString, IsOptional, Min } from 'class-validator';
+import { IsUUID, IsNumber, IsString, IsOptional, Min, IsObject, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentRequestDto {
@@ -15,13 +15,22 @@ export class CreatePaymentRequestDto {
   @IsString()
   currency: string;
 
-  @ApiProperty({ description: 'Payment description', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'Payment type: prepay, postpay, or full' })
   @IsString()
-  description?: string;
+  @IsIn(['prepay', 'postpay', 'full'])
+  paymentType: string;
 
-  @ApiProperty({ description: 'Payment method', example: 'bank_transfer', required: false })
+  @ApiProperty({ description: 'Payment method', example: 'bank_transfer' })
+  @IsString()
+  paymentMethod: string;
+
+  @ApiProperty({ description: 'Payment details (bank account, card, etc.)', required: false })
+  @IsOptional()
+  @IsObject()
+  paymentDetails?: Record<string, any>;
+
+  @ApiProperty({ description: 'Additional payment instructions', required: false })
   @IsOptional()
   @IsString()
-  paymentMethod?: string;
+  instructions?: string;
 }

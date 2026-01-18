@@ -132,7 +132,6 @@ export function PaymentRequestModal({
         // Create new payment request
         const requestData: Partial<PaymentRequest> = {
           offerId,
-          createdBy,
           ...formData
         };
         savedRequest = await paymentRequestService.createPaymentRequest(requestData);

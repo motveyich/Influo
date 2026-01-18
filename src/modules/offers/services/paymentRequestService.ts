@@ -11,8 +11,10 @@ export class PaymentRequestService {
         offerId: requestData.offerId,
         amount: requestData.amount,
         currency: requestData.currency || 'USD',
-        description: requestData.instructions || '',
+        paymentType: requestData.paymentType || 'full',
         paymentMethod: requestData.paymentMethod || 'bank_transfer',
+        paymentDetails: requestData.paymentDetails || {},
+        instructions: requestData.instructions || '',
       };
 
       const request = await apiClient.post<PaymentRequest>('/payments', payload);

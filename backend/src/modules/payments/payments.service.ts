@@ -14,19 +14,11 @@ export class PaymentsService {
     const { data: offer } = await supabase
       .from('offers')
       .select('advertiser_id, influencer_id, status, amount')
-      .eq('id', createDto.offerId)
+      .eq('offer_id', createDto.offerId)
       .maybeSingle();
 
     if (!offer) {
       throw new NotFoundException('Offer not found');
-    }
-
-    if (offer.status !== 'completed') {
-      throw new BadRequestException('Can only request payment for completed offers');
-    }
-
-    if (offer.influencer_id !== userId) {
-      throw new ForbiddenException('Only the influencer can request payment');
     }
 
     const { data: existing } = await supabase
@@ -41,14 +33,14 @@ export class PaymentsService {
 
     const paymentData = {
       offer_id: createDto.offerId,
-      influencer_id: userId,
-      advertiser_id: offer.advertiser_id,
-      amount: createDto.amount || offer.amount,
+      created_by: userId,
+      amount: createDto.amount,
       currency: createDto.currency,
-      description: createDto.description,
+      payment_type: createDto.paymentType,
       payment_method: createDto.paymentMethod,
-      status: 'pending',
-      requested_at: new Date().toISOString(),
+      payment_details: createDto.paymentDetails || {},
+      instructions: createDto.instructions,
+      status: 'draft',
     };
 
     const { data: payment, error } = await supabase
@@ -70,24 +62,15 @@ export class PaymentsService {
 
     let query = supabase
       .from('payment_requests')
-      .select(`
-        *,
-        offer:offers(*),
-        influencer:user_profiles!payment_requests_influencer_id_fkey(*),
-        advertiser:user_profiles!payment_requests_advertiser_id_fkey(*)
-      `);
+      .select('*, offer:offers(*)');
 
-    if (filters?.asAdvertiser) {
-      query = query.eq('advertiser_id', userId);
-    } else {
-      query = query.eq('influencer_id', userId);
-    }
+    query = query.eq('created_by', userId);
 
     if (filters?.status) {
       query = query.eq('status', filters.status);
     }
 
-    const { data: payments, error } = await query.order('requested_at', { ascending: false });
+    const { data: payments, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       this.logger.error(`Failed to fetch payment requests: ${error.message}`, error);
@@ -102,12 +85,7 @@ export class PaymentsService {
 
     const { data: payment, error } = await supabase
       .from('payment_requests')
-      .select(`
-        *,
-        offer:offers(*),
-        influencer:user_profiles!payment_requests_influencer_id_fkey(*),
-        advertiser:user_profiles!payment_requests_advertiser_id_fkey(*)
-      `)
+      .select('*, offer:offers(*)')
       .eq('id', id)
       .maybeSingle();
 
@@ -115,7 +93,7 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    if (payment.influencer_id !== userId && payment.advertiser_id !== userId) {
+    if (payment.created_by !== userId) {
       throw new ForbiddenException('You can only view your own payment requests');
     }
 
@@ -149,7 +127,7 @@ export class PaymentsService {
 
     const { data: payment } = await supabase
       .from('payment_requests')
-      .select('advertiser_id, influencer_id, status')
+      .select('created_by, status')
       .eq('id', id)
       .maybeSingle();
 
@@ -157,18 +135,17 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    const hasPermission =
-      requiredRole === 'advertiser' ? payment.advertiser_id === userId : payment.influencer_id === userId;
-
-    if (!hasPermission) {
-      throw new ForbiddenException(`Only ${requiredRole} can perform this action`);
+    if (payment.created_by !== userId) {
+      throw new ForbiddenException('You can only update your own payment requests');
     }
 
     const validTransitions: Record<string, string[]> = {
-      pending: ['approved', 'rejected', 'cancelled'],
-      approved: ['paid', 'cancelled'],
-      rejected: [],
-      paid: [],
+      draft: ['pending', 'cancelled'],
+      pending: ['paying', 'cancelled'],
+      paying: ['paid', 'failed', 'cancelled'],
+      paid: ['confirmed'],
+      confirmed: [],
+      failed: ['pending'],
       cancelled: [],
     };
 
@@ -178,40 +155,18 @@ export class PaymentsService {
 
     const updateData: any = {
       status,
-      updated_at: new Date().toISOString(),
     };
 
-    if (status === 'approved') {
-      updateData.approved_at = new Date().toISOString();
-      updateData.approved_by = userId;
-    }
-
-    if (status === 'paid') {
-      updateData.paid_at = new Date().toISOString();
-    }
-
-    if (updateDto.adminNotes) {
-      updateData.admin_notes = updateDto.adminNotes;
-    }
-
-    if (updateDto.transactionId) {
-      updateData.transaction_id = updateDto.transactionId;
-    }
-
-    if (updateDto.proofOfPayment) {
-      updateData.proof_of_payment = updateDto.proofOfPayment;
+    if (status === 'confirmed') {
+      updateData.confirmed_at = new Date().toISOString();
+      updateData.confirmed_by = userId;
     }
 
     const { data: updated, error } = await supabase
       .from('payment_requests')
       .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        offer:offers(*),
-        influencer:user_profiles!payment_requests_influencer_id_fkey(*),
-        advertiser:user_profiles!payment_requests_advertiser_id_fkey(*)
-      `)
+      .select('*, offer:offers(*)')
       .single();
 
     if (error) {
@@ -228,42 +183,47 @@ export class PaymentsService {
     const { data: payments } = await supabase
       .from('payment_requests')
       .select('status, amount, currency')
-      .eq('influencer_id', userId);
+      .eq('created_by', userId);
 
     if (!payments || payments.length === 0) {
       return {
         totalRequested: 0,
-        totalApproved: 0,
         totalPaid: 0,
+        totalConfirmed: 0,
+        draftCount: 0,
         pendingCount: 0,
-        approvedCount: 0,
         paidCount: 0,
+        confirmedCount: 0,
       };
     }
 
     const stats = payments.reduce(
       (acc, p) => {
         acc.totalRequested += p.amount;
-        if (p.status === 'approved') {
-          acc.totalApproved += p.amount;
-          acc.approvedCount++;
+        if (p.status === 'draft') {
+          acc.draftCount++;
+        }
+        if (p.status === 'pending' || p.status === 'paying') {
+          acc.pendingCount++;
         }
         if (p.status === 'paid') {
           acc.totalPaid += p.amount;
           acc.paidCount++;
         }
-        if (p.status === 'pending') {
-          acc.pendingCount++;
+        if (p.status === 'confirmed') {
+          acc.totalConfirmed += p.amount;
+          acc.confirmedCount++;
         }
         return acc;
       },
       {
         totalRequested: 0,
-        totalApproved: 0,
         totalPaid: 0,
+        totalConfirmed: 0,
+        draftCount: 0,
         pendingCount: 0,
-        approvedCount: 0,
         paidCount: 0,
+        confirmedCount: 0,
       },
     );
 
@@ -274,38 +234,20 @@ export class PaymentsService {
     return {
       id: payment.id,
       offerId: payment.offer_id,
-      influencerId: payment.influencer_id,
-      advertiserId: payment.advertiser_id,
+      createdBy: payment.created_by,
       amount: payment.amount,
       currency: payment.currency,
-      description: payment.description,
+      paymentType: payment.payment_type,
       paymentMethod: payment.payment_method,
+      paymentDetails: payment.payment_details || {},
+      instructions: payment.instructions,
       status: payment.status,
-      requestedAt: payment.requested_at,
-      approvedAt: payment.approved_at,
-      paidAt: payment.paid_at,
-      approvedBy: payment.approved_by,
-      adminNotes: payment.admin_notes,
-      transactionId: payment.transaction_id,
-      proofOfPayment: payment.proof_of_payment,
+      isFrozen: payment.is_frozen,
+      confirmedBy: payment.confirmed_by,
+      confirmedAt: payment.confirmed_at,
+      paymentProof: payment.payment_proof,
+      createdAt: payment.created_at,
       updatedAt: payment.updated_at,
-      offer: payment.offer,
-      influencer: payment.influencer
-        ? {
-            id: payment.influencer.user_id,
-            fullName: payment.influencer.full_name,
-            username: payment.influencer.username,
-            avatar: payment.influencer.avatar,
-          }
-        : undefined,
-      advertiser: payment.advertiser
-        ? {
-            id: payment.advertiser.user_id,
-            fullName: payment.advertiser.full_name,
-            username: payment.advertiser.username,
-            avatar: payment.advertiser.avatar,
-          }
-        : undefined,
     };
   }
 }
