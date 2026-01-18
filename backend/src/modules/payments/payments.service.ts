@@ -115,8 +115,16 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    if (payment.created_by !== userId) {
-      throw new ForbiddenException('You can only view your own payment requests');
+    const offer = payment.offer;
+    if (!offer) {
+      throw new NotFoundException('Associated offer not found');
+    }
+
+    const isAdvertiser = offer.advertiser_id === userId;
+    const isInfluencer = offer.influencer_id === userId;
+
+    if (!isAdvertiser && !isInfluencer) {
+      throw new ForbiddenException('You are not a participant in this offer');
     }
 
     return this.transformPayment(payment);
@@ -153,7 +161,7 @@ export class PaymentsService {
 
     const { data: payment } = await supabase
       .from('payment_requests')
-      .select('created_by, status')
+      .select('created_by, status, offer_id, offer:offers(advertiser_id, influencer_id)')
       .eq('id', id)
       .maybeSingle();
 
@@ -161,22 +169,44 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    if (payment.created_by !== userId) {
-      throw new ForbiddenException('You can only update your own payment requests');
+    const offer = payment.offer;
+    if (!offer) {
+      throw new NotFoundException('Associated offer not found');
     }
 
-    const validTransitions: Record<string, string[]> = {
+    const isAdvertiser = offer.advertiser_id === userId;
+    const isInfluencer = offer.influencer_id === userId;
+
+    if (!isAdvertiser && !isInfluencer) {
+      throw new ForbiddenException('You are not a participant in this offer');
+    }
+
+    const userRole = isAdvertiser ? 'advertiser' : 'influencer';
+
+    const influencerTransitions: Record<string, string[]> = {
       draft: ['pending', 'cancelled'],
-      pending: ['paying', 'cancelled'],
-      paying: ['paid', 'failed', 'cancelled'],
-      paid: ['confirmed'],
+      pending: ['cancelled'],
+      paying: ['cancelled'],
+      paid: ['confirmed', 'cancelled'],
       confirmed: [],
-      failed: ['pending'],
+      failed: ['cancelled'],
       cancelled: [],
     };
 
+    const advertiserTransitions: Record<string, string[]> = {
+      draft: ['cancelled'],
+      pending: ['paying', 'failed', 'cancelled'],
+      paying: ['paid', 'failed', 'cancelled'],
+      paid: ['cancelled'],
+      confirmed: [],
+      failed: ['pending', 'cancelled'],
+      cancelled: [],
+    };
+
+    const validTransitions = userRole === 'influencer' ? influencerTransitions : advertiserTransitions;
+
     if (!validTransitions[payment.status]?.includes(status)) {
-      throw new BadRequestException(`Cannot transition from ${payment.status} to ${status}`);
+      throw new BadRequestException(`Cannot transition from ${payment.status} to ${status} as ${userRole}`);
     }
 
     const updateData: any = {
