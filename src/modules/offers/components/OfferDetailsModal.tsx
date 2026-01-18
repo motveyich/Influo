@@ -437,8 +437,12 @@ export function OfferDetailsModal({
         );
       }
 
-      // Completed/Terminated/Declined/Cancelled - no actions for applications
-      // (applications don't have payment/review functionality)
+      // Completed/Terminated/Declined/Cancelled - can dispute
+      if (['completed', 'terminated', 'declined', 'cancelled'].includes(offer.status)) {
+        actions.push(
+          { label: 'Оспорить решение', action: 'dispute', style: 'warning', icon: AlertTriangle }
+        );
+      }
 
       console.log('🎬 [OfferDetailsModal] Application Actions:', {
         status: offer.status,
@@ -1057,8 +1061,8 @@ export function OfferDetailsModal({
               </div>
               )}
 
-              {/* Reviews - Only for offers, not applications */}
-              {collaborationType === 'offer' && reviews.length > 0 && (
+              {/* Reviews */}
+              {reviews.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Отзывы</h3>
                   <div className="space-y-3">

@@ -239,13 +239,43 @@ export class ReviewsService {
 
     const ratingData = await this.getUserRating(userId);
 
+    const { data: currentProfile } = await supabase
+      .from('user_profiles')
+      .select('unified_account_info')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const currentInfo = currentProfile?.unified_account_info || {};
+
+    const { data: completedOffersCount } = await supabase
+      .from('offers')
+      .select('offer_id', { count: 'exact', head: true })
+      .or(`advertiser_id.eq.${userId},influencer_id.eq.${userId}`)
+      .eq('status', 'completed');
+
+    const { data: completedApplicationsCount } = await supabase
+      .from('applications')
+      .select('id', { count: 'exact', head: true })
+      .or(`applicant_id.eq.${userId},target_id.eq.${userId}`)
+      .eq('status', 'completed');
+
+    const completedDeals = (completedOffersCount || 0) + (completedApplicationsCount || 0);
+
+    const updatedInfo = {
+      ...currentInfo,
+      averageRating: ratingData.averageRating,
+      totalReviews: ratingData.totalReviews,
+      completedDeals: completedDeals,
+    };
+
     await supabase
       .from('user_profiles')
       .update({
-        rating: ratingData.averageRating,
-        reviews_count: ratingData.totalReviews,
+        unified_account_info: updatedInfo,
       })
       .eq('user_id', userId);
+
+    this.logger.log(`Updated rating for user ${userId}: ${ratingData.averageRating} (${ratingData.totalReviews} reviews, ${completedDeals} deals)`);
   }
 
   private transformReview(review: any) {
