@@ -56,6 +56,24 @@ export class ReviewsController {
     return this.reviewsService.findByUser(userId);
   }
 
+  @Get('user/:userId/received')
+  @Public()
+  @ApiOperation({ summary: 'Get reviews received by a specific user' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'List of received reviews' })
+  async findReceivedReviews(@Param('userId') userId: string) {
+    return this.reviewsService.findReceivedReviews(userId);
+  }
+
+  @Get('user/:userId/given')
+  @Public()
+  @ApiOperation({ summary: 'Get reviews given by a specific user' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'List of given reviews' })
+  async findGivenReviews(@Param('userId') userId: string) {
+    return this.reviewsService.findGivenReviews(userId);
+  }
+
   @Get('user/:userId/rating')
   @Public()
   @ApiOperation({ summary: 'Get user rating statistics' })

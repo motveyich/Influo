@@ -1,26 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, User, Calendar } from 'lucide-react';
-import { supabase, TABLES } from '../../../core/supabase';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
-
-interface Review {
-  id: string;
-  dealId: string;
-  reviewerId: string;
-  revieweeId: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-  reviewerProfile?: {
-    fullName: string;
-    avatarUrl?: string;
-  };
-  revieweeProfile?: {
-    fullName: string;
-    avatarUrl?: string;
-  };
-}
+import { reviewsService, ReviewWithProfile } from '../../reviews/services/reviewsService';
 
 interface ReviewsTabProps {
   userId: string;
@@ -28,87 +10,35 @@ interface ReviewsTabProps {
 
 export function ReviewsTab({ userId }: ReviewsTabProps) {
   const [activeSection, setActiveSection] = useState<'received' | 'given'>('received');
-  const [receivedReviews, setReceivedReviews] = useState<Review[]>([]);
-  const [givenReviews, setGivenReviews] = useState<Review[]>([]);
+  const [receivedReviews, setReceivedReviews] = useState<ReviewWithProfile[]>([]);
+  const [givenReviews, setGivenReviews] = useState<ReviewWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadReviews();
+    if (userId) {
+      loadReviews();
+    }
   }, [userId]);
 
   const loadReviews = async () => {
     setIsLoading(true);
     try {
-      // Загружаем отзывы обо мне
-      const { data: received, error: receivedError } = await supabase
-        .from(TABLES.REVIEWS)
-        .select('*')
-        .eq('reviewee_id', userId)
-        .order('created_at', { ascending: false });
+      console.log('[ReviewsTab] Loading reviews for user:', userId);
 
-      if (receivedError) throw receivedError;
+      const [received, given] = await Promise.all([
+        reviewsService.getReceivedReviews(userId),
+        reviewsService.getGivenReviews(userId)
+      ]);
 
-      // Загружаем мои отзывы
-      const { data: given, error: givenError } = await supabase
-        .from(TABLES.REVIEWS)
-        .select('*')
-        .eq('reviewer_id', userId)
-        .order('created_at', { ascending: false });
+      console.log('[ReviewsTab] Received reviews:', received.length);
+      console.log('[ReviewsTab] Given reviews:', given.length);
 
-      if (givenError) throw givenError;
-
-      // Загружаем профили для полученных отзывов
-      if (received && received.length > 0) {
-        const reviewerIds = received.map(r => r.reviewer_id);
-        const { data: profiles } = await supabase
-          .from(TABLES.USER_PROFILES)
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', reviewerIds);
-
-        const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-        setReceivedReviews(received.map(r => ({
-          id: r.id,
-          dealId: r.deal_id,
-          reviewerId: r.reviewer_id,
-          revieweeId: r.reviewee_id,
-          rating: parseFloat(r.rating),
-          comment: r.comment,
-          createdAt: r.created_at,
-          reviewerProfile: profilesMap.get(r.reviewer_id) ? {
-            fullName: profilesMap.get(r.reviewer_id)!.full_name,
-            avatarUrl: profilesMap.get(r.reviewer_id)!.avatar_url
-          } : undefined
-        })));
-      }
-
-      // Загружаем профили для отданных отзывов
-      if (given && given.length > 0) {
-        const reviewedIds = given.map(r => r.reviewee_id);
-        const { data: profiles } = await supabase
-          .from(TABLES.USER_PROFILES)
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', reviewedIds);
-
-        const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-        setGivenReviews(given.map(r => ({
-          id: r.id,
-          dealId: r.deal_id,
-          reviewerId: r.reviewer_id,
-          revieweeId: r.reviewee_id,
-          rating: parseFloat(r.rating),
-          comment: r.comment,
-          createdAt: r.created_at,
-          revieweeProfile: profilesMap.get(r.reviewee_id) ? {
-            fullName: profilesMap.get(r.reviewee_id)!.full_name,
-            avatarUrl: profilesMap.get(r.reviewee_id)!.avatar_url
-          } : undefined
-        })));
-      }
-
+      setReceivedReviews(received);
+      setGivenReviews(given);
     } catch (error) {
-      console.error('Failed to load reviews:', error);
+      console.error('[ReviewsTab] Failed to load reviews:', error);
+      setReceivedReviews([]);
+      setGivenReviews([]);
     } finally {
       setIsLoading(false);
     }
@@ -131,17 +61,17 @@ export function ReviewsTab({ userId }: ReviewsTabProps) {
     );
   };
 
-  const renderReviewCard = (review: Review, type: 'received' | 'given') => {
-    const profile = type === 'received' ? review.reviewerProfile : review.revieweeProfile;
+  const renderReviewCard = (review: ReviewWithProfile, type: 'received' | 'given') => {
+    const profile = type === 'received' ? review.reviewer : review.reviewed;
     const label = type === 'received' ? 'От' : 'Для';
 
     return (
       <div key={review.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            {profile?.avatarUrl ? (
+            {profile?.avatar ? (
               <img
-                src={profile.avatarUrl}
+                src={profile.avatar}
                 alt={profile.fullName}
                 className="w-10 h-10 rounded-full object-cover"
               />

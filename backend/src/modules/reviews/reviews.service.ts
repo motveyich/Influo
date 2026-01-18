@@ -126,6 +126,48 @@ export class ReviewsService {
     return this.findAll(userId);
   }
 
+  async findReceivedReviews(userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: reviews, error } = await supabase
+      .from('reviews')
+      .select(`
+        *,
+        reviewer:user_profiles!reviews_reviewer_id_fkey(*),
+        reviewed:user_profiles!reviews_reviewee_id_fkey(*)
+      `)
+      .eq('reviewee_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch received reviews: ${error.message}`, error);
+      return [];
+    }
+
+    return reviews.map((review) => this.transformReview(review));
+  }
+
+  async findGivenReviews(userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: reviews, error } = await supabase
+      .from('reviews')
+      .select(`
+        *,
+        reviewer:user_profiles!reviews_reviewer_id_fkey(*),
+        reviewed:user_profiles!reviews_reviewee_id_fkey(*)
+      `)
+      .eq('reviewer_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch given reviews: ${error.message}`, error);
+      return [];
+    }
+
+    return reviews.map((review) => this.transformReview(review));
+  }
+
   async findByDeal(dealId: string, collaborationType: string) {
     const supabase = this.supabaseService.getAdminClient();
 
