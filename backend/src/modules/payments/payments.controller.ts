@@ -21,18 +21,21 @@ export class PaymentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all payment requests for current user' })
+  @ApiOperation({ summary: 'Get all payment requests for current user or specific offer' })
   @ApiQuery({ name: 'status', required: false, enum: ['pending', 'approved', 'rejected', 'paid', 'cancelled'] })
   @ApiQuery({ name: 'asAdvertiser', required: false, type: Boolean })
+  @ApiQuery({ name: 'offerId', required: false, type: String, description: 'Filter payment requests by offer ID' })
   @ApiResponse({ status: 200, description: 'Payment requests retrieved successfully' })
   findAll(
     @CurrentUser('userId') userId: string,
     @Query('status') status?: string,
     @Query('asAdvertiser') asAdvertiser?: string,
+    @Query('offerId') offerId?: string,
   ) {
     return this.paymentsService.findAll(userId, {
       status,
       asAdvertiser: asAdvertiser === 'true',
+      offerId,
     });
   }
 

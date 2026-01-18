@@ -61,14 +61,32 @@ export class PaymentsService {
     return this.transformPayment(payment);
   }
 
-  async findAll(userId: string, filters?: { status?: string; asAdvertiser?: boolean }) {
+  async findAll(userId: string, filters?: { status?: string; asAdvertiser?: boolean; offerId?: string }) {
     const supabase = this.supabaseService.getAdminClient();
 
     let query = supabase
       .from('payment_requests')
       .select('*, offer:offers(*)');
 
-    query = query.eq('created_by', userId);
+    if (filters?.offerId) {
+      const { data: offer } = await supabase
+        .from('offers')
+        .select('advertiser_id, influencer_id')
+        .eq('offer_id', filters.offerId)
+        .maybeSingle();
+
+      if (!offer) {
+        throw new NotFoundException('Offer not found');
+      }
+
+      if (offer.advertiser_id !== userId && offer.influencer_id !== userId) {
+        throw new ForbiddenException('You do not have access to this offer');
+      }
+
+      query = query.eq('offer_id', filters.offerId);
+    } else {
+      query = query.eq('created_by', userId);
+    }
 
     if (filters?.status) {
       query = query.eq('status', filters.status);
