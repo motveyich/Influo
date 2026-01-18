@@ -1,38 +1,54 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
 import { UpdateSettingsDto } from './dto';
 
 @Injectable()
 export class UserSettingsService {
+  private readonly logger = new Logger(UserSettingsService.name);
+
   constructor(private readonly supabase: SupabaseService) {}
 
   async getUserSettings(userId: string) {
-    const { data, error } = await this.supabase.getClient()
+    this.logger.debug(`Getting settings for user: ${userId}`);
+
+    const { data, error } = await this.supabase.getAdminClient()
       .from('user_settings')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (error) {
-      throw new Error(`Failed to get user settings: ${error.message}`);
+      this.logger.error(`Failed to get user settings: ${error.message}`, error);
+      throw new BadRequestException(`Failed to get user settings: ${error.message}`);
     }
 
     if (!data) {
+      this.logger.log(`No settings found for user ${userId}, creating defaults`);
       return await this.createDefaultSettings(userId);
     }
 
+    this.logger.debug(`Successfully retrieved settings for user: ${userId}`);
     return this.transformFromDatabase(data);
   }
 
   async updateSettings(userId: string, updates: UpdateSettingsDto) {
+    this.logger.log(`Updating settings for user: ${userId}`);
+    this.logger.debug(`Update data: ${JSON.stringify(updates)}`);
+
     const currentSettings = await this.getUserSettings(userId);
+
+    // Merge updates with current settings, preserving nested objects
     const updatedSettings = {
       ...currentSettings,
-      ...updates,
+      security: { ...currentSettings.security, ...updates.security },
+      privacy: { ...currentSettings.privacy, ...updates.privacy },
+      notifications: { ...currentSettings.notifications, ...updates.notifications },
+      interface: { ...currentSettings.interface, ...updates.interface },
+      account: { ...currentSettings.account, ...updates.account },
       updatedAt: new Date().toISOString()
     };
 
-    const { data, error } = await this.supabase.getClient()
+    const { data, error } = await this.supabase.getAdminClient()
       .from('user_settings')
       .upsert([this.transformToDatabase(updatedSettings)], {
         onConflict: 'user_id'
@@ -41,27 +57,33 @@ export class UserSettingsService {
       .single();
 
     if (error) {
-      throw new Error(`Failed to update settings: ${error.message}`);
+      this.logger.error(`Failed to update settings: ${error.message}`, error);
+      throw new BadRequestException(`Failed to update settings: ${error.message}`);
     }
 
+    this.logger.log(`Successfully updated settings for user: ${userId}`);
     return this.transformFromDatabase(data);
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    this.logger.log(`Changing password for user: ${userId}`);
+
     // Get user email
-    const { data: { user }, error: userError } = await this.supabase.getClient().auth.admin.getUserById(userId);
+    const { data: { user }, error: userError } = await this.supabase.getAdminClient().auth.admin.getUserById(userId);
 
     if (userError || !user?.email) {
+      this.logger.error(`User not found: ${userId}`, userError);
       throw new NotFoundException('User not found');
     }
 
     // Update password using Supabase Auth Admin API
-    const { error } = await this.supabase.getClient().auth.admin.updateUserById(
+    const { error } = await this.supabase.getAdminClient().auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );
 
     if (error) {
+      this.logger.error(`Failed to change password: ${error.message}`, error);
       throw new BadRequestException(`Failed to change password: ${error.message}`);
     }
 
@@ -71,6 +93,8 @@ export class UserSettingsService {
         passwordLastChanged: new Date().toISOString()
       }
     });
+
+    this.logger.log(`Successfully changed password for user: ${userId}`);
   }
 
   async deactivateAccount(userId: string, reason?: string) {
@@ -85,8 +109,10 @@ export class UserSettingsService {
   }
 
   async deleteAccount(userId: string) {
+    this.logger.log(`Deleting account for user: ${userId}`);
+
     // Mark user profile as deleted
-    const { error } = await this.supabase.getClient()
+    const { error } = await this.supabase.getAdminClient()
       .from('user_profiles')
       .update({
         is_deleted: true,
@@ -96,23 +122,30 @@ export class UserSettingsService {
       .eq('user_id', userId);
 
     if (error) {
-      throw new Error(`Failed to delete account: ${error.message}`);
+      this.logger.error(`Failed to delete account: ${error.message}`, error);
+      throw new BadRequestException(`Failed to delete account: ${error.message}`);
     }
+
+    this.logger.log(`Successfully deleted account for user: ${userId}`);
   }
 
   private async createDefaultSettings(userId: string) {
+    this.logger.log(`Creating default settings for user: ${userId}`);
+
     const defaultSettings = this.getDefaultSettings(userId);
 
-    const { data, error } = await this.supabase.getClient()
+    const { data, error } = await this.supabase.getAdminClient()
       .from('user_settings')
       .insert([this.transformToDatabase(defaultSettings)])
       .select()
       .single();
 
     if (error) {
-      throw new Error(`Failed to create default settings: ${error.message}`);
+      this.logger.error(`Failed to create default settings: ${error.message}`, error);
+      throw new BadRequestException(`Failed to create default settings: ${error.message}`);
     }
 
+    this.logger.log(`Successfully created default settings for user: ${userId}`);
     return this.transformFromDatabase(data);
   }
 
