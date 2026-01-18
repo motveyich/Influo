@@ -93,42 +93,35 @@ export function OfferDetailsModal({
     try {
       setIsLoading(true);
 
-      // For applications, only load blacklist status and initiator profile
-      // Don't load payment requests, reviews, or history as they use offer-specific endpoints
-      if (collaborationType === 'application') {
-        // Check blacklist status
-        const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
-        if (targetUserId) {
-          const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
-          setIsBlacklisted(blacklisted);
-        }
+      // Load reviews and review permission for all collaboration types
+      const [reviewData, reviewPermission] = await Promise.all([
+        reviewService.getOfferReviews(offer.id, collaborationType),
+        reviewService.canUserReview(offer.id, currentUserId, collaborationType)
+      ]);
 
-        // Load initiator profile
-        await loadInitiatorProfile();
-      } else {
-        // For offers, load all details
-        const [paymentData, reviewData, historyData, reviewPermission] = await Promise.all([
+      setReviews(reviewData);
+      setCanReview(reviewPermission);
+
+      // For offers, also load payment requests and history
+      if (collaborationType === 'offer') {
+        const [paymentData, historyData] = await Promise.all([
           paymentRequestService.getOfferPaymentRequests(offer.id),
-          reviewService.getOfferReviews(offer.id, collaborationType),
-          offerService.getOfferHistory(offer.id),
-          reviewService.canUserReview(offer.id, currentUserId, collaborationType)
+          offerService.getOfferHistory(offer.id)
         ]);
 
         setPaymentRequests(paymentData);
-        setReviews(reviewData);
         setOfferHistory(historyData);
-        setCanReview(reviewPermission);
-
-        // Check blacklist status
-        const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
-        if (targetUserId) {
-          const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
-          setIsBlacklisted(blacklisted);
-        }
-
-        // Load initiator profile
-        await loadInitiatorProfile();
       }
+
+      // Check blacklist status
+      const targetUserId = isInfluencer ? offer.advertiserId : offer.influencerId;
+      if (targetUserId) {
+        const blacklisted = await blacklistService.isInMyBlacklist(targetUserId);
+        setIsBlacklisted(blacklisted);
+      }
+
+      // Load initiator profile
+      await loadInitiatorProfile();
     } catch (error) {
       console.error('Failed to load offer details:', error);
     } finally {
