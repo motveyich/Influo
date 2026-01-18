@@ -21,7 +21,7 @@ export class PaymentsService {
       throw new NotFoundException('Offer not found');
     }
 
-    const offerDetails = offer.details || {};
+    const offerDetails = (offer as any).details || {};
     const proposedRate = offerDetails.proposed_rate || 0;
     const offerCurrency = offerDetails.currency || 'RUB';
 
@@ -79,7 +79,7 @@ export class PaymentsService {
         throw new NotFoundException('Offer not found');
       }
 
-      if (offer.advertiser_id !== userId && offer.influencer_id !== userId) {
+      if ((offer as any).advertiser_id !== userId && (offer as any).influencer_id !== userId) {
         throw new ForbiddenException('You do not have access to this offer');
       }
 
@@ -115,7 +115,7 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    const offer = payment.offer;
+    const offer = payment.offer as any;
     if (!offer) {
       throw new NotFoundException('Associated offer not found');
     }
@@ -169,7 +169,7 @@ export class PaymentsService {
       throw new NotFoundException('Payment request not found');
     }
 
-    const offer = payment.offer;
+    const offer = payment.offer as any;
     if (!offer) {
       throw new NotFoundException('Associated offer not found');
     }
