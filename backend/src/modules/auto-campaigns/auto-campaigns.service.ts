@@ -634,8 +634,6 @@ export class AutoCampaignsService {
       campaign_id: null,
       auto_campaign_id: campaignId,
       initiated_by: campaign.advertiser_id,
-      proposed_rate: match.selectedPrice,
-      currency: 'RUB',
       status: 'pending',
       details: {
         title: `Предложение о сотрудничестве: ${campaign.title}`,
@@ -648,6 +646,8 @@ export class AutoCampaignsService {
         influencer_response: 'pending',
         advertiser_response: 'pending',
         enable_chat: campaign.enable_chat !== false,
+        proposed_rate: match.selectedPrice,
+        currency: 'RUB',
         timeline: {
           start_date: campaign.start_date,
           end_date: campaign.end_date

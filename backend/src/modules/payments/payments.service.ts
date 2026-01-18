@@ -13,13 +13,17 @@ export class PaymentsService {
 
     const { data: offer } = await supabase
       .from('offers')
-      .select('advertiser_id, influencer_id, status, proposed_rate, currency')
+      .select('advertiser_id, influencer_id, status, details')
       .eq('offer_id', createDto.offerId)
       .maybeSingle();
 
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
+
+    const offerDetails = offer.details || {};
+    const proposedRate = offerDetails.proposed_rate || 0;
+    const offerCurrency = offerDetails.currency || 'RUB';
 
     const { data: existing } = await supabase
       .from('payment_requests')
