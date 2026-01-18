@@ -197,6 +197,24 @@ export class OfferService {
     }
   }
 
+  async confirmCompletion(offerId: string): Promise<CollaborationOffer> {
+    try {
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/confirm-completion`);
+    } catch (error) {
+      console.error('Failed to confirm completion:', error);
+      throw error;
+    }
+  }
+
+  async rejectCompletion(offerId: string): Promise<CollaborationOffer> {
+    try {
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/reject-completion`);
+    } catch (error) {
+      console.error('Failed to reject completion:', error);
+      throw error;
+    }
+  }
+
   async updateOfferStatus(
     offerId: string,
     newStatus: OfferStatus,

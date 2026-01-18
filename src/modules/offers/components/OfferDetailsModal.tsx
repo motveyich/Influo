@@ -256,7 +256,19 @@ export function OfferDetailsModal({
     // Handle regular offers
     try {
       setIsLoading(true);
-      const updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
+      let updatedOffer;
+
+      switch (newStatus) {
+        case 'confirm_completion':
+          updatedOffer = await offerService.confirmCompletion(offer.id);
+          break;
+        case 'reject_completion':
+          updatedOffer = await offerService.rejectCompletion(offer.id);
+          break;
+        default:
+          updatedOffer = await offerService.updateOfferStatus(offer.id, newStatus, currentUserId, additionalData);
+      }
+
       onOfferUpdated(updatedOffer);
       await loadOfferDetails();
 
@@ -264,14 +276,16 @@ export function OfferDetailsModal({
         'accepted': 'Предложение принято',
         'declined': 'Предложение отклонено',
         'cancelled': 'Предложение отменено',
-        'completed': 'Сотрудничество завершено',
+        'completed': 'Запрос на завершение отправлен',
+        'confirm_completion': 'Завершение подтверждено',
+        'reject_completion': 'Завершение отменено',
         'terminated': 'Сотрудничество расторгнуто'
       };
 
       toast.success(statusMessages[newStatus] || 'Статус обновлен');
 
       // Автоматически открыть окно отзыва после завершения или расторжения
-      if (newStatus === 'completed' || newStatus === 'terminated') {
+      if (newStatus === 'confirm_completion' || newStatus === 'terminated') {
         // Проверяем, может ли пользователь оставить отзыв
         const canLeaveReview = await reviewService.canUserReview(offer.id, currentUserId, collaborationType);
         if (canLeaveReview) {
@@ -476,15 +490,28 @@ export function OfferDetailsModal({
 
     // In progress actions
     if (offer.status === 'in_progress') {
-      if (isReceiver) {
-        // Получатель может завершить
-        actions.push(
-          { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy }
-        );
-      }
+      // Обе стороны могут завершить
+      actions.push(
+        { label: 'Завершить сотрудничество', action: 'completed', style: 'success', icon: Trophy }
+      );
       // Обе стороны могут расторгнуть или пожаловаться
       actions.push(
         { label: 'Расторгнуть сотрудничество', action: 'terminated', style: 'danger', icon: Ban },
+        { label: 'Пожаловаться', action: 'report', style: 'warning', icon: AlertTriangle }
+      );
+    }
+
+    // Pending completion - opposite party can confirm or reject
+    if (offer.status === 'pending_completion') {
+      const completionInitiator = offer.completionInitiatedBy;
+      if (completionInitiator && completionInitiator !== currentUserId) {
+        actions.push(
+          { label: 'Подтвердить завершение', action: 'confirm_completion', style: 'success', icon: CheckCircle },
+          { label: 'Сотрудничество еще не окончено', action: 'reject_completion', style: 'warning', icon: XCircle }
+        );
+      }
+      // Обе стороны могут пожаловаться
+      actions.push(
         { label: 'Пожаловаться', action: 'report', style: 'warning', icon: AlertTriangle }
       );
     }
@@ -611,6 +638,8 @@ export function OfferDetailsModal({
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending_completion':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'terminated':
@@ -676,6 +705,7 @@ export function OfferDetailsModal({
                 {offer.status === 'pending' ? 'Ожидает ответа' :
                  offer.status === 'accepted' ? 'Принято' :
                  offer.status === 'in_progress' ? 'В работе' :
+                 offer.status === 'pending_completion' ? 'Ожидает подтверждения завершения' :
                  offer.status === 'completed' ? 'Завершено' :
                  offer.status === 'terminated' ? 'Расторгнуто' :
                  offer.status === 'declined' ? 'Отклонено' : 'Отменено'}
@@ -1249,6 +1279,7 @@ export function OfferDetailsModal({
                       {offer.status === 'pending' ? 'Ожидает ответа' :
                        offer.status === 'accepted' ? 'Принято' :
                        offer.status === 'in_progress' ? 'В работе' :
+                       offer.status === 'pending_completion' ? 'Ожидает подтверждения завершения' :
                        offer.status === 'completed' ? 'Завершено' :
                        offer.status === 'terminated' ? 'Расторгнуто' :
                        offer.status === 'declined' ? 'Отклонено' : 'Отменено'}

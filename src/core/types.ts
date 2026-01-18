@@ -494,7 +494,7 @@ export interface AIChatMessage {
 }
 
 // Offers system types
-export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'terminated' | 'cancelled';
+export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'pending_completion' | 'completed' | 'terminated' | 'cancelled';
 export type PaymentRequestStatus = 'draft' | 'pending' | 'paying' | 'paid' | 'confirmed' | 'failed' | 'cancelled';
 export type CollaborationStage = 'pre_payment' | 'work_in_progress' | 'post_payment' | 'completed';
 
@@ -536,6 +536,8 @@ export interface CollaborationOffer {
   completedAt?: string;
   terminatedAt?: string;
   terminationReason?: string;
+  completionInitiatedBy?: string;
+  completionRequestedAt?: string;
 
   // Reviews
   influencerReviewed: boolean;

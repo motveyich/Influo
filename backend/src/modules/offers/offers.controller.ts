@@ -164,4 +164,43 @@ export class OffersController {
   ) {
     return this.offersService.cancel(id, userId);
   }
+
+  @Post(':id/confirm-completion')
+  @ApiOperation({ summary: 'Confirm offer completion' })
+  @ApiParam({ name: 'id', description: 'Offer ID' })
+  @ApiResponse({ status: 200, description: 'Offer completion confirmed' })
+  @ApiResponse({ status: 403, description: 'Cannot confirm own completion request' })
+  @ApiResponse({ status: 409, description: 'Offer is not pending completion' })
+  async confirmCompletion(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.offersService.confirmCompletion(id, userId);
+  }
+
+  @Post(':id/reject-completion')
+  @ApiOperation({ summary: 'Reject offer completion' })
+  @ApiParam({ name: 'id', description: 'Offer ID' })
+  @ApiResponse({ status: 200, description: 'Offer completion rejected' })
+  @ApiResponse({ status: 403, description: 'Cannot reject own completion request' })
+  @ApiResponse({ status: 409, description: 'Offer is not pending completion' })
+  async rejectCompletion(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.offersService.rejectCompletion(id, userId);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get offer status history' })
+  @ApiParam({ name: 'id', description: 'Offer ID' })
+  @ApiResponse({ status: 200, description: 'Offer history retrieved' })
+  @ApiResponse({ status: 403, description: 'You can only view history of your own offers' })
+  @ApiResponse({ status: 404, description: 'Offer not found' })
+  async getHistory(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.offersService.getOfferHistory(id, userId);
+  }
 }

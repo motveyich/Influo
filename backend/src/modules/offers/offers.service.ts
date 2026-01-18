@@ -275,7 +275,50 @@ export class OffersService {
   }
 
   async markCompleted(id: string, userId: string) {
-    return this.updateStatus(id, userId, 'completed', 'influencer');
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offer } = await supabase
+      .from('offers')
+      .select('advertiser_id, influencer_id, status, completion_initiated_by')
+      .eq('offer_id', id)
+      .maybeSingle();
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this offer');
+    }
+
+    if (offer.status !== 'in_progress') {
+      throw new ConflictException('Can only request completion for offers in progress');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('offers')
+      .update({
+        status: 'pending_completion',
+        completion_initiated_by: userId,
+        completion_requested_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('offer_id', id)
+      .select(`
+        *,
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
+      `)
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to request completion: ${error.message}`, error);
+      throw new ConflictException('Failed to request completion');
+    }
+
+    this.logger.log(`Offer ${id} completion requested by user ${userId}`);
+    return this.transformOffer(updated);
   }
 
   async terminate(id: string, userId: string) {
@@ -351,7 +394,8 @@ export class OffersService {
     const validTransitions: Record<string, string[]> = {
       pending: ['accepted', 'cancelled', 'declined'],
       accepted: ['in_progress', 'cancelled', 'terminated'],
-      in_progress: ['completed', 'cancelled', 'terminated'],
+      in_progress: ['pending_completion', 'cancelled', 'terminated'],
+      pending_completion: ['completed', 'in_progress'],
       completed: [],
       cancelled: [],
       terminated: [],
@@ -382,6 +426,148 @@ export class OffersService {
     return this.transformOffer(updated);
   }
 
+  async getOfferHistory(offerId: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offer } = await supabase
+      .from('offers')
+      .select('advertiser_id, influencer_id')
+      .eq('offer_id', offerId)
+      .maybeSingle();
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('You can only view history of your own offers');
+    }
+
+    const { data: history, error } = await supabase
+      .from('offer_status_history')
+      .select(`
+        *,
+        changed_by_profile:user_profiles!offer_status_history_changed_by_fkey(
+          user_id,
+          full_name,
+          username,
+          avatar
+        )
+      `)
+      .eq('offer_id', offerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to get offer history: ${error.message}`, error);
+      return [];
+    }
+
+    return history || [];
+  }
+
+  async confirmCompletion(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offer } = await supabase
+      .from('offers')
+      .select('advertiser_id, influencer_id, status, completion_initiated_by')
+      .eq('offer_id', id)
+      .maybeSingle();
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this offer');
+    }
+
+    if (offer.status !== 'pending_completion') {
+      throw new ConflictException('Offer is not pending completion');
+    }
+
+    if (offer.completion_initiated_by === userId) {
+      throw new ForbiddenException('Cannot confirm your own completion request');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('offers')
+      .update({
+        status: 'completed',
+        completion_initiated_by: null,
+        completion_requested_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('offer_id', id)
+      .select(`
+        *,
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
+      `)
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to confirm completion: ${error.message}`, error);
+      throw new ConflictException('Failed to confirm completion');
+    }
+
+    this.logger.log(`Offer ${id} completion confirmed by user ${userId}`);
+    return this.transformOffer(updated);
+  }
+
+  async rejectCompletion(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offer } = await supabase
+      .from('offers')
+      .select('advertiser_id, influencer_id, status, completion_initiated_by')
+      .eq('offer_id', id)
+      .maybeSingle();
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    const isParticipant = offer.advertiser_id === userId || offer.influencer_id === userId;
+    if (!isParticipant) {
+      throw new ForbiddenException('Not authorized to update this offer');
+    }
+
+    if (offer.status !== 'pending_completion') {
+      throw new ConflictException('Offer is not pending completion');
+    }
+
+    if (offer.completion_initiated_by === userId) {
+      throw new ForbiddenException('Cannot reject your own completion request');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('offers')
+      .update({
+        status: 'in_progress',
+        completion_initiated_by: null,
+        completion_requested_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('offer_id', id)
+      .select(`
+        *,
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
+      `)
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to reject completion: ${error.message}`, error);
+      throw new ConflictException('Failed to reject completion');
+    }
+
+    this.logger.log(`Offer ${id} completion rejected by user ${userId}`);
+    return this.transformOffer(updated);
+  }
+
   private transformOffer(offer: any) {
     const details = offer.details || {};
 
@@ -394,6 +580,8 @@ export class OffersService {
       autoCampaignId: offer.auto_campaign_id || null,
       influencerCardId: offer.influencer_card_id || null,
       initiatedBy: offer.initiated_by || offer.advertiser_id,
+      completionInitiatedBy: offer.completion_initiated_by || null,
+      completionRequestedAt: offer.completion_requested_at || null,
 
       title: details.title || offer.title || 'Без названия',
       description: details.description || offer.description || '',
