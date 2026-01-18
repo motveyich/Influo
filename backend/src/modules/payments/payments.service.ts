@@ -120,6 +120,10 @@ export class PaymentsService {
     return this.updateStatus(id, userId, 'cancelled', 'influencer', {});
   }
 
+  async updatePaymentStatus(id: string, userId: string, status: string) {
+    return this.updateStatus(id, userId, status, 'influencer', {});
+  }
+
   private async updateStatus(
     id: string,
     userId: string,
@@ -232,6 +236,40 @@ export class PaymentsService {
     );
 
     return stats;
+  }
+
+  async deletePaymentRequest(id: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: payment } = await supabase
+      .from('payment_requests')
+      .select('created_by, status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!payment) {
+      throw new NotFoundException('Payment request not found');
+    }
+
+    if (payment.created_by !== userId) {
+      throw new ForbiddenException('You can only delete your own payment requests');
+    }
+
+    if (!['draft', 'cancelled'].includes(payment.status)) {
+      throw new BadRequestException('Can only delete draft or cancelled payment requests');
+    }
+
+    const { error } = await supabase
+      .from('payment_requests')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      this.logger.error(`Failed to delete payment request: ${error.message}`, error);
+      throw new ConflictException('Failed to delete payment request');
+    }
+
+    return { message: 'Payment request deleted successfully' };
   }
 
   private transformPayment(payment: any) {

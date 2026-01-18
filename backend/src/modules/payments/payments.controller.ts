@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
-import { CreatePaymentRequestDto, UpdatePaymentRequestDto } from './dto';
+import { CreatePaymentRequestDto, UpdatePaymentRequestDto, UpdatePaymentStatusDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -89,5 +89,27 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Payment request cancelled successfully' })
   cancel(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.paymentsService.cancel(id, userId);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update payment request status' })
+  @ApiResponse({ status: 200, description: 'Payment request status updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid status transition' })
+  @ApiResponse({ status: 404, description: 'Payment request not found' })
+  updateStatus(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @Body() updateStatusDto: UpdatePaymentStatusDto,
+  ) {
+    return this.paymentsService.updatePaymentStatus(id, userId, updateStatusDto.status);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete payment request' })
+  @ApiResponse({ status: 200, description: 'Payment request deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Cannot delete payment request in current status' })
+  @ApiResponse({ status: 404, description: 'Payment request not found' })
+  delete(@Param('id') id: string, @CurrentUser('userId') userId: string) {
+    return this.paymentsService.deletePaymentRequest(id, userId);
   }
 }

@@ -100,8 +100,7 @@ export class PaymentRequestService {
   async updatePaymentStatus(paymentId: string, newStatus: string, userId: string): Promise<PaymentRequest> {
     try {
       return await apiClient.patch<PaymentRequest>(`/payments/${paymentId}/status`, {
-        status: newStatus,
-        userId
+        status: newStatus
       });
     } catch (error) {
       console.error('Failed to update payment status:', error);
@@ -111,7 +110,7 @@ export class PaymentRequestService {
 
   async deletePaymentRequest(paymentId: string, userId: string): Promise<void> {
     try {
-      await apiClient.delete(`/payments/${paymentId}`, { userId });
+      await apiClient.delete(`/payments/${paymentId}`);
     } catch (error) {
       console.error('Failed to delete payment request:', error);
       throw error;
