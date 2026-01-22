@@ -10,6 +10,8 @@ import { PaymentRequestModal } from './PaymentRequestModal';
 import { ReviewModal } from './ReviewModal';
 import { ReportModal } from '../../../components/ReportModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
+import { CompleteCollaborationModal } from './CompleteCollaborationModal';
+import { ViewCompletionModal } from './ViewCompletionModal';
 import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star, MessageCircle, CreditCard as Edit, Trash2, Play, Square, Trophy, Ban, AlertTriangle, Plus, User, FileText, History, Flag, UserCircle, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -44,6 +46,8 @@ export function OfferDetailsModal({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showViewCompletionModal, setShowViewCompletionModal] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [canReview, setCanReview] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentRequest | null>(null);
@@ -173,6 +177,16 @@ export function OfferDetailsModal({
       if (!reason) return;
 
       setShowReportModal(true);
+      return;
+    }
+
+    if (newStatus === 'completed') {
+      setShowCompleteModal(true);
+      return;
+    }
+
+    if (newStatus === 'view_completion') {
+      setShowViewCompletionModal(true);
       return;
     }
 
@@ -498,13 +512,17 @@ export function OfferDetailsModal({
       );
     }
 
-    // Pending completion - opposite party can confirm or reject
+    // Pending completion - opposite party can view and confirm or reject
     if (offer.status === 'pending_completion') {
       const completionInitiator = offer.completionInitiatedBy;
       if (completionInitiator && completionInitiator !== currentUserId) {
         actions.push(
-          { label: 'Подтвердить завершение', action: 'confirm_completion', style: 'success', icon: CheckCircle },
-          { label: 'Сотрудничество еще не окончено', action: 'reject_completion', style: 'warning', icon: XCircle }
+          { label: 'Посмотреть выполнение', action: 'view_completion', style: 'primary', icon: FileText }
+        );
+      } else {
+        // Initiator sees waiting status
+        actions.push(
+          { label: 'Ожидание подтверждения', action: null, style: 'neutral', icon: Clock, disabled: true }
         );
       }
       // Обе стороны могут пожаловаться
@@ -1350,6 +1368,47 @@ export function OfferDetailsModal({
             onClose={() => {
               setShowProfileModal(false);
               setProfileUserId(null);
+            }}
+          />
+        )}
+
+        {/* Complete Collaboration Modal */}
+        <CompleteCollaborationModal
+          isOpen={showCompleteModal}
+          onClose={() => setShowCompleteModal(false)}
+          offerId={offer.id}
+          onComplete={async (screenshotUrl) => {
+            const updatedOffer = collaborationType === 'offer'
+              ? await offerService.markCompleted(offer.id, screenshotUrl)
+              : await applicationService.markCompleted(offer.id);
+            onOfferUpdated(updatedOffer);
+            await loadOfferDetails();
+            setShowCompleteModal(false);
+          }}
+        />
+
+        {/* View Completion Modal */}
+        {offer.metadata?.completion_screenshot_url && (
+          <ViewCompletionModal
+            isOpen={showViewCompletionModal}
+            onClose={() => setShowViewCompletionModal(false)}
+            offer={offer}
+            screenshotUrl={offer.metadata.completion_screenshot_url}
+            onConfirm={async () => {
+              const updatedOffer = collaborationType === 'offer'
+                ? await offerService.confirmCompletion(offer.id)
+                : await applicationService.confirmCompletion(offer.id);
+              onOfferUpdated(updatedOffer);
+              await loadOfferDetails();
+              setShowViewCompletionModal(false);
+            }}
+            onReject={async () => {
+              const updatedOffer = collaborationType === 'offer'
+                ? await offerService.rejectCompletion(offer.id)
+                : await applicationService.rejectCompletion(offer.id);
+              onOfferUpdated(updatedOffer);
+              await loadOfferDetails();
+              setShowViewCompletionModal(false);
             }}
           />
         )}

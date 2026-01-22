@@ -161,9 +161,11 @@ export class OfferService {
     }
   }
 
-  async markCompleted(offerId: string): Promise<CollaborationOffer> {
+  async markCompleted(offerId: string, screenshotUrl: string): Promise<CollaborationOffer> {
     try {
-      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/complete`);
+      return await apiClient.post<CollaborationOffer>(`/offers/${offerId}/complete`, {
+        screenshotUrl
+      });
     } catch (error) {
       console.error('Failed to mark offer completed:', error);
       throw error;

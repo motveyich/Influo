@@ -274,12 +274,12 @@ export class OffersService {
     return this.updateStatus(id, userId, 'in_progress', 'influencer');
   }
 
-  async markCompleted(id: string, userId: string) {
+  async markCompleted(id: string, userId: string, screenshotUrl?: string) {
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: offer } = await supabase
       .from('offers')
-      .select('advertiser_id, influencer_id, status, completion_initiated_by')
+      .select('advertiser_id, influencer_id, status, completion_initiated_by, metadata')
       .eq('offer_id', id)
       .maybeSingle();
 
@@ -296,12 +296,21 @@ export class OffersService {
       throw new ConflictException('Can only request completion for offers in progress');
     }
 
+    if (!screenshotUrl) {
+      throw new BadRequestException('Screenshot URL is required to complete the offer');
+    }
+
+    const metadata = offer.metadata || {};
+    metadata.completion_screenshot_url = screenshotUrl;
+    metadata.completion_screenshot_uploaded_at = new Date().toISOString();
+
     const { data: updated, error } = await supabase
       .from('offers')
       .update({
         status: 'pending_completion',
         completion_initiated_by: userId,
         completion_requested_at: new Date().toISOString(),
+        metadata: metadata,
         updated_at: new Date().toISOString()
       })
       .eq('offer_id', id)

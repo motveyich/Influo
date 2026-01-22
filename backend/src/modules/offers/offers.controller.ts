@@ -131,14 +131,16 @@ export class OffersController {
   }
 
   @Post(':id/complete')
-  @ApiOperation({ summary: 'Mark offer as completed' })
+  @ApiOperation({ summary: 'Mark offer as completed with screenshot proof' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
   @ApiResponse({ status: 200, description: 'Offer marked as completed' })
+  @ApiResponse({ status: 400, description: 'Screenshot URL is required' })
   async markCompleted(
     @Param('id') id: string,
+    @Body() markCompletedDto: { screenshotUrl: string },
     @CurrentUser('userId') userId: string,
   ) {
-    return this.offersService.markCompleted(id, userId);
+    return this.offersService.markCompleted(id, userId, markCompletedDto.screenshotUrl);
   }
 
   @Post(':id/terminate')
