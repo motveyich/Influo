@@ -147,6 +147,22 @@ export class ProfilesController {
     return this.profilesService.uploadAvatar(id, file);
   }
 
+  @Delete(':id/avatar')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete profile avatar' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Avatar deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Profile not found' })
+  async deleteAvatar(
+    @Param('id') id: string,
+    @CurrentUser('userId') currentUserId: string,
+  ) {
+    if (id !== currentUserId) {
+      return { message: 'You can only delete avatar for your own profile' };
+    }
+    return this.profilesService.deleteAvatar(id);
+  }
+
   @Post('initialize')
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)

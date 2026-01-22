@@ -576,6 +576,55 @@ export class ProfilesService {
     return this.transformProfile(updatedProfile);
   }
 
+  async deleteAvatar(userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('avatar, user_id')
+      .eq('user_id', userId)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      throw new NotFoundException('Profile not found');
+    }
+
+    if (profile.avatar) {
+      const avatarPath = profile.avatar.split('/').slice(-2).join('/');
+
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([avatarPath]);
+
+      if (deleteError) {
+        this.logger.error(`Failed to delete avatar from storage: ${deleteError.message}`, {
+          deleteError,
+          userId,
+          avatarPath,
+        });
+      }
+    }
+
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ avatar: null })
+      .eq('user_id', userId)
+      .eq('is_deleted', false)
+      .select()
+      .single();
+
+    if (updateError) {
+      this.logger.error(`Failed to update profile after avatar deletion: ${updateError.message}`, {
+        updateError,
+        userId,
+      });
+      throw new InternalServerErrorException('Failed to delete avatar');
+    }
+
+    return this.transformProfile(updatedProfile);
+  }
+
   async searchProfiles(query: string, userType?: string, limit = 20) {
     const supabase = this.supabaseService.getAdminClient();
 

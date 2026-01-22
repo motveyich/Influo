@@ -8,6 +8,11 @@ import {
   Query,
   UseGuards,
   ParseBoolPipe,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,7 +21,10 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { OffersService } from './offers.service';
 import { CreateOfferDto, UpdateOfferDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -128,6 +136,41 @@ export class OffersController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.offersService.markInProgress(id, userId);
+  }
+
+  @Post(':id/completion-screenshot')
+  @ApiOperation({ summary: 'Upload completion screenshot' })
+  @ApiParam({ name: 'id', description: 'Offer ID' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Screenshot uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @ApiResponse({ status: 403, description: 'Not authorized to upload screenshot for this offer' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCompletionScreenshot(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.offersService.uploadCompletionScreenshot(id, userId, file);
   }
 
   @Post(':id/complete')

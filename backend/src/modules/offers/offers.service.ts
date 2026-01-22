@@ -632,4 +632,58 @@ export class OffersService {
       } : undefined,
     };
   }
+
+  async uploadCompletionScreenshot(offerId: string, userId: string, file: Express.Multer.File): Promise<{ url: string }> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('influencer_id, advertiser_id')
+      .eq('offer_id', offerId)
+      .maybeSingle();
+
+    if (offerError || !offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    if (offer.influencer_id !== userId && offer.advertiser_id !== userId) {
+      throw new ForbiddenException('Not authorized to upload screenshot for this offer');
+    }
+
+    const { data: existingFiles } = await supabase.storage
+      .from('completion-screenshots')
+      .list(offerId);
+
+    if (existingFiles && existingFiles.length > 0) {
+      const filesToRemove = existingFiles.map(f => `${offerId}/${f.name}`);
+      await supabase.storage
+        .from('completion-screenshots')
+        .remove(filesToRemove);
+    }
+
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${offerId}/completion-screenshot-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('completion-screenshots')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      this.logger.error(`Failed to upload completion screenshot: ${uploadError.message}`, {
+        uploadError,
+        offerId,
+        userId,
+      });
+      throw new ConflictException('Failed to upload screenshot');
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('completion-screenshots')
+      .getPublicUrl(fileName);
+
+    return { url: urlData.publicUrl };
+  }
 }

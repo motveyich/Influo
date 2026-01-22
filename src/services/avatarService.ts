@@ -1,7 +1,4 @@
-import { supabase } from '../core/supabase';
-
 export class AvatarService {
-  private readonly BUCKET_NAME = 'avatars';
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
   private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -19,44 +16,29 @@ export class AvatarService {
         throw new Error('Допустимые форматы: JPEG, PNG, WebP, GIF');
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      const { data: existingFiles } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list(userId);
-
-      if (existingFiles && existingFiles.length > 0) {
-        for (const existingFile of existingFiles) {
-          await supabase.storage
-            .from(this.BUCKET_NAME)
-            .remove([`${userId}/${existingFile.name}`]);
-        }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Не авторизован');
       }
 
-      const { data, error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/profiles/${userId}/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Не удалось загрузить аватар');
+      }
 
-      const { data: publicUrlData } = supabase.storage
-        .from(this.BUCKET_NAME)
-        .getPublicUrl(fileName);
-
-      const avatarUrl = publicUrlData.publicUrl;
-
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ avatar: avatarUrl })
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
-      return avatarUrl;
+      const data = await response.json();
+      return data.url;
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       throw error;
@@ -65,25 +47,22 @@ export class AvatarService {
 
   async deleteAvatar(userId: string): Promise<void> {
     try {
-      const { data: files } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .list(userId);
-
-      if (files && files.length > 0) {
-        const filesToRemove = files.map(file => `${userId}/${file.name}`);
-        const { error } = await supabase.storage
-          .from(this.BUCKET_NAME)
-          .remove(filesToRemove);
-
-        if (error) throw error;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Не авторизован');
       }
 
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ avatar: null })
-        .eq('user_id', userId);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/profiles/${userId}/avatar`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Не удалось удалить аватар');
+      }
     } catch (error) {
       console.error('Failed to delete avatar:', error);
       throw error;
