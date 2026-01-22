@@ -14,7 +14,7 @@ export class CompletionScreenshotService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
         throw new Error('Не авторизован');
       }

@@ -19,7 +19,7 @@ export class AvatarService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
         throw new Error('Не авторизован');
       }
@@ -47,7 +47,7 @@ export class AvatarService {
 
   async deleteAvatar(userId: string): Promise<void> {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
         throw new Error('Не авторизован');
       }
