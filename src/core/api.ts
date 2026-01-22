@@ -17,6 +17,8 @@ const getApiBaseUrl = (): string => {
 
 const API_URL = getApiBaseUrl();
 
+export { API_URL };
+
 interface RequestOptions {
   method?: string;
   headers?: Record<string, string>;

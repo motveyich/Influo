@@ -1,4 +1,4 @@
-import { apiClient } from '../core/api';
+import { apiClient, API_URL } from '../core/api';
 
 export class CompletionScreenshotService {
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -19,7 +19,7 @@ export class CompletionScreenshotService {
         throw new Error('Не авторизован');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/offers/${offerId}/completion-screenshot`, {
+      const response = await fetch(`${API_URL}/offers/${offerId}/completion-screenshot`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

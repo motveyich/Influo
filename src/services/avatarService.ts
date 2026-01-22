@@ -1,3 +1,5 @@
+import { API_URL } from '../core/api';
+
 export class AvatarService {
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
   private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -24,7 +26,7 @@ export class AvatarService {
         throw new Error('Не авторизован');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/profiles/${userId}/avatar`, {
+      const response = await fetch(`${API_URL}/profiles/${userId}/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -52,7 +54,7 @@ export class AvatarService {
         throw new Error('Не авторизован');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/profiles/${userId}/avatar`, {
+      const response = await fetch(`${API_URL}/profiles/${userId}/avatar`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
