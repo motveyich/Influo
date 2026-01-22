@@ -140,6 +140,60 @@ export class ApplicationsService {
     return this.updateStatus(id, userId, 'in_progress', false);
   }
 
+  async uploadCompletionScreenshot(applicationId: string, userId: string, file: Express.Multer.File): Promise<{ url: string }> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: application, error: applicationError } = await supabase
+      .from('applications')
+      .select('applicant_id, target_id')
+      .eq('id', applicationId)
+      .maybeSingle();
+
+    if (applicationError || !application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    if (application.applicant_id !== userId && application.target_id !== userId) {
+      throw new ForbiddenException('Not authorized to upload screenshot for this application');
+    }
+
+    const { data: existingFiles } = await supabase.storage
+      .from('completion-screenshots')
+      .list(applicationId);
+
+    if (existingFiles && existingFiles.length > 0) {
+      const filesToRemove = existingFiles.map(f => `${applicationId}/${f.name}`);
+      await supabase.storage
+        .from('completion-screenshots')
+        .remove(filesToRemove);
+    }
+
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${applicationId}/completion-screenshot-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('completion-screenshots')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      this.logger.error(`Failed to upload completion screenshot: ${uploadError.message}`, {
+        uploadError,
+        applicationId,
+        userId,
+      });
+      throw new ConflictException('Failed to upload screenshot');
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('completion-screenshots')
+      .getPublicUrl(fileName);
+
+    return { url: urlData.publicUrl };
+  }
+
   async complete(id: string, userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 

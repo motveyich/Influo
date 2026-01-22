@@ -1376,7 +1376,8 @@ export function OfferDetailsModal({
         <CompleteCollaborationModal
           isOpen={showCompleteModal}
           onClose={() => setShowCompleteModal(false)}
-          offerId={offer.id}
+          collaborationId={offer.id}
+          collaborationType={collaborationType}
           onComplete={async (screenshotUrl) => {
             const updatedOffer = collaborationType === 'offer'
               ? await offerService.markCompleted(offer.id, screenshotUrl)

@@ -7,14 +7,16 @@ import toast from 'react-hot-toast';
 interface CompleteCollaborationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  offerId: string;
+  collaborationId: string;
+  collaborationType: 'offer' | 'application';
   onComplete: (screenshotUrl: string) => Promise<void>;
 }
 
 export function CompleteCollaborationModal({
   isOpen,
   onClose,
-  offerId,
+  collaborationId,
+  collaborationType,
   onComplete
 }: CompleteCollaborationModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -85,7 +87,11 @@ export function CompleteCollaborationModal({
     setIsUploading(true);
 
     try {
-      const screenshotUrl = await completionScreenshotService.uploadScreenshot(offerId, selectedFile);
+      const screenshotUrl = await completionScreenshotService.uploadScreenshot(
+        collaborationId,
+        selectedFile,
+        collaborationType
+      );
 
       await onComplete(screenshotUrl);
 

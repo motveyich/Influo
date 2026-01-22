@@ -4,7 +4,11 @@ export class CompletionScreenshotService {
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-  async uploadScreenshot(offerId: string, file: File): Promise<string> {
+  async uploadScreenshot(
+    collaborationId: string,
+    file: File,
+    type: 'offer' | 'application' = 'application'
+  ): Promise<string> {
     try {
       const validation = this.validateFile(file);
       if (!validation.valid) {
@@ -19,7 +23,11 @@ export class CompletionScreenshotService {
         throw new Error('Не авторизован');
       }
 
-      const response = await fetch(`${API_URL}/offers/${offerId}/completion-screenshot`, {
+      const endpoint = type === 'offer'
+        ? `${API_URL}/offers/${collaborationId}/completion-screenshot`
+        : `${API_URL}/applications/${collaborationId}/completion-screenshot`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

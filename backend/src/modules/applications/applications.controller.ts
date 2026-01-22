@@ -7,6 +7,11 @@ import {
   Query,
   UseGuards,
   ParseBoolPipe,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,7 +20,10 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -88,6 +96,41 @@ export class ApplicationsController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.applicationsService.markInProgress(id, userId);
+  }
+
+  @Post(':id/completion-screenshot')
+  @ApiOperation({ summary: 'Upload completion screenshot for application' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Screenshot uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @ApiResponse({ status: 403, description: 'Not authorized to upload screenshot for this application' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCompletionScreenshot(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\/(jpeg|jpg|png|webp)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.applicationsService.uploadCompletionScreenshot(id, userId, file);
   }
 
   @Post(':id/complete')
