@@ -294,7 +294,15 @@ export class ProfilesService {
       updateData.website = updateProfileDto.website;
     }
     if (updateProfileDto.userType !== undefined) {
-      updateData.user_type = updateProfileDto.userType;
+      // Only allow setting user_type to NULL, 'admin', or 'moderator'
+      // Regular users should have NULL user_type (unified user model)
+      if (updateProfileDto.userType === null || updateProfileDto.userType === 'admin' || updateProfileDto.userType === 'moderator') {
+        updateData.user_type = updateProfileDto.userType;
+      } else {
+        // For 'influencer' or 'advertiser', set to NULL
+        updateData.user_type = null;
+        this.logger.log(`Converting legacy userType '${updateProfileDto.userType}' to NULL for unified user model`);
+      }
     }
     if (updateProfileDto.socialMediaLinks !== undefined) {
       updateData.social_media_links = updateProfileDto.socialMediaLinks;

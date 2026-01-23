@@ -408,11 +408,22 @@ export function ProfilesPage() {
                               </span>
                             </div>
                           )}
-                          {combinedProfile.influencerProfile.audienceOverview.ageRange && (
+                          {combinedProfile.influencerProfile.audienceOverview.ageRange &&
+                           (combinedProfile.influencerProfile.audienceOverview.ageRange.min || combinedProfile.influencerProfile.audienceOverview.ageRange.max) && (
                             <div>
                               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Возрастной диапазон: </span>
                               <span className="text-sm text-gray-900 dark:text-gray-100">
-                                {combinedProfile.influencerProfile.audienceOverview.ageRange.min} - {combinedProfile.influencerProfile.audienceOverview.ageRange.max} лет
+                                {combinedProfile.influencerProfile.audienceOverview.ageRange.min || 0} - {combinedProfile.influencerProfile.audienceOverview.ageRange.max || 0} лет
+                              </span>
+                            </div>
+                          )}
+                          {combinedProfile.influencerProfile.audienceOverview.genderDistribution && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Распределение по полу: </span>
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {combinedProfile.influencerProfile.audienceOverview.genderDistribution.male ? `М: ${combinedProfile.influencerProfile.audienceOverview.genderDistribution.male}% ` : ''}
+                                {combinedProfile.influencerProfile.audienceOverview.genderDistribution.female ? `Ж: ${combinedProfile.influencerProfile.audienceOverview.genderDistribution.female}% ` : ''}
+                                {combinedProfile.influencerProfile.audienceOverview.genderDistribution.other ? `Другое: ${combinedProfile.influencerProfile.audienceOverview.genderDistribution.other}%` : ''}
                               </span>
                             </div>
                           )}

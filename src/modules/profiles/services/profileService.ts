@@ -9,7 +9,6 @@ export class ProfileService {
         throw new Error('User ID is required to create a profile');
       }
 
-      const userType = this.determineUserType(profileData);
       const completion = this.calculateProfileCompletion(profileData);
 
       const payload = {
@@ -24,7 +23,6 @@ export class ProfileService {
         avatar: profileData.avatar,
         influencerData: this.hasInfluencerContent(profileData.influencerData) ? profileData.influencerData : null,
         advertiserData: this.hasAdvertiserContent(profileData.advertiserData) ? profileData.advertiserData : null,
-        userType,
         profileCompletion: completion,
       };
 
@@ -89,11 +87,9 @@ export class ProfileService {
       }
 
       const mergedProfile = { ...currentProfile, ...updates };
-      const userType = this.determineUserType(mergedProfile);
       const completion = this.calculateProfileCompletion(mergedProfile);
 
       const payload: any = {
-        userType,
         profileCompletion: completion,
       };
 

@@ -62,11 +62,16 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     primaryNiches: [],
     secondaryNiches: [],
     audienceOverview: {
-      primaryCountry: '',
-      primaryAgeRange: '',
-      primaryGender: '',
-      sizeRange: '',
-      description: ''
+      primaryCountries: [],
+      ageRange: {
+        min: undefined,
+        max: undefined
+      },
+      genderDistribution: {
+        male: undefined,
+        female: undefined,
+        other: undefined
+      }
     },
     preferredBrandCategories: [],
     excludedBrandCategories: [],
@@ -123,11 +128,16 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         primaryNiches: currentProfile.influencerProfile.primaryNiches ?? [],
         secondaryNiches: currentProfile.influencerProfile.secondaryNiches ?? [],
         audienceOverview: currentProfile.influencerProfile.audienceOverview ?? {
-          primaryCountry: '',
-          primaryAgeRange: '',
-          primaryGender: '',
-          sizeRange: '',
-          description: ''
+          primaryCountries: [],
+          ageRange: {
+            min: undefined,
+            max: undefined
+          },
+          genderDistribution: {
+            male: undefined,
+            female: undefined,
+            other: undefined
+          }
         },
         preferredBrandCategories: currentProfile.influencerProfile.preferredBrandCategories ?? [],
         excludedBrandCategories: currentProfile.influencerProfile.excludedBrandCategories ?? [],
@@ -145,11 +155,16 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         primaryNiches: [],
         secondaryNiches: [],
         audienceOverview: {
-          primaryCountry: '',
-          primaryAgeRange: '',
-          primaryGender: '',
-          sizeRange: '',
-          description: ''
+          primaryCountries: [],
+          ageRange: {
+            min: undefined,
+            max: undefined
+          },
+          genderDistribution: {
+            male: undefined,
+            female: undefined,
+            other: undefined
+          }
         },
         preferredBrandCategories: [],
         excludedBrandCategories: [],
