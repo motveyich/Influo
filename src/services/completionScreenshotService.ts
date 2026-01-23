@@ -2,7 +2,8 @@ import { apiClient, API_URL } from '../core/api';
 
 export class CompletionScreenshotService {
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  private readonly ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/jpe', 'image/jfif'];
+  private readonly ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.jpe', '.jfif'];
 
   async uploadScreenshot(
     collaborationId: string,
@@ -83,8 +84,21 @@ export class CompletionScreenshotService {
       return { valid: false, error: 'Размер файла не должен превышать 10 МБ' };
     }
 
-    if (!this.ALLOWED_TYPES.includes(file.type)) {
-      return { valid: false, error: 'Допустимые форматы: JPEG, PNG, WebP' };
+    // Check MIME type first
+    const isValidMimeType = this.ALLOWED_TYPES.includes(file.type);
+
+    // If MIME type is not recognized, check file extension
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = this.ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
+
+    if (!isValidMimeType && !hasValidExtension) {
+      console.warn('File validation failed:', {
+        fileName: file.name,
+        fileType: file.type,
+        allowedTypes: this.ALLOWED_TYPES,
+        allowedExtensions: this.ALLOWED_EXTENSIONS
+      });
+      return { valid: false, error: 'Допустимые форматы: JPEG, JPG, PNG, WebP' };
     }
 
     return { valid: true };

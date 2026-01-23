@@ -39,6 +39,7 @@ interface OfferCardProps {
   onViewDetails: (offer: CollaborationOffer, collaborationType?: 'application' | 'offer') => void;
   onViewProfile?: (userId: string) => void;
   collaborationType?: 'application' | 'offer';
+  onRequestComplete?: (offer: CollaborationOffer, collaborationType: 'application' | 'offer') => void;
 }
 
 export function OfferCard({
@@ -48,7 +49,8 @@ export function OfferCard({
   onOfferUpdated,
   onViewDetails,
   onViewProfile,
-  collaborationType = 'application'
+  collaborationType = 'application',
+  onRequestComplete
 }: OfferCardProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPaymentWindows, setShowPaymentWindows] = React.useState(false);
@@ -247,6 +249,12 @@ export function OfferCard({
   };
 
   const handleStatusUpdate = async (newStatus: OfferStatus, additionalData?: any) => {
+    // If requesting completion, open modal instead of calling API directly
+    if (newStatus === 'completed' && onRequestComplete) {
+      onRequestComplete(offer, collaborationType);
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('[OfferCard] Updating collaboration:', {
@@ -273,9 +281,9 @@ export function OfferCard({
             console.log('[OfferCard] Application marked in progress:', updatedData);
             break;
           case 'completed':
-            updatedData = await applicationService.markCompleted(offer.id);
-            console.log('[OfferCard] Application completed:', updatedData);
-            break;
+            // This should not be reached if onRequestComplete is provided
+            toast.error('Требуется загрузить скриншот для завершения');
+            return;
           case 'terminated':
             updatedData = await applicationService.terminateApplication(offer.id);
             console.log('[OfferCard] Application terminated:', updatedData);

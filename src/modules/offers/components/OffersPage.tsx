@@ -10,6 +10,7 @@ import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion'
 import { FeatureGate } from '../../../components/FeatureGate';
 import { OfferCard } from './OfferCard';
 import { OfferDetailsModal } from './OfferDetailsModal';
+import { CompleteCollaborationModal } from './CompleteCollaborationModal';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import {
   Search,
@@ -44,6 +45,9 @@ export function OffersPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [offerToComplete, setOfferToComplete] = useState<CollaborationOffer | null>(null);
+  const [offerToCompleteType, setOfferToCompleteType] = useState<'application' | 'offer'>('offer');
 
   const { user, loading } = useAuth();
   const currentUserId = user?.id || '';
@@ -141,6 +145,12 @@ export function OffersPage() {
     console.log('Opening profile for user:', userId);
     setProfileUserId(userId);
     setShowProfileModal(true);
+  }, []);
+
+  const handleRequestComplete = useCallback((offer: CollaborationOffer, collaborationType: 'application' | 'offer') => {
+    setOfferToComplete(offer);
+    setOfferToCompleteType(collaborationType);
+    setShowCompleteModal(true);
   }, []);
 
   const getUserRole = (collab: UnifiedCollaboration): 'influencer' | 'advertiser' => {
@@ -491,6 +501,7 @@ export function OffersPage() {
                           onViewDetails={handleViewOfferDetails}
                           onViewProfile={handleViewProfile}
                           collaborationType={collab.type}
+                          onRequestComplete={handleRequestComplete}
                         />
                       </div>
                     );
@@ -528,6 +539,35 @@ export function OffersPage() {
             onClose={() => {
               setShowProfileModal(false);
               setProfileUserId(null);
+            }}
+          />
+        )}
+
+        {/* Complete Collaboration Modal */}
+        {offerToComplete && (
+          <CompleteCollaborationModal
+            isOpen={showCompleteModal}
+            onClose={() => {
+              setShowCompleteModal(false);
+              setOfferToComplete(null);
+            }}
+            collaborationId={offerToComplete.id}
+            collaborationType={offerToCompleteType}
+            onComplete={async (screenshotUrl) => {
+              try {
+                const updatedOffer = offerToCompleteType === 'offer'
+                  ? await offerService.markCompleted(offerToComplete.id, screenshotUrl)
+                  : await applicationService.markCompleted(offerToComplete.id, screenshotUrl);
+
+                handleOfferUpdated(updatedOffer);
+                await loadCollaborations();
+                setShowCompleteModal(false);
+                setOfferToComplete(null);
+                toast.success('Сотрудничество успешно завершено');
+              } catch (error: any) {
+                console.error('Failed to complete collaboration:', error);
+                toast.error(error.message || 'Не удалось завершить сотрудничество');
+              }
             }}
           />
         )}

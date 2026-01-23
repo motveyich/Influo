@@ -106,12 +106,12 @@ export function ProfilesPage() {
     isLoading: settingsLoading
   } = useUserSettings(currentUserId);
 
-  const handleProfileUpdated = (updatedProfile: UserProfile) => {
-    // Use the updated profile directly instead of refetching (prevents double-fetch)
-    setProfile(updatedProfile);
-
+  const handleProfileUpdated = async (updatedProfile: UserProfile) => {
     // Dispatch event to notify other components (e.g., modals) about the profile update
     window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
+
+    // Refresh the profile from the hook to ensure all data is up-to-date
+    await refreshProfile();
 
     toast.success(t('profile.success.updated'));
   };
