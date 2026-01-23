@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv, Wallet, Clock, CheckCircle2, HourglassIcon } from 'lucide-react';
 import { AutoCampaign, CollaborationOffer } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { OfferDetailsModal } from '../../offers/components/OfferDetailsModal';
+import { PaymentRequestModal } from '../../offers/components/PaymentRequestModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
@@ -39,6 +40,7 @@ export function AutoCampaignCollaborationsModal({
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showOfferDetails, setShowOfferDetails] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
@@ -70,7 +72,7 @@ export function AutoCampaignCollaborationsModal({
       const offers = await offerService.getOffersByCampaign(campaign.id);
 
       const acceptedOffers = offers.filter(o =>
-        ['accepted', 'in_progress', 'completed'].includes(o.status)
+        ['accepted', 'in_progress', 'pending_completion', 'completed'].includes(o.status)
       );
 
       const collabs: Collaboration[] = await Promise.all(
@@ -119,6 +121,7 @@ export function AutoCampaignCollaborationsModal({
     const badges: Record<string, { text: string; color: string }> = {
       accepted: { text: 'Принято', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
       in_progress: { text: 'В работе', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      pending_completion: { text: 'Ожидает согласования', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
       completed: { text: 'Завершено', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' }
     };
 
@@ -154,6 +157,21 @@ export function AutoCampaignCollaborationsModal({
     ));
     setSelectedOffer(updatedOffer);
   };
+
+  const handleOpenPaymentModal = (offer: CollaborationOffer) => {
+    setSelectedOffer(offer);
+    setShowPaymentModal(true);
+  };
+
+  // Вычисляем статистику
+  const stats = useMemo(() => {
+    return {
+      inProgress: collaborations.filter(c => c.status === 'in_progress').length,
+      pendingCompletion: collaborations.filter(c => c.status === 'pending_completion').length,
+      completed: collaborations.filter(c => c.status === 'completed').length,
+      accepted: collaborations.filter(c => c.status === 'accepted').length,
+    };
+  }, [collaborations]);
 
   if (!isOpen) return null;
 
@@ -196,12 +214,65 @@ export function AutoCampaignCollaborationsModal({
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {collaborations.map((collab) => (
-                  <div
-                    key={collab.offerId}
-                    className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-                  >
+              <div className="space-y-6">
+                {/* Статистика */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <span className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        {stats.accepted}
+                      </span>
+                    </div>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                      Принято
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                        {stats.inProgress}
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                      В работе
+                    </p>
+                  </div>
+
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <HourglassIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                        {stats.pendingCompletion}
+                      </span>
+                    </div>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                      Ожидают согласования
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        {stats.completed}
+                      </span>
+                    </div>
+                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                      Завершены
+                    </p>
+                  </div>
+                </div>
+
+                {/* Список сотрудничеств */}
+                <div className="space-y-4">
+                  {collaborations.map((collab) => (
+                    <div
+                      key={collab.offerId}
+                      className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                    >
                     <div className="flex items-start justify-between gap-4">
                       {/* User Info */}
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -243,7 +314,7 @@ export function AutoCampaignCollaborationsModal({
 
                     {/* Actions */}
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center flex-wrap gap-2">
                         <button
                           onClick={() => handleViewProfile(collab.influencerId)}
                           className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium"
@@ -263,12 +334,22 @@ export function AutoCampaignCollaborationsModal({
                           className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium"
                         >
                           <FileText className="w-4 h-4" />
-                          <span>Подробнее</span>
+                          <span>Детали</span>
                         </button>
+                        {collab.status === 'completed' && (
+                          <button
+                            onClick={() => handleOpenPaymentModal(collab.offer)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                          >
+                            <Wallet className="w-4 h-4" />
+                            <span>Окно оплаты</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -296,6 +377,22 @@ export function AutoCampaignCollaborationsModal({
             setSelectedOffer(null);
           }}
           onOfferUpdated={handleOfferUpdated}
+        />
+      )}
+
+      {/* Payment Request Modal */}
+      {showPaymentModal && selectedOffer && (
+        <PaymentRequestModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedOffer(null);
+          }}
+          offer={selectedOffer}
+          currentUserId={currentUserId}
+          onSuccess={() => {
+            loadCollaborations();
+          }}
         />
       )}
     </>

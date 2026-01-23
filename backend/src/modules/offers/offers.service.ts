@@ -431,8 +431,86 @@ export class OffersService {
       throw new ConflictException('Failed to update offer status');
     }
 
+    // Обновляем счетчики и статус автокампании, если оффер связан с автокампанией
+    if (offer.auto_campaign_id) {
+      await this.updateAutoCampaignCounters(offer.auto_campaign_id, offer.status, status);
+    }
+
     this.logger.log(`Offer ${id} status updated to ${status} by user ${userId}`);
     return this.transformOffer(updated);
+  }
+
+  private async updateAutoCampaignCounters(campaignId: string, oldStatus: string, newStatus: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    try {
+      // Получаем текущее состояние кампании
+      const { data: campaign, error: fetchError } = await supabase
+        .from('auto_campaigns')
+        .select('accepted_offers_count, completed_offers_count, target_influencers_count, status')
+        .eq('id', campaignId)
+        .maybeSingle();
+
+      if (fetchError || !campaign) {
+        this.logger.error(`Failed to fetch campaign ${campaignId}:`, fetchError);
+        return;
+      }
+
+      let acceptedDelta = 0;
+      let completedDelta = 0;
+
+      // Отслеживаем изменения счетчиков
+      if (oldStatus !== 'accepted' && newStatus === 'accepted') {
+        acceptedDelta = 1;
+      } else if (oldStatus === 'accepted' && newStatus !== 'accepted') {
+        acceptedDelta = -1;
+      }
+
+      if (oldStatus !== 'completed' && newStatus === 'completed') {
+        completedDelta = 1;
+      } else if (oldStatus === 'completed' && newStatus !== 'completed') {
+        completedDelta = -1;
+      }
+
+      // Вычисляем новые значения
+      const newAcceptedCount = Math.max(0, campaign.accepted_offers_count + acceptedDelta);
+      const newCompletedCount = Math.max(0, campaign.completed_offers_count + completedDelta);
+
+      // Определяем новый статус кампании
+      let newCampaignStatus = campaign.status;
+
+      if (campaign.status === 'active' && newAcceptedCount >= campaign.target_influencers_count) {
+        newCampaignStatus = 'closed';
+      }
+
+      if ((campaign.status === 'active' || campaign.status === 'closed') && newCompletedCount > 0 && newCompletedCount < campaign.target_influencers_count) {
+        // Если есть завершенные, но не все
+        newCampaignStatus = 'closed';
+      }
+
+      if ((campaign.status === 'closed' || campaign.status === 'active') && newCompletedCount >= campaign.target_influencers_count) {
+        newCampaignStatus = 'completed';
+      }
+
+      // Обновляем кампанию
+      const { error: updateError } = await supabase
+        .from('auto_campaigns')
+        .update({
+          accepted_offers_count: newAcceptedCount,
+          completed_offers_count: newCompletedCount,
+          status: newCampaignStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', campaignId);
+
+      if (updateError) {
+        this.logger.error(`Failed to update campaign counters: ${updateError.message}`, updateError);
+      } else {
+        this.logger.log(`Campaign ${campaignId} updated: accepted=${newAcceptedCount}, completed=${newCompletedCount}, status=${newCampaignStatus}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error updating campaign counters:`, error);
+    }
   }
 
   async getOfferHistory(offerId: string, userId: string) {

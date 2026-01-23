@@ -533,7 +533,9 @@ export function AutoCampaignsPage() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {(campaign.status === 'in_progress' || campaign.status === 'closed') && (
+                          {((campaign.status === 'active' && campaign.acceptedOffersCount > 0) ||
+                            campaign.status === 'in_progress' ||
+                            campaign.status === 'closed') && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
