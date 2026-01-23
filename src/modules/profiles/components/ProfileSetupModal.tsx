@@ -242,6 +242,22 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       newErrors.contentLanguages = 'Выберите хотя бы один язык контента';
     }
 
+    if (influencerProfile.audienceOverview?.ageRange?.min !== undefined &&
+        influencerProfile.audienceOverview?.ageRange?.max !== undefined) {
+      if (influencerProfile.audienceOverview.ageRange.min > influencerProfile.audienceOverview.ageRange.max) {
+        newErrors.ageRange = 'Минимальный возраст не может быть больше максимального';
+      }
+    }
+
+    const male = influencerProfile.audienceOverview?.genderDistribution?.male || 0;
+    const female = influencerProfile.audienceOverview?.genderDistribution?.female || 0;
+    const other = influencerProfile.audienceOverview?.genderDistribution?.other || 0;
+    const totalGender = male + female + other;
+
+    if (totalGender > 100) {
+      newErrors.genderDistribution = 'Сумма процентов распределения по полу не должна превышать 100%';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -656,131 +672,210 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">Обзор аудитории</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Основная страна
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Основные страны аудитории
                     </label>
-                    <select
-                      value={influencerProfile.audienceOverview?.primaryCountry}
-                      onChange={(e) => setInfluencerProfile(prev => ({
-                        ...prev,
-                        audienceOverview: {
-                          ...prev.audienceOverview,
-                          primaryCountry: e.target.value,
-                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
-                          primaryGender: prev.audienceOverview?.primaryGender || '',
-                          sizeRange: prev.audienceOverview?.sizeRange || '',
-                          description: prev.audienceOverview?.description || ''
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Выберите страну</option>
-                      {COUNTRIES.map(country => (
-                        <option key={country} value={country}>{country}</option>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                      {COUNTRIES.map((country) => (
+                        <label key={country} className="flex items-center space-x-2 text-sm hover:bg-gray-50 p-1 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={influencerProfile.audienceOverview?.primaryCountries?.includes(country) || false}
+                            onChange={(e) => {
+                              const current = influencerProfile.audienceOverview?.primaryCountries || [];
+                              const updated = e.target.checked
+                                ? [...current, country]
+                                : current.filter(c => c !== country);
+                              setInfluencerProfile(prev => ({
+                                ...prev,
+                                audienceOverview: {
+                                  ...prev.audienceOverview,
+                                  primaryCountries: updated,
+                                  ageRange: prev.audienceOverview?.ageRange || {},
+                                  genderDistribution: prev.audienceOverview?.genderDistribution || {}
+                                }
+                              }));
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-gray-700">{country}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
+                    {influencerProfile.audienceOverview?.primaryCountries && influencerProfile.audienceOverview.primaryCountries.length > 0 && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        Выбрано: {influencerProfile.audienceOverview.primaryCountries.length} {influencerProfile.audienceOverview.primaryCountries.length === 1 ? 'страна' : influencerProfile.audienceOverview.primaryCountries.length < 5 ? 'страны' : 'стран'}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Основная возрастная группа
+                      Минимальный возраст аудитории
                     </label>
-                    <select
-                      value={influencerProfile.audienceOverview?.primaryAgeRange}
-                      onChange={(e) => setInfluencerProfile(prev => ({
-                        ...prev,
-                        audienceOverview: {
-                          ...prev.audienceOverview,
-                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
-                          primaryAgeRange: e.target.value,
-                          primaryGender: prev.audienceOverview?.primaryGender || '',
-                          sizeRange: prev.audienceOverview?.sizeRange || '',
-                          description: prev.audienceOverview?.description || ''
-                        }
-                      }))}
+                    <input
+                      type="number"
+                      min="13"
+                      max="100"
+                      value={influencerProfile.audienceOverview?.ageRange?.min ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                        setInfluencerProfile(prev => ({
+                          ...prev,
+                          audienceOverview: {
+                            ...prev.audienceOverview,
+                            primaryCountries: prev.audienceOverview?.primaryCountries || [],
+                            ageRange: {
+                              ...prev.audienceOverview?.ageRange,
+                              min: value
+                            },
+                            genderDistribution: prev.audienceOverview?.genderDistribution || {}
+                          }
+                        }));
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Выберите возраст</option>
-                      {DETAILED_AGE_RANGES.map(range => (
-                        <option key={range} value={range}>{range}</option>
-                      ))}
-                    </select>
+                      placeholder="Например, 18"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Основной пол
+                      Максимальный возраст аудитории
                     </label>
-                    <select
-                      value={influencerProfile.audienceOverview?.primaryGender}
-                      onChange={(e) => setInfluencerProfile(prev => ({
-                        ...prev,
-                        audienceOverview: {
-                          ...prev.audienceOverview,
-                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
-                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
-                          primaryGender: e.target.value,
-                          sizeRange: prev.audienceOverview?.sizeRange || '',
-                          description: prev.audienceOverview?.description || ''
-                        }
-                      }))}
+                    <input
+                      type="number"
+                      min="13"
+                      max="100"
+                      value={influencerProfile.audienceOverview?.ageRange?.max ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                        setInfluencerProfile(prev => ({
+                          ...prev,
+                          audienceOverview: {
+                            ...prev.audienceOverview,
+                            primaryCountries: prev.audienceOverview?.primaryCountries || [],
+                            ageRange: {
+                              ...prev.audienceOverview?.ageRange,
+                              max: value
+                            },
+                            genderDistribution: prev.audienceOverview?.genderDistribution || {}
+                          }
+                        }));
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Выберите пол</option>
-                      <option value="Мужской">Мужской</option>
-                      <option value="Женский">Женский</option>
-                      <option value="Смешанный">Смешанный</option>
-                    </select>
+                      placeholder="Например, 35"
+                    />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Размер аудитории
-                    </label>
-                    <select
-                      value={influencerProfile.audienceOverview?.sizeRange}
-                      onChange={(e) => setInfluencerProfile(prev => ({
-                        ...prev,
-                        audienceOverview: {
-                          ...prev.audienceOverview,
-                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
-                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
-                          primaryGender: prev.audienceOverview?.primaryGender || '',
-                          sizeRange: e.target.value,
-                          description: prev.audienceOverview?.description || ''
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Выберите размер</option>
-                      {AUDIENCE_SIZE_RANGES.map(range => (
-                        <option key={range} value={range}>{range}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {errors.ageRange && (
+                    <p className="md:col-span-2 text-red-600 text-sm flex items-center mt-1">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.ageRange}
+                    </p>
+                  )}
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Описание аудитории
+                      Распределение аудитории по полу (в процентах)
                     </label>
-                    <textarea
-                      value={influencerProfile.audienceOverview?.description}
-                      onChange={(e) => setInfluencerProfile(prev => ({
-                        ...prev,
-                        audienceOverview: {
-                          ...prev.audienceOverview,
-                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
-                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
-                          primaryGender: prev.audienceOverview?.primaryGender || '',
-                          sizeRange: prev.audienceOverview?.sizeRange || '',
-                          description: e.target.value
-                        }
-                      }))}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Общая характеристика вашей аудитории"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Мужчины (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={influencerProfile.audienceOverview?.genderDistribution?.male ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            setInfluencerProfile(prev => ({
+                              ...prev,
+                              audienceOverview: {
+                                ...prev.audienceOverview,
+                                primaryCountries: prev.audienceOverview?.primaryCountries || [],
+                                ageRange: prev.audienceOverview?.ageRange || {},
+                                genderDistribution: {
+                                  ...prev.audienceOverview?.genderDistribution,
+                                  male: value
+                                }
+                              }
+                            }));
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="50"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Женщины (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={influencerProfile.audienceOverview?.genderDistribution?.female ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            setInfluencerProfile(prev => ({
+                              ...prev,
+                              audienceOverview: {
+                                ...prev.audienceOverview,
+                                primaryCountries: prev.audienceOverview?.primaryCountries || [],
+                                ageRange: prev.audienceOverview?.ageRange || {},
+                                genderDistribution: {
+                                  ...prev.audienceOverview?.genderDistribution,
+                                  female: value
+                                }
+                              }
+                            }));
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="50"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Другие (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={influencerProfile.audienceOverview?.genderDistribution?.other ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            setInfluencerProfile(prev => ({
+                              ...prev,
+                              audienceOverview: {
+                                ...prev.audienceOverview,
+                                primaryCountries: prev.audienceOverview?.primaryCountries || [],
+                                ageRange: prev.audienceOverview?.ageRange || {},
+                                genderDistribution: {
+                                  ...prev.audienceOverview?.genderDistribution,
+                                  other: value
+                                }
+                              }
+                            }));
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                    {(() => {
+                      const male = influencerProfile.audienceOverview?.genderDistribution?.male || 0;
+                      const female = influencerProfile.audienceOverview?.genderDistribution?.female || 0;
+                      const other = influencerProfile.audienceOverview?.genderDistribution?.other || 0;
+                      const total = male + female + other;
+                      return total > 0 && (
+                        <p className={`text-sm mt-2 ${total > 100 ? 'text-red-600' : 'text-gray-500'}`}>
+                          Всего: {total.toFixed(1)}% {total > 100 && '(не должно превышать 100%)'}
+                        </p>
+                      );
+                    })()}
+                    {errors.genderDistribution && (
+                      <p className="text-red-600 text-sm flex items-center mt-2">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {errors.genderDistribution}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
