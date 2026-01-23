@@ -116,6 +116,30 @@ export class OfferService {
     }
   }
 
+  async getOffersByCampaign(campaignId: string): Promise<CollaborationOffer[]> {
+    try {
+      console.log('[OfferService] Loading offers for auto-campaign:', campaignId);
+      const offers = await apiClient.get<CollaborationOffer[]>(`/offers/auto-campaign/${campaignId}`);
+      console.log('[OfferService] Loaded campaign offers:', offers);
+      return offers;
+    } catch (error) {
+      console.error('[OfferService] Failed to get offers by campaign:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile(userId: string): Promise<any> {
+    try {
+      console.log('[OfferService] Loading user profile:', userId);
+      const profile = await apiClient.get<any>(`/profiles/${userId}`);
+      console.log('[OfferService] Loaded profile:', profile);
+      return profile;
+    } catch (error) {
+      console.error('[OfferService] Failed to get user profile:', error);
+      throw error;
+    }
+  }
+
   async getOffer(offerId: string): Promise<CollaborationOffer> {
     try {
       return await apiClient.get<CollaborationOffer>(`/offers/${offerId}`);

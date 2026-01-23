@@ -180,6 +180,41 @@ export class OffersService {
     return offers.map((offer) => this.transformOffer(offer));
   }
 
+  async findByAutoCampaign(campaignId: string, userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: campaign, error: campaignError } = await supabase
+      .from('auto_campaigns')
+      .select('advertiser_id')
+      .eq('id', campaignId)
+      .maybeSingle();
+
+    if (campaignError || !campaign) {
+      throw new NotFoundException('Auto campaign not found');
+    }
+
+    if (campaign.advertiser_id !== userId) {
+      throw new ForbiddenException('You can only view offers for your own campaign');
+    }
+
+    const { data: offers, error } = await supabase
+      .from('offers')
+      .select(`
+        *,
+        advertiser:advertiser_id(*),
+        influencer:influencer_id(*)
+      `)
+      .eq('auto_campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch offers by auto campaign: ${error.message}`, error);
+      return [];
+    }
+
+    return offers.map((offer) => this.transformOffer(offer));
+  }
+
   async findOne(id: string, userId: string) {
     const supabase = this.supabaseService.getAdminClient();
 
@@ -456,16 +491,25 @@ export class OffersService {
         return;
       }
 
+      // Не изменяем статус если кампания на паузе или уже завершена
+      if (campaign.status === 'paused' || campaign.status === 'completed') {
+        this.logger.log(`Campaign ${campaignId} is ${campaign.status}, skipping status update`);
+        return;
+      }
+
       let acceptedDelta = 0;
       let completedDelta = 0;
 
-      // Отслеживаем изменения счетчиков
-      if (oldStatus !== 'accepted' && newStatus === 'accepted') {
+      // Отслеживаем изменения счетчиков для accepted статуса
+      if (oldStatus !== 'accepted' && oldStatus !== 'in_progress' && oldStatus !== 'pending_completion' && oldStatus !== 'completed' &&
+          (newStatus === 'accepted' || newStatus === 'in_progress' || newStatus === 'pending_completion' || newStatus === 'completed')) {
         acceptedDelta = 1;
-      } else if (oldStatus === 'accepted' && newStatus !== 'accepted') {
+      } else if ((oldStatus === 'accepted' || oldStatus === 'in_progress' || oldStatus === 'pending_completion' || oldStatus === 'completed') &&
+                 newStatus !== 'accepted' && newStatus !== 'in_progress' && newStatus !== 'pending_completion' && newStatus !== 'completed') {
         acceptedDelta = -1;
       }
 
+      // Отслеживаем изменения счетчиков для completed статуса
       if (oldStatus !== 'completed' && newStatus === 'completed') {
         completedDelta = 1;
       } else if (oldStatus === 'completed' && newStatus !== 'completed') {
@@ -479,16 +523,18 @@ export class OffersService {
       // Определяем новый статус кампании
       let newCampaignStatus = campaign.status;
 
-      if (campaign.status === 'active' && newAcceptedCount >= campaign.target_influencers_count) {
+      // Переход active -> in_progress когда хотя бы один оффер принят
+      if (campaign.status === 'active' && newAcceptedCount > 0 && newAcceptedCount < campaign.target_influencers_count) {
+        newCampaignStatus = 'in_progress';
+      }
+
+      // Переход active/in_progress -> closed когда достигнута цель по принятым офферам
+      if ((campaign.status === 'active' || campaign.status === 'in_progress') && newAcceptedCount >= campaign.target_influencers_count) {
         newCampaignStatus = 'closed';
       }
 
-      if ((campaign.status === 'active' || campaign.status === 'closed') && newCompletedCount > 0 && newCompletedCount < campaign.target_influencers_count) {
-        // Если есть завершенные, но не все
-        newCampaignStatus = 'closed';
-      }
-
-      if ((campaign.status === 'closed' || campaign.status === 'active') && newCompletedCount >= campaign.target_influencers_count) {
+      // Переход в completed когда достигнута цель по завершенным офферам
+      if ((campaign.status === 'in_progress' || campaign.status === 'closed') && newCompletedCount >= campaign.target_influencers_count) {
         newCampaignStatus = 'completed';
       }
 
@@ -506,7 +552,7 @@ export class OffersService {
       if (updateError) {
         this.logger.error(`Failed to update campaign counters: ${updateError.message}`, updateError);
       } else {
-        this.logger.log(`Campaign ${campaignId} updated: accepted=${newAcceptedCount}, completed=${newCompletedCount}, status=${newCampaignStatus}`);
+        this.logger.log(`Campaign ${campaignId} updated: accepted=${newAcceptedCount}, completed=${newCompletedCount}, status=${campaign.status}->${newCampaignStatus}`);
       }
     } catch (error) {
       this.logger.error(`Error updating campaign counters:`, error);

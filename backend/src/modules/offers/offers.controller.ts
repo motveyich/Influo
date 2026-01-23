@@ -76,6 +76,19 @@ export class OffersController {
     return this.offersService.findByParticipant(userId);
   }
 
+  @Get('auto-campaign/:campaignId')
+  @ApiOperation({ summary: 'Get all offers for an auto-campaign' })
+  @ApiParam({ name: 'campaignId', description: 'Auto Campaign ID' })
+  @ApiResponse({ status: 200, description: 'List of offers for the campaign' })
+  @ApiResponse({ status: 403, description: 'You can only view offers for your own campaign' })
+  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  async findByAutoCampaign(
+    @Param('campaignId') campaignId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.offersService.findByAutoCampaign(campaignId, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get offer by ID' })
   @ApiParam({ name: 'id', description: 'Offer ID' })
