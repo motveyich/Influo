@@ -785,12 +785,21 @@ export interface ReputationData {
   trustScore?: number;
 }
 
+export interface AgeRange {
+  min?: number;
+  max?: number;
+}
+
+export interface GenderDistribution {
+  male?: number;
+  female?: number;
+  other?: number;
+}
+
 export interface AudienceOverview {
-  primaryCountry: string;
-  primaryAgeRange: string;
-  primaryGender: string;
-  sizeRange: string;
-  description?: string;
+  primaryCountries?: string[];
+  ageRange?: AgeRange;
+  genderDistribution?: GenderDistribution;
 }
 
 export interface InfluencerProfileData {
@@ -810,6 +819,10 @@ export interface InfluencerProfileData {
   reputationData?: ReputationData;
 }
 
+export interface TargetDemographics {
+  ageRange?: AgeRange;
+}
+
 export interface AdvertiserProfileData {
   logo?: string;
   companyName: string;
@@ -818,15 +831,16 @@ export interface AdvertiserProfileData {
   organizationWebsite?: string;
   companyDescription: string;
   businessCategories: string[];
-  brandValues: string[];
-  typicalIntegrationTypes: string[];
+  brandValues?: string[];
+  typicalIntegrationTypes?: string[];
   typicalBudgetRange?: {
     min: number;
     max: number;
     currency: string;
   };
-  workWithMicroInfluencers: boolean;
-  paymentPolicies: string[];
-  giveCreativeFreedom: boolean;
+  workWithMicroInfluencers?: boolean;
+  paymentPolicies?: string[];
+  giveCreativeFreedom?: boolean;
+  targetDemographics?: TargetDemographics;
   reputationData?: ReputationData;
 }
