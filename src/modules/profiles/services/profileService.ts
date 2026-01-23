@@ -1,5 +1,5 @@
 import { apiClient } from '../../../core/api';
-import { UserProfile, SocialMediaLink } from '../../../core/types';
+import { UserProfile, SocialMediaLink, InfluencerProfileData, AdvertiserProfileData } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 
 export class ProfileService {
@@ -104,6 +104,16 @@ export class ProfileService {
       if (updates.location !== undefined) payload.location = updates.location || null;
       if (updates.website !== undefined) payload.website = updates.website || null;
       if (updates.avatar !== undefined) payload.avatar = updates.avatar || null;
+
+      if (updates.influencerProfile !== undefined) {
+        console.log('[ProfileService] Processing influencerProfile:', updates.influencerProfile);
+        payload.influencerProfile = updates.influencerProfile;
+      }
+
+      if (updates.advertiserProfile !== undefined) {
+        console.log('[ProfileService] Processing advertiserProfile:', updates.advertiserProfile);
+        payload.advertiserProfile = updates.advertiserProfile;
+      }
 
       if (updates.influencerData !== undefined) {
         console.log('[ProfileService] 📊 Processing influencerData:', {
@@ -517,6 +527,117 @@ export class ProfileService {
     });
 
     return sanitized;
+  }
+
+  async updateInfluencerProfile(userId: string, profileData: Partial<InfluencerProfileData>): Promise<UserProfile> {
+    try {
+      console.log('[ProfileService] Updating influencer profile for:', userId);
+
+      this.validateInfluencerProfile(profileData);
+
+      const currentProfile = await this.getProfile(userId);
+      if (!currentProfile) {
+        throw new Error('Profile not found');
+      }
+
+      const mergedInfluencerProfile = {
+        ...currentProfile.influencerProfile,
+        ...profileData
+      };
+
+      return await this.updateProfile(userId, {
+        influencerProfile: mergedInfluencerProfile
+      });
+    } catch (error) {
+      console.error('[ProfileService] Failed to update influencer profile:', error);
+      throw error;
+    }
+  }
+
+  async updateAdvertiserProfile(userId: string, profileData: Partial<AdvertiserProfileData>): Promise<UserProfile> {
+    try {
+      console.log('[ProfileService] Updating advertiser profile for:', userId);
+
+      this.validateAdvertiserProfile(profileData);
+
+      const currentProfile = await this.getProfile(userId);
+      if (!currentProfile) {
+        throw new Error('Profile not found');
+      }
+
+      const mergedAdvertiserProfile = {
+        ...currentProfile.advertiserProfile,
+        ...profileData
+      };
+
+      return await this.updateProfile(userId, {
+        advertiserProfile: mergedAdvertiserProfile
+      });
+    } catch (error) {
+      console.error('[ProfileService] Failed to update advertiser profile:', error);
+      throw error;
+    }
+  }
+
+  private validateInfluencerProfile(profileData: Partial<InfluencerProfileData>): void {
+    if (profileData.bio !== undefined) {
+      const bioLength = profileData.bio.length;
+      if (bioLength < 100 || bioLength > 500) {
+        throw new Error('Био должно содержать от 100 до 500 символов');
+      }
+    }
+
+    if (profileData.primaryNiches !== undefined) {
+      if (profileData.primaryNiches.length < 1) {
+        throw new Error('Выберите хотя бы одну нишу');
+      }
+      if (profileData.primaryNiches.length > 5) {
+        throw new Error('Максимальное количество ниш: 5');
+      }
+    }
+
+    if (profileData.contentLanguages !== undefined && profileData.contentLanguages.length === 0) {
+      throw new Error('Выберите хотя бы один язык контента');
+    }
+  }
+
+  private validateAdvertiserProfile(profileData: Partial<AdvertiserProfileData>): void {
+    if (profileData.companyDescription !== undefined) {
+      const descLength = profileData.companyDescription.length;
+      if (descLength < 50) {
+        throw new Error('Описание компании должно содержать минимум 50 символов');
+      }
+    }
+
+    if (profileData.businessCategories !== undefined) {
+      if (profileData.businessCategories.length < 1) {
+        throw new Error('Выберите хотя бы одну категорию бизнеса');
+      }
+      if (profileData.businessCategories.length > 3) {
+        throw new Error('Максимальное количество категорий: 3');
+      }
+    }
+
+    if (profileData.website !== undefined && profileData.website) {
+      try {
+        new URL(profileData.website);
+      } catch {
+        throw new Error('Некорректный формат URL сайта');
+      }
+    }
+  }
+
+  getProfileAvatar(profile: UserProfile | null): string | undefined {
+    if (!profile) return undefined;
+
+    return profile.influencerProfile?.avatar ||
+           profile.advertiserProfile?.logo ||
+           profile.avatar;
+  }
+
+  hasNewProfileStructure(profile: UserProfile | null): boolean {
+    if (!profile) return false;
+    return !!(profile.influencerProfile || profile.advertiserProfile);
   }
 }
 

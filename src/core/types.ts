@@ -42,12 +42,18 @@ export interface UserProfile {
   fullName: string;
   username?: string;
   phone?: string;
+
+  // New profile structures
+  influencerProfile?: InfluencerProfileData;
+  advertiserProfile?: AdvertiserProfileData;
+
+  // Legacy fields - deprecated, kept for backward compatibility
   avatar?: string;
   bio?: string;
   location?: string;
   website?: string;
-  
-  // Influencer data
+
+  // @deprecated Use influencerProfile instead
   influencerData?: {
     socialMediaLinks: SocialMediaLink[];
     metrics: InfluencerMetrics;
@@ -61,8 +67,8 @@ export interface UserProfile {
       video: number;
     };
   };
-  
-  // Advertiser data
+
+  // @deprecated Use advertiserProfile instead
   advertiserData?: {
     companyName?: string;
     industry?: string;
@@ -70,7 +76,7 @@ export interface UserProfile {
     previousCampaigns: number;
     averageBudget: number;
   };
-  
+
   // Profile completion tracking
   profileCompletion: {
     basicInfo: boolean;
@@ -79,7 +85,7 @@ export interface UserProfile {
     overallComplete: boolean;
     completionPercentage: number;
   };
-  
+
   unifiedAccountInfo: {
     isVerified: boolean;
     joinedAt: string;
@@ -760,4 +766,67 @@ export interface AutoCampaignFormData {
   enableChat: boolean;
   startDate?: string;
   endDate?: string;
+}
+
+// New profile structure types
+
+export interface ReputationData {
+  rating: number;
+  completedDeals: number;
+  totalReviews: number;
+  positiveReviewsPercentage: number;
+  averageResponseTime?: number;
+  verifications: {
+    email: boolean;
+    phone: boolean;
+    document?: boolean;
+  };
+  badges?: string[];
+  trustScore?: number;
+}
+
+export interface AudienceOverview {
+  primaryCountry: string;
+  primaryAgeRange: string;
+  primaryGender: string;
+  sizeRange: string;
+  description?: string;
+}
+
+export interface InfluencerProfileData {
+  avatar?: string;
+  nickname?: string;
+  country?: string;
+  city?: string;
+  contentLanguages: string[];
+  bio: string;
+  primaryNiches: string[];
+  secondaryNiches?: string[];
+  audienceOverview?: AudienceOverview;
+  preferredBrandCategories: string[];
+  excludedBrandCategories: string[];
+  openToLongTermCollabs: boolean;
+  chatEnabled: boolean;
+  reputationData?: ReputationData;
+}
+
+export interface AdvertiserProfileData {
+  logo?: string;
+  companyName: string;
+  country?: string;
+  city?: string;
+  website?: string;
+  companyDescription: string;
+  businessCategories: string[];
+  brandValues: string[];
+  typicalIntegrationTypes: string[];
+  typicalBudgetRange?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  worksWithMicroInfluencers: boolean;
+  paymentPolicies: string[];
+  creativeFreedoAllowed: boolean;
+  reputationData?: ReputationData;
 }
