@@ -800,6 +800,8 @@ export interface AudienceOverview {
   primaryCountries?: string[];
   ageRange?: AgeRange;
   genderDistribution?: GenderDistribution;
+  predominantGender?: string;
+  audienceSizeRange?: string;
 }
 
 export interface InfluencerProfileData {

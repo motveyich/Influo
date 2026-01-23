@@ -364,3 +364,12 @@ export const DETAILED_AGE_RANGES = [
   '65+'
 ] as const;
 export type DetailedAgeRange = typeof DETAILED_AGE_RANGES[number];
+
+// Predominant gender options for audience (преобладающий пол аудитории)
+export const PREDOMINANT_GENDER_OPTIONS = [
+  'Не указано',
+  'Мужской',
+  'Женский',
+  'Смешанный'
+] as const;
+export type PredominantGender = typeof PREDOMINANT_GENDER_OPTIONS[number];
