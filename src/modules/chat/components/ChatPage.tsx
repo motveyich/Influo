@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChatMessage } from '../../../core/types';
 import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
@@ -33,6 +33,23 @@ interface Conversation {
 
 type ChatTab = 'main' | 'new' | 'restricted';
 
+// Debounce utility
+function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  return useCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, [callback, delay]);
+}
+
 export function ChatPage() {
   const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -49,6 +66,7 @@ export function ChatPage() {
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [showAIPanel, setShowAIPanel] = useState(true);
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
+  const updateStatusCache = useRef<Map<string, boolean>>(new Map());
 
   const { user, loading } = useAuth();
   const { t } = useTranslation();
@@ -104,29 +122,21 @@ export function ChatPage() {
   }, [messages]);
 
   // Handle userId parameter changes in URL (for navigating from offers)
+  // FIXED: Removed conversations from dependency array to prevent cascading re-renders
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const userIdParam = urlParams.get('userId');
 
     console.log('URL changed, userId param:', userIdParam);
 
-    if (userIdParam && currentUserId && conversations.length > 0) {
+    if (userIdParam && currentUserId) {
       // Clear the URL parameter
       window.history.replaceState({}, '', '/app/chat');
 
-      // Find existing conversation or create new one
-      const existingConversation = conversations.find(conv => conv.participantId === userIdParam);
-
-      console.log('Handling userId from URL - existing conversation:', existingConversation);
-
-      if (existingConversation) {
-        setSelectedConversation(existingConversation);
-        setActiveTab(existingConversation.chatType);
-      } else {
-        createNewConversation(userIdParam);
-      }
+      // Store the target user ID to be handled after conversations load
+      setTargetUserId(userIdParam);
     }
-  }, [location.search, currentUserId, conversations]);
+  }, [location.search, currentUserId]);
 
   const loadBlockedUsers = async () => {
     try {
@@ -278,7 +288,7 @@ export function ChatPage() {
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessagesInternal = useCallback(async (conversationId: string) => {
     try {
       setIsLoading(true);
       const partnerId = selectedConversation?.participantId;
@@ -292,7 +302,10 @@ export function ChatPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUserId, selectedConversation?.participantId]);
+
+  const loadMessages = loadMessagesInternal;
+  const loadMessagesDebounced = useDebounce(loadMessagesInternal, 300);
 
   const markConversationAsRead = async (partnerId: string) => {
     try {
@@ -313,7 +326,7 @@ export function ChatPage() {
     }
   };
 
-  const handleNewMessage = async (message: any) => {
+  const handleNewMessage = useCallback(async (message: any) => {
     console.log('New message received:', message);
     // Update messages list and conversations
     if (message.new) {
@@ -344,34 +357,44 @@ export function ChatPage() {
         setMessages(prev => [...prev, transformedMessage]);
       }
 
-      // Update conversation status for both sender and receiver
+      // Update conversation status for both sender and receiver (debounced)
       updateConversationStatus(partnerId);
     }
-  };
+  }, [currentUserId, selectedConversation?.participantId, updateConversationStatus]);
 
-  const updateConversationStatus = async (partnerId: string) => {
+  const updateConversationStatusInternal = useCallback(async (partnerId: string) => {
     try {
-      const allMessages = await chatService.getConversation(currentUserId, partnerId);
+      // Check cache to avoid redundant updates
+      const cachedValue = updateStatusCache.current.get(partnerId);
 
+      const allMessages = await chatService.getConversation(currentUserId, partnerId);
       const realMessages = allMessages.filter(msg => msg.messageType !== 'conversation_init');
       const hasResponded = realMessages.some(msg => msg.senderId === partnerId);
 
-      setConversations(prev => prev.map(conv => {
-        if (conv.participantId === partnerId) {
-          const newChatType = hasResponded ? 'main' : conv.chatType;
-          return {
-            ...conv,
-            chatType: newChatType,
-            canSendMessage: !conv.isBlocked,
-            hasReceiverResponded: hasResponded
-          };
-        }
-        return conv;
-      }));
+      // Only update if status has changed
+      if (cachedValue !== hasResponded) {
+        updateStatusCache.current.set(partnerId, hasResponded);
+
+        setConversations(prev => prev.map(conv => {
+          if (conv.participantId === partnerId) {
+            const newChatType = hasResponded ? 'main' : conv.chatType;
+            return {
+              ...conv,
+              chatType: newChatType,
+              canSendMessage: !conv.isBlocked,
+              hasReceiverResponded: hasResponded
+            };
+          }
+          return conv;
+        }));
+      }
     } catch (error) {
       console.error('Failed to update conversation status:', error);
     }
-  };
+  }, [currentUserId]);
+
+  // Debounced version to prevent excessive calls
+  const updateConversationStatus = useDebounce(updateConversationStatusInternal, 500);
 
   const updateConversationLastMessage = (message: ChatMessage, shouldIncrementUnread: boolean = true) => {
     setConversations(prev => prev.map(conv => {
@@ -392,11 +415,11 @@ export function ChatPage() {
         // Handle payment request status updates
         const paymentRequestId = messages.find(m => m.id === messageId)?.metadata?.paymentRequestId;
         const newStatus = messages.find(m => m.id === messageId)?.metadata?.buttons?.find((b: any) => b.action === action)?.status;
-        
+
         if (paymentRequestId && newStatus) {
-          // Refresh messages to show updated status
+          // Refresh messages to show updated status (debounced to prevent excessive refreshes)
           if (selectedConversation) {
-            await loadMessages(selectedConversation.id);
+            loadMessagesDebounced(selectedConversation.id);
           }
           return;
         }
@@ -461,10 +484,10 @@ export function ChatPage() {
         
         toast.error('Сообщение о проблеме с оплатой отправлено');
       }
-      
-      // Обновляем сообщения
+
+      // Обновляем сообщения (debounced to prevent excessive refreshes)
       if (selectedConversation) {
-        await loadMessages(selectedConversation.id);
+        loadMessagesDebounced(selectedConversation.id);
       }
     } catch (error: any) {
       console.error('Failed to handle message interaction:', error);
@@ -607,9 +630,9 @@ export function ChatPage() {
   };
 
   const handleCollaborationRequestSent = () => {
-    // Refresh messages to show the collaboration request
+    // Refresh messages to show the collaboration request (debounced)
     if (selectedConversation) {
-      loadMessages(selectedConversation.id);
+      loadMessagesDebounced(selectedConversation.id);
     }
   };
 

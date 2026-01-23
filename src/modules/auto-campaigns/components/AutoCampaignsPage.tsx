@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AutoCampaign } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
 import { useAuth } from '../../../hooks/useAuth';
@@ -36,18 +36,7 @@ export function AutoCampaignsPage() {
   const { t } = useTranslation();
   const currentUserId = user?.id || '';
 
-  useEffect(() => {
-    if (currentUserId) {
-      loadCampaigns();
-    }
-  }, [currentUserId, activeTab]);
-
-  useEffect(() => {
-    const campaigns = activeTab === 'all' ? allCampaigns : myCampaigns;
-    loadAdvertiserProfiles(campaigns);
-  }, [allCampaigns, myCampaigns, activeTab]);
-
-  const loadAdvertiserProfiles = async (campaigns: AutoCampaign[]) => {
+  const loadAdvertiserProfiles = useCallback(async (campaigns: AutoCampaign[]) => {
     const advertiserIds = [...new Set(campaigns.map(c => c.advertiserId))];
     const profiles: Record<string, any> = {};
 
@@ -65,22 +54,9 @@ export function AutoCampaignsPage() {
     }
 
     setAdvertiserProfiles(profiles);
-  };
+  }, []);
 
-  const getPlatformIcon = (platform: string) => {
-    const platformLower = platform.toLowerCase();
-    const iconProps = { className: "w-3.5 h-3.5" };
-
-    if (platformLower.includes('instagram')) return <Instagram {...iconProps} />;
-    if (platformLower.includes('youtube')) return <Youtube {...iconProps} />;
-    if (platformLower.includes('twitter') || platformLower.includes('x')) return <Twitter {...iconProps} />;
-    if (platformLower.includes('facebook')) return <Facebook {...iconProps} />;
-    if (platformLower.includes('tiktok')) return <Tv {...iconProps} />;
-
-    return <Tv {...iconProps} />;
-  };
-
-  const loadCampaigns = async () => {
+  const loadCampaigns = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -97,12 +73,42 @@ export function AutoCampaignsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUserId, activeTab]);
 
-  const handleCreateCampaign = () => {
+  useEffect(() => {
+    if (currentUserId) {
+      loadCampaigns();
+    }
+  }, [currentUserId, loadCampaigns]);
+
+  // Memoize current campaigns to prevent unnecessary profile loads
+  const currentCampaigns = useMemo(() => {
+    return activeTab === 'all' ? allCampaigns : myCampaigns;
+  }, [activeTab, allCampaigns, myCampaigns]);
+
+  useEffect(() => {
+    if (currentCampaigns.length > 0) {
+      loadAdvertiserProfiles(currentCampaigns);
+    }
+  }, [currentCampaigns, loadAdvertiserProfiles]);
+
+  const getPlatformIcon = useCallback((platform: string) => {
+    const platformLower = platform.toLowerCase();
+    const iconProps = { className: "w-3.5 h-3.5" };
+
+    if (platformLower.includes('instagram')) return <Instagram {...iconProps} />;
+    if (platformLower.includes('youtube')) return <Youtube {...iconProps} />;
+    if (platformLower.includes('twitter') || platformLower.includes('x')) return <Twitter {...iconProps} />;
+    if (platformLower.includes('facebook')) return <Facebook {...iconProps} />;
+    if (platformLower.includes('tiktok')) return <Tv {...iconProps} />;
+
+    return <Tv {...iconProps} />;
+  }, []);
+
+  const handleCreateCampaign = useCallback(() => {
     setEditingCampaign(null);
     setShowModal(true);
-  };
+  }, []);
 
   const handleLaunchCampaign = async (campaign: AutoCampaign) => {
     if (!confirm(`Запустить автокампанию "${campaign.title}"? Система автоматически подберёт инфлюенсеров и отправит предложения.`)) {

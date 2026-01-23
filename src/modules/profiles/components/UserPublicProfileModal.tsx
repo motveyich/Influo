@@ -25,6 +25,23 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
     loadProfileData();
   }, [userId]);
 
+  // Listen for profile updates from other components
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      const updatedProfile = event.detail as UserProfile;
+      // Only update if it's the same user's profile
+      if (updatedProfile.userId === userId) {
+        setProfile(updatedProfile);
+      }
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate as EventListener);
+    };
+  }, [userId]);
+
   const loadProfileData = async () => {
     try {
       setIsLoading(true);

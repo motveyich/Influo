@@ -37,10 +37,36 @@ export class CompletionScreenshotService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Не удалось загрузить скриншот');
+        const errorMessage = errorData.message || `Ошибка загрузки: ${response.status}`;
+
+        console.error('Screenshot upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          file: {
+            name: file.name,
+            type: file.type,
+            size: file.size
+          }
+        });
+
+        // Provide more specific error messages
+        if (response.status === 400) {
+          throw new Error('Неверный формат файла. Используйте JPEG, PNG или WebP');
+        } else if (response.status === 413) {
+          throw new Error('Файл слишком большой. Максимальный размер: 10 МБ');
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+
+      if (!data.url) {
+        console.error('No URL in response:', data);
+        throw new Error('Сервер не вернул URL скриншота');
+      }
+
       return data.url;
     } catch (error: any) {
       console.error('Failed to upload completion screenshot:', error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { InfluencerCard, AdvertiserCard } from '../../../core/types';
 import { InfluencerCardDisplay } from './InfluencerCardDisplay';
@@ -109,12 +109,29 @@ export function InfluencerCardsPage() {
     clearFilters();
   };
 
-  // Main data loading effect
+  // Memoize filter params to prevent unnecessary re-renders
+  const filterParams = useMemo(() => ({
+    searchQuery,
+    platformFilter,
+    minFollowersFilter,
+    maxFollowersFilter,
+    selectedCountries: selectedCountries.join(','),
+    minBudgetFilter,
+    maxBudgetFilter,
+    selectedProductCategories: selectedProductCategories.join(','),
+    selectedServiceFormats: selectedServiceFormats.join(',')
+  }), [searchQuery, platformFilter, minFollowersFilter, maxFollowersFilter, selectedCountries, minBudgetFilter, maxBudgetFilter, selectedProductCategories, selectedServiceFormats]);
+
+  // Main data loading effect - optimized to reduce re-renders
   useEffect(() => {
     if (currentUserId && !loading) {
-      loadData();
+      const timeoutId = setTimeout(() => {
+        loadData();
+      }, 300); // Debounce by 300ms to prevent rapid re-loading during filter changes
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [currentUserId, loading, activeTab, searchQuery, platformFilter, minFollowersFilter, maxFollowersFilter, selectedCountries, minBudgetFilter, maxBudgetFilter, selectedProductCategories, selectedServiceFormats]);
+  }, [currentUserId, loading, activeTab, filterParams]);
 
   // Listen for favorites changes
   useEffect(() => {

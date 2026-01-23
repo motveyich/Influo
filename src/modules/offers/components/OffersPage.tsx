@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CollaborationOffer, OfferStatus } from '../../../core/types';
 import { offerService } from '../services/offerService';
@@ -55,7 +55,7 @@ export function OffersPage() {
     }
   }, [currentUserId, loading, activeTab, location.pathname]);
 
-  const loadCollaborations = async () => {
+  const loadCollaborations = useCallback(async () => {
     try {
       setIsLoading(true);
       setLoadError(null);
@@ -109,9 +109,9 @@ export function OffersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUserId, activeTab]);
 
-  const handleOfferUpdated = (updatedOffer: CollaborationOffer) => {
+  const handleOfferUpdated = useCallback((updatedOffer: CollaborationOffer) => {
     const isActiveStatus = CollaborationAdapter.isActiveStatus(updatedOffer.status);
     const shouldRefresh = (activeTab === 'active' && !isActiveStatus) ||
                          (activeTab === 'completed' && isActiveStatus);
@@ -119,21 +119,21 @@ export function OffersPage() {
     if (shouldRefresh) {
       loadCollaborations();
     }
-  };
+  }, [activeTab, loadCollaborations]);
 
-  const handleViewDetails = (collab: UnifiedCollaboration) => {
+  const handleViewDetails = useCallback((collab: UnifiedCollaboration) => {
     setSelectedOffer(collab.originalData as CollaborationOffer);
     setSelectedCollaborationType(collab.type);
     setShowDetailsModal(true);
-  };
+  }, []);
 
-  const handleViewOfferDetails = (offer: CollaborationOffer, collaborationType: 'application' | 'offer' = 'offer') => {
+  const handleViewOfferDetails = useCallback((offer: CollaborationOffer, collaborationType: 'application' | 'offer' = 'offer') => {
     setSelectedOffer(offer);
     setSelectedCollaborationType(collaborationType);
     setShowDetailsModal(true);
-  };
+  }, []);
 
-  const handleViewProfile = (userId: string) => {
+  const handleViewProfile = useCallback((userId: string) => {
     if (!userId) {
       toast.error('ID пользователя не найден');
       return;
@@ -141,7 +141,7 @@ export function OffersPage() {
     console.log('Opening profile for user:', userId);
     setProfileUserId(userId);
     setShowProfileModal(true);
-  };
+  }, []);
 
   const getUserRole = (collab: UnifiedCollaboration): 'influencer' | 'advertiser' => {
     return collab.influencerId === currentUserId ? 'influencer' : 'advertiser';
@@ -182,7 +182,8 @@ export function OffersPage() {
     });
   }, [collaborations, searchQuery, statusFilter]);
 
-  const getOfferStats = () => {
+  // Memoize stats calculation to prevent unnecessary recalculations
+  const stats = useMemo(() => {
     const activeCollabs = allCollaborations.filter(c => CollaborationAdapter.isActiveStatus(c.status));
     const completedCollabs = allCollaborations.filter(c => CollaborationAdapter.isCompletedStatus(c.status));
 
@@ -199,7 +200,7 @@ export function OffersPage() {
       activeCount: activeCollabs.length,
       completedCount: completedCollabs.length
     };
-  };
+  }, [allCollaborations]);
 
   const getStatusFiltersForTab = (): { value: OfferStatus | 'all'; label: string }[] => {
     if (activeTab === 'active') {
@@ -220,8 +221,6 @@ export function OffersPage() {
       ];
     }
   };
-
-  const stats = getOfferStats();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

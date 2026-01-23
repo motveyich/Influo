@@ -107,7 +107,12 @@ export function ProfilesPage() {
   } = useUserSettings(currentUserId);
 
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
-    refreshProfile();
+    // Use the updated profile directly instead of refetching (prevents double-fetch)
+    setProfile(updatedProfile);
+
+    // Dispatch event to notify other components (e.g., modals) about the profile update
+    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
+
     toast.success(t('profile.success.updated'));
   };
 
