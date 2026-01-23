@@ -130,19 +130,19 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         bio: currentProfile.influencerProfile.bio ?? '',
         primaryNiches: currentProfile.influencerProfile.primaryNiches ?? [],
         secondaryNiches: currentProfile.influencerProfile.secondaryNiches ?? [],
-        audienceOverview: currentProfile.influencerProfile.audienceOverview ?? {
-          primaryCountries: [],
+        audienceOverview: {
+          primaryCountries: currentProfile.influencerProfile.audienceOverview?.primaryCountries ?? [],
           ageRange: {
-            min: undefined,
-            max: undefined
+            min: currentProfile.influencerProfile.audienceOverview?.ageRange?.min ?? undefined,
+            max: currentProfile.influencerProfile.audienceOverview?.ageRange?.max ?? undefined
           },
           genderDistribution: {
-            male: undefined,
-            female: undefined,
-            other: undefined
+            male: currentProfile.influencerProfile.audienceOverview?.genderDistribution?.male ?? undefined,
+            female: currentProfile.influencerProfile.audienceOverview?.genderDistribution?.female ?? undefined,
+            other: currentProfile.influencerProfile.audienceOverview?.genderDistribution?.other ?? undefined
           },
-          predominantGender: undefined,
-          audienceSizeRange: undefined
+          predominantGender: currentProfile.influencerProfile.audienceOverview?.predominantGender ?? undefined,
+          audienceSizeRange: currentProfile.influencerProfile.audienceOverview?.audienceSizeRange ?? undefined
         },
         preferredBrandCategories: currentProfile.influencerProfile.preferredBrandCategories ?? [],
         excludedBrandCategories: currentProfile.influencerProfile.excludedBrandCategories ?? [],
@@ -744,8 +744,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                       Основной пол аудитории
                     </label>
                     <select
-                      value={influencerProfile.audienceOverview?.predominantGender || ''}
+                      value={influencerProfile.audienceOverview?.predominantGender || 'Не указано'}
                       onChange={(e) => {
+                        const value = e.target.value;
                         setInfluencerProfile(prev => ({
                           ...prev,
                           audienceOverview: {
@@ -753,7 +754,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                             primaryCountries: prev.audienceOverview?.primaryCountries || [],
                             ageRange: prev.audienceOverview?.ageRange || {},
                             genderDistribution: prev.audienceOverview?.genderDistribution || {},
-                            predominantGender: e.target.value || undefined,
+                            predominantGender: value === 'Не указано' || value === '' ? undefined : value,
                             audienceSizeRange: prev.audienceOverview?.audienceSizeRange
                           }
                         }));
