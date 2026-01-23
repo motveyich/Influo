@@ -330,23 +330,41 @@ export class ProfilesService {
       }
     }
     if (updateProfileDto.influencerProfile !== undefined) {
-      // null = clear the field, object = update, undefined = don't change
+      // null = clear the field, object = merge with existing, undefined = don't change
       if (updateProfileDto.influencerProfile === null) {
         updateData.influencer_profile = null;
         this.logger.log(`Clearing influencerProfile for user ${userId}`);
       } else if (typeof updateProfileDto.influencerProfile === 'object') {
-        updateData.influencer_profile = updateProfileDto.influencerProfile;
+        // Merge new data with existing influencer profile
+        const existingInfluencerProfile = currentProfile.influencer_profile || {};
+        updateData.influencer_profile = this.deepMerge(
+          existingInfluencerProfile,
+          updateProfileDto.influencerProfile
+        );
+        this.logger.log(`Merged influencerProfile for user ${userId}`);
+        this.logger.debug(`Existing profile:`, JSON.stringify(existingInfluencerProfile, null, 2));
+        this.logger.debug(`New data:`, JSON.stringify(updateProfileDto.influencerProfile, null, 2));
+        this.logger.debug(`Merged result:`, JSON.stringify(updateData.influencer_profile, null, 2));
       } else {
         this.logger.warn(`Invalid influencerProfile format for user ${userId}, skipping`);
       }
     }
     if (updateProfileDto.advertiserProfile !== undefined) {
-      // null = clear the field, object = update, undefined = don't change
+      // null = clear the field, object = merge with existing, undefined = don't change
       if (updateProfileDto.advertiserProfile === null) {
         updateData.advertiser_profile = null;
         this.logger.log(`Clearing advertiserProfile for user ${userId}`);
       } else if (typeof updateProfileDto.advertiserProfile === 'object') {
-        updateData.advertiser_profile = updateProfileDto.advertiserProfile;
+        // Merge new data with existing advertiser profile
+        const existingAdvertiserProfile = currentProfile.advertiser_profile || {};
+        updateData.advertiser_profile = this.deepMerge(
+          existingAdvertiserProfile,
+          updateProfileDto.advertiserProfile
+        );
+        this.logger.log(`Merged advertiserProfile for user ${userId}`);
+        this.logger.debug(`Existing profile:`, JSON.stringify(existingAdvertiserProfile, null, 2));
+        this.logger.debug(`New data:`, JSON.stringify(updateProfileDto.advertiserProfile, null, 2));
+        this.logger.debug(`Merged result:`, JSON.stringify(updateData.advertiser_profile, null, 2));
       } else {
         this.logger.warn(`Invalid advertiserProfile format for user ${userId}, skipping`);
       }
@@ -893,6 +911,12 @@ export class ProfilesService {
           other: this.toNumber(data.audienceOverview.genderDistribution.other, 0),
         };
       }
+      if (data.audienceOverview.predominantGender !== undefined) {
+        audience.predominantGender = String(data.audienceOverview.predominantGender || '');
+      }
+      if (data.audienceOverview.audienceSizeRange !== undefined) {
+        audience.audienceSizeRange = String(data.audienceOverview.audienceSizeRange || '');
+      }
       if (Object.keys(audience).length > 0) {
         sanitized.audienceOverview = audience;
       }
@@ -1000,6 +1024,41 @@ export class ProfilesService {
     }
     const parsed = Number(value);
     return isNaN(parsed) ? defaultValue : parsed;
+  }
+
+  private deepMerge(target: any, source: any): any {
+    if (!source || typeof source !== 'object') {
+      return target;
+    }
+
+    if (!target || typeof target !== 'object') {
+      return source;
+    }
+
+    const result = { ...target };
+
+    for (const key in source) {
+      if (source.hasOwnProperty(key)) {
+        const sourceValue = source[key];
+        const targetValue = result[key];
+
+        if (sourceValue === undefined) {
+          continue;
+        }
+
+        if (sourceValue === null) {
+          result[key] = null;
+        } else if (Array.isArray(sourceValue)) {
+          result[key] = sourceValue;
+        } else if (typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+          result[key] = this.deepMerge(targetValue, sourceValue);
+        } else {
+          result[key] = sourceValue;
+        }
+      }
+    }
+
+    return result;
   }
 
   private calculateProfileCompletionData(profile: any) {
