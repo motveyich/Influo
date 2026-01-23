@@ -2,31 +2,47 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsBoolean, IsOptional, ValidateNested, MinLength, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export class AgeRangeDto {
+  @ApiProperty({ example: 18, required: false })
+  @IsOptional()
+  min?: number;
+
+  @ApiProperty({ example: 35, required: false })
+  @IsOptional()
+  max?: number;
+}
+
+export class GenderDistributionDto {
+  @ApiProperty({ example: 40, required: false })
+  @IsOptional()
+  male?: number;
+
+  @ApiProperty({ example: 55, required: false })
+  @IsOptional()
+  female?: number;
+
+  @ApiProperty({ example: 5, required: false })
+  @IsOptional()
+  other?: number;
+}
+
 export class AudienceOverviewDto {
-  @ApiProperty({ example: 'Россия', required: false })
+  @ApiProperty({ example: ['Россия', 'Казахстан'], required: false })
   @IsOptional()
-  @IsString()
-  primaryCountry?: string;
+  @IsArray()
+  primaryCountries?: string[];
 
-  @ApiProperty({ example: '18-24', required: false })
+  @ApiProperty({ type: AgeRangeDto, required: false })
   @IsOptional()
-  @IsString()
-  primaryAgeRange?: string;
+  @ValidateNested()
+  @Type(() => AgeRangeDto)
+  ageRange?: AgeRangeDto;
 
-  @ApiProperty({ example: 'Женский', required: false })
+  @ApiProperty({ type: GenderDistributionDto, required: false })
   @IsOptional()
-  @IsString()
-  primaryGender?: string;
-
-  @ApiProperty({ example: 'Микро (10к-50к)', required: false })
-  @IsOptional()
-  @IsString()
-  sizeRange?: string;
-
-  @ApiProperty({ example: 'Активная молодая аудитория, интересующаяся модой', required: false })
-  @IsOptional()
-  @IsString()
-  description?: string;
+  @ValidateNested()
+  @Type(() => GenderDistributionDto)
+  genderDistribution?: GenderDistributionDto;
 }
 
 export class InfluencerProfileDto {

@@ -815,7 +815,7 @@ export interface AdvertiserProfileData {
   companyName: string;
   country?: string;
   city?: string;
-  website?: string;
+  organizationWebsite?: string;
   companyDescription: string;
   businessCategories: string[];
   brandValues: string[];
@@ -825,8 +825,8 @@ export interface AdvertiserProfileData {
     max: number;
     currency: string;
   };
-  worksWithMicroInfluencers: boolean;
+  workWithMicroInfluencers: boolean;
   paymentPolicies: string[];
-  creativeFreedoAllowed: boolean;
+  giveCreativeFreedom: boolean;
   reputationData?: ReputationData;
 }

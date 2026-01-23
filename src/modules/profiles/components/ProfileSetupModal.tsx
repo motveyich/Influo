@@ -79,7 +79,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     companyName: '',
     country: '',
     city: '',
-    website: '',
+    organizationWebsite: '',
     companyDescription: '',
     businessCategories: [],
     brandValues: [],
@@ -89,9 +89,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       max: 0,
       currency: 'USD'
     },
-    worksWithMicroInfluencers: true,
+    workWithMicroInfluencers: true,
     paymentPolicies: [],
-    creativeFreedoAllowed: true
+    giveCreativeFreedom: true
   });
 
   useEffect(() => {
@@ -164,7 +164,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         companyName: currentProfile.advertiserProfile.companyName ?? '',
         country: currentProfile.advertiserProfile.country ?? '',
         city: currentProfile.advertiserProfile.city ?? '',
-        website: currentProfile.advertiserProfile.website ?? '',
+        organizationWebsite: currentProfile.advertiserProfile.organizationWebsite ?? '',
         companyDescription: currentProfile.advertiserProfile.companyDescription ?? '',
         businessCategories: currentProfile.advertiserProfile.businessCategories ?? [],
         brandValues: currentProfile.advertiserProfile.brandValues ?? [],
@@ -174,9 +174,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           max: 0,
           currency: 'USD'
         },
-        worksWithMicroInfluencers: currentProfile.advertiserProfile.worksWithMicroInfluencers ?? true,
+        workWithMicroInfluencers: currentProfile.advertiserProfile.workWithMicroInfluencers ?? true,
         paymentPolicies: currentProfile.advertiserProfile.paymentPolicies ?? [],
-        creativeFreedoAllowed: currentProfile.advertiserProfile.creativeFreedoAllowed ?? true
+        giveCreativeFreedom: currentProfile.advertiserProfile.giveCreativeFreedom ?? true
       });
     } else {
       setAdvertiserProfile({
@@ -184,7 +184,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         companyName: '',
         country: '',
         city: '',
-        website: '',
+        organizationWebsite: '',
         companyDescription: '',
         businessCategories: [],
         brandValues: [],
@@ -194,9 +194,9 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           max: 0,
           currency: 'USD'
         },
-        worksWithMicroInfluencers: true,
+        workWithMicroInfluencers: true,
         paymentPolicies: [],
-        creativeFreedoAllowed: true
+        giveCreativeFreedom: true
       });
     }
   }, [currentProfile, isOpen, user?.id, user?.fullName, user?.email]);
@@ -890,8 +890,8 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                   </label>
                   <input
                     type="url"
-                    value={advertiserProfile.website}
-                    onChange={(e) => setAdvertiserProfile(prev => ({ ...prev, website: e.target.value }))}
+                    value={advertiserProfile.organizationWebsite}
+                    onChange={(e) => setAdvertiserProfile(prev => ({ ...prev, organizationWebsite: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="https://example.com"
                   />
@@ -1114,10 +1114,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={advertiserProfile.worksWithMicroInfluencers}
+                    checked={advertiserProfile.workWithMicroInfluencers}
                     onChange={(e) => setAdvertiserProfile(prev => ({
                       ...prev,
-                      worksWithMicroInfluencers: e.target.checked
+                      workWithMicroInfluencers: e.target.checked
                     }))}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
@@ -1127,10 +1127,10 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={advertiserProfile.creativeFreedoAllowed}
+                    checked={advertiserProfile.giveCreativeFreedom}
                     onChange={(e) => setAdvertiserProfile(prev => ({
                       ...prev,
-                      creativeFreedoAllowed: e.target.checked
+                      giveCreativeFreedom: e.target.checked
                     }))}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />

@@ -3,6 +3,24 @@ import { IsString, IsArray, IsBoolean, IsOptional, ValidateNested, MinLength } f
 import { Type } from 'class-transformer';
 import { BudgetRangeDto } from './advertiser-data.dto';
 
+export class TargetAgeRangeDto {
+  @ApiProperty({ example: 18, required: false })
+  @IsOptional()
+  min?: number;
+
+  @ApiProperty({ example: 45, required: false })
+  @IsOptional()
+  max?: number;
+}
+
+export class TargetDemographicsDto {
+  @ApiProperty({ type: TargetAgeRangeDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TargetAgeRangeDto)
+  ageRange?: TargetAgeRangeDto;
+}
+
 export class AdvertiserProfileDto {
   @ApiProperty({ example: 'https://example.com/logo.jpg', required: false })
   @IsOptional()
@@ -26,7 +44,7 @@ export class AdvertiserProfileDto {
   @ApiProperty({ example: 'https://example.com', required: false })
   @IsOptional()
   @IsString()
-  website?: string;
+  organizationWebsite?: string;
 
   @ApiProperty({
     example: 'Мы компания, занимающаяся производством экологичной косметики. Наша миссия - предоставлять качественные продукты...',
@@ -59,7 +77,7 @@ export class AdvertiserProfileDto {
   @ApiProperty({ example: true, required: false })
   @IsOptional()
   @IsBoolean()
-  worksWithMicroInfluencers?: boolean;
+  workWithMicroInfluencers?: boolean;
 
   @ApiProperty({ example: ['Оплата после публикации', 'Частичная предоплата (50%)'], required: false })
   @IsOptional()
@@ -69,7 +87,13 @@ export class AdvertiserProfileDto {
   @ApiProperty({ example: true, required: false })
   @IsOptional()
   @IsBoolean()
-  creativeFreedoAllowed?: boolean;
+  giveCreativeFreedom?: boolean;
+
+  @ApiProperty({ type: TargetDemographicsDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TargetDemographicsDto)
+  targetDemographics?: TargetDemographicsDto;
 
   @ApiProperty({ required: false })
   @IsOptional()
