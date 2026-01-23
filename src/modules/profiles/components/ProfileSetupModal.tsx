@@ -62,9 +62,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     primaryNiches: [],
     secondaryNiches: [],
     audienceOverview: {
-      primaryCountries: [],
-      ageRange: { min: undefined, max: undefined },
-      genderDistribution: { male: undefined, female: undefined, other: undefined }
+      primaryCountry: '',
+      primaryAgeRange: '',
+      primaryGender: '',
+      sizeRange: '',
+      description: ''
     },
     preferredBrandCategories: [],
     excludedBrandCategories: [],
@@ -121,9 +123,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         primaryNiches: currentProfile.influencerProfile.primaryNiches ?? [],
         secondaryNiches: currentProfile.influencerProfile.secondaryNiches ?? [],
         audienceOverview: currentProfile.influencerProfile.audienceOverview ?? {
-          primaryCountries: [],
-          ageRange: { min: undefined, max: undefined },
-          genderDistribution: { male: undefined, female: undefined, other: undefined }
+          primaryCountry: '',
+          primaryAgeRange: '',
+          primaryGender: '',
+          sizeRange: '',
+          description: ''
         },
         preferredBrandCategories: currentProfile.influencerProfile.preferredBrandCategories ?? [],
         excludedBrandCategories: currentProfile.influencerProfile.excludedBrandCategories ?? [],
@@ -141,9 +145,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
         primaryNiches: [],
         secondaryNiches: [],
         audienceOverview: {
-          primaryCountries: [],
-          ageRange: { min: undefined, max: undefined },
-          genderDistribution: { male: undefined, female: undefined, other: undefined }
+          primaryCountry: '',
+          primaryAgeRange: '',
+          primaryGender: '',
+          sizeRange: '',
+          description: ''
         },
         preferredBrandCategories: [],
         excludedBrandCategories: [],
@@ -635,151 +641,131 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">Обзор аудитории</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Основные страны аудитории
+                      Основная страна
                     </label>
                     <select
-                      multiple
-                      value={influencerProfile.audienceOverview?.primaryCountries || []}
-                      onChange={(e) => {
-                        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                        setInfluencerProfile(prev => ({
-                          ...prev,
-                          audienceOverview: {
-                            ...prev.audienceOverview,
-                            primaryCountries: selectedOptions
-                          }
-                        }));
-                      }}
+                      value={influencerProfile.audienceOverview?.primaryCountry}
+                      onChange={(e) => setInfluencerProfile(prev => ({
+                        ...prev,
+                        audienceOverview: {
+                          ...prev.audienceOverview,
+                          primaryCountry: e.target.value,
+                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
+                          primaryGender: prev.audienceOverview?.primaryGender || '',
+                          sizeRange: prev.audienceOverview?.sizeRange || '',
+                          description: prev.audienceOverview?.description || ''
+                        }
+                      }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      size={4}
                     >
+                      <option value="">Выберите страну</option>
                       {COUNTRIES.map(country => (
                         <option key={country} value={country}>{country}</option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs text-gray-500">Удерживайте Ctrl (Cmd на Mac) для выбора нескольких стран</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Возраст аудитории (от)
+                      Основная возрастная группа
                     </label>
-                    <input
-                      type="number"
-                      min="13"
-                      max="100"
-                      value={influencerProfile.audienceOverview?.ageRange?.min ?? ''}
+                    <select
+                      value={influencerProfile.audienceOverview?.primaryAgeRange}
                       onChange={(e) => setInfluencerProfile(prev => ({
                         ...prev,
                         audienceOverview: {
                           ...prev.audienceOverview,
-                          ageRange: {
-                            ...prev.audienceOverview?.ageRange,
-                            min: e.target.value ? parseInt(e.target.value) : undefined
-                          }
+                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
+                          primaryAgeRange: e.target.value,
+                          primaryGender: prev.audienceOverview?.primaryGender || '',
+                          sizeRange: prev.audienceOverview?.sizeRange || '',
+                          description: prev.audienceOverview?.description || ''
                         }
                       }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Например, 18"
-                    />
+                    >
+                      <option value="">Выберите возраст</option>
+                      {DETAILED_AGE_RANGES.map(range => (
+                        <option key={range} value={range}>{range}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Возраст аудитории (до)
+                      Основной пол
                     </label>
-                    <input
-                      type="number"
-                      min="13"
-                      max="100"
-                      value={influencerProfile.audienceOverview?.ageRange?.max ?? ''}
+                    <select
+                      value={influencerProfile.audienceOverview?.primaryGender}
                       onChange={(e) => setInfluencerProfile(prev => ({
                         ...prev,
                         audienceOverview: {
                           ...prev.audienceOverview,
-                          ageRange: {
-                            ...prev.audienceOverview?.ageRange,
-                            max: e.target.value ? parseInt(e.target.value) : undefined
-                          }
+                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
+                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
+                          primaryGender: e.target.value,
+                          sizeRange: prev.audienceOverview?.sizeRange || '',
+                          description: prev.audienceOverview?.description || ''
                         }
                       }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Например, 35"
-                    />
+                    >
+                      <option value="">Выберите пол</option>
+                      <option value="Мужской">Мужской</option>
+                      <option value="Женский">Женский</option>
+                      <option value="Смешанный">Смешанный</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Размер аудитории
+                    </label>
+                    <select
+                      value={influencerProfile.audienceOverview?.sizeRange}
+                      onChange={(e) => setInfluencerProfile(prev => ({
+                        ...prev,
+                        audienceOverview: {
+                          ...prev.audienceOverview,
+                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
+                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
+                          primaryGender: prev.audienceOverview?.primaryGender || '',
+                          sizeRange: e.target.value,
+                          description: prev.audienceOverview?.description || ''
+                        }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Выберите размер</option>
+                      {AUDIENCE_SIZE_RANGES.map(range => (
+                        <option key={range} value={range}>{range}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Распределение по полу (%)
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Описание аудитории
                     </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Мужчины</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={influencerProfile.audienceOverview?.genderDistribution?.male ?? ''}
-                          onChange={(e) => setInfluencerProfile(prev => ({
-                            ...prev,
-                            audienceOverview: {
-                              ...prev.audienceOverview,
-                              genderDistribution: {
-                                ...prev.audienceOverview?.genderDistribution,
-                                male: e.target.value ? parseInt(e.target.value) : undefined
-                              }
-                            }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="40"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Женщины</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={influencerProfile.audienceOverview?.genderDistribution?.female ?? ''}
-                          onChange={(e) => setInfluencerProfile(prev => ({
-                            ...prev,
-                            audienceOverview: {
-                              ...prev.audienceOverview,
-                              genderDistribution: {
-                                ...prev.audienceOverview?.genderDistribution,
-                                female: e.target.value ? parseInt(e.target.value) : undefined
-                              }
-                            }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="55"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">Другое</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={influencerProfile.audienceOverview?.genderDistribution?.other ?? ''}
-                          onChange={(e) => setInfluencerProfile(prev => ({
-                            ...prev,
-                            audienceOverview: {
-                              ...prev.audienceOverview,
-                              genderDistribution: {
-                                ...prev.audienceOverview?.genderDistribution,
-                                other: e.target.value ? parseInt(e.target.value) : undefined
-                              }
-                            }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="5"
-                        />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">Сумма должна составлять 100%</p>
+                    <textarea
+                      value={influencerProfile.audienceOverview?.description}
+                      onChange={(e) => setInfluencerProfile(prev => ({
+                        ...prev,
+                        audienceOverview: {
+                          ...prev.audienceOverview,
+                          primaryCountry: prev.audienceOverview?.primaryCountry || '',
+                          primaryAgeRange: prev.audienceOverview?.primaryAgeRange || '',
+                          primaryGender: prev.audienceOverview?.primaryGender || '',
+                          sizeRange: prev.audienceOverview?.sizeRange || '',
+                          description: e.target.value
+                        }
+                      }))}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Общая характеристика вашей аудитории"
+                    />
                   </div>
                 </div>
               </div>
