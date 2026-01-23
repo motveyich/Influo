@@ -43,6 +43,16 @@ export class AudienceOverviewDto {
   @ValidateNested()
   @Type(() => GenderDistributionDto)
   genderDistribution?: GenderDistributionDto;
+
+  @ApiProperty({ example: 'Женский', required: false })
+  @IsOptional()
+  @IsString()
+  predominantGender?: string;
+
+  @ApiProperty({ example: 'Микро (10к-50к)', required: false })
+  @IsOptional()
+  @IsString()
+  audienceSizeRange?: string;
 }
 
 export class InfluencerProfileDto {
