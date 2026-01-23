@@ -321,6 +321,28 @@ export class ProfilesService {
         this.logger.warn(`Invalid advertiserData format for user ${userId}, skipping`);
       }
     }
+    if (updateProfileDto.influencerProfile !== undefined) {
+      // null = clear the field, object = update, undefined = don't change
+      if (updateProfileDto.influencerProfile === null) {
+        updateData.influencer_profile = null;
+        this.logger.log(`Clearing influencerProfile for user ${userId}`);
+      } else if (typeof updateProfileDto.influencerProfile === 'object') {
+        updateData.influencer_profile = updateProfileDto.influencerProfile;
+      } else {
+        this.logger.warn(`Invalid influencerProfile format for user ${userId}, skipping`);
+      }
+    }
+    if (updateProfileDto.advertiserProfile !== undefined) {
+      // null = clear the field, object = update, undefined = don't change
+      if (updateProfileDto.advertiserProfile === null) {
+        updateData.advertiser_profile = null;
+        this.logger.log(`Clearing advertiserProfile for user ${userId}`);
+      } else if (typeof updateProfileDto.advertiserProfile === 'object') {
+        updateData.advertiser_profile = updateProfileDto.advertiserProfile;
+      } else {
+        this.logger.warn(`Invalid advertiserProfile format for user ${userId}, skipping`);
+      }
+    }
     if (updateProfileDto.metrics !== undefined) {
       updateData.metrics = updateProfileDto.metrics;
     }
@@ -361,6 +383,34 @@ export class ProfilesService {
       } catch (sanitizeError: any) {
         this.logger.error(`Failed to sanitize advertiser_data: ${sanitizeError.message}`, sanitizeError);
         throw new InternalServerErrorException('Invalid advertiser data format');
+      }
+    }
+
+    if (updateData.influencer_profile !== undefined) {
+      try {
+        if (updateData.influencer_profile === null) {
+          this.logger.log(`Setting influencer_profile to null for user ${userId}`);
+        } else if (typeof updateData.influencer_profile === 'object') {
+          updateData.influencer_profile = this.sanitizeInfluencerProfile(updateData.influencer_profile);
+          this.logger.log(`Sanitized influencer_profile for user ${userId}`);
+        }
+      } catch (sanitizeError: any) {
+        this.logger.error(`Failed to sanitize influencer_profile: ${sanitizeError.message}`, sanitizeError);
+        throw new InternalServerErrorException('Invalid influencer profile format');
+      }
+    }
+
+    if (updateData.advertiser_profile !== undefined) {
+      try {
+        if (updateData.advertiser_profile === null) {
+          this.logger.log(`Setting advertiser_profile to null for user ${userId}`);
+        } else if (typeof updateData.advertiser_profile === 'object') {
+          updateData.advertiser_profile = this.sanitizeAdvertiserProfile(updateData.advertiser_profile);
+          this.logger.log(`Sanitized advertiser_profile for user ${userId}`);
+        }
+      } catch (sanitizeError: any) {
+        this.logger.error(`Failed to sanitize advertiser_profile: ${sanitizeError.message}`, sanitizeError);
+        throw new InternalServerErrorException('Invalid advertiser profile format');
       }
     }
 
@@ -781,6 +831,161 @@ export class ProfilesService {
     return Object.keys(sanitized).length > 0 ? sanitized : null;
   }
 
+  private sanitizeInfluencerProfile(data: any): any {
+    if (!data || data === null) return null;
+
+    const sanitized: any = {};
+
+    // Basic fields
+    if (data.nickname !== undefined) {
+      sanitized.nickname = String(data.nickname || '');
+    }
+    if (data.country !== undefined) {
+      sanitized.country = String(data.country || '');
+    }
+    if (data.city !== undefined) {
+      sanitized.city = String(data.city || '');
+    }
+    if (data.bio !== undefined) {
+      sanitized.bio = String(data.bio || '');
+    }
+
+    // Primary niches
+    if (data.primaryNiches !== undefined) {
+      sanitized.primaryNiches = Array.isArray(data.primaryNiches)
+        ? data.primaryNiches.filter((n: any) => typeof n === 'string')
+        : [];
+    }
+
+    // Content languages
+    if (data.contentLanguages !== undefined) {
+      sanitized.contentLanguages = Array.isArray(data.contentLanguages)
+        ? data.contentLanguages.filter((l: any) => typeof l === 'string')
+        : [];
+    }
+
+    // Audience overview
+    if (data.audienceOverview !== undefined && data.audienceOverview !== null) {
+      const audience: any = {};
+      if (data.audienceOverview.primaryCountries !== undefined) {
+        audience.primaryCountries = Array.isArray(data.audienceOverview.primaryCountries)
+          ? data.audienceOverview.primaryCountries.filter((c: any) => typeof c === 'string')
+          : [];
+      }
+      if (data.audienceOverview.ageRange !== undefined && data.audienceOverview.ageRange !== null) {
+        audience.ageRange = {
+          min: this.toNumber(data.audienceOverview.ageRange.min, 0),
+          max: this.toNumber(data.audienceOverview.ageRange.max, 0),
+        };
+      }
+      if (data.audienceOverview.genderDistribution !== undefined && data.audienceOverview.genderDistribution !== null) {
+        audience.genderDistribution = {
+          male: this.toNumber(data.audienceOverview.genderDistribution.male, 0),
+          female: this.toNumber(data.audienceOverview.genderDistribution.female, 0),
+          other: this.toNumber(data.audienceOverview.genderDistribution.other, 0),
+        };
+      }
+      if (Object.keys(audience).length > 0) {
+        sanitized.audienceOverview = audience;
+      }
+    }
+
+    // Preferred brand categories
+    if (data.preferredBrandCategories !== undefined) {
+      sanitized.preferredBrandCategories = Array.isArray(data.preferredBrandCategories)
+        ? data.preferredBrandCategories.filter((c: any) => typeof c === 'string')
+        : [];
+    }
+
+    // Boolean flags
+    if (data.openToLongTermCollabs !== undefined) {
+      sanitized.openToLongTermCollabs = Boolean(data.openToLongTermCollabs);
+    }
+
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+  }
+
+  private sanitizeAdvertiserProfile(data: any): any {
+    if (!data || data === null) return null;
+
+    const sanitized: any = {};
+
+    // Basic company info
+    if (data.companyName !== undefined) {
+      sanitized.companyName = String(data.companyName || '');
+    }
+    if (data.companyDescription !== undefined) {
+      sanitized.companyDescription = String(data.companyDescription || '');
+    }
+    if (data.logo !== undefined) {
+      sanitized.logo = String(data.logo || '');
+    }
+    if (data.organizationWebsite !== undefined) {
+      sanitized.organizationWebsite = String(data.organizationWebsite || '');
+    }
+
+    // Business categories
+    if (data.businessCategories !== undefined) {
+      sanitized.businessCategories = Array.isArray(data.businessCategories)
+        ? data.businessCategories.filter((c: any) => typeof c === 'string')
+        : [];
+    }
+
+    // Brand values
+    if (data.brandValues !== undefined) {
+      sanitized.brandValues = Array.isArray(data.brandValues)
+        ? data.brandValues.filter((v: any) => typeof v === 'string')
+        : [];
+    }
+
+    // Typical budget range
+    if (data.typicalBudgetRange !== undefined && data.typicalBudgetRange !== null) {
+      sanitized.typicalBudgetRange = {
+        min: this.toNumber(data.typicalBudgetRange.min, 0),
+        max: this.toNumber(data.typicalBudgetRange.max, 0),
+        currency: String(data.typicalBudgetRange.currency || 'USD'),
+      };
+    }
+
+    // Typical integration types
+    if (data.typicalIntegrationTypes !== undefined) {
+      sanitized.typicalIntegrationTypes = Array.isArray(data.typicalIntegrationTypes)
+        ? data.typicalIntegrationTypes.filter((t: any) => typeof t === 'string')
+        : [];
+    }
+
+    // Payment policies
+    if (data.paymentPolicies !== undefined) {
+      sanitized.paymentPolicies = Array.isArray(data.paymentPolicies)
+        ? data.paymentPolicies.filter((p: any) => typeof p === 'string')
+        : [];
+    }
+
+    // Target demographics
+    if (data.targetDemographics !== undefined && data.targetDemographics !== null) {
+      const demo: any = {};
+      if (data.targetDemographics.ageRange !== undefined && data.targetDemographics.ageRange !== null) {
+        demo.ageRange = {
+          min: this.toNumber(data.targetDemographics.ageRange.min, 0),
+          max: this.toNumber(data.targetDemographics.ageRange.max, 0),
+        };
+      }
+      if (Object.keys(demo).length > 0) {
+        sanitized.targetDemographics = demo;
+      }
+    }
+
+    // Boolean flags
+    if (data.workWithMicroInfluencers !== undefined) {
+      sanitized.workWithMicroInfluencers = Boolean(data.workWithMicroInfluencers);
+    }
+    if (data.giveCreativeFreedom !== undefined) {
+      sanitized.giveCreativeFreedom = Boolean(data.giveCreativeFreedom);
+    }
+
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+  }
+
   private toNumber(value: any, defaultValue: number = 0): number {
     if (value === null || value === undefined || value === '') {
       return defaultValue;
@@ -884,6 +1089,8 @@ export class ProfilesService {
       socialMediaLinks: profile.social_media_links || {},
       influencerData: profile.influencer_data || null,
       advertiserData: profile.advertiser_data || null,
+      influencerProfile: profile.influencer_profile || null,
+      advertiserProfile: profile.advertiser_profile || null,
       metrics: profile.metrics || {},
       profileCompletion,
       unifiedAccountInfo: profile.unified_account_info || {},
