@@ -3,6 +3,8 @@ import { IsString, IsOptional, IsUrl, MaxLength, MinLength, IsObject, ValidateIf
 import { Type } from 'class-transformer';
 import { InfluencerDataDto } from './influencer-data.dto';
 import { AdvertiserDataDto } from './advertiser-data.dto';
+import { InfluencerProfileDto } from './influencer-profile.dto';
+import { AdvertiserProfileDto } from './advertiser-profile.dto';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -139,4 +141,28 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsObject()
   profileCompletion?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Influencer profile data (new structure)',
+    required: false,
+    nullable: true,
+    type: () => InfluencerProfileDto,
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.influencerProfile !== null)
+  @ValidateNested()
+  @Type(() => InfluencerProfileDto)
+  influencerProfile?: InfluencerProfileDto | null;
+
+  @ApiProperty({
+    description: 'Advertiser profile data (new structure)',
+    required: false,
+    nullable: true,
+    type: () => AdvertiserProfileDto,
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.advertiserProfile !== null)
+  @ValidateNested()
+  @Type(() => AdvertiserProfileDto)
+  advertiserProfile?: AdvertiserProfileDto | null;
 }
