@@ -167,7 +167,7 @@ export function CompleteCollaborationModal({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/jpe,image/jfif,image/png,image/webp,.jpg,.jpeg,.jpe,.jfif,.png,.webp"
                 onChange={handleFileInputChange}
                 className="hidden"
               />

@@ -281,148 +281,451 @@ export function UserPublicProfileModal({ userId, currentUserId, onClose }: UserP
           </div>
 
           {/* Influencer Information */}
-          {profile.influencerData && (
+          {(profile.influencerProfile || profile.influencerData) && (
             <div className="bg-gradient-to-r from-pink-50 to-blue-50 dark:from-pink-900/20 dark:to-blue-900/20 rounded-lg p-4 space-y-3">
               <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center space-x-2">
                 <Users className="w-5 h-5 text-pink-600" />
                 <span>Инфлюенсер</span>
               </h4>
 
-              {profile.influencerData.categories && profile.influencerData.categories.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Категории</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.influencerData.categories.map((category, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
-                      >
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* New profile structure */}
+              {profile.influencerProfile && (
+                <>
+                  {profile.influencerProfile.nickname && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Никнейм</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {profile.influencerProfile.nickname}
+                      </p>
+                    </div>
+                  )}
 
-              {shouldShowSocialMedia() && profile.influencerData.socialMediaLinks && profile.influencerData.socialMediaLinks.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Социальные сети</p>
-                  <div className="space-y-2">
-                    {profile.influencerData.socialMediaLinks.map((link, idx) => (
-                      <a
-                        key={idx}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        {getSocialIcon(link.platform)}
-                        <span className="capitalize">{link.platform}</span>
-                        {link.followers && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            ({formatNumber(link.followers)} подписчиков)
+                  {(profile.influencerProfile.country || profile.influencerProfile.city) && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Локация</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {[profile.influencerProfile.city, profile.influencerProfile.country].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.contentLanguages && profile.influencerProfile.contentLanguages.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Языки контента</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerProfile.contentLanguages.map((lang, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {lang}
                           </span>
-                        )}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {profile.influencerData.collaborationTypes && profile.influencerData.collaborationTypes.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Типы сотрудничества</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.influencerData.collaborationTypes.map((type, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
-                      >
-                        {type}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {profile.influencerData.priceRanges && Object.keys(profile.influencerData.priceRanges).length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Стоимость</p>
-                  <div className="space-y-1">
-                    {Object.entries(profile.influencerData.priceRanges).map(([type, range]: [string, any]) => (
-                      <div key={type} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300 capitalize">{type}:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {formatCurrency(range.min, range.currency)} - {formatCurrency(range.max, range.currency)}
-                        </span>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.primaryNiches && profile.influencerProfile.primaryNiches.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Основные ниши</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerProfile.primaryNiches.map((niche, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-pink-100 dark:bg-pink-900/30 rounded-md text-xs text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-700 font-medium"
+                          >
+                            {niche}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.secondaryNiches && profile.influencerProfile.secondaryNiches.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Дополнительные ниши</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerProfile.secondaryNiches.map((niche, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {niche}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.preferredBrandCategories && profile.influencerProfile.preferredBrandCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Предпочитаемые категории брендов</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerProfile.preferredBrandCategories.map((category, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md text-xs text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.excludedBrandCategories && profile.influencerProfile.excludedBrandCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Исключенные категории брендов</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerProfile.excludedBrandCategories.map((category, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-md text-xs text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerProfile.audienceOverview && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Обзор аудитории</p>
+                      <div className="space-y-1 text-sm">
+                        {profile.influencerProfile.audienceOverview.primaryCountries && profile.influencerProfile.audienceOverview.primaryCountries.length > 0 && (
+                          <div className="flex items-start">
+                            <span className="text-gray-600 dark:text-gray-400 min-w-[120px]">Страны:</span>
+                            <span className="text-gray-900 dark:text-gray-100">
+                              {profile.influencerProfile.audienceOverview.primaryCountries.join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        {profile.influencerProfile.audienceOverview.ageRange && (
+                          <div className="flex items-start">
+                            <span className="text-gray-600 dark:text-gray-400 min-w-[120px]">Возраст:</span>
+                            <span className="text-gray-900 dark:text-gray-100">
+                              {profile.influencerProfile.audienceOverview.ageRange.min || '?'} - {profile.influencerProfile.audienceOverview.ageRange.max || '?'}
+                            </span>
+                          </div>
+                        )}
+                        {profile.influencerProfile.audienceOverview.predominantGender && (
+                          <div className="flex items-start">
+                            <span className="text-gray-600 dark:text-gray-400 min-w-[120px]">Пол:</span>
+                            <span className="text-gray-900 dark:text-gray-100 capitalize">
+                              {profile.influencerProfile.audienceOverview.predominantGender === 'male' ? 'Мужской' :
+                               profile.influencerProfile.audienceOverview.predominantGender === 'female' ? 'Женский' :
+                               profile.influencerProfile.audienceOverview.predominantGender}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-600 dark:text-gray-400">Долгосрочное сотрудничество:</span>
+                      <span className={`font-medium ${profile.influencerProfile.openToLongTermCollabs ? 'text-green-600' : 'text-red-600'}`}>
+                        {profile.influencerProfile.openToLongTermCollabs ? 'Да' : 'Нет'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </>
+              )}
+
+              {/* Legacy profile structure - fallback */}
+              {!profile.influencerProfile && profile.influencerData && (
+                <>
+                  {profile.influencerData.categories && profile.influencerData.categories.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Категории</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerData.categories.map((category, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {shouldShowSocialMedia() && profile.influencerData.socialMediaLinks && profile.influencerData.socialMediaLinks.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Социальные сети</p>
+                      <div className="space-y-2">
+                        {profile.influencerData.socialMediaLinks.map((link, idx) => (
+                          <a
+                            key={idx}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            {getSocialIcon(link.platform)}
+                            <span className="capitalize">{link.platform}</span>
+                            {link.followers && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                ({formatNumber(link.followers)} подписчиков)
+                              </span>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerData.collaborationTypes && profile.influencerData.collaborationTypes.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Типы сотрудничества</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.influencerData.collaborationTypes.map((type, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {type}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.influencerData.priceRanges && Object.keys(profile.influencerData.priceRanges).length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Стоимость</p>
+                      <div className="space-y-1">
+                        {Object.entries(profile.influencerData.priceRanges).map(([type, range]: [string, any]) => (
+                          <div key={type} className="flex items-center justify-between text-sm">
+                            <span className="text-gray-700 dark:text-gray-300 capitalize">{type}:</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {formatCurrency(range.min, range.currency)} - {formatCurrency(range.max, range.currency)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
           {/* Advertiser Information */}
-          {profile.advertiserData && (
+          {(profile.advertiserProfile || profile.advertiserData) && (
             <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-lg p-4 space-y-3">
               <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center space-x-2">
                 <Briefcase className="w-5 h-5 text-green-600" />
                 <span>Рекламодатель</span>
               </h4>
 
-              {profile.advertiserData.companyName && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Компания</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {profile.advertiserData.companyName}
-                  </p>
-                </div>
-              )}
+              {/* New profile structure */}
+              {profile.advertiserProfile && (
+                <>
+                  {profile.advertiserProfile.companyName && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Компания</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {profile.advertiserProfile.companyName}
+                      </p>
+                    </div>
+                  )}
 
-              {profile.advertiserData.industry && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Индустрия</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{profile.advertiserData.industry}</p>
-                </div>
-              )}
+                  {(profile.advertiserProfile.country || profile.advertiserProfile.city) && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Локация</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {[profile.advertiserProfile.city, profile.advertiserProfile.country].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  )}
 
-              {profile.advertiserData.companyDescription && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">О компании</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {profile.advertiserData.companyDescription}
-                  </p>
-                </div>
-              )}
-
-              {profile.advertiserData.budgetRange && (
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Бюджет на кампанию</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {formatCurrency(profile.advertiserData.budgetRange.min, profile.advertiserData.budgetRange.currency)} -{' '}
-                      {formatCurrency(profile.advertiserData.budgetRange.max, profile.advertiserData.budgetRange.currency)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {profile.advertiserData.preferredCategories && profile.advertiserData.preferredCategories.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Предпочитаемые категории</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.advertiserData.preferredCategories.map((category, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                  {profile.advertiserProfile.organizationWebsite && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Веб-сайт</p>
+                      <a
+                        href={profile.advertiserProfile.organizationWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        {category}
+                        {profile.advertiserProfile.organizationWebsite}
+                      </a>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.companyDescription && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">О компании</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {profile.advertiserProfile.companyDescription}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.businessCategories && profile.advertiserProfile.businessCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Категории бизнеса</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.advertiserProfile.businessCategories.map((category, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md text-xs text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700 font-medium"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.brandValues && profile.advertiserProfile.brandValues.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Ценности бренда</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.advertiserProfile.brandValues.map((value, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-md text-xs text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700"
+                          >
+                            {value}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.typicalIntegrationTypes && profile.advertiserProfile.typicalIntegrationTypes.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Типичные типы интеграций</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.advertiserProfile.typicalIntegrationTypes.map((type, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {type}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.typicalBudgetRange && (
+                    <div className="flex items-start space-x-2">
+                      <DollarSign className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Типичный бюджет на кампанию</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {formatCurrency(profile.advertiserProfile.typicalBudgetRange.min, profile.advertiserProfile.typicalBudgetRange.currency)} -{' '}
+                          {formatCurrency(profile.advertiserProfile.typicalBudgetRange.max, profile.advertiserProfile.typicalBudgetRange.currency)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.advertiserProfile.paymentPolicies && profile.advertiserProfile.paymentPolicies.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Политики оплаты</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.advertiserProfile.paymentPolicies.map((policy, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {policy}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-600 dark:text-gray-400">Микроинфлюенсеры:</span>
+                      <span className={`font-medium ${profile.advertiserProfile.workWithMicroInfluencers ? 'text-green-600' : 'text-red-600'}`}>
+                        {profile.advertiserProfile.workWithMicroInfluencers ? 'Да' : 'Нет'}
                       </span>
-                    ))}
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-600 dark:text-gray-400">Творческая свобода:</span>
+                      <span className={`font-medium ${profile.advertiserProfile.giveCreativeFreedom ? 'text-green-600' : 'text-red-600'}`}>
+                        {profile.advertiserProfile.giveCreativeFreedom ? 'Да' : 'Нет'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+
+                  {profile.advertiserProfile.targetDemographics && profile.advertiserProfile.targetDemographics.ageRange && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Целевая демография (возраст)</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {profile.advertiserProfile.targetDemographics.ageRange.min || '?'} - {profile.advertiserProfile.targetDemographics.ageRange.max || '?'}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Legacy profile structure - fallback */}
+              {!profile.advertiserProfile && profile.advertiserData && (
+                <>
+                  {profile.advertiserData.companyName && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Компания</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {profile.advertiserData.companyName}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.advertiserData.industry && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Индустрия</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{profile.advertiserData.industry}</p>
+                    </div>
+                  )}
+
+                  {profile.advertiserData.companyDescription && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">О компании</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {profile.advertiserData.companyDescription}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.advertiserData.budgetRange && (
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="w-4 h-4 text-green-600" />
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Бюджет на кампанию</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {formatCurrency(profile.advertiserData.budgetRange.min, profile.advertiserData.budgetRange.currency)} -{' '}
+                          {formatCurrency(profile.advertiserData.budgetRange.max, profile.advertiserData.budgetRange.currency)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.advertiserData.preferredCategories && profile.advertiserData.preferredCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Предпочитаемые категории</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.advertiserData.preferredCategories.map((category, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
