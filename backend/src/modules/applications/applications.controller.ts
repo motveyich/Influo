@@ -124,7 +124,7 @@ export class ApplicationsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/(jpeg|jpg|png|webp)' }),
+          new FileTypeValidator({ fileType: '.(png|jpg|jpeg|jpe|jfif|webp)' }),
         ],
         fileIsRequired: true,
       }),
