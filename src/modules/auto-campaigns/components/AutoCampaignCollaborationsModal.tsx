@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv, Wallet, Clock, CheckCircle2, HourglassIcon, Eye } from 'lucide-react';
-import { AutoCampaign, CollaborationOffer } from '../../../core/types';
+import { AutoCampaign, CollaborationOffer, PaymentRequest } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
+import { paymentRequestService } from '../../offers/services/paymentRequestService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { OfferDetailsModal } from '../../offers/components/OfferDetailsModal';
-import { PaymentRequestModal } from '../../offers/components/PaymentRequestModal';
 import { ViewCompletionModal } from '../../offers/components/ViewCompletionModal';
+import { PendingPaymentsModal } from '../../offers/components/PendingPaymentsModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
@@ -21,7 +22,8 @@ interface Collaboration {
   status: string;
   proposedRate: number;
   currency: string;
-  hasPaymentWindow: boolean;
+  hasPendingPayments: boolean;
+  pendingPayments: PaymentRequest[];
   offer: CollaborationOffer;
 }
 
@@ -43,6 +45,7 @@ export function AutoCampaignCollaborationsModal({
   const [showOfferDetails, setShowOfferDetails] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showViewCompletionModal, setShowViewCompletionModal] = useState(false);
+  const [selectedPayments, setSelectedPayments] = useState<PaymentRequest[]>([]);
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
@@ -94,6 +97,16 @@ export function AutoCampaignCollaborationsModal({
           // Получаем платформу
           const platform = offer.platform || offer.details?.platform || campaign.platforms[0] || 'unknown';
 
+          // Загружаем payment requests для этого offer
+          let pendingPayments: PaymentRequest[] = [];
+          try {
+            const allPayments = await paymentRequestService.getOfferPaymentRequests(offer.id);
+            // Фильтруем только pending payment requests
+            pendingPayments = allPayments.filter(p => p.status === 'pending');
+          } catch (error) {
+            console.error(`Failed to load payment requests for offer ${offer.id}:`, error);
+          }
+
           return {
             offerId: offer.offer_id || offer.id || '',
             influencerId: offer.influencerId,
@@ -104,7 +117,8 @@ export function AutoCampaignCollaborationsModal({
             status: offer.status,
             proposedRate: offer.proposedRate,
             currency: offer.currency || 'RUB',
-            hasPaymentWindow: offer.status === 'completed',
+            hasPendingPayments: pendingPayments.length > 0,
+            pendingPayments: pendingPayments,
             offer: offer
           };
         })
@@ -160,8 +174,9 @@ export function AutoCampaignCollaborationsModal({
     setSelectedOffer(updatedOffer);
   };
 
-  const handleOpenPaymentModal = (offer: CollaborationOffer) => {
-    setSelectedOffer(offer);
+  const handleOpenPaymentModal = (collab: Collaboration) => {
+    setSelectedOffer(collab.offer);
+    setSelectedPayments(collab.pendingPayments);
     setShowPaymentModal(true);
   };
 
@@ -384,13 +399,13 @@ export function AutoCampaignCollaborationsModal({
                             <span>Посмотреть выполнение</span>
                           </button>
                         )}
-                        {collab.status === 'completed' && (
+                        {collab.hasPendingPayments && (
                           <button
-                            onClick={() => handleOpenPaymentModal(collab.offer)}
+                            onClick={() => handleOpenPaymentModal(collab)}
                             className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
                           >
                             <Wallet className="w-4 h-4" />
-                            <span>Окно оплаты</span>
+                            <span>Окно оплаты ({collab.pendingPayments.length})</span>
                           </button>
                         )}
                       </div>
@@ -428,18 +443,22 @@ export function AutoCampaignCollaborationsModal({
         />
       )}
 
-      {/* Payment Request Modal */}
-      {showPaymentModal && selectedOffer && (
-        <PaymentRequestModal
+      {/* Pending Payments Modal */}
+      {showPaymentModal && selectedPayments.length > 0 && (
+        <PendingPaymentsModal
           isOpen={showPaymentModal}
           onClose={() => {
             setShowPaymentModal(false);
             setSelectedOffer(null);
+            setSelectedPayments([]);
           }}
-          offer={selectedOffer}
+          payments={selectedPayments}
           currentUserId={currentUserId}
-          onSuccess={() => {
+          onPaymentUpdated={() => {
             loadCollaborations();
+            setShowPaymentModal(false);
+            setSelectedOffer(null);
+            setSelectedPayments([]);
           }}
         />
       )}
