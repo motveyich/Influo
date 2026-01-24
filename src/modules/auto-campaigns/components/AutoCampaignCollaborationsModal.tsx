@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv, Wallet, Clock, CheckCircle2, HourglassIcon } from 'lucide-react';
+import { X, User, MessageCircle, DollarSign, Loader2, ExternalLink, FileText, Instagram, Youtube, Twitter, Facebook, Tv, Wallet, Clock, CheckCircle2, HourglassIcon, Eye } from 'lucide-react';
 import { AutoCampaign, CollaborationOffer } from '../../../core/types';
 import { offerService } from '../../offers/services/offerService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { OfferDetailsModal } from '../../offers/components/OfferDetailsModal';
 import { PaymentRequestModal } from '../../offers/components/PaymentRequestModal';
+import { ViewCompletionModal } from '../../offers/components/ViewCompletionModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import toast from 'react-hot-toast';
@@ -41,6 +42,7 @@ export function AutoCampaignCollaborationsModal({
   const [selectedOffer, setSelectedOffer] = useState<CollaborationOffer | null>(null);
   const [showOfferDetails, setShowOfferDetails] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showViewCompletionModal, setShowViewCompletionModal] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
@@ -161,6 +163,43 @@ export function AutoCampaignCollaborationsModal({
   const handleOpenPaymentModal = (offer: CollaborationOffer) => {
     setSelectedOffer(offer);
     setShowPaymentModal(true);
+  };
+
+  const handleViewCompletion = (offer: CollaborationOffer) => {
+    setSelectedOffer(offer);
+    setShowViewCompletionModal(true);
+  };
+
+  const handleConfirmCompletion = async () => {
+    if (!selectedOffer) return;
+
+    try {
+      const updatedOffer = await offerService.confirmCompletion(selectedOffer.id, currentUserId);
+      handleOfferUpdated(updatedOffer);
+      setShowViewCompletionModal(false);
+      setSelectedOffer(null);
+      toast.success('Выполнение подтверждено');
+      loadCollaborations();
+    } catch (error: any) {
+      console.error('Failed to confirm completion:', error);
+      toast.error(error.message || 'Не удалось подтвердить выполнение');
+    }
+  };
+
+  const handleRejectCompletion = async () => {
+    if (!selectedOffer) return;
+
+    try {
+      const updatedOffer = await offerService.rejectCompletion(selectedOffer.id, currentUserId);
+      handleOfferUpdated(updatedOffer);
+      setShowViewCompletionModal(false);
+      setSelectedOffer(null);
+      toast.success('Выполнение отклонено, сотрудничество возвращено в работу');
+      loadCollaborations();
+    } catch (error: any) {
+      console.error('Failed to reject completion:', error);
+      toast.error(error.message || 'Не удалось отклонить выполнение');
+    }
   };
 
   // Вычисляем статистику
@@ -336,6 +375,15 @@ export function AutoCampaignCollaborationsModal({
                           <FileText className="w-4 h-4" />
                           <span>Детали</span>
                         </button>
+                        {collab.status === 'pending_completion' && (collab.offer as any).metadata?.completion_screenshot_url && (collab.offer as any).completionInitiatedBy !== currentUserId && (
+                          <button
+                            onClick={() => handleViewCompletion(collab.offer)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>Посмотреть выполнение</span>
+                          </button>
+                        )}
                         {collab.status === 'completed' && (
                           <button
                             onClick={() => handleOpenPaymentModal(collab.offer)}
@@ -393,6 +441,21 @@ export function AutoCampaignCollaborationsModal({
           onSuccess={() => {
             loadCollaborations();
           }}
+        />
+      )}
+
+      {/* View Completion Modal */}
+      {showViewCompletionModal && selectedOffer && (selectedOffer as any).metadata?.completion_screenshot_url && (
+        <ViewCompletionModal
+          isOpen={showViewCompletionModal}
+          onClose={() => {
+            setShowViewCompletionModal(false);
+            setSelectedOffer(null);
+          }}
+          offer={selectedOffer}
+          screenshotUrl={(selectedOffer as any).metadata.completion_screenshot_url}
+          onConfirm={handleConfirmCompletion}
+          onReject={handleRejectCompletion}
         />
       )}
     </>
