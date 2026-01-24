@@ -5,6 +5,7 @@ import { applicationService } from '../../applications/services/applicationServi
 import { paymentRequestService } from '../services/paymentRequestService';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { supabase } from '../../../core/supabase';
+import { ViewCompletionModal } from './ViewCompletionModal';
 import {
   Clock,
   DollarSign,
@@ -29,6 +30,7 @@ import {
   UserCircle
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 
 interface OfferCardProps {
@@ -58,6 +60,7 @@ export function OfferCard({
   const [paymentWindowsLoading, setPaymentWindowsLoading] = React.useState(false);
   const [paymentWindowsLoaded, setPaymentWindowsLoaded] = React.useState(false);
   const [partnerProfile, setPartnerProfile] = React.useState<any>(null);
+  const [showViewCompletionModal, setShowViewCompletionModal] = React.useState(false);
 
   React.useEffect(() => {
     if (!paymentWindowsLoaded && collaborationType === 'offer') {
@@ -326,6 +329,50 @@ export function OfferCard({
     }
   };
 
+  const handleConfirmCompletion = async () => {
+    setIsLoading(true);
+    try {
+      let updatedData: any;
+
+      if (collaborationType === 'application') {
+        updatedData = await applicationService.confirmCompletion(offer.id);
+      } else {
+        updatedData = await offerService.confirmCompletion(offer.id, currentUserId);
+      }
+
+      onOfferUpdated(updatedData);
+      toast.success('Выполнение подтверждено');
+      setShowViewCompletionModal(false);
+    } catch (error: any) {
+      console.error('Failed to confirm completion:', error);
+      toast.error(error.message || 'Не удалось подтвердить выполнение');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRejectCompletion = async () => {
+    setIsLoading(true);
+    try {
+      let updatedData: any;
+
+      if (collaborationType === 'application') {
+        updatedData = await applicationService.rejectCompletion(offer.id);
+      } else {
+        updatedData = await offerService.rejectCompletion(offer.id, currentUserId);
+      }
+
+      onOfferUpdated(updatedData);
+      toast.success('Выполнение отклонено, сотрудничество возвращено в работу');
+      setShowViewCompletionModal(false);
+    } catch (error: any) {
+      console.error('Failed to reject completion:', error);
+      toast.error(error.message || 'Не удалось отклонить выполнение');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getAvailableActions = () => {
     const actions = [];
 
@@ -399,6 +446,24 @@ export function OfferCard({
       actions.push(
         { label: 'Расторгнуть', action: 'terminated', style: 'danger' }
       );
+    }
+
+    // Pending completion actions
+    if (offer.status === 'pending_completion') {
+      const completionInitiator = (offer as any).completionInitiatedBy;
+      const isCompletionInitiator = completionInitiator === currentUserId;
+
+      if (!isCompletionInitiator) {
+        // Другая сторона может посмотреть и подтвердить/отклонить
+        actions.push(
+          { label: 'Посмотреть выполнение', action: 'view_completion', style: 'primary' }
+        );
+      } else {
+        // Инициатор ждет подтверждения
+        actions.push(
+          { label: 'Ожидание подтверждения', action: 'waiting', style: 'neutral', disabled: true }
+        );
+      }
     }
 
     return actions;
@@ -506,6 +571,32 @@ export function OfferCard({
           </p>
         </div>
       </div>
+
+      {/* Pending Completion Notice */}
+      {offer.status === 'pending_completion' && (offer as any).metadata?.completion_screenshot_url && (
+        <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-purple-900 mb-1">
+                {(offer as any).completionInitiatedBy === currentUserId
+                  ? 'Ожидается подтверждение от партнера'
+                  : 'Требуется ваше подтверждение выполнения'}
+              </p>
+              <p className="text-xs text-purple-700">
+                {(offer as any).completionInitiatedBy === currentUserId
+                  ? 'Вы загрузили скриншот выполнения. Ожидайте подтверждения от партнера.'
+                  : 'Партнер загрузил скриншот выполнения. Пожалуйста, проверьте и подтвердите.'}
+              </p>
+              {(offer as any).metadata?.completion_screenshot_uploaded_at && (
+                <p className="text-xs text-purple-600 mt-1">
+                  Загружено {formatDistanceToNow(parseISO((offer as any).metadata.completion_screenshot_uploaded_at), { addSuffix: true, locale: ru })}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Details */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
@@ -738,11 +829,19 @@ export function OfferCard({
             {availableActions.map((action) => (
               <button
                 key={action.action}
-                onClick={() => handleStatusUpdate(action.action as OfferStatus)}
-                disabled={isLoading}
+                onClick={() => {
+                  if (action.action === 'view_completion') {
+                    setShowViewCompletionModal(true);
+                  } else if (!action.disabled) {
+                    handleStatusUpdate(action.action as OfferStatus);
+                  }
+                }}
+                disabled={isLoading || action.disabled}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
                   action.style === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
                   action.style === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                  action.style === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                  action.style === 'neutral' ? 'bg-gray-400 text-white cursor-not-allowed' :
                   'bg-gray-600 hover:bg-gray-700 text-white'
                 }`}
               >
@@ -752,6 +851,18 @@ export function OfferCard({
           </div>
         )}
       </div>
+
+      {/* View Completion Modal */}
+      {showViewCompletionModal && offer.status === 'pending_completion' && (offer as any).metadata?.completion_screenshot_url && (
+        <ViewCompletionModal
+          isOpen={showViewCompletionModal}
+          onClose={() => setShowViewCompletionModal(false)}
+          offer={offer}
+          screenshotUrl={(offer as any).metadata.completion_screenshot_url}
+          onConfirm={handleConfirmCompletion}
+          onReject={handleRejectCompletion}
+        />
+      )}
     </div>
   );
 }
