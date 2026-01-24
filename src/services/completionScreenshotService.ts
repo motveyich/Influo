@@ -63,12 +63,12 @@ export class CompletionScreenshotService {
 
       const data = await response.json();
 
-      if (!data.url) {
+      if (!data?.data?.url) {
         console.error('No URL in response:', data);
         throw new Error('Сервер не вернул URL скриншота');
       }
 
-      return data.url;
+      return data.data.url;
     } catch (error: any) {
       console.error('Failed to upload completion screenshot:', error);
       throw error;
