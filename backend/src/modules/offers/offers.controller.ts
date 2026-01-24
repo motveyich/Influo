@@ -177,7 +177,10 @@ export class OffersController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({ fileType: "image/png" }),
+          new FileTypeValidator({
+            fileType: /^image\/(jpeg|jpg|jpe|jfif|png|webp)$/,
+            skipMagicNumbersValidation: true
+          }),
         ],
         fileIsRequired: true,
       }),
