@@ -4,7 +4,7 @@ import { advertiserCardService } from '../services/advertiserCardService';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { X, Save, AlertCircle, Calendar, DollarSign, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { CONTENT_TYPES } from '../../../core/constants';
+import { CONTENT_TYPES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS, AUDIENCE_SIZE_RANGES, DETAILED_AGE_RANGES, PREDOMINANT_GENDER_OPTIONS, COUNTRIES } from '../../../core/constants';
 
 interface AdvertiserCardModalProps {
   isOpen: boolean;
@@ -27,69 +27,6 @@ const PLATFORMS = [
   { value: 'rutube', label: 'RuTube' },
   { value: 'yandex_zen', label: 'Яндекс.Дзен' },
   { value: 'likee', label: 'Likee' }
-];
-
-const PRODUCT_CATEGORIES = [
-  'Косметика',
-  'Химия для дома',
-  'Электроника',
-  'Одежда',
-  'Информационный продукт',
-  'Курсы',
-  'Заведения',
-  'Продукты питания',
-  'Напитки',
-  'Спортивные товары',
-  'Детские товары',
-  'Товары для дома',
-  'Мебель',
-  'Автомобили',
-  'Недвижимость',
-  'Финансовые услуги',
-  'Страхование',
-  'Медицинские услуги',
-  'Образовательные услуги',
-  'Туристические услуги',
-  'Развлечения',
-  'Игры и приложения',
-  'Программное обеспечение',
-  'Книги и издания',
-  'Музыка',
-  'Фильмы и сериалы',
-  'Подписки и сервисы',
-  'Криптовалюта',
-  'Инвестиции',
-  'Ювелирные изделия',
-  'Часы',
-  'Аксессуары',
-  'Обувь',
-  'Сумки',
-  'Парфюмерия',
-  'Средства по уходу',
-  'Витамины и БАДы',
-  'Спортивное питание',
-  'Диетические продукты',
-  'Органические продукты',
-  'Веганские продукты',
-  'Товары для животных',
-  'Садоводство',
-  'Инструменты',
-  'Строительные материалы',
-  'Канцелярские товары',
-  'Хобби и рукоделие',
-  'Музыкальные инструменты',
-  'Фототехника',
-  'Видеотехника',
-  'Компьютеры',
-  'Мобильные устройства',
-  'Бытовая техника',
-  'Климатическая техника',
-  'Освещение',
-  'Текстиль',
-  'Постельное белье',
-  'Посуда',
-  'Кухонная утварь',
-  'Другое'
 ];
 
 export function AdvertiserCardModal({ 
@@ -126,7 +63,12 @@ export function AdvertiserCardModal({
       minEngagementRate: 0
     },
     targetAudience: {
-      interests: [] as string[]
+      audienceSizeRange: undefined,
+      ageRange: undefined,
+      predominantGender: undefined,
+      genderDistribution: undefined,
+      countries: [],
+      interests: []
     },
     contactInfo: {
       email: '',
@@ -151,6 +93,11 @@ export function AdvertiserCardModal({
         campaignDuration: currentCard.campaignDuration,
         influencerRequirements: currentCard.influencerRequirements,
         targetAudience: {
+          audienceSizeRange: currentCard.targetAudience?.audienceSizeRange,
+          ageRange: currentCard.targetAudience?.ageRange,
+          predominantGender: currentCard.targetAudience?.predominantGender,
+          genderDistribution: currentCard.targetAudience?.genderDistribution,
+          countries: currentCard.targetAudience?.countries || [],
           interests: currentCard.targetAudience?.interests || []
         },
         contactInfo: currentCard.contactInfo
@@ -419,24 +366,163 @@ export function AdvertiserCardModal({
             )}
           </div>
 
-          {/* Target Audience Interests */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Интересы аудитории
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {PRODUCT_CATEGORIES.map((interest) => (
+          {/* Target Audience */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Целевая аудитория</h3>
+
+            {/* Audience Overview */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-md font-medium text-gray-900 mb-4">Обзор аудитории</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Audience Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Желаемый размер аудитории
+                  </label>
+                  <select
+                    value={formData.targetAudience.audienceSizeRange || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      targetAudience: {
+                        ...prev.targetAudience,
+                        audienceSizeRange: e.target.value || undefined
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {AUDIENCE_SIZE_RANGES.map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Age Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Целевой возраст
+                  </label>
+                  <select
+                    value={
+                      formData.targetAudience.ageRange?.min && formData.targetAudience.ageRange?.max
+                        ? `${formData.targetAudience.ageRange.min}-${formData.targetAudience.ageRange.max === 100 ? '100+' : formData.targetAudience.ageRange.max}`
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      let min: number | undefined;
+                      let max: number | undefined;
+
+                      if (value) {
+                        if (value === '65+') {
+                          min = 65;
+                          max = 100;
+                        } else {
+                          const parts = value.split('-');
+                          min = parseInt(parts[0]);
+                          max = parseInt(parts[1]);
+                        }
+                      }
+
+                      setFormData(prev => ({
+                        ...prev,
+                        targetAudience: {
+                          ...prev.targetAudience,
+                          ageRange: value ? { min, max } : undefined
+                        }
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {DETAILED_AGE_RANGES.map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Predominant Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Преобладающий пол
+                  </label>
+                  <select
+                    value={formData.targetAudience.predominantGender || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      targetAudience: {
+                        ...prev.targetAudience,
+                        predominantGender: e.target.value || undefined
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {PREDOMINANT_GENDER_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Countries */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Целевые страны
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
+                  {COUNTRIES.map((country) => (
+                    <button
+                      key={country}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.targetAudience.countries || [];
+                        setFormData(prev => ({
+                          ...prev,
+                          targetAudience: {
+                            ...prev.targetAudience,
+                            countries: current.includes(country)
+                              ? current.filter(c => c !== country)
+                              : [...current, country]
+                          }
+                        }));
+                      }}
+                      className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
+                        formData.targetAudience.countries?.includes(country)
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Target Audience Interests */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Интересы аудитории
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {AUDIENCE_INTERESTS.map((interest) => (
                 <button
                   key={interest}
                   type="button"
-                  onClick={() => handleArrayToggle(
-                    formData.targetAudience.interests,
-                    interest,
-                    (newInterests) => setFormData(prev => ({
+                  onClick={() => {
+                    const current = formData.targetAudience.interests;
+                    setFormData(prev => ({
                       ...prev,
-                      targetAudience: { ...prev.targetAudience, interests: newInterests }
-                    }))
-                  )}
+                      targetAudience: {
+                        ...prev.targetAudience,
+                        interests: current.includes(interest)
+                          ? current.filter(i => i !== interest)
+                          : [...current, interest]
+                      }
+                    }));
+                  }}
                   className={`px-3 py-2 text-sm rounded-md border transition-colors text-left ${
                     formData.targetAudience.interests.includes(interest)
                       ? 'bg-blue-100 border-blue-300 text-blue-700'
@@ -446,6 +532,7 @@ export function AdvertiserCardModal({
                   {interest}
                 </button>
               ))}
+            </div>
             </div>
           </div>
 

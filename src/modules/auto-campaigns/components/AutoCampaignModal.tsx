@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AutoCampaign, AutoCampaignFormData } from '../../../core/types';
 import { autoCampaignService } from '../services/autoCampaignService';
-import { PRIMARY_PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS } from '../../../core/constants';
+import { PRIMARY_PLATFORMS, CONTENT_TYPES, COUNTRIES, PRODUCT_CATEGORIES, AUDIENCE_INTERESTS, AUDIENCE_SIZE_RANGES, DETAILED_AGE_RANGES, PREDOMINANT_GENDER_OPTIONS } from '../../../core/constants';
 import { formatPlatform } from '../../../core/utils/platform-utils';
 import { X, DollarSign, Users, Target, Calendar, CheckSquare, MessageCircle, Briefcase, Globe, Heart } from 'lucide-react';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
@@ -27,6 +27,9 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
     contentTypes: ['post'],
     platforms: ['instagram'],
     targetCountries: [],
+    audienceSizeRange: undefined,
+    targetAgeRange: undefined,
+    targetGender: undefined,
     targetAudienceInterests: [],
     productCategories: [],
     enableChat: true,
@@ -53,6 +56,9 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
         contentTypes: editingCampaign.contentTypes,
         platforms: editingCampaign.platforms,
         targetCountries: editingCampaign.targetCountries || [],
+        audienceSizeRange: editingCampaign.audienceSizeRange,
+        targetAgeRange: editingCampaign.targetAgeRange,
+        targetGender: editingCampaign.targetGender,
         targetAudienceInterests: editingCampaign.targetAudienceInterests || [],
         productCategories: editingCampaign.productCategories || [],
         enableChat: editingCampaign.enableChat,
@@ -435,54 +441,147 @@ export function AutoCampaignModal({ isOpen, onClose, onSuccess, advertiserId, ed
             </div>
           </div>
 
-          {/* Demographics - Countries */}
+          {/* Target Audience */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Globe className="w-4 h-4 inline mr-1" />
-              Целевые страны (опционально)
-            </label>
-            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-              {COUNTRIES.map((country) => (
-                <button
-                  key={country}
-                  type="button"
-                  onClick={() => toggleCountry(country)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    formData.targetCountries.includes(country)
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {country}
-                </button>
-              ))}
-            </div>
-          </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Целевая аудитория</h3>
 
-          {/* Audience Interests */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Heart className="w-4 h-4 inline mr-1" />
-              Интересы аудитории (опционально)
-            </label>
-            <p className="text-xs text-gray-500 mb-3">
-              Выберите интересы аудитории инфлюенсеров. Система будет учитывать эти интересы при подборе.
-            </p>
-            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {AUDIENCE_INTERESTS.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => toggleInterest(interest)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors text-left ${
-                    formData.targetAudienceInterests.includes(interest)
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
+            {/* Audience Overview */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-md font-medium text-gray-900 mb-4">Обзор аудитории</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Audience Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Желаемый размер аудитории
+                  </label>
+                  <select
+                    value={formData.audienceSizeRange || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      audienceSizeRange: e.target.value || undefined
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {AUDIENCE_SIZE_RANGES.map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Age Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Целевой возраст
+                  </label>
+                  <select
+                    value={
+                      formData.targetAgeRange?.min && formData.targetAgeRange?.max
+                        ? `${formData.targetAgeRange.min}-${formData.targetAgeRange.max === 100 ? '100+' : formData.targetAgeRange.max}`
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      let min: number | undefined;
+                      let max: number | undefined;
+
+                      if (value) {
+                        if (value === '65+') {
+                          min = 65;
+                          max = 100;
+                        } else {
+                          const parts = value.split('-');
+                          min = parseInt(parts[0]);
+                          max = parseInt(parts[1]);
+                        }
+                      }
+
+                      setFormData(prev => ({
+                        ...prev,
+                        targetAgeRange: value ? { min, max } : undefined
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {DETAILED_AGE_RANGES.map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Predominant Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Преобладающий пол
+                  </label>
+                  <select
+                    value={formData.targetGender || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      targetGender: e.target.value || undefined
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {PREDOMINANT_GENDER_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Demographics - Countries */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Globe className="w-4 h-4 inline mr-1" />
+                Целевые страны (опционально)
+              </label>
+              <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                {COUNTRIES.map((country) => (
+                  <button
+                    key={country}
+                    type="button"
+                    onClick={() => toggleCountry(country)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      formData.targetCountries.includes(country)
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {country}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Audience Interests */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Heart className="w-4 h-4 inline mr-1" />
+                Интересы аудитории (опционально)
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Выберите интересы аудитории инфлюенсеров. Система будет учитывать эти интересы при подборе.
+              </p>
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {AUDIENCE_INTERESTS.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => toggleInterest(interest)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors text-left ${
+                      formData.targetAudienceInterests.includes(interest)
+                        ? 'bg-pink-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

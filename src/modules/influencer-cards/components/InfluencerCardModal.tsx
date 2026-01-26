@@ -72,7 +72,10 @@ export function InfluencerCardModal({
       engagementRate: 0
     },
     audienceDemographics: {
+      audienceSizeRange: undefined,
+      ageRange: undefined,
       ageGroups: {} as Record<string, number>,
+      predominantGender: undefined,
       genderSplit: { male: 50, female: 50, other: 0 },
       topCountries: [] as Array<{country: string; percentage: number}>,
       interests: [] as string[]
@@ -127,7 +130,10 @@ export function InfluencerCardModal({
           engagementRate: currentCard.reach.engagementRate || 0
         },
         audienceDemographics: {
+          audienceSizeRange: currentCard.audienceDemographics.audienceSizeRange,
+          ageRange: currentCard.audienceDemographics.ageRange,
           ageGroups: currentCard.audienceDemographics.ageGroups || {},
+          predominantGender: currentCard.audienceDemographics.predominantGender,
           genderSplit: currentCard.audienceDemographics.genderSplit || { male: 50, female: 50, other: 0 },
           topCountries: convertedCountries,
           interests: currentCard.audienceDemographics.interests || []
@@ -147,7 +153,10 @@ export function InfluencerCardModal({
         platform: 'instagram',
         reach: { followers: 0, engagementRate: 0 },
         audienceDemographics: {
+          audienceSizeRange: undefined,
+          ageRange: undefined,
           ageGroups: {},
+          predominantGender: undefined,
           genderSplit: { male: 50, female: 50, other: 0 },
           topCountries: [],
           interests: []
@@ -648,7 +657,104 @@ export function InfluencerCardModal({
           {/* Audience Demographics */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Демография аудитории</h3>
-            
+
+            {/* Audience Overview */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-md font-medium text-gray-900 mb-4">Обзор аудитории</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Audience Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Размер аудитории
+                  </label>
+                  <select
+                    value={formData.audienceDemographics.audienceSizeRange || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      audienceDemographics: {
+                        ...prev.audienceDemographics,
+                        audienceSizeRange: e.target.value || undefined
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {['Нано (до 10к)', 'Микро (10к-50к)', 'Средний (50к-250к)', 'Макро (250к-1M)', 'Мега (1M+)'].map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Age Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Возрастной диапазон
+                  </label>
+                  <select
+                    value={
+                      formData.audienceDemographics.ageRange?.min && formData.audienceDemographics.ageRange?.max
+                        ? `${formData.audienceDemographics.ageRange.min}-${formData.audienceDemographics.ageRange.max === 100 ? '100+' : formData.audienceDemographics.ageRange.max}`
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      let min: number | undefined;
+                      let max: number | undefined;
+
+                      if (value) {
+                        if (value === '65+') {
+                          min = 65;
+                          max = 100;
+                        } else {
+                          const parts = value.split('-');
+                          min = parseInt(parts[0]);
+                          max = parseInt(parts[1]);
+                        }
+                      }
+
+                      setFormData(prev => ({
+                        ...prev,
+                        audienceDemographics: {
+                          ...prev.audienceDemographics,
+                          ageRange: value ? { min, max } : undefined
+                        }
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'].map(range => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Predominant Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Преобладающий пол
+                  </label>
+                  <select
+                    value={formData.audienceDemographics.predominantGender || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      audienceDemographics: {
+                        ...prev.audienceDemographics,
+                        predominantGender: e.target.value || undefined
+                      }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    <option value="Мужской">Мужской</option>
+                    <option value="Женский">Женский</option>
+                    <option value="Смешанная">Смешанная</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Countries */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-3">

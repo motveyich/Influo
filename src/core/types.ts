@@ -109,7 +109,10 @@ export interface InfluencerCard {
     engagementRate: number;
   };
   audienceDemographics: {
-    ageGroups: Record<string, number>;
+    audienceSizeRange?: string;
+    ageRange?: { min?: number; max?: number };
+    ageGroups?: Record<string, number>;
+    predominantGender?: string;
     genderSplit: Record<string, number>;
     topCountries: Record<string, number> | string[];
     interests: string[];
@@ -151,6 +154,11 @@ export interface AdvertiserCard {
     minEngagementRate?: number;
   };
   targetAudience: {
+    audienceSizeRange?: string;
+    ageRange?: { min?: number; max?: number };
+    predominantGender?: string;
+    genderDistribution?: Record<string, number>;
+    countries?: string[];
     interests: string[];
   };
   contactInfo: {
@@ -733,6 +741,9 @@ export interface AutoCampaign {
   endDate?: string;
   targetPricePerFollower?: number;
   targetCountries?: string[];
+  audienceSizeRange?: string;
+  targetAgeRange?: { min?: number; max?: number };
+  targetGender?: string;
   targetAudienceInterests?: string[];
   productCategories?: string[];
   enableChat?: boolean;
@@ -761,6 +772,9 @@ export interface AutoCampaignFormData {
   contentTypes: string[];
   platforms: string[];
   targetCountries: string[];
+  audienceSizeRange?: string;
+  targetAgeRange?: { min?: number; max?: number };
+  targetGender?: string;
   targetAudienceInterests: string[];
   productCategories: string[];
   enableChat: boolean;

@@ -310,7 +310,7 @@ export function ChatPage() {
   const markConversationAsRead = async (partnerId: string) => {
     try {
       await chatService.markMessagesAsRead(partnerId, currentUserId);
-      
+
       // Update conversation unread count in UI
       setConversations(prev => prev.map(conv => {
         if (conv.participantId === partnerId) {
@@ -325,6 +325,41 @@ export function ChatPage() {
       console.error('Failed to mark messages as read:', error);
     }
   };
+
+  // Update conversation status (must be defined before handleNewMessage)
+  const updateConversationStatusInternal = useCallback(async (partnerId: string) => {
+    try {
+      // Check cache to avoid redundant updates
+      const cachedValue = updateStatusCache.current.get(partnerId);
+
+      const allMessages = await chatService.getConversation(currentUserId, partnerId);
+      const realMessages = allMessages.filter(msg => msg.messageType !== 'conversation_init');
+      const hasResponded = realMessages.some(msg => msg.senderId === partnerId);
+
+      // Only update if status has changed
+      if (cachedValue !== hasResponded) {
+        updateStatusCache.current.set(partnerId, hasResponded);
+
+        setConversations(prev => prev.map(conv => {
+          if (conv.participantId === partnerId) {
+            const newChatType = hasResponded ? 'main' : conv.chatType;
+            return {
+              ...conv,
+              chatType: newChatType,
+              canSendMessage: !conv.isBlocked,
+              hasReceiverResponded: hasResponded
+            };
+          }
+          return conv;
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to update conversation status:', error);
+    }
+  }, [currentUserId]);
+
+  // Debounced version to prevent excessive calls
+  const updateConversationStatus = useDebounce(updateConversationStatusInternal, 500);
 
   const handleNewMessage = useCallback(async (message: any) => {
     console.log('New message received:', message);
@@ -362,39 +397,6 @@ export function ChatPage() {
     }
   }, [currentUserId, selectedConversation?.participantId, updateConversationStatus]);
 
-  const updateConversationStatusInternal = useCallback(async (partnerId: string) => {
-    try {
-      // Check cache to avoid redundant updates
-      const cachedValue = updateStatusCache.current.get(partnerId);
-
-      const allMessages = await chatService.getConversation(currentUserId, partnerId);
-      const realMessages = allMessages.filter(msg => msg.messageType !== 'conversation_init');
-      const hasResponded = realMessages.some(msg => msg.senderId === partnerId);
-
-      // Only update if status has changed
-      if (cachedValue !== hasResponded) {
-        updateStatusCache.current.set(partnerId, hasResponded);
-
-        setConversations(prev => prev.map(conv => {
-          if (conv.participantId === partnerId) {
-            const newChatType = hasResponded ? 'main' : conv.chatType;
-            return {
-              ...conv,
-              chatType: newChatType,
-              canSendMessage: !conv.isBlocked,
-              hasReceiverResponded: hasResponded
-            };
-          }
-          return conv;
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to update conversation status:', error);
-    }
-  }, [currentUserId]);
-
-  // Debounced version to prevent excessive calls
-  const updateConversationStatus = useDebounce(updateConversationStatusInternal, 500);
 
   const updateConversationLastMessage = (message: ChatMessage, shouldIncrementUnread: boolean = true) => {
     setConversations(prev => prev.map(conv => {
