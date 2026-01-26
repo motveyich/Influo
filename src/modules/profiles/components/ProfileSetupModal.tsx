@@ -425,10 +425,22 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div className="mb-8">
                 <AvatarUpload
                   userId={currentProfile?.userId || ''}
-                  currentAvatarUrl={basicInfo.avatar || basicInfo.fullName}
+                  currentAvatarUrl={currentProfile?.avatar || basicInfo.avatar}
                   fullName={basicInfo.fullName}
-                  onAvatarUpdate={(newAvatarUrl) => {
+                  onAvatarUpdate={async (newAvatarUrl) => {
                     setBasicInfo(prev => ({ ...prev, avatar: newAvatarUrl || '' }));
+
+                    // Update profile immediately to persist avatar change
+                    if (user?.id) {
+                      try {
+                        const updatedProfile = await profileService.updateProfile(user.id, {
+                          avatar: newAvatarUrl || null
+                        });
+                        onProfileUpdated(updatedProfile);
+                      } catch (error: any) {
+                        console.error('Failed to update profile with new avatar:', error);
+                      }
+                    }
                   }}
                 />
               </div>
