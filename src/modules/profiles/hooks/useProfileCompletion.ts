@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../../../core/types';
 import { profileService } from '../services/profileService';
-import { isSupabaseConfigured } from '../../../core/supabase';
 
 export function useProfileCompletion(userId: string) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -39,13 +38,13 @@ export function useProfileCompletion(userId: string) {
       } catch (profileError: any) {
         console.error('[useProfileCompletion] Error loading profile:', profileError);
 
-        // Handle specific fetch errors that indicate Supabase connection issues
+        // Handle specific fetch errors that indicate connection issues
         if (profileError instanceof TypeError && profileError.message === 'Failed to fetch') {
-          setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner to set up your database connection, or 2) Check that your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server with "npm run dev".');
+          setError('Unable to connect to backend API. Please check your network connection.');
           setProfile(null);
           return;
         } else if (profileError?.message?.includes('Failed to fetch') || profileError?.cause?.message === 'Failed to fetch') {
-          setError('Database connection failed. Please verify your Supabase configuration and restart the development server.');
+          setError('Connection failed. Please verify your network connection.');
           setProfile(null);
           return;
         } else if (profileError?.message?.includes('account has been deleted')) {
@@ -87,17 +86,13 @@ export function useProfileCompletion(userId: string) {
       
       // Handle different types of errors with specific messages
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to Supabase database. Please: 1) Click "Connect to Supabase" in the top right corner, or 2) Check that your .env file exists and contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values, then restart the dev server.');
-      } else if (err.message?.includes('Unable to connect to Supabase') || err.message?.includes('Database connection failed')) {
+        setError('Unable to connect to backend API. Please check your network connection.');
+      } else if (err.message?.includes('Connection failed')) {
         setError(err.message);
-      } else if (err.message?.includes('relation') && err.message?.includes('does not exist')) {
-        setError('Database tables are not set up. Please configure Supabase properly.');
-      } else if (err.message?.includes('Invalid API key')) {
-        setError('Invalid Supabase API key. Please check your configuration.');
       } else if (err.message?.includes('Failed to fetch')) {
-        setError('Network connection failed. Please check your internet connection and Supabase configuration.');
+        setError('Network connection failed. Please check your internet connection.');
       } else {
-        setError(err.message || 'Failed to load profile. Please check your database connection.');
+        setError(err.message || 'Failed to load profile. Please check your network connection.');
       }
       
       // Set profile to null to prevent further errors
@@ -108,19 +103,15 @@ export function useProfileCompletion(userId: string) {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase is not configured. Please click "Connect to Supabase" or check your .env file configuration.');
-    }
-    
     try {
       if (!profile) throw new Error('No profile loaded');
-      
+
       const updatedProfile = await profileService.updateProfile(userId, updates);
       setProfile(updatedProfile);
       return updatedProfile;
     } catch (err: any) {
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        setError('Unable to connect to database. Please ensure Supabase is properly configured.');
+        setError('Unable to connect to backend API. Please check your network connection.');
       } else {
         setError(err.message || 'Failed to update profile');
       }

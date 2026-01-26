@@ -56,6 +56,17 @@ export function Layout({ children }: LayoutProps) {
     ...(isModerator ? adminNavigation : [])
   ];
 
+  // Debug logging for admin panel visibility
+  React.useEffect(() => {
+    console.log('🔍 [Layout] Admin panel visibility check:', {
+      userRole,
+      isModerator,
+      showingAdminPanel: isModerator,
+      userId: user?.id,
+      navigationLength: navigation.length
+    });
+  }, [userRole, isModerator, user?.id]);
+
   // Apply interface settings from user settings
   React.useEffect(() => {
     if (settings?.interface) {

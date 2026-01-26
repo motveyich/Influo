@@ -22,7 +22,14 @@ export function useAuth() {
   useEffect(() => {
     if (userId) {
       // Get role from authState.user.role instead of separate API call
-      setUserRole((authState.user?.role as UserRole) || 'user');
+      const loadedRole = (authState.user?.role as UserRole) || 'user';
+      console.log('🔐 [useAuth] Loading user role:', {
+        userId,
+        roleFromUser: authState.user?.role,
+        loadedRole,
+        fullUser: authState.user
+      });
+      setUserRole(loadedRole);
       setRoleLoading(false);
       checkUserStatus();
     } else {

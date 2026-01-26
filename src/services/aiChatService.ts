@@ -1,6 +1,7 @@
-import { supabase, TABLES } from '../core/supabase';
+import { TABLES } from '../core/supabase';
 import { AIChatThread, AIChatMessage, ChatMessage } from '../core/types';
 import { analytics } from '../core/analytics';
+import { apiClient } from '../core/api';
 
 export class AIChatService {
   private activeThreads = new Map<string, AIChatThread>();
@@ -18,11 +19,11 @@ export class AIChatService {
         return this.activeThreads.get(conversationId)!;
       }
 
-      // Create or get existing thread using upsert
+      // Create or get existing thread via API
       const newThread = {
-        conversation_id: conversationId,
-        user1_id: userId,
-        user2_id: userId, // Same user for personal chat
+        conversationId,
+        user1Id: userId,
+        user2Id: userId, // Same user for personal chat
         metadata: {
           created_by_service: true,
           conversation_type: 'personal_ai_assistant',
@@ -30,16 +31,8 @@ export class AIChatService {
         }
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.AI_CHAT_THREADS)
-        .upsert([newThread], { 
-          onConflict: 'conversation_id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Note: This requires backend endpoint POST /ai-chat/threads
+      const data = await apiClient.post<any>('/ai-chat/threads', newThread);
 
       const thread = this.transformThreadFromDatabase(data);
       this.activeThreads.set(conversationId, thread);
@@ -61,14 +54,8 @@ export class AIChatService {
 
   async getThreadMessages(threadId: string): Promise<AIChatMessage[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.AI_CHAT_MESSAGES)
-        .select('*')
-        .eq('thread_id', threadId)
-        .order('created_at', { ascending: true })
-        .limit(50); // Limit to last 50 AI messages
-
-      if (error) throw error;
+      // Note: This requires backend endpoint GET /ai-chat/threads/:threadId/messages
+      const data = await apiClient.get<any[]>(`/ai-chat/threads/${threadId}/messages?limit=50`);
 
       return data.map(message => this.transformMessageFromDatabase(message));
     } catch (error) {
@@ -176,18 +163,15 @@ export class AIChatService {
 
   private async getUserRoles(currentUserId: string, partnerId: string): Promise<{ currentUserRole: string; partnerRole: string; currentUserId: string; partnerId: string }> {
     try {
-      // Get user profiles
-      const { data: profiles } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .select('user_id, user_type, full_name')
-        .in('user_id', [currentUserId, partnerId]);
-      
-      const currentUserProfile = profiles?.find(p => p.user_id === currentUserId);
-      const partnerProfile = profiles?.find(p => p.user_id === partnerId);
-      
+      // Get user profiles via API
+      const [currentUserProfile, partnerProfile] = await Promise.all([
+        apiClient.get<any>(`/profiles/${currentUserId}`).catch(() => null),
+        apiClient.get<any>(`/profiles/${partnerId}`).catch(() => null)
+      ]);
+
       return {
-        currentUserRole: this.getUserTypeLabel(currentUserProfile?.user_type || 'user'),
-        partnerRole: this.getUserTypeLabel(partnerProfile?.user_type || 'user'),
+        currentUserRole: this.getUserTypeLabel(currentUserProfile?.userType || 'user'),
+        partnerRole: this.getUserTypeLabel(partnerProfile?.userType || 'user'),
         currentUserId: currentUserId,
         partnerId: partnerId
       };
@@ -283,24 +267,18 @@ export class AIChatService {
   ): Promise<AIChatMessage> {
     try {
       const newMessage = {
-        thread_id: threadId,
-        message_type: messageType,
-        content: content,
+        threadId,
+        messageType,
+        content,
         metadata: {
           ...metadata,
           generated_at: new Date().toISOString(),
           model: 'deepseek-reasoner'
-        },
-        created_at: new Date().toISOString()
+        }
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.AI_CHAT_MESSAGES)
-        .insert([newMessage])
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Note: This requires backend endpoint POST /ai-chat/threads/:threadId/messages
+      const data = await apiClient.post<any>(`/ai-chat/threads/${threadId}/messages`, newMessage);
 
       return this.transformMessageFromDatabase(data);
     } catch (error) {

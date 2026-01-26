@@ -12,31 +12,7 @@ export class ModerationService {
 
   async loadContentFilters(): Promise<void> {
     try {
-      // Check if Supabase is configured
-      if (!isSupabaseConfigured()) {
-        console.warn('Supabase не настроен. Content filters недоступны.');
-        this.contentFilters = [];
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.CONTENT_FILTERS)
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) {
-        if (error.code === '42P01') {
-          console.warn('Content filters table does not exist yet');
-          this.contentFilters = [];
-          return;
-        } else if (error.message?.includes('Failed to fetch')) {
-          console.warn('Supabase connection failed. Content filters недоступны.');
-          this.contentFilters = [];
-          return;
-        }
-        throw error;
-      }
-
+      const data = await apiClient.get<any[]>('/moderation/filters?isActive=true');
       this.contentFilters = data.map(filter => this.transformFilterFromDatabase(filter));
     } catch (error) {
       console.warn('Failed to load content filters, using empty filters:', error);
@@ -47,35 +23,17 @@ export class ModerationService {
   async createReport(reportData: Partial<ContentReport>): Promise<ContentReport> {
     try {
       const newReport = {
-        reporter_id: reportData.reporterId,
-        target_type: reportData.targetType,
-        target_id: reportData.targetId,
-        report_type: reportData.reportType,
+        reporterId: reportData.reporterId,
+        targetType: reportData.targetType,
+        targetId: reportData.targetId,
+        reportType: reportData.reportType,
         description: reportData.description,
         evidence: reportData.evidence || {},
-        status: 'pending',
         priority: this.calculateReportPriority(reportData.reportType!),
-        metadata: reportData.metadata || {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        metadata: reportData.metadata || {}
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.CONTENT_REPORTS)
-        .insert([newReport])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Add to moderation queue if high priority
-      if (newReport.priority >= 4) {
-        await this.addToModerationQueue(
-          reportData.targetType!,
-          reportData.targetId!,
-          { report_id: data.id, auto_flagged: false }
-        );
-      }
+      const data = await apiClient.post<any>('/moderation/reports', newReport);
 
       return this.transformReportFromDatabase(data);
     } catch (error) {
@@ -179,30 +137,18 @@ export class ModerationService {
     metadata?: Record<string, any>
   ): Promise<ModerationQueueItem> {
     try {
-      // Get content data
-      const contentData = await this.getContentData(contentType, contentId);
-
       const queueItem = {
-        content_type: contentType,
-        content_id: contentId,
-        content_data: contentData,
-        moderation_status: 'pending' as ModerationStatus,
-        flagged_reasons: [],
-        auto_flagged: metadata?.auto_flagged || false,
-        filter_matches: metadata?.filter_matches || {},
+        contentType,
+        contentId,
+        moderationStatus: 'pending' as ModerationStatus,
+        flaggedReasons: [],
+        autoFlagged: metadata?.auto_flagged || false,
+        filterMatches: metadata?.filter_matches || {},
         priority: metadata?.priority || 1,
-        metadata: metadata || {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        metadata: metadata || {}
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.MODERATION_QUEUE)
-        .insert([queueItem])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.post<any>('/moderation/queue', queueItem);
 
       return this.transformQueueItemFromDatabase(data);
     } catch (error) {
@@ -280,34 +226,23 @@ export class ModerationService {
 
   private async getContentData(contentType: string, contentId: string): Promise<any> {
     try {
-      let table = '';
-      let idField = '';
+      let endpoint = '';
 
       switch (contentType) {
         case 'user_profile':
-          table = TABLES.USER_PROFILES;
-          idField = 'user_id';
+          endpoint = `/profiles/${contentId}`;
           break;
         case 'influencer_card':
-          table = TABLES.INFLUENCER_CARDS;
-          idField = 'id';
+          endpoint = `/influencer-cards/${contentId}`;
           break;
         case 'campaign':
-          table = TABLES.CAMPAIGNS;
-          idField = 'campaign_id';
+          endpoint = `/auto-campaigns/${contentId}`;
           break;
         default:
           throw new Error(`Unsupported content type: ${contentType}`);
       }
 
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .eq(idField, contentId)
-        .single();
-
-      if (error) throw error;
-
+      const data = await apiClient.get<any>(endpoint);
       return data;
     } catch (error) {
       console.error('Failed to get content data:', error);
@@ -321,28 +256,20 @@ export class ModerationService {
     status: ModerationStatus
   ): Promise<void> {
     try {
-      let table = '';
-      let idField = '';
+      let endpoint = '';
 
       switch (contentType) {
         case 'influencer_card':
-          table = TABLES.INFLUENCER_CARDS;
-          idField = 'id';
+          endpoint = `/influencer-cards/${contentId}`;
           break;
         case 'campaign':
-          table = TABLES.CAMPAIGNS;
-          idField = 'campaign_id';
+          endpoint = `/auto-campaigns/${contentId}`;
           break;
         default:
           return; // Skip for unsupported types
       }
 
-      const { error } = await supabase
-        .from(table)
-        .update({ moderation_status: status })
-        .eq(idField, contentId);
-
-      if (error) throw error;
+      await apiClient.patch(endpoint, { moderationStatus: status });
     } catch (error) {
       console.error('Failed to update content moderation status:', error);
     }
