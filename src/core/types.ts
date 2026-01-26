@@ -805,7 +805,7 @@ export interface AudienceOverview {
 }
 
 export interface InfluencerProfileData {
-  avatar?: string;
+  // NOTE: avatar removed - use UserProfile.avatar instead
   nickname?: string;
   country?: string;
   city?: string;
@@ -829,7 +829,7 @@ export interface TargetDemographics {
 }
 
 export interface AdvertiserProfileData {
-  logo?: string;
+  // NOTE: logo removed - use UserProfile.avatar instead
   companyName: string;
   country?: string;
   city?: string;

@@ -56,11 +56,6 @@ export class AudienceOverviewDto {
 }
 
 export class InfluencerProfileDto {
-  @ApiProperty({ example: 'https://example.com/avatar.jpg', required: false })
-  @IsOptional()
-  @IsString()
-  avatar?: string;
-
   @ApiProperty({ example: 'coolblogger', required: false })
   @IsOptional()
   @IsString()

@@ -862,6 +862,8 @@ export class ProfilesService {
 
     const sanitized: any = {};
 
+    // NOTE: avatar is removed from influencer_profile and should only be in user_profiles.avatar
+
     // Basic fields
     if (data.nickname !== undefined) {
       sanitized.nickname = String(data.nickname || '');
@@ -942,15 +944,14 @@ export class ProfilesService {
 
     const sanitized: any = {};
 
+    // NOTE: logo is removed from advertiser_profile and should only be in user_profiles.avatar
+
     // Basic company info
     if (data.companyName !== undefined) {
       sanitized.companyName = String(data.companyName || '');
     }
     if (data.companyDescription !== undefined) {
       sanitized.companyDescription = String(data.companyDescription || '');
-    }
-    if (data.logo !== undefined) {
-      sanitized.logo = String(data.logo || '');
     }
     if (data.organizationWebsite !== undefined) {
       sanitized.organizationWebsite = String(data.organizationWebsite || '');

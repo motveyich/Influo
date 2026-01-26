@@ -50,11 +50,11 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
     fullName: '',
     email: '',
     username: '',
-    phone: ''
+    phone: '',
+    avatar: ''
   });
 
   const [influencerProfile, setInfluencerProfile] = useState<Partial<InfluencerProfileData>>({
-    avatar: '',
     nickname: '',
     country: '',
     city: '',
@@ -83,7 +83,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
   });
 
   const [advertiserProfile, setAdvertiserProfile] = useState<Partial<AdvertiserProfileData>>({
-    logo: '',
     companyName: '',
     country: '',
     city: '',
@@ -115,14 +114,14 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       fullName: currentProfile?.fullName ?? user?.fullName ?? '',
       email: currentProfile?.email ?? user?.email ?? '',
       username: currentProfile?.username ?? '',
-      phone: currentProfile?.phone ?? ''
+      phone: currentProfile?.phone ?? '',
+      avatar: currentProfile?.avatar ?? ''
     };
 
     setBasicInfo(newBasicInfo);
 
     if (currentProfile?.influencerProfile) {
       setInfluencerProfile({
-        avatar: currentProfile.influencerProfile.avatar ?? '',
         nickname: currentProfile.influencerProfile.nickname ?? '',
         country: currentProfile.influencerProfile.country ?? '',
         city: currentProfile.influencerProfile.city ?? '',
@@ -151,7 +150,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       });
     } else {
       setInfluencerProfile({
-        avatar: '',
         nickname: '',
         country: '',
         city: '',
@@ -182,7 +180,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
 
     if (currentProfile?.advertiserProfile) {
       setAdvertiserProfile({
-        logo: currentProfile.advertiserProfile.logo ?? '',
         companyName: currentProfile.advertiserProfile.companyName ?? '',
         country: currentProfile.advertiserProfile.country ?? '',
         city: currentProfile.advertiserProfile.city ?? '',
@@ -202,7 +199,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
       });
     } else {
       setAdvertiserProfile({
-        logo: '',
         companyName: '',
         country: '',
         city: '',
@@ -429,7 +425,7 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
               <div className="mb-8">
                 <AvatarUpload
                   userId={currentProfile?.userId || ''}
-                  currentAvatarUrl={basicInfo.fullName}
+                  currentAvatarUrl={basicInfo.avatar || basicInfo.fullName}
                   fullName={basicInfo.fullName}
                   onAvatarUpdate={(newAvatarUrl) => {
                     setBasicInfo(prev => ({ ...prev, avatar: newAvatarUrl || '' }));
@@ -507,20 +503,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           {activeTab === 'influencer' && (
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900">Настройки инфлюенсера</h3>
-
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Аватар профиля
-                </label>
-                <AvatarUpload
-                  userId={currentProfile?.userId || ''}
-                  currentAvatarUrl={influencerProfile.avatar}
-                  fullName={basicInfo.fullName}
-                  onAvatarUpdate={(newAvatarUrl) => {
-                    setInfluencerProfile(prev => ({ ...prev, avatar: newAvatarUrl || '' }));
-                  }}
-                />
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -857,20 +839,6 @@ export function ProfileSetupModal({ isOpen, onClose, currentProfile, initialTab 
           {activeTab === 'advertiser' && (
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900">Настройки рекламодателя</h3>
-
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Логотип компании
-                </label>
-                <AvatarUpload
-                  userId={currentProfile?.userId || ''}
-                  currentAvatarUrl={advertiserProfile.logo}
-                  fullName={advertiserProfile.companyName || 'Company'}
-                  onAvatarUpdate={(newLogoUrl) => {
-                    setAdvertiserProfile(prev => ({ ...prev, logo: newLogoUrl || '' }));
-                  }}
-                />
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

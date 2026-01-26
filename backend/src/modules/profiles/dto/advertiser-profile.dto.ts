@@ -22,11 +22,6 @@ export class TargetDemographicsDto {
 }
 
 export class AdvertiserProfileDto {
-  @ApiProperty({ example: 'https://example.com/logo.jpg', required: false })
-  @IsOptional()
-  @IsString()
-  logo?: string;
-
   @ApiProperty({ example: 'ООО Инфлюо', required: true })
   @IsString()
   companyName!: string;
