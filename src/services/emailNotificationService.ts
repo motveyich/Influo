@@ -1,4 +1,4 @@
-import { profileService } from '../modules/profiles/services/profileService';
+import { supabase } from '../core/supabase';
 
 export interface EmailNotificationData {
   userName?: string;
@@ -17,15 +17,14 @@ class EmailNotificationService {
     subject: string,
     data: EmailNotificationData
   ): Promise<void> {
-    let userData;
-    try {
-      userData = await profileService.getProfile(userId);
-      if (!userData?.email) {
-        console.error('User profile or email not found');
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to get user profile:', error);
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('email, settings')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (userError || !userData?.email) {
+      console.error('Failed to get user email:', userError);
       return;
     }
 
