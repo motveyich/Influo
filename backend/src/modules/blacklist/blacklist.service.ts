@@ -1,66 +1,63 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
-import { SupabaseService } from '../../shared/supabase/supabase.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Blacklist, UserProfile } from '../../database/entities';
 import { CreateBlacklistDto } from './dto';
 
 @Injectable()
 export class BlacklistService {
   private readonly logger = new Logger(BlacklistService.name);
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    @InjectRepository(Blacklist)
+    private blacklistRepository: Repository<Blacklist>,
+    @InjectRepository(UserProfile)
+    private userProfileRepository: Repository<UserProfile>,
+  ) {}
 
   async blockUser(userId: string, createDto: CreateBlacklistDto) {
-    const supabase = this.supabaseService.getAdminClient();
-
     if (userId === createDto.blockedId) {
       throw new BadRequestException('Cannot block yourself');
     }
 
-    const { data: blockedUser } = await supabase
-      .from('user_profiles')
-      .select('user_id')
-      .eq('user_id', createDto.blockedId)
-      .maybeSingle();
+    const blockedUser = await this.userProfileRepository.findOne({
+      where: { user_id: createDto.blockedId },
+    });
 
     if (!blockedUser) {
       throw new NotFoundException('User not found');
     }
 
-    const { data: existing } = await supabase
-      .from('blacklist')
-      .select('id')
-      .eq('blocker_id', userId)
-      .eq('blocked_id', createDto.blockedId)
-      .maybeSingle();
+    const existing = await this.blacklistRepository.findOne({
+      where: {
+        blocker_id: userId,
+        blocked_user_id: createDto.blockedId,
+      },
+    });
 
     if (existing) {
       throw new ConflictException('User already blocked');
     }
 
-    const blacklistData = {
-      blocker_id: userId,
-      blocked_id: createDto.blockedId,
-      reason: createDto.reason,
-      created_at: new Date().toISOString(),
-    };
+    try {
+      const blacklist = this.blacklistRepository.create({
+        blocker_id: userId,
+        blocked_user_id: createDto.blockedId,
+        reason: createDto.reason,
+      });
 
-    const { data: blacklist, error } = await supabase.from('blacklist').insert(blacklistData).select().single();
-
-    if (error) {
+      const savedBlacklist = await this.blacklistRepository.save(blacklist);
+      return this.transformBlacklist(savedBlacklist);
+    } catch (error) {
       this.logger.error(`Failed to block user: ${error.message}`, error);
       throw new ConflictException('Failed to block user');
     }
-
-    return this.transformBlacklist(blacklist);
   }
 
   async unblockUser(userId: string, blacklistId: string) {
-    const supabase = this.supabaseService.getAdminClient();
-
-    const { data: blacklist } = await supabase
-      .from('blacklist')
-      .select('blocker_id')
-      .eq('id', blacklistId)
-      .maybeSingle();
+    const blacklist = await this.blacklistRepository.findOne({
+      where: { id: blacklistId },
+    });
 
     if (!blacklist) {
       throw new NotFoundException('Blacklist entry not found');
@@ -70,25 +67,22 @@ export class BlacklistService {
       throw new NotFoundException('Blacklist entry not found');
     }
 
-    const { error } = await supabase.from('blacklist').delete().eq('id', blacklistId);
-
-    if (error) {
+    try {
+      await this.blacklistRepository.delete({ id: blacklistId });
+      return { message: 'User unblocked successfully' };
+    } catch (error) {
       this.logger.error(`Failed to unblock user: ${error.message}`, error);
       throw new ConflictException('Failed to unblock user');
     }
-
-    return { message: 'User unblocked successfully' };
   }
 
   async unblockUserByUserId(userId: string, blockedUserId: string) {
-    const supabase = this.supabaseService.getAdminClient();
-
-    const { data: blacklist } = await supabase
-      .from('blacklist')
-      .select('id, blocker_id')
-      .eq('blocker_id', userId)
-      .eq('blocked_id', blockedUserId)
-      .maybeSingle();
+    const blacklist = await this.blacklistRepository.findOne({
+      where: {
+        blocker_id: userId,
+        blocked_user_id: blockedUserId,
+      },
+    });
 
     if (!blacklist) {
       throw new NotFoundException('Blacklist entry not found');
@@ -98,43 +92,36 @@ export class BlacklistService {
   }
 
   async findAll(userId: string) {
-    const supabase = this.supabaseService.getAdminClient();
+    try {
+      const blacklists = await this.blacklistRepository.find({
+        where: { blocker_id: userId },
+        relations: ['blocked_user'],
+        order: { created_at: 'DESC' },
+      });
 
-    const { data: blacklists, error } = await supabase
-      .from('blacklist')
-      .select(`
-        *,
-        blocked_user:user_profiles!blacklist_blocked_id_fkey(*)
-      `)
-      .eq('blocker_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+      return blacklists.map((blacklist) => this.transformBlacklistWithUser(blacklist));
+    } catch (error) {
       this.logger.error(`Failed to fetch blacklist: ${error.message}`, error);
       return [];
     }
-
-    return blacklists.map((blacklist) => this.transformBlacklistWithUser(blacklist));
   }
 
   async isBlocked(userId: string, targetUserId: string): Promise<boolean> {
-    const supabase = this.supabaseService.getAdminClient();
+    const count = await this.blacklistRepository.count({
+      where: [
+        { blocker_id: userId, blocked_user_id: targetUserId },
+        { blocker_id: targetUserId, blocked_user_id: userId },
+      ],
+    });
 
-    const { data } = await supabase
-      .rpc('is_user_blacklisted', {
-        p_user_id: userId,
-        p_target_user_id: targetUserId,
-      })
-      .single();
-
-    return Boolean(data) || false;
+    return count > 0;
   }
 
-  private transformBlacklist(blacklist: any) {
+  private transformBlacklist(blacklist: Blacklist) {
     return {
       id: blacklist.id,
       blockerId: blacklist.blocker_id,
-      blockedId: blacklist.blocked_id,
+      blockedId: blacklist.blocked_user_id,
       reason: blacklist.reason,
       createdAt: blacklist.created_at,
     };
