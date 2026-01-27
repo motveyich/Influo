@@ -4,7 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './database/database.module';
+import { SupabaseModule } from './shared/supabase/supabase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { InfluencerCardsModule } from './modules/influencer-cards/influencer-cards.module';
@@ -31,6 +31,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
     ThrottlerModule.forRoot([
       {
@@ -38,7 +39,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
         limit: 10,
       },
     ]),
-    DatabaseModule,
+    SupabaseModule,
     AuthModule,
     ProfilesModule,
     InfluencerCardsModule,
