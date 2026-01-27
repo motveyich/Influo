@@ -30,7 +30,7 @@ import {
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get('DATABASE_URL');
+        const databaseUrl = configService.get<string>('DATABASE_URL');
 
         let dbHost: string;
         let dbPort: number;
@@ -57,17 +57,17 @@ import {
               database: dbDatabase,
               ssl: sslEnabled,
             });
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Failed to parse DATABASE_URL:', error.message);
             throw new Error('Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database');
           }
         } else {
-          dbHost = configService.get('DB_HOST');
-          dbPort = parseInt(configService.get('DB_PORT', '5432'), 10);
-          dbUsername = configService.get('DB_USERNAME');
-          dbPassword = configService.get('DB_PASSWORD');
-          dbDatabase = configService.get('DB_DATABASE', 'postgres');
-          sslEnabled = configService.get('DB_SSL') === 'true' || configService.get('DB_SSL') === true;
+          dbHost = configService.get<string>('DB_HOST') || '';
+          dbPort = parseInt(configService.get<string>('DB_PORT', '5432'), 10);
+          dbUsername = configService.get<string>('DB_USERNAME') || '';
+          dbPassword = configService.get<string>('DB_PASSWORD') || '';
+          dbDatabase = configService.get<string>('DB_DATABASE', 'postgres');
+          sslEnabled = configService.get<string>('DB_SSL') === 'true' || configService.get<boolean>('DB_SSL') === true;
 
           console.log('🔧 Using individual DB_* environment variables');
           console.log('🔧 Database Configuration:', {
