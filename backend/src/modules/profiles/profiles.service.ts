@@ -1178,25 +1178,25 @@ export class ProfilesService {
 
       const { data: offers, error: offersListError } = await supabase
         .from('offers')
-        .select('id as offer_id, influencer_id, advertiser_id')
+        .select('id, influencer_id, advertiser_id')
         .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
         .in('status', ['accepted', 'in_progress']);
 
       let pendingPayoutsCount = 0;
       if (offers && offers.length > 0) {
-        const offerIds = offers.map(o => o.offer_id);
+        const offerIds = offers.map((o: any) => o.id);
         const { data: paymentRequests } = await supabase
           .from('payment_requests')
           .select('id, offer_id, status')
           .in('offer_id', offerIds);
 
         if (paymentRequests) {
-          pendingPayoutsCount = paymentRequests.filter(pr => {
-            const offer = offers.find(o => o.offer_id === pr.offer_id);
+          pendingPayoutsCount = paymentRequests.filter((pr: any) => {
+            const offer = offers.find((o: any) => o.id === pr.offer_id);
             if (!offer) return false;
 
-            const isAdvertiser = offer.advertiser_id === userId;
-            const isInfluencer = offer.influencer_id === userId;
+            const isAdvertiser = (offer as any).advertiser_id === userId;
+            const isInfluencer = (offer as any).influencer_id === userId;
 
             if (isAdvertiser && ['pending', 'paying'].includes(pr.status)) {
               return true;
