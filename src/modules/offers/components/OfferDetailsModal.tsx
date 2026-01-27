@@ -140,24 +140,13 @@ export function OfferDetailsModal({
         return;
       }
 
-      const { supabase } = await import('../../../core/supabase');
-
-      // Получить профиль инициатора
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', offer.initiatedBy)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error loading initiator profile:', profileError);
-        return;
-      }
+      // Get initiator profile from API
+      const profile = await profileService.getProfile(offer.initiatedBy);
 
       if (profile) {
         setInitiatorProfile(profile);
 
-        // Получить отзывы об инициаторе
+        // Get reviews about initiator
         const initiatorReviewsData = await reviewService.getUserReviews(offer.initiatedBy);
         setInitiatorReviews(initiatorReviewsData);
       }
