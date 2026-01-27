@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { api } from '../core/api';
 
 export class CampaignMetricsService {
   private trackedCampaigns = new Set<string>();
@@ -11,18 +11,7 @@ export class CampaignMetricsService {
         return;
       }
 
-      const { error } = await supabase
-        .from('campaign_views')
-        .insert([{
-          campaign_id: campaignId,
-          user_id: userId || null,
-          viewed_at: new Date().toISOString()
-        }]);
-
-      if (error) {
-        console.error('Failed to track campaign view:', error);
-        return;
-      }
+      await api.post(`/campaign-metrics/${campaignId}/views`);
 
       this.trackedCampaigns.add(key);
 
@@ -41,13 +30,7 @@ export class CampaignMetricsService {
     engagement: number;
   }> {
     try {
-      const { data, error } = await supabase
-        .from('auto_campaigns')
-        .select('metrics')
-        .eq('id', campaignId)
-        .maybeSingle();
-
-      if (error) throw error;
+      const data = await api.get(`/campaign-metrics/${campaignId}`);
 
       return data?.metrics || {
         applicants: 0,
@@ -68,11 +51,7 @@ export class CampaignMetricsService {
 
   async refreshCampaignMetrics(campaignId: string): Promise<void> {
     try {
-      const { error } = await supabase.rpc('update_campaign_metrics', {
-        p_campaign_id: campaignId
-      });
-
-      if (error) throw error;
+      await api.post(`/campaign-metrics/${campaignId}/refresh`);
     } catch (error) {
       console.error('Failed to refresh campaign metrics:', error);
       throw error;

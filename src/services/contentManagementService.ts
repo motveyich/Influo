@@ -1,41 +1,19 @@
-import { supabase, TABLES } from '../core/supabase';
+import { api } from '../core/api';
 import { PlatformUpdate, PlatformEvent } from '../core/types';
 import { roleService } from './roleService';
 import { adminService } from './adminService';
 
 export class ContentManagementService {
 
-  // Updates Management
   async createUpdate(updateData: Partial<PlatformUpdate>, createdBy: string): Promise<PlatformUpdate> {
     try {
-      // Check permissions
       const hasPermission = await roleService.checkPermission(createdBy, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const newUpdate = {
-        title: updateData.title,
-        description: updateData.description,
-        content: updateData.content,
-        type: updateData.type || 'feature',
-        is_important: updateData.isImportant || false,
-        published_at: updateData.publishedAt || new Date().toISOString(),
-        is_published: updateData.isPublished ?? true,
-        created_by: createdBy,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const data = await api.post('/content-management/updates', updateData);
 
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_UPDATES)
-        .insert([newUpdate])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log the action
       await adminService.logAction(createdBy, 'update_created', 'platform_updates', data.id, {
         title: updateData.title,
         type: updateData.type
@@ -48,37 +26,17 @@ export class ContentManagementService {
     }
   }
 
-  async updateUpdate(updateId: string, updates: Partial<PlatformUpdate>, updatedBy: string): Promise<PlatformUpdate> {
+  async updateUpdate(updateId: string, updateData: Partial<PlatformUpdate>, userId: string): Promise<PlatformUpdate> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(updatedBy, 'moderator');
+      const hasPermission = await roleService.checkPermission(userId, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const updateData = {
-        title: updates.title,
-        description: updates.description,
-        content: updates.content,
-        type: updates.type,
-        is_important: updates.isImportant,
-        published_at: updates.publishedAt,
-        is_published: updates.isPublished,
-        updated_at: new Date().toISOString()
-      };
+      const data = await api.patch(`/content-management/updates/${updateId}`, updateData);
 
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_UPDATES)
-        .update(updateData)
-        .eq('id', updateId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log the action
-      await adminService.logAction(updatedBy, 'update_updated', 'platform_updates', updateId, {
-        updated_fields: Object.keys(updates)
+      await adminService.logAction(userId, 'update_updated', 'platform_updates', updateId, {
+        changes: updateData
       });
 
       return this.transformUpdateFromDatabase(data);
@@ -88,111 +46,54 @@ export class ContentManagementService {
     }
   }
 
-  async deleteUpdate(updateId: string, deletedBy: string): Promise<void> {
+  async deleteUpdate(updateId: string, userId: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
+      const hasPermission = await roleService.checkPermission(userId, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const { error } = await supabase
-        .from(TABLES.PLATFORM_UPDATES)
-        .delete()
-        .eq('id', updateId);
+      await api.delete(`/content-management/updates/${updateId}`);
 
-      if (error) throw error;
-
-      // Log the action
-      await adminService.logAction(deletedBy, 'update_deleted', 'platform_updates', updateId);
+      await adminService.logAction(userId, 'update_deleted', 'platform_updates', updateId);
     } catch (error) {
       console.error('Failed to delete update:', error);
       throw error;
     }
   }
 
-  async getAllUpdates(filters?: {
-    type?: string;
-    isPublished?: boolean;
-  }): Promise<PlatformUpdate[]> {
+  async getUpdates(filters?: { type?: string; priority?: string; isPublished?: boolean }): Promise<PlatformUpdate[]> {
     try {
-      let query = supabase
-        .from(TABLES.PLATFORM_UPDATES)
-        .select('*');
-
-      if (filters?.type && filters.type !== 'all') {
-        query = query.eq('type', filters.type);
-      }
-
-      if (filters?.isPublished !== undefined) {
-        query = query.eq('is_published', filters.isPublished);
-      }
-
-      query = query.order('published_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(update => this.transformUpdateFromDatabase(update));
+      const data = await api.get('/content-management/updates', { params: filters });
+      return data.map(this.transformUpdateFromDatabase);
     } catch (error) {
-      console.error('Failed to get all updates:', error);
-      throw error;
+      console.error('Failed to get updates:', error);
+      return [];
     }
   }
 
   async getPublishedUpdates(): Promise<PlatformUpdate[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_UPDATES)
-        .select('*')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      return data.map(update => this.transformUpdateFromDatabase(update));
+      const data = await api.get('/content-management/updates/published');
+      return data.map(this.transformUpdateFromDatabase);
     } catch (error) {
       console.error('Failed to get published updates:', error);
       return [];
     }
   }
 
-  // Events Management
   async createEvent(eventData: Partial<PlatformEvent>, createdBy: string): Promise<PlatformEvent> {
     try {
-      // Check permissions
       const hasPermission = await roleService.checkPermission(createdBy, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const newEvent = {
-        title: eventData.title,
-        description: eventData.description,
-        content: eventData.content,
-        type: eventData.type || 'announcement',
-        participant_count: eventData.participantCount || 0,
-        published_at: eventData.publishedAt || new Date().toISOString(),
-        is_published: eventData.isPublished ?? true,
-        created_by: createdBy,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const data = await api.post('/content-management/events', eventData);
 
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_EVENTS)
-        .insert([newEvent])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log the action
       await adminService.logAction(createdBy, 'event_created', 'platform_events', data.id, {
         title: eventData.title,
-        type: eventData.type
+        event_type: eventData.type
       });
 
       return this.transformEventFromDatabase(data);
@@ -202,37 +103,17 @@ export class ContentManagementService {
     }
   }
 
-  async updateEvent(eventId: string, updates: Partial<PlatformEvent>, updatedBy: string): Promise<PlatformEvent> {
+  async updateEvent(eventId: string, eventData: Partial<PlatformEvent>, userId: string): Promise<PlatformEvent> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(updatedBy, 'moderator');
+      const hasPermission = await roleService.checkPermission(userId, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const updateData = {
-        title: updates.title,
-        description: updates.description,
-        content: updates.content,
-        type: updates.type,
-        participant_count: updates.participantCount,
-        published_at: updates.publishedAt,
-        is_published: updates.isPublished,
-        updated_at: new Date().toISOString()
-      };
+      const data = await api.patch(`/content-management/events/${eventId}`, eventData);
 
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_EVENTS)
-        .update(updateData)
-        .eq('id', eventId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log the action
-      await adminService.logAction(updatedBy, 'event_updated', 'platform_events', eventId, {
-        updated_fields: Object.keys(updates)
+      await adminService.logAction(userId, 'event_updated', 'platform_events', eventId, {
+        changes: eventData
       });
 
       return this.transformEventFromDatabase(data);
@@ -242,108 +123,74 @@ export class ContentManagementService {
     }
   }
 
-  async deleteEvent(eventId: string, deletedBy: string): Promise<void> {
+  async deleteEvent(eventId: string, userId: string): Promise<void> {
     try {
-      // Check permissions
-      const hasPermission = await roleService.checkPermission(deletedBy, 'moderator');
+      const hasPermission = await roleService.checkPermission(userId, 'moderator');
       if (!hasPermission) {
         throw new Error('Insufficient permissions');
       }
 
-      const { error } = await supabase
-        .from(TABLES.PLATFORM_EVENTS)
-        .delete()
-        .eq('id', eventId);
+      await api.delete(`/content-management/events/${eventId}`);
 
-      if (error) throw error;
-
-      // Log the action
-      await adminService.logAction(deletedBy, 'event_deleted', 'platform_events', eventId);
+      await adminService.logAction(userId, 'event_deleted', 'platform_events', eventId);
     } catch (error) {
       console.error('Failed to delete event:', error);
       throw error;
     }
   }
 
-  async getAllEvents(filters?: {
-    type?: string;
-    isPublished?: boolean;
-  }): Promise<PlatformEvent[]> {
+  async getEvents(filters?: { eventType?: string; isPublished?: boolean }): Promise<PlatformEvent[]> {
     try {
-      let query = supabase
-        .from(TABLES.PLATFORM_EVENTS)
-        .select('*');
-
-      if (filters?.type && filters.type !== 'all') {
-        query = query.eq('type', filters.type);
-      }
-
-      if (filters?.isPublished !== undefined) {
-        query = query.eq('is_published', filters.isPublished);
-      }
-
-      query = query.order('published_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data.map(event => this.transformEventFromDatabase(event));
+      const data = await api.get('/content-management/events', { params: filters });
+      return data.map(this.transformEventFromDatabase);
     } catch (error) {
-      console.error('Failed to get all events:', error);
-      throw error;
+      console.error('Failed to get events:', error);
+      return [];
     }
   }
 
   async getPublishedEvents(): Promise<PlatformEvent[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.PLATFORM_EVENTS)
-        .select('*')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      return data.map(event => this.transformEventFromDatabase(event));
+      const data = await api.get('/content-management/events/published');
+      return data.map(this.transformEventFromDatabase);
     } catch (error) {
       console.error('Failed to get published events:', error);
       return [];
     }
   }
 
-  // Transform functions
-
-  private transformUpdateFromDatabase(dbData: any): PlatformUpdate {
+  private transformUpdateFromDatabase(data: any): PlatformUpdate {
     return {
-      id: dbData.id,
-      title: dbData.title,
-      description: dbData.description,
-      content: dbData.content,
-      type: dbData.type,
-      isImportant: dbData.is_important,
-      publishedAt: dbData.published_at,
-      isPublished: dbData.is_published,
-      createdBy: dbData.created_by,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      id: data.id,
+      title: data.title,
+      description: data.description || data.content,
+      content: data.content,
+      type: data.type,
+      isImportant: data.is_important,
+      publishedAt: data.published_at || data.created_at,
+      isPublished: data.is_published,
+      createdBy: data.created_by,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
     };
   }
 
-  private transformEventFromDatabase(dbData: any): PlatformEvent {
+  private transformEventFromDatabase(data: any): PlatformEvent {
     return {
-      id: dbData.id,
-      title: dbData.title,
-      description: dbData.description,
-      content: dbData.content,
-      type: dbData.type,
-      participantCount: dbData.participant_count,
-      publishedAt: dbData.published_at,
-      isPublished: dbData.is_published,
-      createdBy: dbData.created_by,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      type: data.event_type,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      location: data.location,
+      registrationLink: data.registration_link,
+      participantCount: data.participant_count || 0,
+      publishedAt: data.published_at || data.created_at,
+      isPublished: data.is_published,
+      createdBy: data.created_by,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
     };
   }
 }

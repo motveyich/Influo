@@ -1129,6 +1129,109 @@ export class ProfilesService {
     };
   }
 
+  async getUserStats(userId: string) {
+    const supabase = this.supabaseService.getAdminClient();
+
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('completed_deals_count, total_reviews_count, average_rating')
+        .eq('user_id', userId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+
+      if (profileError) {
+        this.logger.error(`Failed to fetch profile metrics: ${profileError.message}`, profileError);
+      }
+
+      const { data: pendingOffers, error: offersError } = await supabase
+        .from('offers')
+        .select('id', { count: 'exact', head: true })
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+        .eq('status', 'pending');
+
+      if (offersError) {
+        this.logger.error(`Failed to fetch pending offers: ${offersError.message}`, offersError);
+      }
+
+      const { count: pendingCount } = await supabase
+        .from('offers')
+        .select('*', { count: 'exact', head: true })
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+        .eq('status', 'pending');
+
+      const { data: unreadMessages, error: messagesError } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+      if (messagesError) {
+        this.logger.error(`Failed to fetch unread messages: ${messagesError.message}`, messagesError);
+      }
+
+      const { count: unreadCount } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+      const { data: offers, error: offersListError } = await supabase
+        .from('offers')
+        .select('id as offer_id, influencer_id, advertiser_id')
+        .or(`influencer_id.eq.${userId},advertiser_id.eq.${userId}`)
+        .in('status', ['accepted', 'in_progress']);
+
+      let pendingPayoutsCount = 0;
+      if (offers && offers.length > 0) {
+        const offerIds = offers.map(o => o.offer_id);
+        const { data: paymentRequests } = await supabase
+          .from('payment_requests')
+          .select('id, offer_id, status')
+          .in('offer_id', offerIds);
+
+        if (paymentRequests) {
+          pendingPayoutsCount = paymentRequests.filter(pr => {
+            const offer = offers.find(o => o.offer_id === pr.offer_id);
+            if (!offer) return false;
+
+            const isAdvertiser = offer.advertiser_id === userId;
+            const isInfluencer = offer.influencer_id === userId;
+
+            if (isAdvertiser && ['pending', 'paying'].includes(pr.status)) {
+              return true;
+            }
+
+            if (isInfluencer && pr.status === 'paid') {
+              return true;
+            }
+
+            return false;
+          }).length;
+        }
+      }
+
+      return {
+        pendingApplications: pendingCount || 0,
+        unreadMessages: unreadCount || 0,
+        pendingPayouts: pendingPayoutsCount,
+        accountRating: Number((profile?.average_rating || 0).toFixed(1)),
+        totalReviews: profile?.total_reviews_count || 0,
+        completedDeals: profile?.completed_deals_count || 0,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get user stats: ${error.message}`, error);
+      return {
+        pendingApplications: 0,
+        unreadMessages: 0,
+        pendingPayouts: 0,
+        accountRating: 0,
+        totalReviews: 0,
+        completedDeals: 0,
+      };
+    }
+  }
+
   private transformProfile(profile: any) {
     const profileCompletion = profile.profile_completion || this.calculateProfileCompletionData(profile);
 

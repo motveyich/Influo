@@ -109,6 +109,21 @@ export class ProfilesController {
     return this.profilesService.getProfileCompletion(id);
   }
 
+  @Get(':id/stats')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get user statistics' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'User statistics' })
+  async getStats(
+    @Param('id') id: string,
+    @CurrentUser('userId') currentUserId: string,
+  ) {
+    if (id !== currentUserId) {
+      return { message: 'You can only view your own statistics' };
+    }
+    return this.profilesService.getUserStats(id);
+  }
+
   @Post(':id/avatar')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Upload profile avatar' })

@@ -22,6 +22,9 @@ import { RolesModule } from './modules/roles/roles.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { ContentManagementModule } from './modules/content-management/content-management.module';
+import { CampaignMetricsModule } from './modules/campaign-metrics/campaign-metrics.module';
+import { CardAnalyticsModule } from './modules/card-analytics/card-analytics.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -57,6 +60,9 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ChatModule,
     AdminModule,
     ModerationModule,
+    ContentManagementModule,
+    CampaignMetricsModule,
+    CardAnalyticsModule,
   ],
   controllers: [AppController],
   providers: [
