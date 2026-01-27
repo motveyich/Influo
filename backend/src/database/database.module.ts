@@ -31,10 +31,11 @@ import {
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const dbHost = configService.get('DB_HOST');
-        const dbPort = configService.get('DB_PORT', 5432);
+        const dbPort = parseInt(configService.get('DB_PORT', '5432'), 10);
         const dbUsername = configService.get('DB_USERNAME');
+        const dbPassword = configService.get('DB_PASSWORD');
         const dbDatabase = configService.get('DB_DATABASE', 'postgres');
-        const sslEnabled = configService.get('DB_SSL') === 'true';
+        const sslEnabled = configService.get('DB_SSL') === 'true' || configService.get('DB_SSL') === true;
 
         console.log('🔧 Database Configuration:', {
           host: dbHost,
@@ -42,14 +43,31 @@ import {
           username: dbUsername,
           database: dbDatabase,
           ssl: sslEnabled,
+          hasPassword: !!dbPassword,
+          envVars: {
+            DB_HOST: !!process.env.DB_HOST,
+            DB_PORT: !!process.env.DB_PORT,
+            DB_USERNAME: !!process.env.DB_USERNAME,
+            DB_PASSWORD: !!process.env.DB_PASSWORD,
+            DB_DATABASE: !!process.env.DB_DATABASE,
+            DB_SSL: !!process.env.DB_SSL,
+          }
         });
+
+        if (!dbHost || !dbUsername || !dbPassword) {
+          console.error('❌ Missing required database configuration:');
+          console.error('DB_HOST:', dbHost ? 'SET' : 'MISSING');
+          console.error('DB_USERNAME:', dbUsername ? 'SET' : 'MISSING');
+          console.error('DB_PASSWORD:', dbPassword ? 'SET' : 'MISSING');
+          throw new Error('Missing required database environment variables. Please check DB_HOST, DB_USERNAME, and DB_PASSWORD.');
+        }
 
         return {
           type: 'postgres',
           host: dbHost,
           port: dbPort,
           username: dbUsername,
-          password: configService.get('DB_PASSWORD'),
+          password: dbPassword,
           database: dbDatabase,
           entities: [
             UserProfile,
