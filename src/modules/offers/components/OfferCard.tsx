@@ -4,7 +4,7 @@ import { offerService } from '../services/offerService';
 import { applicationService } from '../../applications/services/applicationService';
 import { paymentRequestService } from '../services/paymentRequestService';
 import { UserAvatar } from '../../../components/UserAvatar';
-import { supabase } from '../../../core/supabase';
+import { profileService } from '../../profiles/services/profileService';
 import { ViewCompletionModal } from './ViewCompletionModal';
 import {
   Clock,
@@ -77,12 +77,14 @@ export function OfferCard({
         return;
       }
 
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name, avatar')
-        .eq('user_id', partnerId)
-        .maybeSingle();
-      if (data) setPartnerProfile(data);
+      const profile = await profileService.getProfile(partnerId);
+      if (profile) {
+        setPartnerProfile({
+          user_id: profile.userId,
+          full_name: profile.fullName,
+          avatar: profile.avatar
+        });
+      }
     } catch (error) {
       console.error('Failed to load partner profile:', error);
     }
