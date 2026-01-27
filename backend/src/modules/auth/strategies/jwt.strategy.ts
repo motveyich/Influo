@@ -57,7 +57,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const supabase = this.supabaseService.getAdminClient();
     const { data: user, error } = await supabase
       .from('user_profiles')
-      .select('user_id, email, full_name, user_type, avatar')
+      .select('user_id, email, full_name, user_type, role, avatar')
       .eq('user_id', payload.sub)
       .maybeSingle();
 
@@ -72,11 +72,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
+    // Use 'role' field with fallback to 'user_type' for backward compatibility
+    const userRole = user.role || user.user_type || 'user';
+
     console.log('✅ [JwtStrategy] Token validated successfully');
     console.log('✅ [JwtStrategy] User:', {
       id: user.user_id,
       email: user.email,
       type: user.user_type,
+      role: user.role,
+      resolvedRole: userRole,
     });
     console.log('🔐 [JwtStrategy] ========== TOKEN VALIDATION END ==========');
 
@@ -84,7 +89,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId: user.user_id,
       email: user.email,
       fullName: user.full_name,
-      userType: user.user_type,
+      userType: userRole,
       avatar: user.avatar,
     };
   }

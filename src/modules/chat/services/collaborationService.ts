@@ -1,8 +1,8 @@
-import { supabase, TABLES } from '../../../core/supabase';
 import { CollaborationForm } from '../../../core/types';
 import { analytics } from '../../../core/analytics';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from './chatService';
+import { api } from '../../../core/api';
 
 export class CollaborationService {
   async sendCollaborationRequest(requestData: Partial<CollaborationForm>): Promise<CollaborationForm> {
@@ -10,25 +10,13 @@ export class CollaborationService {
       // Validate collaboration form data
       this.validateCollaborationForm(requestData);
 
-      const newRequest: Partial<CollaborationForm> = {
-        form_fields: requestData.formFields,
-        linked_campaign: requestData.linkedCampaign,
-        sender_id: requestData.senderId,
-        receiver_id: requestData.receiverId,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const response = await api.post('/chat/collaboration-requests', {
+        formFields: requestData.formFields,
+        linkedCampaign: requestData.linkedCampaign,
+        receiverId: requestData.receiverId
+      });
 
-      const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_FORMS)
-        .insert([newRequest])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const transformedRequest = this.transformFromDatabase(data);
+      const transformedRequest = response.data;
 
       // Send as chat message
       await chatService.sendMessage({
@@ -65,25 +53,17 @@ export class CollaborationService {
   }
 
   async respondToCollaborationRequest(
-    requestId: string, 
+    requestId: string,
     response: 'accepted' | 'declined',
     responseData?: any
   ): Promise<CollaborationForm> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_FORMS)
-        .update({
-          status: response,
-          form_fields: responseData ? { ...responseData } : undefined,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestId)
-        .select()
-        .single();
+      const apiResponse = await api.patch(`/chat/collaboration-requests/${requestId}/respond`, {
+        response,
+        responseData
+      });
 
-      if (error) throw error;
-
-      const updatedRequest = this.transformFromDatabase(data);
+      const updatedRequest = apiResponse.data;
 
       // Send response as chat message
       await chatService.sendMessage({
@@ -122,17 +102,12 @@ export class CollaborationService {
 
   async getCollaborationRequest(requestId: string): Promise<CollaborationForm | null> {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_FORMS)
-        .select('*')
-        .eq('id', requestId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return this.transformFromDatabase(data);
-    } catch (error) {
+      const response = await api.get(`/chat/collaboration-requests/${requestId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
       console.error('Failed to get collaboration request:', error);
       throw error;
     }
@@ -140,17 +115,8 @@ export class CollaborationService {
 
   async getUserCollaborationRequests(userId: string, type: 'sent' | 'received'): Promise<CollaborationForm[]> {
     try {
-      const column = type === 'sent' ? 'sender_id' : 'receiver_id';
-      
-      const { data, error } = await supabase
-        .from(TABLES.COLLABORATION_FORMS)
-        .select('*')
-        .eq(column, userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return data.map(request => this.transformFromDatabase(request));
+      const response = await api.get(`/chat/collaboration-requests?type=${type}`);
+      return response.data;
     } catch (error) {
       console.error('Failed to get user collaboration requests:', error);
       throw error;
@@ -196,19 +162,6 @@ export class CollaborationService {
     if (errors.length > 0) {
       throw new Error(errors.join('; '));
     }
-  }
-
-  private transformFromDatabase(dbData: any): CollaborationForm {
-    return {
-      id: dbData.id,
-      formFields: dbData.form_fields,
-      linkedCampaign: dbData.linked_campaign,
-      senderId: dbData.sender_id,
-      receiverId: dbData.receiver_id,
-      status: dbData.status,
-      createdAt: dbData.created_at,
-      updatedAt: dbData.updated_at
-    };
   }
 }
 

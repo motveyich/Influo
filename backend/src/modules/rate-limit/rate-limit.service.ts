@@ -1,32 +1,30 @@
-import { api } from '../core/api';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { SupabaseService } from '../../shared/supabase/supabase.service';
 
-export type InteractionType = 'application' | 'favorite' | 'automatic_offer' | 'manual_offer';
+@Injectable()
+export class RateLimitService {
+  constructor(private readonly supabase: SupabaseService) {}
 
-export interface RateLimitInteraction {
-  id: string;
-  userId: string;
-  targetUserId: string;
-  interactionType: InteractionType;
-  cardId?: string;
-  campaignId?: string;
-  createdAt: string;
-}
-
-class RateLimitService {
   async isRateLimited(
     userId: string,
     targetUserId: string,
-    interactionType?: InteractionType,
+    interactionType?: string,
     cardId?: string
   ): Promise<boolean> {
     try {
-      const response = await api.post('/rate-limit/check', {
-        targetUserId,
-        interactionType: interactionType || undefined,
-        cardId: cardId || undefined
+      const { data, error } = await this.supabase.getClient().rpc('is_rate_limited', {
+        p_user_id: userId,
+        p_target_user_id: targetUserId,
+        p_interaction_type: interactionType || null,
+        p_card_id: cardId || null
       });
 
-      return response.data.isLimited === true;
+      if (error) {
+        console.error('Error checking rate limit:', error);
+        return false;
+      }
+
+      return data === true;
     } catch (error) {
       console.error('Error checking rate limit:', error);
       return false;
@@ -34,32 +32,59 @@ class RateLimitService {
   }
 
   async recordInteraction(
+    userId: string,
     targetUserId: string,
-    interactionType: InteractionType,
+    interactionType: string,
     cardId?: string,
     campaignId?: string
   ): Promise<void> {
     try {
-      await api.post('/rate-limit/record', {
-        targetUserId,
-        interactionType,
-        cardId: cardId || undefined,
-        campaignId: campaignId || undefined
-      });
+      const { error } = await this.supabase.getClient()
+        .from('rate_limit_interactions')
+        .insert({
+          user_id: userId,
+          target_user_id: targetUserId,
+          interaction_type: interactionType,
+          card_id: cardId || null,
+          campaign_id: campaignId || null
+        });
+
+      if (error) {
+        throw new BadRequestException(`Failed to record interaction: ${error.message}`);
+      }
     } catch (error: any) {
       console.error('Error recording interaction:', error);
-      throw new Error(error.message || 'Failed to record interaction');
+      throw error;
     }
   }
 
-  async getLastInteraction(userId: string, targetUserId: string): Promise<RateLimitInteraction | null> {
+  async getLastInteraction(userId: string, targetUserId: string) {
     try {
-      const response = await api.get(`/rate-limit/last-interaction/${targetUserId}`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
+      const { data, error } = await this.supabase.getClient()
+        .from('rate_limit_interactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('target_user_id', targetUserId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw new BadRequestException(`Failed to fetch last interaction: ${error.message}`);
       }
+
+      if (!data) return null;
+
+      return {
+        id: data.id,
+        userId: data.user_id,
+        targetUserId: data.target_user_id,
+        interactionType: data.interaction_type,
+        cardId: data.card_id,
+        campaignId: data.campaign_id,
+        createdAt: data.created_at
+      };
+    } catch (error) {
       console.error('Error fetching last interaction:', error);
       return null;
     }
@@ -86,9 +111,9 @@ class RateLimitService {
   async canInteract(
     userId: string,
     targetUserId: string,
-    interactionType?: InteractionType,
+    interactionType?: string,
     cardId?: string
-  ): Promise<{ allowed: boolean; remainingMinutes?: number; reason?: string }> {
+  ) {
     try {
       const isLimited = await this.isRateLimited(userId, targetUserId, interactionType, cardId);
 
@@ -118,5 +143,3 @@ class RateLimitService {
     }
   }
 }
-
-export const rateLimitService = new RateLimitService();

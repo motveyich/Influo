@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
-import { SendMessageDto, InitializeConversationDto } from './dto';
+import { SendMessageDto, InitializeConversationDto, SendCollaborationRequestDto, RespondCollaborationRequestDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -61,5 +61,47 @@ export class ChatController {
     @Param('otherUserId') otherUserId: string,
   ) {
     return this.chatService.getConversationInitiator(userId, otherUserId);
+  }
+
+  @Post('collaboration-requests')
+  @ApiOperation({ summary: 'Send collaboration request' })
+  async sendCollaborationRequest(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: SendCollaborationRequestDto,
+  ) {
+    return this.chatService.sendCollaborationRequest(userId, dto);
+  }
+
+  @Patch('collaboration-requests/:requestId/respond')
+  @ApiOperation({ summary: 'Respond to collaboration request' })
+  async respondToCollaborationRequest(
+    @CurrentUser('userId') userId: string,
+    @Param('requestId') requestId: string,
+    @Body() dto: RespondCollaborationRequestDto,
+  ) {
+    return this.chatService.respondToCollaborationRequest(
+      userId,
+      requestId,
+      dto.response,
+      dto.responseData
+    );
+  }
+
+  @Get('collaboration-requests/:requestId')
+  @ApiOperation({ summary: 'Get collaboration request' })
+  async getCollaborationRequest(
+    @CurrentUser('userId') userId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.chatService.getCollaborationRequest(userId, requestId);
+  }
+
+  @Get('collaboration-requests')
+  @ApiOperation({ summary: 'Get user collaboration requests' })
+  async getUserCollaborationRequests(
+    @CurrentUser('userId') userId: string,
+    @Query('type') type: 'sent' | 'received',
+  ) {
+    return this.chatService.getUserCollaborationRequests(userId, type);
   }
 }

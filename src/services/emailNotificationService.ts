@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase';
+import { api } from '../core/api';
 
 export interface EmailNotificationData {
   userName?: string;
@@ -17,16 +17,14 @@ class EmailNotificationService {
     subject: string,
     data: EmailNotificationData
   ): Promise<void> {
-    const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('email, settings')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const response = await api.get(`/profiles/${userId}`);
+      const userData = response.data;
 
-    if (userError || !userData?.email) {
-      console.error('Failed to get user email:', userError);
-      return;
-    }
+      if (!userData?.email) {
+        console.error('Failed to get user email: Email not found');
+        return;
+      }
 
     const notificationTypeMapping: Record<NotificationType, keyof typeof userData.settings.notifications.email> = {
       platform_update: 'marketing',
@@ -70,6 +68,10 @@ class EmailNotificationService {
     } catch (error) {
       console.error('Error sending email notification:', error);
       throw error;
+    }
+    } catch (error) {
+      console.error('Error in sendEmail:', error);
+      return;
     }
   }
 

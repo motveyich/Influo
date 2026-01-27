@@ -16,6 +16,7 @@ import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, CreditCard, Star,
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { blacklistService } from '../../../services/blacklistService';
+import { api } from '../../../core/api';
 
 interface OfferDetailsModalProps {
   isOpen: boolean;
@@ -140,29 +141,20 @@ export function OfferDetailsModal({
         return;
       }
 
-      const { supabase } = await import('../../../core/supabase');
-
       // Получить профиль инициатора
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', offer.initiatedBy)
-        .maybeSingle();
+      const response = await api.get(`/profiles/${offer.initiatedBy}`);
 
-      if (profileError) {
-        console.error('Error loading initiator profile:', profileError);
-        return;
-      }
-
-      if (profile) {
-        setInitiatorProfile(profile);
+      if (response.data) {
+        setInitiatorProfile(response.data);
 
         // Получить отзывы об инициаторе
         const initiatorReviewsData = await reviewService.getUserReviews(offer.initiatedBy);
         setInitiatorReviews(initiatorReviewsData);
       }
-    } catch (error) {
-      console.error('Failed to load initiator profile:', error);
+    } catch (error: any) {
+      if (error.response?.status !== 404) {
+        console.error('Error loading initiator profile:', error);
+      }
     }
   };
 

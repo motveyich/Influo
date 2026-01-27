@@ -11,7 +11,7 @@ import { UserPublicProfileModal } from '../../profiles/components/UserPublicProf
 import { AutoCampaignApplicationModal } from './AutoCampaignApplicationModal';
 import { AutoCampaignCollaborationsModal } from './AutoCampaignCollaborationsModal';
 import { UserAvatar } from '../../../components/UserAvatar';
-import { supabase } from '../../../core/supabase';
+import { api } from '../../../core/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -42,14 +42,18 @@ export function AutoCampaignsPage() {
 
     for (const advertiserId of advertiserIds) {
       try {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, full_name, avatar')
-          .eq('user_id', advertiserId)
-          .maybeSingle();
-        if (data) profiles[advertiserId] = data;
-      } catch (error) {
-        console.error('Failed to load advertiser profile:', error);
+        const response = await api.get(`/profiles/${advertiserId}`);
+        if (response.data) {
+          profiles[advertiserId] = {
+            user_id: response.data.userId || response.data.id,
+            full_name: response.data.fullName,
+            avatar: response.data.avatar
+          };
+        }
+      } catch (error: any) {
+        if (error.response?.status !== 404) {
+          console.error('Failed to load advertiser profile:', error);
+        }
       }
     }
 

@@ -267,4 +267,121 @@ export class ChatService {
       initiatedBy: data?.sender_id || null
     };
   }
+
+  async sendCollaborationRequest(userId: string, requestData: any) {
+    const client = this.supabase.getClient();
+
+    const newRequest = {
+      form_fields: requestData.formFields,
+      linked_campaign: requestData.linkedCampaign,
+      sender_id: userId,
+      receiver_id: requestData.receiverId,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await client
+      .from('collaboration_forms')
+      .insert([newRequest])
+      .select()
+      .single();
+
+    if (error) {
+      throw new BadRequestException(`Failed to send collaboration request: ${error.message}`);
+    }
+
+    return this.transformCollaborationForm(data);
+  }
+
+  async respondToCollaborationRequest(userId: string, requestId: string, response: 'accepted' | 'declined', responseData?: any) {
+    const client = this.supabase.getClient();
+
+    // Verify user is receiver of the request
+    const { data: request } = await client
+      .from('collaboration_forms')
+      .select('receiver_id')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (!request) {
+      throw new NotFoundException('Collaboration request not found');
+    }
+
+    if (request.receiver_id !== userId) {
+      throw new ForbiddenException('You can only respond to requests sent to you');
+    }
+
+    const { data, error } = await client
+      .from('collaboration_forms')
+      .update({
+        status: response,
+        form_fields: responseData ? responseData : undefined,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new BadRequestException(`Failed to respond to collaboration request: ${error.message}`);
+    }
+
+    return this.transformCollaborationForm(data);
+  }
+
+  async getCollaborationRequest(userId: string, requestId: string) {
+    const client = this.supabase.getClient();
+
+    const { data, error } = await client
+      .from('collaboration_forms')
+      .select('*')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (error) {
+      throw new BadRequestException(`Failed to get collaboration request: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new NotFoundException('Collaboration request not found');
+    }
+
+    // Verify user is sender or receiver
+    if (data.sender_id !== userId && data.receiver_id !== userId) {
+      throw new ForbiddenException('You do not have access to this collaboration request');
+    }
+
+    return this.transformCollaborationForm(data);
+  }
+
+  async getUserCollaborationRequests(userId: string, type: 'sent' | 'received') {
+    const client = this.supabase.getClient();
+    const column = type === 'sent' ? 'sender_id' : 'receiver_id';
+
+    const { data, error } = await client
+      .from('collaboration_forms')
+      .select('*')
+      .eq(column, userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new BadRequestException(`Failed to get collaboration requests: ${error.message}`);
+    }
+
+    return data.map(request => this.transformCollaborationForm(request));
+  }
+
+  private transformCollaborationForm(dbData: any) {
+    return {
+      id: dbData.id,
+      formFields: dbData.form_fields,
+      linkedCampaign: dbData.linked_campaign,
+      senderId: dbData.sender_id,
+      receiverId: dbData.receiver_id,
+      status: dbData.status,
+      createdAt: dbData.created_at,
+      updatedAt: dbData.updated_at
+    };
+  }
 }
