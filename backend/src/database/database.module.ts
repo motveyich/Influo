@@ -30,36 +30,71 @@ import {
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const dbHost = configService.get('DB_HOST');
-        const dbPort = parseInt(configService.get('DB_PORT', '5432'), 10);
-        const dbUsername = configService.get('DB_USERNAME');
-        const dbPassword = configService.get('DB_PASSWORD');
-        const dbDatabase = configService.get('DB_DATABASE', 'postgres');
-        const sslEnabled = configService.get('DB_SSL') === 'true' || configService.get('DB_SSL') === true;
+        const databaseUrl = configService.get('DATABASE_URL');
 
-        console.log('🔧 Database Configuration:', {
-          host: dbHost,
-          port: dbPort,
-          username: dbUsername,
-          database: dbDatabase,
-          ssl: sslEnabled,
-          hasPassword: !!dbPassword,
-          envVars: {
-            DB_HOST: !!process.env.DB_HOST,
-            DB_PORT: !!process.env.DB_PORT,
-            DB_USERNAME: !!process.env.DB_USERNAME,
-            DB_PASSWORD: !!process.env.DB_PASSWORD,
-            DB_DATABASE: !!process.env.DB_DATABASE,
-            DB_SSL: !!process.env.DB_SSL,
+        let dbHost: string;
+        let dbPort: number;
+        let dbUsername: string;
+        let dbPassword: string;
+        let dbDatabase: string;
+        let sslEnabled: boolean;
+
+        if (databaseUrl) {
+          try {
+            const url = new URL(databaseUrl);
+            dbHost = url.hostname;
+            dbPort = parseInt(url.port) || 5432;
+            dbUsername = decodeURIComponent(url.username);
+            dbPassword = decodeURIComponent(url.password);
+            dbDatabase = url.pathname.slice(1) || 'postgres';
+            sslEnabled = url.searchParams.get('sslmode') !== 'disable';
+
+            console.log('✅ Using DATABASE_URL for connection');
+            console.log('🔧 Parsed Database Configuration:', {
+              host: dbHost,
+              port: dbPort,
+              username: dbUsername.substring(0, 10) + '***',
+              database: dbDatabase,
+              ssl: sslEnabled,
+            });
+          } catch (error) {
+            console.error('❌ Failed to parse DATABASE_URL:', error.message);
+            throw new Error('Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database');
           }
-        });
+        } else {
+          dbHost = configService.get('DB_HOST');
+          dbPort = parseInt(configService.get('DB_PORT', '5432'), 10);
+          dbUsername = configService.get('DB_USERNAME');
+          dbPassword = configService.get('DB_PASSWORD');
+          dbDatabase = configService.get('DB_DATABASE', 'postgres');
+          sslEnabled = configService.get('DB_SSL') === 'true' || configService.get('DB_SSL') === true;
 
-        if (!dbHost || !dbUsername || !dbPassword) {
-          console.error('❌ Missing required database configuration:');
-          console.error('DB_HOST:', dbHost ? 'SET' : 'MISSING');
-          console.error('DB_USERNAME:', dbUsername ? 'SET' : 'MISSING');
-          console.error('DB_PASSWORD:', dbPassword ? 'SET' : 'MISSING');
-          throw new Error('Missing required database environment variables. Please check DB_HOST, DB_USERNAME, and DB_PASSWORD.');
+          console.log('🔧 Using individual DB_* environment variables');
+          console.log('🔧 Database Configuration:', {
+            host: dbHost,
+            port: dbPort,
+            username: dbUsername ? dbUsername.substring(0, 10) + '***' : 'MISSING',
+            database: dbDatabase,
+            ssl: sslEnabled,
+            envVars: {
+              DB_HOST: !!process.env.DB_HOST,
+              DB_PORT: !!process.env.DB_PORT,
+              DB_USERNAME: !!process.env.DB_USERNAME,
+              DB_PASSWORD: !!process.env.DB_PASSWORD,
+              DB_DATABASE: !!process.env.DB_DATABASE,
+              DB_SSL: !!process.env.DB_SSL,
+            }
+          });
+
+          if (!dbHost || !dbUsername || !dbPassword) {
+            console.error('❌ Missing required database configuration.');
+            console.error('Please set either:');
+            console.error('  1. DATABASE_URL (recommended for Vercel)');
+            console.error('     Example: postgresql://user:password@host:port/database');
+            console.error('  OR');
+            console.error('  2. Individual variables: DB_HOST, DB_USERNAME, DB_PASSWORD');
+            throw new Error('Missing database configuration. Set DATABASE_URL or DB_* variables.');
+          }
         }
 
         return {
@@ -96,12 +131,14 @@ import {
           logging: configService.get('NODE_ENV') === 'development',
           ssl: sslEnabled ? { rejectUnauthorized: false } : false,
           extra: {
-            // Optimized for serverless (Vercel)
-            max: 3, // Maximum number of connections
-            connectionTimeoutMillis: 10000, // 10 seconds
-            idleTimeoutMillis: 30000, // 30 seconds
-            statement_timeout: 30000, // 30 seconds query timeout
+            max: 3,
+            connectionTimeoutMillis: 10000,
+            idleTimeoutMillis: 30000,
+            statement_timeout: 30000,
+            query_timeout: 30000,
           },
+          retryAttempts: 3,
+          retryDelay: 3000,
         };
       },
       inject: [ConfigService],
