@@ -51,7 +51,8 @@ export class DeepSeekRequestDto {
   customPrompt?: string;
 
   @IsString()
-  userId: string;
+  @IsOptional()
+  userId?: string;
 
   @IsString()
   conversationId: string;
