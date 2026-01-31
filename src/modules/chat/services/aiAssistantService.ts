@@ -19,9 +19,9 @@ export class AIAssistantService {
   ): Promise<string> {
     try {
       const messageContext = messages.map(m => ({
-        content: m.content,
+        content: m.messageContent || '',
         senderId: m.senderId,
-        timestamp: m.createdAt
+        timestamp: m.timestamp
       }));
 
       const response = await apiClient.post<DeepSeekResponse>('/ai-assistant/deepseek', {

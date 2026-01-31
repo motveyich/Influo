@@ -29,7 +29,7 @@ export class AILocalRules {
     const stage = this.detectStage(messages);
     const messageCount = messages.length;
 
-    const textContent = messages.map(m => m.content.toLowerCase()).join(' ');
+    const textContent = messages.map(m => m.messageContent?.toLowerCase() || '').join(' ');
 
     const hasAgreement = this.checkForAgreement(textContent);
     const hasPriceDiscussion = this.checkForPrice(textContent);
@@ -69,7 +69,7 @@ export class AILocalRules {
   private detectStage(messages: ChatMessage[]): ConversationStage {
     if (messages.length <= 3) return 'initial';
 
-    const textContent = messages.map(m => m.content.toLowerCase()).join(' ');
+    const textContent = messages.map(m => m.messageContent?.toLowerCase() || '').join(' ');
 
     const completionKeywords = ['завершили', 'готово', 'выполнено', 'спасибо за сотрудничество', 'оплачено'];
     const negotiationKeywords = ['цена', 'стоимость', 'бюджет', 'условия', 'срок', 'deadline', 'deliverables'];
