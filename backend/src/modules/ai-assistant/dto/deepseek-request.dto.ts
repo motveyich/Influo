@@ -6,7 +6,23 @@ export enum AIRequestType {
   RISKS = 'risks',
   IMPROVE_MESSAGE = 'improve_message',
   SUGGEST_REPLY = 'suggest_reply',
-  SUGGEST_NEXT_STEPS = 'suggest_next_steps'
+  SUGGEST_NEXT_STEPS = 'suggest_next_steps',
+  CHECK_MESSAGE = 'check_message',
+  SUGGEST_FIRST_MESSAGE = 'suggest_first_message',
+  CHECKLIST = 'checklist',
+  FORMULATE_NEUTRAL = 'formulate_neutral',
+  REVIEW_HELP = 'review_help'
+}
+
+export enum DealStage {
+  PRE_CONTACT = 'pre_contact',
+  INITIAL_CONTACT = 'initial_contact',
+  NEGOTIATION = 'negotiation',
+  DECISION = 'decision',
+  COLLABORATION = 'collaboration',
+  NEAR_COMPLETION = 'near_completion',
+  COMPLETION = 'completion',
+  UNKNOWN = 'unknown'
 }
 
 class MessageContextDto {
@@ -39,4 +55,8 @@ export class DeepSeekRequestDto {
 
   @IsString()
   conversationId: string;
+
+  @IsEnum(DealStage)
+  @IsOptional()
+  dealStage?: DealStage;
 }

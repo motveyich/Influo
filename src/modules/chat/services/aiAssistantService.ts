@@ -1,7 +1,27 @@
 import { apiClient } from '../../../core/api';
 import { ChatMessage } from '../../../core/types';
 
-export type AIRequestType = 'summary' | 'risks' | 'improve_message' | 'suggest_reply' | 'suggest_next_steps';
+export type AIRequestType =
+  | 'summary'
+  | 'risks'
+  | 'improve_message'
+  | 'suggest_reply'
+  | 'suggest_next_steps'
+  | 'check_message'
+  | 'suggest_first_message'
+  | 'checklist'
+  | 'formulate_neutral'
+  | 'review_help';
+
+export type DealStage =
+  | 'pre_contact'
+  | 'initial_contact'
+  | 'negotiation'
+  | 'decision'
+  | 'collaboration'
+  | 'near_completion'
+  | 'completion'
+  | 'unknown';
 
 interface DeepSeekResponse {
   success: boolean;
@@ -15,7 +35,8 @@ export class AIAssistantService {
     type: AIRequestType,
     messages: ChatMessage[],
     conversationId: string,
-    customPrompt?: string
+    customPrompt?: string,
+    dealStage?: DealStage
   ): Promise<string> {
     try {
       const messageContext = messages.map(m => ({
@@ -28,7 +49,8 @@ export class AIAssistantService {
         type,
         messages: messageContext,
         conversationId,
-        customPrompt
+        customPrompt,
+        dealStage
       });
 
       if (response.data.cached) {
@@ -62,6 +84,26 @@ export class AIAssistantService {
 
   async suggestNextSteps(messages: ChatMessage[], conversationId: string): Promise<string> {
     return this.requestDeepSeekAnalysis('suggest_next_steps', messages, conversationId);
+  }
+
+  async checkMessage(messages: ChatMessage[], conversationId: string, messageText: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('check_message', messages, conversationId, messageText);
+  }
+
+  async suggestFirstMessage(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('suggest_first_message', messages, conversationId);
+  }
+
+  async getChecklist(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('checklist', messages, conversationId);
+  }
+
+  async formulateNeutral(messages: ChatMessage[], conversationId: string, messageText: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('formulate_neutral', messages, conversationId, messageText);
+  }
+
+  async getReviewHelp(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('review_help', messages, conversationId);
   }
 }
 
