@@ -25,8 +25,13 @@ export class AIAssistantService {
 
     const cached = this.getFromCache(cacheKey);
     if (cached) {
-      this.logger.log(`Cache hit for ${dto.type}`);
-      return { response: cached, cached: true };
+      if (!cached || cached.trim().length === 0) {
+        this.logger.warn(`Cache hit for ${dto.type} but value is empty, invalidating cache`);
+        this.cache.delete(cacheKey);
+      } else {
+        this.logger.log(`Cache hit for ${dto.type} - Length: ${cached.length} characters`);
+        return { response: cached, cached: true };
+      }
     }
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -332,5 +337,11 @@ ${conversationText}
       maxSize: 100,
       ttl: this.CACHE_TTL
     };
+  }
+
+  clearCache(): void {
+    const oldSize = this.cache.size;
+    this.cache.clear();
+    this.logger.log(`Cache cleared - Removed ${oldSize} entries`);
   }
 }

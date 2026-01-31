@@ -16,6 +16,11 @@ export class AIAssistantController {
     @CurrentUser() user: any,
     @Body() dto: DeepSeekRequestDto
   ) {
+    if (!user || !user.id) {
+      this.logger.error('User not authenticated or missing user ID');
+      throw new HttpException('Пользователь не авторизован', HttpStatus.UNAUTHORIZED);
+    }
+
     dto.userId = user.id;
 
     try {
@@ -24,18 +29,23 @@ export class AIAssistantController {
       const result = await this.aiAssistantService.processDeepSeekRequest(dto);
 
       if (!result.response || result.response.trim().length === 0) {
-        this.logger.warn('Service returned empty response');
+        this.logger.warn(`Service returned empty response - Response: ${JSON.stringify(result)}`);
         throw new HttpException('AI вернул пустой ответ', HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      this.logger.log(`DeepSeek request completed successfully - Cached: ${result.cached}`);
+      this.logger.log(`DeepSeek request completed successfully - Cached: ${result.cached}, Response length: ${result.response.length}`);
+      this.logger.debug(`Response preview: ${result.response.substring(0, 100)}...`);
 
-      return {
+      const responseData = {
         success: true,
         response: result.response,
         cached: result.cached,
         message: result.cached ? 'Ответ из кэша' : 'Новый запрос к DeepSeek'
       };
+
+      this.logger.debug(`Sending response to client: ${JSON.stringify({ ...responseData, response: responseData.response.substring(0, 50) + '...' })}`);
+
+      return responseData;
     } catch (error) {
       this.logger.error(`DeepSeek request failed: ${error.message}`, error.stack);
 
@@ -57,6 +67,16 @@ export class AIAssistantController {
   @Get('cache-stats')
   getCacheStats() {
     return this.aiAssistantService.getCacheStats();
+  }
+
+  @Post('clear-cache')
+  clearCache(@CurrentUser() user: any) {
+    this.logger.log(`Clearing AI assistant cache - User: ${user.id}`);
+    this.aiAssistantService.clearCache();
+    return {
+      success: true,
+      message: 'Кэш AI assistant успешно очищен'
+    };
   }
 
   @Get('test-connection')
