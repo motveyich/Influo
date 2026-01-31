@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { ContentManagementService } from './content-management.service';
 import { CreatePlatformUpdateDto, UpdatePlatformUpdateDto, CreatePlatformEventDto, UpdatePlatformEventDto } from './dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('content-management')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
 @Controller('content-management')
 export class ContentManagementController {
@@ -47,6 +51,7 @@ export class ContentManagementController {
   }
 
   @Get('updates')
+  @Public()
   @ApiOperation({ summary: 'Get platform updates' })
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'priority', required: false })
@@ -65,6 +70,7 @@ export class ContentManagementController {
   }
 
   @Get('updates/published')
+  @Public()
   @ApiOperation({ summary: 'Get published platform updates' })
   @ApiResponse({ status: 200, description: 'Published updates retrieved successfully' })
   getPublishedUpdates() {
@@ -107,6 +113,7 @@ export class ContentManagementController {
   }
 
   @Get('events')
+  @Public()
   @ApiOperation({ summary: 'Get platform events' })
   @ApiQuery({ name: 'event_type', required: false })
   @ApiQuery({ name: 'is_published', required: false, type: Boolean })
@@ -122,6 +129,7 @@ export class ContentManagementController {
   }
 
   @Get('events/published')
+  @Public()
   @ApiOperation({ summary: 'Get published platform events' })
   @ApiResponse({ status: 200, description: 'Published events retrieved successfully' })
   getPublishedEvents() {

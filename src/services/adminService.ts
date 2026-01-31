@@ -231,16 +231,34 @@ export class AdminService {
 
   private transformCampaignFromDatabase(dbData: any): Campaign {
     return {
-      campaignId: dbData.campaign_id,
+      campaignId: dbData.id || dbData.campaign_id,
       advertiserId: dbData.advertiser_id,
       title: dbData.title,
       description: dbData.description,
-      brand: dbData.brand,
-      budget: dbData.budget,
-      preferences: dbData.preferences,
+      brand: dbData.brand || 'N/A',
+      budget: dbData.budget || {
+        min: dbData.budget_min || 0,
+        max: dbData.budget_max || 0,
+        currency: 'USD'
+      },
+      preferences: dbData.preferences || {
+        platforms: dbData.platforms || [],
+        contentTypes: dbData.content_types || [],
+        targetAudience: {
+          countries: dbData.target_countries || [],
+          interests: dbData.target_audience_interests || []
+        }
+      },
       status: dbData.status,
-      timeline: dbData.timeline,
-      metrics: dbData.metrics,
+      timeline: dbData.timeline || {
+        startDate: dbData.start_date,
+        endDate: dbData.end_date
+      },
+      metrics: dbData.metrics || {
+        sentOffers: dbData.sent_offers_count || 0,
+        acceptedOffers: dbData.accepted_offers_count || 0,
+        completedOffers: dbData.completed_offers_count || 0
+      },
       createdAt: dbData.created_at,
       updatedAt: dbData.updated_at
     };
