@@ -38,17 +38,29 @@ export class AIAssistantService {
       };
     }
 
+    this.logger.debug(`API Key present: ${apiKey ? 'Yes' : 'No'}, starts with: ${apiKey?.substring(0, 7)}...`);
+
     try {
       const prompt = this.buildPrompt(dto);
       const maxTokens = this.getMaxTokens(dto.type);
+
+      this.logger.debug(`Requesting DeepSeek - Type: ${dto.type}, MaxTokens: ${maxTokens}, ConversationId: ${dto.conversationId}`);
+      this.logger.debug(`Prompt length: ${prompt.length} characters`);
+
       const response = await this.callDeepSeek(prompt, apiKey, maxTokens);
 
+      if (!response || response.trim().length === 0) {
+        this.logger.warn('DeepSeek returned empty response');
+        throw new Error('DeepSeek вернул пустой ответ');
+      }
+
+      this.logger.log(`DeepSeek response received - Length: ${response.length} characters`);
       this.saveToCache(cacheKey, response);
 
       return { response, cached: false };
     } catch (error) {
-      this.logger.error(`DeepSeek API error: ${error.message}`);
-      throw new Error('Не удалось получить ответ от AI');
+      this.logger.error(`DeepSeek API error: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
@@ -201,32 +213,81 @@ ${conversationText}
   }
 
   private async callDeepSeek(prompt: string, apiKey: string, maxTokens: number): Promise<string> {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: maxTokens,
-        temperature: 0.7,
-        stream: false
-      })
-    });
+    this.logger.debug('Calling DeepSeek API...');
 
-    if (!response.ok) {
-      throw new Error(`DeepSeek API returned ${response.status}`);
+    let response: Response;
+    try {
+      response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: maxTokens,
+          temperature: 0.7,
+          stream: false
+        })
+      });
+    } catch (error) {
+      this.logger.error(`Network error calling DeepSeek: ${error.message}`);
+      throw new Error(`Ошибка сети при обращении к DeepSeek: ${error.message}`);
     }
 
-    const data = await response.json();
-    return data.choices[0]?.message?.content || 'Не удалось получить ответ';
+    this.logger.debug(`DeepSeek response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      let errorDetails = '';
+      try {
+        const errorData = await response.json();
+        errorDetails = JSON.stringify(errorData);
+        this.logger.error(`DeepSeek API error response: ${errorDetails}`);
+      } catch (e) {
+        const errorText = await response.text();
+        errorDetails = errorText;
+        this.logger.error(`DeepSeek API error text: ${errorText}`);
+      }
+
+      if (response.status === 401) {
+        throw new Error('DeepSeek API: Неверный API ключ (401 Unauthorized)');
+      } else if (response.status === 429) {
+        throw new Error('DeepSeek API: Превышен лимит запросов (429 Too Many Requests)');
+      } else if (response.status === 402) {
+        throw new Error('DeepSeek API: Недостаточно средств на балансе (402 Payment Required)');
+      } else {
+        throw new Error(`DeepSeek API вернул ошибку ${response.status}: ${errorDetails}`);
+      }
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+      this.logger.debug(`DeepSeek response data structure: ${JSON.stringify(Object.keys(data))}`);
+    } catch (error) {
+      this.logger.error('Failed to parse DeepSeek response as JSON');
+      throw new Error('Не удалось разобрать ответ от DeepSeek');
+    }
+
+    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      this.logger.error(`Invalid response structure from DeepSeek: ${JSON.stringify(data)}`);
+      throw new Error('DeepSeek вернул некорректную структуру ответа');
+    }
+
+    const content = data.choices[0]?.message?.content;
+    if (!content) {
+      this.logger.error(`No content in DeepSeek response: ${JSON.stringify(data.choices[0])}`);
+      throw new Error('DeepSeek вернул пустой контент');
+    }
+
+    this.logger.debug(`Successfully extracted content from DeepSeek (length: ${content.length})`);
+    return content.trim();
   }
 
   private generateCacheKey(dto: DeepSeekRequestDto): string {
