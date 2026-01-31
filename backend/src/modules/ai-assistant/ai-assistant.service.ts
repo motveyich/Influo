@@ -45,37 +45,38 @@ export class AIAssistantService {
   }
 
   private buildPrompt(dto: DeepSeekRequestDto): string {
-    const lastMessages = dto.messages.slice(-10);
+    const lastMessages = dto.messages.slice(-12);
     const conversationText = lastMessages
       .map(m => `${m.senderId === dto.userId ? 'Я' : 'Собеседник'}: ${m.content}`)
       .join('\n');
 
-    const systemPrompt = `Ты помощник для платформы сотрудничества инфлюенсеров и рекламодателей.
-Будь кратким, практичным и по делу. Помогай договариваться, а не принимай решения за пользователя.
+    const systemPrompt = `Ты AI-помощник по деловым переговорам для платформы Influo (инфлюенсеры + рекламодатели).
 
-Контекст диалога:
+Твоя роль: помогать договариваться практично и корректно. Не принимай решения за пользователя, только подсказывай.
+
+Контекст последних сообщений:
 ${conversationText}
 
 `;
 
     switch (dto.type) {
       case AIRequestType.SUMMARY:
-        return systemPrompt + 'Дай краткую сводку всех договоренностей из этого диалога. Что согласовано, что еще нужно уточнить? (максимум 5 пунктов)';
+        return systemPrompt + 'Сделай краткую сводку договоренностей: что уже согласовано, что нужно уточнить. Структурировано, 4-6 пунктов максимум.';
 
       case AIRequestType.RISKS:
-        return systemPrompt + 'Проанализируй возможные риски в этом сотрудничестве. На что стоит обратить внимание? (максимум 3 риска)';
+        return systemPrompt + 'Укажи 2-3 возможных риска или недопонимания. Будь конкретным, но не пугай. Формат: список с краткими пояснениями.';
 
       case AIRequestType.IMPROVE_MESSAGE:
-        return systemPrompt + `Пользователь хочет написать: "${dto.customPrompt}"\n\nПредложи улучшенную версию - более профессиональную, но дружелюбную. Только текст сообщения, без объяснений.`;
+        return systemPrompt + `Пользователь хочет написать: "${dto.customPrompt}"\n\nУлучши формулировку: профессионально, но дружелюбно. Выведи ТОЛЬКО итоговый текст, без комментариев.`;
 
-      case AIRequestType.ANALYZE_TONE:
-        return systemPrompt + 'Оцени тон диалога. Конструктивный ли разговор? Есть ли взаимопонимание? (коротко, 2-3 предложения)';
+      case AIRequestType.SUGGEST_REPLY:
+        return systemPrompt + 'Предложи 2-3 варианта ответа на последнее сообщение собеседника. Каждый вариант - 1-2 предложения. Нумерованный список.';
 
       case AIRequestType.SUGGEST_NEXT_STEPS:
-        return systemPrompt + 'Что сделать дальше, чтобы продвинуться в переговорах? (максимум 3 конкретных действия)';
+        return systemPrompt + 'Что делать дальше для продвижения? 3 конкретных шага, каждый в 1 предложение. Нумерованный список.';
 
       default:
-        return systemPrompt + (dto.customPrompt || 'Помоги разобраться в ситуации');
+        return systemPrompt + (dto.customPrompt || 'Помоги разобраться');
     }
   }
 

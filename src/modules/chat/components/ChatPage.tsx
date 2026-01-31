@@ -7,7 +7,6 @@ import { chatService } from '../services/chatService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
 import { CompactAIAssistant } from './CompactAIAssistant';
 import { MessageBubble } from './MessageBubble';
-import { aiAssistantService } from '../services/aiAssistantService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -66,7 +65,6 @@ export function ChatPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [isDeepSeekLoading, setIsDeepSeekLoading] = useState(false);
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
   const updateStatusCache = useRef<Map<string, boolean>>(new Map());
 
@@ -644,34 +642,6 @@ export function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleDeepSeekRequest = async (prompt: string) => {
-    if (!selectedConversation) return;
-
-    setIsDeepSeekLoading(true);
-    try {
-      const response = await aiAssistantService.requestDeepSeekAnalysis(
-        'summary',
-        messages,
-        selectedConversation.id,
-        prompt
-      );
-
-      toast.success('Ответ получен от DeepSeek');
-
-      toast(response, {
-        duration: 10000,
-        style: {
-          maxWidth: '500px',
-          padding: '16px'
-        }
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'Не удалось получить ответ от DeepSeek');
-    } finally {
-      setIsDeepSeekLoading(false);
-    }
-  };
-
   const handleInsertText = (text: string) => {
     setNewMessage(text);
   };
@@ -1078,12 +1048,11 @@ export function ChatPage() {
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 relative">
               {/* Compact AI Assistant Popover */}
-              {showAIAssistant && (
+              {showAIAssistant && selectedConversation && (
                 <CompactAIAssistant
                   messages={messages}
-                  currentUserId={currentUserId}
+                  conversationId={selectedConversation.id}
                   onInsertText={handleInsertText}
-                  onRequestDeepSeek={handleDeepSeekRequest}
                   isOpen={showAIAssistant}
                   onClose={() => setShowAIAssistant(false)}
                 />
@@ -1093,12 +1062,11 @@ export function ChatPage() {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setShowAIAssistant(!showAIAssistant)}
-                    disabled={isDeepSeekLoading}
                     className={`p-2 rounded-md transition-colors ${
                       showAIAssistant
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    } ${isDeepSeekLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                     title="AI-помощник"
                   >
                     <Bot className="w-5 h-5" />

@@ -5,7 +5,7 @@ export enum AIRequestType {
   SUMMARY = 'summary',
   RISKS = 'risks',
   IMPROVE_MESSAGE = 'improve_message',
-  ANALYZE_TONE = 'analyze_tone',
+  SUGGEST_REPLY = 'suggest_reply',
   SUGGEST_NEXT_STEPS = 'suggest_next_steps'
 }
 

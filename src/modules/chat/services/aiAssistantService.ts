@@ -1,7 +1,7 @@
 import { apiClient } from '../../../core/api';
 import { ChatMessage } from '../../../core/types';
 
-export type AIRequestType = 'summary' | 'risks' | 'improve_message' | 'analyze_tone' | 'suggest_next_steps';
+export type AIRequestType = 'summary' | 'risks' | 'improve_message' | 'suggest_reply' | 'suggest_next_steps';
 
 interface DeepSeekResponse {
   success: boolean;
@@ -56,8 +56,8 @@ export class AIAssistantService {
     return this.requestDeepSeekAnalysis('improve_message', messages, conversationId, messageToImprove);
   }
 
-  async analyzeTone(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('analyze_tone', messages, conversationId);
+  async suggestReply(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('suggest_reply', messages, conversationId);
   }
 
   async suggestNextSteps(messages: ChatMessage[], conversationId: string): Promise<string> {
