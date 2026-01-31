@@ -377,7 +377,8 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
     url: '',
     source: '',
     category: 'industry',
-    type: 'feature',
+    type: contentType === 'events' ? 'announcement' : 'info',
+    priority: 'medium',
     isImportant: false,
     participantCount: 0,
     publishedAt: new Date().toISOString().split('T')[0],
@@ -394,7 +395,8 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
         url: editingItem.url || '',
         source: editingItem.source || '',
         category: editingItem.category || 'industry',
-        type: editingItem.type || 'feature',
+        type: editingItem.type || 'info',
+        priority: editingItem.priority || 'medium',
         isImportant: editingItem.isImportant || false,
         participantCount: editingItem.participantCount || 0,
         publishedAt: editingItem.publishedAt ? editingItem.publishedAt.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -409,7 +411,8 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
         url: '',
         source: '',
         category: 'industry',
-        type: 'feature',
+        type: contentType === 'events' ? 'announcement' : 'info',
+        priority: 'medium',
         isImportant: false,
         participantCount: 0,
         publishedAt: new Date().toISOString().split('T')[0],
@@ -442,13 +445,33 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
 
     setIsLoading(true);
     try {
-      const data = {
-        ...formData,
-        publishedAt: new Date(formData.publishedAt).toISOString()
-      };
+      let data: any;
+
+      if (contentType === 'updates') {
+        data = {
+          title: formData.title,
+          summary: formData.summary || undefined,
+          content: formData.content || formData.description,
+          type: formData.type,
+          priority: formData.priority,
+          url: formData.url || undefined,
+          source: formData.source || undefined,
+          is_important: formData.isImportant,
+          is_published: formData.isPublished,
+          published_at: new Date(formData.publishedAt).toISOString()
+        };
+      } else if (contentType === 'events') {
+        data = {
+          title: formData.title,
+          description: formData.description,
+          type: formData.type,
+          participant_count: formData.participantCount || undefined,
+          is_published: formData.isPublished,
+          published_at: new Date(formData.publishedAt).toISOString()
+        };
+      }
 
       if (editingItem) {
-        // Update existing item
         if (contentType === 'updates') {
           await contentManagementService.updateUpdate(editingItem.id, data, user!.id);
         } else if (contentType === 'events') {
@@ -456,7 +479,6 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
         }
         toast.success('Элемент обновлен');
       } else {
-        // Create new item
         if (contentType === 'updates') {
           await contentManagementService.createUpdate(data, user!.id);
         } else if (contentType === 'events') {
@@ -541,20 +563,38 @@ function ContentModal({ isOpen, onClose, contentType, editingItem, onSaved }: Co
 
           {/* Type (for updates/events) */}
           {contentType === 'updates' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Тип обновления
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="feature">Новая функция</option>
-                <option value="improvement">Улучшение</option>
-                <option value="announcement">Объявление</option>
-                <option value="maintenance">Техническое обслуживание</option>
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Тип обновления
+                </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="info">Информация</option>
+                  <option value="success">Успех</option>
+                  <option value="warning">Предупреждение</option>
+                  <option value="error">Ошибка</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Приоритет
+                </label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="low">Низкий</option>
+                  <option value="medium">Средний</option>
+                  <option value="high">Высокий</option>
+                  <option value="critical">Критический</option>
+                </select>
+              </div>
             </div>
           )}
 

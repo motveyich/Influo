@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsObject, IsDateString } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsObject, IsDateString, IsInt } from 'class-validator';
 
 export class CreatePlatformEventDto {
   @IsString()
@@ -7,27 +7,21 @@ export class CreatePlatformEventDto {
   @IsString()
   description: string;
 
-  @IsEnum(['webinar', 'workshop', 'conference', 'meetup', 'other'])
-  event_type: 'webinar' | 'workshop' | 'conference' | 'meetup' | 'other';
-
-  @IsDateString()
-  start_date: string;
-
-  @IsDateString()
+  @IsEnum(['campaign_launch', 'achievement', 'contest', 'milestone', 'announcement', 'maintenance'])
   @IsOptional()
-  end_date?: string;
+  type?: 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
 
-  @IsString()
+  @IsInt()
   @IsOptional()
-  location?: string;
-
-  @IsString()
-  @IsOptional()
-  registration_link?: string;
+  participant_count?: number;
 
   @IsBoolean()
   @IsOptional()
   is_published?: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  published_at?: string;
 
   @IsObject()
   @IsOptional()

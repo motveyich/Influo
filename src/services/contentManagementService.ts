@@ -72,6 +72,10 @@ export class ContentManagementService {
     }
   }
 
+  async getAllUpdates(filters?: { isPublished?: boolean }): Promise<PlatformUpdate[]> {
+    return this.getUpdates(filters);
+  }
+
   async getPublishedUpdates(): Promise<PlatformUpdate[]> {
     try {
       const data = await api.get('/content-management/updates/published');
@@ -149,6 +153,10 @@ export class ContentManagementService {
     }
   }
 
+  async getAllEvents(filters?: { isPublished?: boolean }): Promise<PlatformEvent[]> {
+    return this.getEvents(filters);
+  }
+
   async getPublishedEvents(): Promise<PlatformEvent[]> {
     try {
       const data = await api.get('/content-management/events/published');
@@ -163,12 +171,16 @@ export class ContentManagementService {
     return {
       id: data.id,
       title: data.title,
-      description: data.description || data.content,
+      summary: data.summary,
+      description: data.content || data.description || data.summary || '',
       content: data.content,
       type: data.type,
-      isImportant: data.is_important,
+      priority: data.priority,
+      url: data.url,
+      source: data.source,
+      isImportant: data.is_important || false,
       publishedAt: data.published_at || data.created_at,
-      isPublished: data.is_published,
+      isPublished: data.is_published ?? false,
       createdBy: data.created_by,
       createdAt: data.created_at,
       updatedAt: data.updated_at

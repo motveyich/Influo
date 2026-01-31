@@ -456,9 +456,13 @@ export interface ContentFilter {
 export interface PlatformUpdate {
   id: string;
   title: string;
+  summary?: string;
   description: string;
   content?: string;
-  type: 'feature' | 'improvement' | 'announcement' | 'maintenance';
+  type: 'info' | 'warning' | 'success' | 'error';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  url?: string;
+  source?: string;
   isImportant: boolean;
   publishedAt: string;
   isPublished: boolean;
