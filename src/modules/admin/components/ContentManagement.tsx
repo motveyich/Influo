@@ -61,14 +61,16 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
   const loadContent = async () => {
     try {
       setIsLoading(true);
-      
+
       const isPublished = publishedFilter === 'all' ? undefined : publishedFilter === 'published';
-      
+
       if (activeTab === 'updates') {
         const updatesData = await contentManagementService.getAllUpdates({ isPublished });
+        console.log('Loaded updates:', updatesData);
         setUpdates(updatesData);
       } else if (activeTab === 'events') {
         const eventsData = await contentManagementService.getAllEvents({ isPublished });
+        console.log('Loaded events:', eventsData);
         setEvents(eventsData);
       }
     } catch (error) {
@@ -127,17 +129,28 @@ export function ContentManagement({ onStatsUpdate }: ContentManagementProps) {
   };
 
   const getCurrentData = () => {
+    console.log('[ContentManagement] getCurrentData called', {
+      activeTab,
+      updatesLength: updates.length,
+      eventsLength: events.length,
+      searchQuery
+    });
+
     switch (activeTab) {
       case 'updates':
-        return updates.filter(item => 
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const filteredUpdates = updates.filter(item =>
+          item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
         );
+        console.log('[ContentManagement] Filtered updates:', filteredUpdates);
+        return filteredUpdates;
       case 'events':
-        return events.filter(item => 
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const filteredEvents = events.filter(item =>
+          item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
         );
+        console.log('[ContentManagement] Filtered events:', filteredEvents);
+        return filteredEvents;
       default:
         return [];
     }

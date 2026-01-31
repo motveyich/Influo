@@ -69,7 +69,9 @@ export class ContentManagementService {
       if (filters?.priority) params.priority = filters.priority;
       if (filters?.isPublished !== undefined) params.is_published = filters.isPublished;
 
+      console.log('[ContentManagementService] Fetching updates with params:', params);
       const data = await api.get('/content-management/updates', { params });
+      console.log('[ContentManagementService] Updates API response:', data);
       return data.map(this.transformUpdateFromDatabase);
     } catch (error) {
       console.error('Failed to get updates:', error);
@@ -83,7 +85,9 @@ export class ContentManagementService {
 
   async getPublishedUpdates(): Promise<PlatformUpdate[]> {
     try {
+      console.log('[ContentManagementService] Fetching published updates');
       const data = await api.get('/content-management/updates/published');
+      console.log('[ContentManagementService] Published updates API response:', data);
       return data.map(this.transformUpdateFromDatabase);
     } catch (error) {
       console.error('Failed to get published updates:', error);
@@ -154,7 +158,9 @@ export class ContentManagementService {
       if (filters?.eventType) params.event_type = filters.eventType;
       if (filters?.isPublished !== undefined) params.is_published = filters.isPublished;
 
+      console.log('[ContentManagementService] Fetching events with params:', params);
       const data = await api.get('/content-management/events', { params });
+      console.log('[ContentManagementService] Events API response:', data);
       return data.map(this.transformEventFromDatabase);
     } catch (error) {
       console.error('Failed to get events:', error);
@@ -168,7 +174,9 @@ export class ContentManagementService {
 
   async getPublishedEvents(): Promise<PlatformEvent[]> {
     try {
+      console.log('[ContentManagementService] Fetching published events');
       const data = await api.get('/content-management/events/published');
+      console.log('[ContentManagementService] Published events API response:', data);
       return data.map(this.transformEventFromDatabase);
     } catch (error) {
       console.error('Failed to get published events:', error);
