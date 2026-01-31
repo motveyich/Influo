@@ -476,7 +476,7 @@ export interface PlatformEvent {
   title: string;
   description: string;
   content?: string;
-  type: 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
+  type: 'webinar' | 'workshop' | 'conference' | 'meetup' | 'other' | 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
   participantCount?: number;
   publishedAt: string;
   isPublished: boolean;

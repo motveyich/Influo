@@ -64,7 +64,12 @@ export class ContentManagementService {
 
   async getUpdates(filters?: { type?: string; priority?: string; isPublished?: boolean }): Promise<PlatformUpdate[]> {
     try {
-      const data = await api.get('/content-management/updates', { params: filters });
+      const params: any = {};
+      if (filters?.type) params.type = filters.type;
+      if (filters?.priority) params.priority = filters.priority;
+      if (filters?.isPublished !== undefined) params.is_published = filters.isPublished;
+
+      const data = await api.get('/content-management/updates', { params });
       return data.map(this.transformUpdateFromDatabase);
     } catch (error) {
       console.error('Failed to get updates:', error);
@@ -145,7 +150,11 @@ export class ContentManagementService {
 
   async getEvents(filters?: { eventType?: string; isPublished?: boolean }): Promise<PlatformEvent[]> {
     try {
-      const data = await api.get('/content-management/events', { params: filters });
+      const params: any = {};
+      if (filters?.eventType) params.event_type = filters.eventType;
+      if (filters?.isPublished !== undefined) params.is_published = filters.isPublished;
+
+      const data = await api.get('/content-management/events', { params });
       return data.map(this.transformEventFromDatabase);
     } catch (error) {
       console.error('Failed to get events:', error);
@@ -192,14 +201,10 @@ export class ContentManagementService {
       id: data.id,
       title: data.title,
       description: data.description,
-      type: data.event_type,
-      startDate: data.start_date,
-      endDate: data.end_date,
-      location: data.location,
-      registrationLink: data.registration_link,
+      type: data.event_type || data.type,
       participantCount: data.participant_count || 0,
-      publishedAt: data.published_at || data.created_at,
-      isPublished: data.is_published,
+      publishedAt: data.published_at || data.start_date || data.created_at,
+      isPublished: data.is_published ?? false,
       createdBy: data.created_by,
       createdAt: data.created_at,
       updatedAt: data.updated_at

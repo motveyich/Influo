@@ -7,9 +7,9 @@ export class CreatePlatformEventDto {
   @IsString()
   description: string;
 
-  @IsEnum(['campaign_launch', 'achievement', 'contest', 'milestone', 'announcement', 'maintenance'])
+  @IsEnum(['webinar', 'workshop', 'conference', 'meetup', 'other', 'campaign_launch', 'achievement', 'contest', 'milestone', 'announcement', 'maintenance'])
   @IsOptional()
-  type?: 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
+  type?: 'webinar' | 'workshop' | 'conference' | 'meetup' | 'other' | 'campaign_launch' | 'achievement' | 'contest' | 'milestone' | 'announcement' | 'maintenance';
 
   @IsInt()
   @IsOptional()

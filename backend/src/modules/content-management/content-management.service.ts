@@ -100,12 +100,21 @@ export class ContentManagementService {
   }
 
   async createPlatformEvent(userId: string, dto: CreatePlatformEventDto) {
+    const insertData: any = {
+      title: dto.title,
+      description: dto.description,
+      event_type: dto.type || 'announcement',
+      start_date: dto.published_at || new Date().toISOString(),
+      participant_count: dto.participant_count,
+      is_published: dto.is_published,
+      published_at: dto.published_at,
+      metadata: dto.metadata || {},
+      created_by: userId,
+    };
+
     const { data, error } = await this.supabase.getClient()
       .from('platform_events')
-      .insert({
-        ...dto,
-        created_by: userId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -126,9 +135,21 @@ export class ContentManagementService {
       }
     }
 
+    const updateData: any = {};
+    if (dto.title !== undefined) updateData.title = dto.title;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.type !== undefined) updateData.event_type = dto.type;
+    if (dto.participant_count !== undefined) updateData.participant_count = dto.participant_count;
+    if (dto.is_published !== undefined) updateData.is_published = dto.is_published;
+    if (dto.published_at !== undefined) {
+      updateData.published_at = dto.published_at;
+      updateData.start_date = dto.published_at;
+    }
+    if (dto.metadata !== undefined) updateData.metadata = dto.metadata;
+
     const { data, error } = await this.supabase.getClient()
       .from('platform_events')
-      .update(dto)
+      .update(updateData)
       .eq('id', eventId)
       .select()
       .single();
