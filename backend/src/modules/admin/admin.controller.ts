@@ -75,7 +75,7 @@ export class AdminController {
   @Roles('admin', 'moderator')
   async blockUser(@Param('id') userId: string, @Request() req: any) {
     const adminId = req.user.userId;
-    const adminRole = req.user.role || 'user';
+    const adminRole = req.user.userType || 'user';
 
     return this.adminService.blockUser(userId, adminId, adminRole);
   }
@@ -84,7 +84,7 @@ export class AdminController {
   @Roles('admin', 'moderator')
   async restoreUser(@Param('id') userId: string, @Request() req: any) {
     const adminId = req.user.userId;
-    const adminRole = req.user.role || 'user';
+    const adminRole = req.user.userType || 'user';
 
     return this.adminService.restoreUser(userId, adminId, adminRole);
   }
@@ -93,7 +93,7 @@ export class AdminController {
   @Roles('admin', 'moderator')
   async deleteCampaign(@Param('id') campaignId: string, @Request() req: any) {
     const adminId = req.user.userId;
-    const adminRole = req.user.role || 'user';
+    const adminRole = req.user.userType || 'user';
 
     return this.adminService.deleteCampaign(campaignId, adminId, adminRole);
   }
@@ -102,7 +102,7 @@ export class AdminController {
   @Roles('admin', 'moderator')
   async deleteInfluencerCard(@Param('id') cardId: string, @Request() req: any) {
     const adminId = req.user.userId;
-    const adminRole = req.user.role || 'user';
+    const adminRole = req.user.userType || 'user';
 
     return this.adminService.deleteInfluencerCard(cardId, adminId, adminRole);
   }

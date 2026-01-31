@@ -51,7 +51,7 @@ export class ModerationService {
       .select('*');
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq('moderation_status', filters.status);
     }
 
     if (filters?.contentType) {
@@ -108,10 +108,10 @@ export class ModerationService {
     const { data, error } = await supabase
       .from('moderation_queue')
       .update({
-        status,
-        moderated_by: moderatorId,
-        moderated_at: new Date().toISOString(),
-        moderation_notes: moderationNotes || null
+        moderation_status: status,
+        assigned_moderator: moderatorId,
+        reviewed_at: new Date().toISOString(),
+        review_notes: moderationNotes || null
       })
       .eq('id', itemId)
       .select();

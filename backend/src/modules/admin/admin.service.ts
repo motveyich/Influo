@@ -52,12 +52,6 @@ export class AdminService {
       .from('auto_campaigns')
       .select('*');
 
-    if (filters?.isDeleted !== undefined) {
-      query = query.eq('is_deleted', filters.isDeleted);
-    } else {
-      query = query.eq('is_deleted', false);
-    }
-
     if (filters?.status) {
       query = query.eq('status', filters.status);
     }
@@ -221,11 +215,9 @@ export class AdminService {
     const { error } = await supabase
       .from('auto_campaigns')
       .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        deleted_by: adminId
+        status: 'closed'
       })
-      .eq('campaign_id', campaignId);
+      .eq('id', campaignId);
 
     if (error) {
       throw new BadRequestException(`Failed to delete campaign: ${error.message}`);

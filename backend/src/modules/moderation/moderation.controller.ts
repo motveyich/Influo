@@ -50,7 +50,7 @@ export class ModerationController {
     @Request() req: any
   ) {
     const moderatorId = req.user.userId;
-    const moderatorRole = req.user.role || 'user';
+    const moderatorRole = req.user.userType || 'user';
 
     return this.moderationService.updateReportStatus(reportId, status, moderatorId, moderatorRole, resolution);
   }
@@ -64,7 +64,7 @@ export class ModerationController {
     @Request() req: any
   ) {
     const moderatorId = req.user.userId;
-    const moderatorRole = req.user.role || 'user';
+    const moderatorRole = req.user.userType || 'user';
 
     return this.moderationService.updateModerationQueueItem(itemId, status, moderatorId, moderatorRole, moderationNotes);
   }
@@ -73,7 +73,7 @@ export class ModerationController {
   @Roles('admin', 'moderator')
   async approveContent(@Param('id') itemId: string, @Request() req: any) {
     const moderatorId = req.user.userId;
-    const moderatorRole = req.user.role || 'user';
+    const moderatorRole = req.user.userType || 'user';
 
     return this.moderationService.approveContent(itemId, moderatorId, moderatorRole);
   }
@@ -86,7 +86,7 @@ export class ModerationController {
     @Request() req: any
   ) {
     const moderatorId = req.user.userId;
-    const moderatorRole = req.user.role || 'user';
+    const moderatorRole = req.user.userType || 'user';
 
     return this.moderationService.rejectContent(itemId, moderatorId, moderatorRole, reason);
   }
