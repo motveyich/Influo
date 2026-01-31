@@ -95,7 +95,7 @@ export class AIAssistantController {
       this.logger.log(`Testing DeepSeek connection for user ${user.userId}`);
 
       const testResult = await this.aiAssistantService.processDeepSeekRequest({
-        type: AIRequestType.SUMMARY,
+        type: AIRequestType.SUGGEST_REPLY,
         messages: [{ content: 'Привет', senderId: user.userId, timestamp: new Date().toISOString() }],
         conversationId: 'test',
         userId: user.userId

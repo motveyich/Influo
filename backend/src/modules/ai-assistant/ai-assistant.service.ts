@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DeepSeekRequestDto, AIRequestType, DealStage } from './dto';
+import { DeepSeekRequestDto, AIRequestType } from './dto';
 import { SupabaseService } from '../../shared/supabase/supabase.service';
 
 interface CachedResponse {
@@ -17,10 +17,6 @@ export class AIAssistantService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async processDeepSeekRequest(dto: DeepSeekRequestDto): Promise<{ response: string; cached: boolean }> {
-    if (!dto.dealStage) {
-      dto.dealStage = await this.determineDealStage(dto.conversationId, dto.messages.length);
-    }
-
     const cacheKey = this.generateCacheKey(dto);
 
     const cached = this.getFromCache(cacheKey);
@@ -38,7 +34,7 @@ export class AIAssistantService {
     if (!apiKey) {
       this.logger.warn('DeepSeek API key not configured');
       return {
-        response: 'DeepSeek не настроен. Используйте локальные подсказки AI.',
+        response: 'DeepSeek не настроен.',
         cached: false
       };
     }
@@ -46,11 +42,12 @@ export class AIAssistantService {
     this.logger.debug(`API Key present: ${apiKey ? 'Yes' : 'No'}, starts with: ${apiKey?.substring(0, 7)}...`);
 
     try {
-      const prompt = this.buildPrompt(dto);
+      const relevantMessages = await this.getRelevantMessages(dto);
+      const prompt = this.buildPrompt(dto, relevantMessages);
       const maxTokens = this.getMaxTokens(dto.type);
 
       this.logger.debug(`Requesting DeepSeek - Type: ${dto.type}, MaxTokens: ${maxTokens}, ConversationId: ${dto.conversationId}`);
-      this.logger.debug(`Prompt length: ${prompt.length} characters`);
+      this.logger.debug(`Prompt length: ${prompt.length} characters, Messages used: ${relevantMessages.length}`);
 
       const response = await this.callDeepSeek(prompt, apiKey, maxTokens);
 
@@ -72,109 +69,90 @@ export class AIAssistantService {
   private getMaxTokens(type: AIRequestType): number {
     switch (type) {
       case AIRequestType.CHECK_MESSAGE: return 150;
-      case AIRequestType.IMPROVE_MESSAGE: return 200;
-      case AIRequestType.FORMULATE_NEUTRAL: return 200;
       case AIRequestType.SUGGEST_REPLY: return 250;
-      case AIRequestType.SUGGEST_FIRST_MESSAGE: return 300;
-      case AIRequestType.RISKS: return 300;
-      case AIRequestType.CHECKLIST: return 350;
-      case AIRequestType.SUMMARY: return 400;
-      case AIRequestType.REVIEW_HELP: return 400;
-      case AIRequestType.SUGGEST_NEXT_STEPS: return 250;
-      default: return 500;
+      case AIRequestType.DIALOG_STATUS: return 400;
+      default: return 300;
     }
   }
 
-  private async determineDealStage(conversationId: string, messageCount: number): Promise<DealStage> {
+  private async getRelevantMessages(dto: DeepSeekRequestDto): Promise<any[]> {
     try {
-      const [senderId, receiverId] = conversationId.split('_');
+      const [senderId, receiverId] = dto.conversationId.split('_');
       if (!senderId || !receiverId) {
-        return DealStage.UNKNOWN;
+        return this.getLimitedMessages(dto.messages, dto.type);
       }
 
-      const supabase = this.supabaseService.getClient();
-      const { data: offer } = await supabase
+      const supabase = this.supabaseService.getAdminClient();
+
+      // Найти последнее активное сотрудничество (offer) между пользователями
+      const { data: latestOffer } = await supabase
         .from('offers')
-        .select('status, created_at')
+        .select('created_at')
         .or(`and(influencer_id.eq.${senderId},advertiser_id.eq.${receiverId}),and(influencer_id.eq.${receiverId},advertiser_id.eq.${senderId})`)
+        .in('status', ['pending', 'counter', 'accepted', 'in_progress', 'pending_completion'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!offer) {
-        return messageCount <= 5 ? DealStage.PRE_CONTACT : DealStage.INITIAL_CONTACT;
+      if (!latestOffer) {
+        // Если нет активного offer, берем сообщения за последнюю неделю
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const messagesInLastWeek = dto.messages.filter(msg => {
+          const msgDate = new Date(msg.timestamp);
+          return msgDate >= oneWeekAgo;
+        });
+
+        return this.getLimitedMessages(messagesInLastWeek.length > 0 ? messagesInLastWeek : dto.messages, dto.type);
       }
 
-      switch (offer.status) {
-        case 'pending':
-        case 'counter':
-          return DealStage.NEGOTIATION;
-        case 'accepted':
-          return DealStage.DECISION;
-        case 'in_progress':
-          return DealStage.COLLABORATION;
-        case 'pending_completion':
-          return DealStage.NEAR_COMPLETION;
-        case 'completed':
-          return DealStage.COMPLETION;
-        default:
-          return DealStage.UNKNOWN;
+      // Если есть offer, берем сообщения после даты создания offer
+      const offerDate = new Date(latestOffer.created_at);
+      const messagesAfterOffer = dto.messages.filter(msg => {
+        const msgDate = new Date(msg.timestamp);
+        return msgDate >= offerDate;
+      });
+
+      if (messagesAfterOffer.length === 0) {
+        return this.getLimitedMessages(dto.messages, dto.type);
       }
+
+      return this.getLimitedMessages(messagesAfterOffer, dto.type);
     } catch (error) {
-      this.logger.error(`Error determining deal stage: ${error.message}`);
-      return DealStage.UNKNOWN;
+      this.logger.error(`Error getting relevant messages: ${error.message}`);
+      return this.getLimitedMessages(dto.messages, dto.type);
     }
   }
 
-  private getMessageLimit(stage: DealStage): number {
-    switch (stage) {
-      case DealStage.PRE_CONTACT: return 5;
-      case DealStage.INITIAL_CONTACT: return 8;
-      case DealStage.NEGOTIATION: return 12;
-      case DealStage.DECISION: return 10;
-      case DealStage.COLLABORATION: return 10;
-      case DealStage.NEAR_COMPLETION: return 8;
-      case DealStage.COMPLETION: return 5;
-      default: return 10;
-    }
-  }
+  private getLimitedMessages(messages: any[], type: AIRequestType): any[] {
+    let limit: number;
 
-  private getStageContext(stage: DealStage): string {
-    switch (stage) {
-      case DealStage.PRE_CONTACT:
-        return 'Этап: первый контакт. Пользователь только начинает общение.';
-      case DealStage.INITIAL_CONTACT:
-        return 'Этап: начало диалога. Стороны знакомятся и выясняют возможность сотрудничества.';
-      case DealStage.NEGOTIATION:
-        return 'Этап: обсуждение условий. Стороны обсуждают детали сотрудничества (цена, сроки, формат).';
-      case DealStage.DECISION:
-        return 'Этап: принятие решения. Условия согласованы, нужно финализировать договоренности.';
-      case DealStage.COLLABORATION:
-        return 'Этап: сотрудничество в процессе. Работа началась, идет выполнение условий.';
-      case DealStage.NEAR_COMPLETION:
-        return 'Этап: близится завершение. Работа почти завершена, обсуждается финализация.';
-      case DealStage.COMPLETION:
-        return 'Этап: завершение сделки. Работа завершена, время для отзывов и подведения итогов.';
+    switch (type) {
+      case AIRequestType.CHECK_MESSAGE:
+        limit = 5;
+        break;
+      case AIRequestType.SUGGEST_REPLY:
+        limit = 8;
+        break;
+      case AIRequestType.DIALOG_STATUS:
+        limit = 20;
+        break;
       default:
-        return 'Этап: не определен.';
+        limit = 10;
     }
+
+    return messages.slice(-limit);
   }
 
-  private buildPrompt(dto: DeepSeekRequestDto): string {
-    const dealStage = dto.dealStage ?? DealStage.UNKNOWN;
-    const messageLimit = this.getMessageLimit(dealStage);
-    const lastMessages = dto.messages.slice(-messageLimit);
-    const conversationText = lastMessages
+  private buildPrompt(dto: DeepSeekRequestDto, messages: any[]): string {
+    const conversationText = messages
       .map(m => `${m.senderId === dto.userId ? 'Я' : 'Собеседник'}: ${m.content}`)
       .join('\n');
 
-    const stageContext = this.getStageContext(dealStage);
+    const basePrompt = `Ты AI-помощник для платформы Influo (инфлюенсеры + рекламодатели).
 
-    const systemPrompt = `Ты AI-помощник сделки для платформы Influo (инфлюенсеры + рекламодатели).
-
-Твоя роль: помогать договариваться практично и корректно. Не принимай решения за пользователя, только подсказывай.
-
-${stageContext}
+Твоя роль: помогать вести деловую переписку эффективно. Не принимай решения за пользователя, только подсказывай.
 
 Контекст последних сообщений:
 ${conversationText}
@@ -182,38 +160,44 @@ ${conversationText}
 `;
 
     switch (dto.type) {
-      case AIRequestType.SUMMARY:
-        return systemPrompt + 'Сделай краткую сводку договоренностей: что уже согласовано, что нужно уточнить. Структурировано, 4-6 пунктов максимум.';
+      case AIRequestType.CHECK_MESSAGE:
+        return basePrompt + `Пользователь хочет отправить: "${dto.customPrompt}"
 
-      case AIRequestType.RISKS:
-        return systemPrompt + 'Укажи 2-3 возможных риска или недопонимания в этих договоренностях. Будь конкретным, но не пугай. Формат: список с краткими пояснениями.';
+Проверь это сообщение:
+1. Подходит ли для делового общения?
+2. Понятно ли, чего хочет пользователь?
+3. Нет ли двусмысленностей, резкости или лишней воды?
 
-      case AIRequestType.IMPROVE_MESSAGE:
-        return systemPrompt + `Пользователь хочет написать: "${dto.customPrompt}"\n\nУлучши формулировку с учетом текущего этапа: профессионально, но дружелюбно. Выведи ТОЛЬКО итоговый текст, без комментариев.`;
+Дай 2-4 коротких пункта обратной связи. Если нужно, предложи 1 улучшенный вариант.`;
 
       case AIRequestType.SUGGEST_REPLY:
-        return systemPrompt + 'Предложи 2-3 варианта ответа на последнее сообщение собеседника. Каждый вариант - 1-2 предложения. Нумерованный список.';
+        return basePrompt + `Предложи 3 варианта ответа на последнее сообщение собеседника:
 
-      case AIRequestType.SUGGEST_NEXT_STEPS:
-        return systemPrompt + 'Что делать дальше для продвижения на этом этапе? 3 конкретных шага, каждый в 1 предложение. Нумерованный список.';
+1. Нейтральный вариант
+2. Более деловой вариант
+3. Более дружелюбный вариант
 
-      case AIRequestType.CHECK_MESSAGE:
-        return systemPrompt + `Пользователь собирается отправить: "${dto.customPrompt}"\n\nПроверь сообщение: понятно ли, вежливо ли, есть ли конкретика? Укажи 1-2 совета по улучшению или подтверди что все хорошо.`;
+Каждый вариант должен быть кратким (1-2 предложения) и конкретным.`;
 
-      case AIRequestType.SUGGEST_FIRST_MESSAGE:
-        return systemPrompt + 'Предложи 3 варианта первого сообщения для начала контакта. Каждый должен включать: представление, цель обращения, конкретный вопрос. По 2-3 предложения каждый. Нумерованный список.';
+      case AIRequestType.DIALOG_STATUS:
+        return basePrompt + `Проанализируй диалог и составь краткую структурированную выжимку:
 
-      case AIRequestType.CHECKLIST:
-        return systemPrompt + 'Создай чеклист для текущего этапа: что важно проверить/уточнить перед переходом к следующему шагу. 5-6 пунктов.';
+**Текущий статус:**
+— Краткое описание состояния диалога (1 строка)
 
-      case AIRequestType.FORMULATE_NEUTRAL:
-        return systemPrompt + `Пользователь хочет сказать: "${dto.customPrompt}"\n\nПерефразируй это нейтрально и конструктивно для разрешения спорной ситуации. Выведи ТОЛЬКО итоговый текст.`;
+**Уже обсуждали:**
+— Список согласованных моментов
 
-      case AIRequestType.REVIEW_HELP:
-        return systemPrompt + 'Помоги сформулировать конструктивный отзыв о завершенном сотрудничестве. Предложи структуру: что получилось хорошо, что можно улучшить, общая оценка. 3-4 пункта.';
+**Не договорились:**
+— Список открытых вопросов
+
+**Рекомендуется уточнить:**
+— Что важно обсудить далее
+
+Будь конкретным, не придумывай. Основывайся только на содержании диалога.`;
 
       default:
-        return systemPrompt + (dto.customPrompt || 'Помоги разобраться');
+        return basePrompt + 'Помоги с этим запросом.';
     }
   }
 
@@ -301,8 +285,8 @@ ${conversationText}
       .map(m => m.content.substring(0, 50))
       .join('|');
 
-    const dealStage = dto.dealStage ?? DealStage.UNKNOWN;
-    return `${dto.type}:${dto.conversationId}:${dealStage}:${messagesHash}`;
+    const customPromptHash = dto.customPrompt ? dto.customPrompt.substring(0, 30) : '';
+    return `${dto.type}:${dto.conversationId}:${customPromptHash}:${messagesHash}`;
   }
 
   private getFromCache(key: string): string | null {

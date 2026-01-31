@@ -5,8 +5,9 @@ import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { CompactAIAssistant } from './CompactAIAssistant';
+import { SimpleAIAssistant } from './SimpleAIAssistant';
 import { MessageBubble } from './MessageBubble';
+import { aiAssistantService } from '../services/aiAssistantService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -646,6 +647,29 @@ export function ChatPage() {
     setNewMessage(text);
   };
 
+  const handleAIRequest = async (type: string, customPrompt?: string): Promise<string> => {
+    if (!selectedConversation) {
+      throw new Error('Нет выбранного диалога');
+    }
+
+    switch (type) {
+      case 'check_message':
+        if (!customPrompt) {
+          throw new Error('Нет текста для проверки');
+        }
+        return await aiAssistantService.checkMessage(messages, selectedConversation.id, customPrompt);
+
+      case 'suggest_reply':
+        return await aiAssistantService.suggestReply(messages, selectedConversation.id);
+
+      case 'dialog_status':
+        return await aiAssistantService.getDialogStatus(messages, selectedConversation.id);
+
+      default:
+        throw new Error('Неизвестный тип запроса');
+    }
+  };
+
   // Filter conversations by active tab
   const getTabConversations = (tab: ChatTab) => {
     return conversations.filter(conv => conv.chatType === tab);
@@ -1047,14 +1071,17 @@ export function ChatPage() {
 
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 relative">
-              {/* Compact AI Assistant Popover */}
+              {/* Simple AI Assistant */}
               {showAIAssistant && selectedConversation && (
-                <CompactAIAssistant
-                  messages={messages}
-                  conversationId={selectedConversation.id}
-                  onInsertText={handleInsertText}
+                <SimpleAIAssistant
                   isOpen={showAIAssistant}
                   onClose={() => setShowAIAssistant(false)}
+                  messages={messages}
+                  conversationId={selectedConversation.id}
+                  currentUserId={currentUserId}
+                  currentMessageText={newMessage}
+                  onInsertText={handleInsertText}
+                  onAIRequest={handleAIRequest}
                 />
               )}
 

@@ -2,26 +2,9 @@ import { apiClient } from '../../../core/api';
 import { ChatMessage } from '../../../core/types';
 
 export type AIRequestType =
-  | 'summary'
-  | 'risks'
-  | 'improve_message'
-  | 'suggest_reply'
-  | 'suggest_next_steps'
   | 'check_message'
-  | 'suggest_first_message'
-  | 'checklist'
-  | 'formulate_neutral'
-  | 'review_help';
-
-export type DealStage =
-  | 'pre_contact'
-  | 'initial_contact'
-  | 'negotiation'
-  | 'decision'
-  | 'collaboration'
-  | 'near_completion'
-  | 'completion'
-  | 'unknown';
+  | 'suggest_reply'
+  | 'dialog_status';
 
 interface DeepSeekResponse {
   success: boolean;
@@ -31,12 +14,11 @@ interface DeepSeekResponse {
 }
 
 export class AIAssistantService {
-  async requestDeepSeekAnalysis(
+  private async requestDeepSeekAnalysis(
     type: AIRequestType,
     messages: ChatMessage[],
     conversationId: string,
-    customPrompt?: string,
-    dealStage?: DealStage
+    customPrompt?: string
   ): Promise<string> {
     try {
       const messageContext = messages.map(m => ({
@@ -49,61 +31,32 @@ export class AIAssistantService {
         type,
         messages: messageContext,
         conversationId,
-        customPrompt,
-        dealStage
+        customPrompt
       });
 
       if (response.data.cached) {
-        console.log('DeepSeek: Ответ из кэша');
+        console.log('AI: Ответ из кэша');
       } else {
-        console.log('DeepSeek: Новый запрос');
+        console.log('AI: Новый запрос');
       }
 
       return response.data.response;
     } catch (error: any) {
-      console.error('DeepSeek request failed:', error);
+      console.error('AI request failed:', error);
       throw new Error(error.response?.data?.message || 'Не удалось получить ответ от AI');
     }
-  }
-
-  async getSummary(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('summary', messages, conversationId);
-  }
-
-  async analyzeRisks(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('risks', messages, conversationId);
-  }
-
-  async improveMessage(messages: ChatMessage[], conversationId: string, messageToImprove: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('improve_message', messages, conversationId, messageToImprove);
-  }
-
-  async suggestReply(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('suggest_reply', messages, conversationId);
-  }
-
-  async suggestNextSteps(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('suggest_next_steps', messages, conversationId);
   }
 
   async checkMessage(messages: ChatMessage[], conversationId: string, messageText: string): Promise<string> {
     return this.requestDeepSeekAnalysis('check_message', messages, conversationId, messageText);
   }
 
-  async suggestFirstMessage(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('suggest_first_message', messages, conversationId);
+  async suggestReply(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('suggest_reply', messages, conversationId);
   }
 
-  async getChecklist(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('checklist', messages, conversationId);
-  }
-
-  async formulateNeutral(messages: ChatMessage[], conversationId: string, messageText: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('formulate_neutral', messages, conversationId, messageText);
-  }
-
-  async getReviewHelp(messages: ChatMessage[], conversationId: string): Promise<string> {
-    return this.requestDeepSeekAnalysis('review_help', messages, conversationId);
+  async getDialogStatus(messages: ChatMessage[], conversationId: string): Promise<string> {
+    return this.requestDeepSeekAnalysis('dialog_status', messages, conversationId);
   }
 }
 
