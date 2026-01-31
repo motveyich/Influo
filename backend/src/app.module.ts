@@ -26,6 +26,7 @@ import { ContentManagementModule } from './modules/content-management/content-ma
 import { CampaignMetricsModule } from './modules/campaign-metrics/campaign-metrics.module';
 import { CardAnalyticsModule } from './modules/card-analytics/card-analytics.module';
 import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
+import { AIAssistantModule } from './modules/ai-assistant/ai-assistant.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -65,6 +66,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     CampaignMetricsModule,
     CardAnalyticsModule,
     RateLimitModule,
+    AIAssistantModule,
   ],
   controllers: [AppController],
   providers: [

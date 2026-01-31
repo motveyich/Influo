@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChatMessage } from '../../../core/types';
-import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle } from 'lucide-react';
+import { Send, Search, MessageCircle, Handshake, AlertTriangle, UserX, UserCheck, Shield, UserCircle, Bot } from 'lucide-react';
 import { realtimeService } from '../../../core/realtime';
 import { chatService } from '../services/chatService';
 import { UserPublicProfileModal } from '../../profiles/components/UserPublicProfileModal';
-import { AIChatPanel } from './AIChatPanel';
+import { CompactAIAssistant } from './CompactAIAssistant';
 import { MessageBubble } from './MessageBubble';
+import { aiAssistantService } from '../services/aiAssistantService';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useProfileCompletion } from '../../profiles/hooks/useProfileCompletion';
@@ -64,7 +65,8 @@ export function ChatPage() {
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
-  const [showAIPanel, setShowAIPanel] = useState(true);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [isDeepSeekLoading, setIsDeepSeekLoading] = useState(false);
   const [showCollaborationModal, setShowCollaborationModal] = useState(false);
   const updateStatusCache = useRef<Map<string, boolean>>(new Map());
 
@@ -642,6 +644,38 @@ export function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleDeepSeekRequest = async (prompt: string) => {
+    if (!selectedConversation) return;
+
+    setIsDeepSeekLoading(true);
+    try {
+      const response = await aiAssistantService.requestDeepSeekAnalysis(
+        'summary',
+        messages,
+        selectedConversation.id,
+        prompt
+      );
+
+      toast.success('Ответ получен от DeepSeek');
+
+      toast(response, {
+        duration: 10000,
+        style: {
+          maxWidth: '500px',
+          padding: '16px'
+        }
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Не удалось получить ответ от DeepSeek');
+    } finally {
+      setIsDeepSeekLoading(false);
+    }
+  };
+
+  const handleInsertText = (text: string) => {
+    setNewMessage(text);
+  };
+
   // Filter conversations by active tab
   const getTabConversations = (tab: ChatTab) => {
     return conversations.filter(conv => conv.chatType === tab);
@@ -914,7 +948,7 @@ export function ChatPage() {
       </div>
 
       {/* Chat Area */}
-      <div className={`${showAIPanel ? 'flex-1' : 'flex-1'} flex flex-col`}>
+      <div className="flex-1 flex flex-col">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
@@ -1042,9 +1076,33 @@ export function ChatPage() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 relative">
+              {/* Compact AI Assistant Popover */}
+              {showAIAssistant && (
+                <CompactAIAssistant
+                  messages={messages}
+                  currentUserId={currentUserId}
+                  onInsertText={handleInsertText}
+                  onRequestDeepSeek={handleDeepSeekRequest}
+                  isOpen={showAIAssistant}
+                  onClose={() => setShowAIAssistant(false)}
+                />
+              )}
+
               {selectedConversation.canSendMessage ? (
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowAIAssistant(!showAIAssistant)}
+                    disabled={isDeepSeekLoading}
+                    className={`p-2 rounded-md transition-colors ${
+                      showAIAssistant
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    } ${isDeepSeekLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title="AI-помощник"
+                  >
+                    <Bot className="w-5 h-5" />
+                  </button>
                   <input
                     type="text"
                     placeholder={t('chat.typeMessage')}
@@ -1098,17 +1156,6 @@ export function ChatPage() {
           </div>
         )}
       </div>
-
-      {/* AI Chat Panel */}
-      {selectedConversation && showAIPanel && (
-        <AIChatPanel
-          currentUserId={currentUserId}
-          partnerId={selectedConversation.participantId}
-          isVisible={showAIPanel}
-          onToggleVisibility={() => setShowAIPanel(!showAIPanel)}
-          conversationMessages={messages}
-        />
-      )}
 
       {/* Public Profile Modal */}
       {showProfileModal && selectedConversation && (
