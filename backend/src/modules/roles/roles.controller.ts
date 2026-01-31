@@ -28,7 +28,7 @@ export class RolesController {
     return this.rolesService.assignRole(
       assignRoleDto.userId,
       assignRoleDto.role,
-      user.id
+      user.userId
     );
   }
 
@@ -38,7 +38,7 @@ export class RolesController {
     @Param('userId') userId: string,
     @CurrentUser() user: any
   ) {
-    await this.rolesService.removeRole(userId, user.id);
+    await this.rolesService.removeRole(userId, user.userId);
     return { message: 'Role removed successfully' };
   }
 

@@ -16,15 +16,15 @@ export class AIAssistantController {
     @CurrentUser() user: any,
     @Body() dto: DeepSeekRequestDto
   ) {
-    if (!user || !user.id) {
-      this.logger.error('User not authenticated or missing user ID');
+    if (!user || !user.userId) {
+      this.logger.error('User not authenticated or missing user ID', JSON.stringify(user));
       throw new HttpException('Пользователь не авторизован', HttpStatus.UNAUTHORIZED);
     }
 
-    dto.userId = user.id;
+    dto.userId = user.userId;
 
     try {
-      this.logger.log(`Processing DeepSeek request - User: ${user.id}, Type: ${dto.type}`);
+      this.logger.log(`Processing DeepSeek request - User: ${user.userId}, Type: ${dto.type}`);
 
       const result = await this.aiAssistantService.processDeepSeekRequest(dto);
 
@@ -71,7 +71,7 @@ export class AIAssistantController {
 
   @Post('clear-cache')
   clearCache(@CurrentUser() user: any) {
-    this.logger.log(`Clearing AI assistant cache - User: ${user.id}`);
+    this.logger.log(`Clearing AI assistant cache - User: ${user.userId}`);
     this.aiAssistantService.clearCache();
     return {
       success: true,
@@ -92,13 +92,13 @@ export class AIAssistantController {
         };
       }
 
-      this.logger.log(`Testing DeepSeek connection for user ${user.id}`);
+      this.logger.log(`Testing DeepSeek connection for user ${user.userId}`);
 
       const testResult = await this.aiAssistantService.processDeepSeekRequest({
         type: AIRequestType.SUMMARY,
-        messages: [{ content: 'Привет', senderId: user.id, timestamp: new Date().toISOString() }],
+        messages: [{ content: 'Привет', senderId: user.userId, timestamp: new Date().toISOString() }],
         conversationId: 'test',
-        userId: user.id
+        userId: user.userId
       });
 
       return {
