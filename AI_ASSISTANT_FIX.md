@@ -1,12 +1,12 @@
-# AI Assistant 400 Error - Fixed
+# AI Assistant Errors - Fixed
 
-## Problem
+## Problem 1: 400 Bad Request Error
 AI Assistant was returning 400 Bad Request error due to validation issues in the DTO.
 
-## Root Cause
+### Root Cause
 The `userId` field in `DeepSeekRequestDto` was marked as required (`@IsString()` without `@IsOptional()`), but it's populated on the backend from the JWT token via `@CurrentUser()` decorator. The validation happens BEFORE the controller can set this field, causing the request to fail.
 
-## Solution
+### Solution
 Made `userId` optional in the DTO by adding `@IsOptional()` decorator:
 
 ```typescript
@@ -15,8 +15,26 @@ Made `userId` optional in the DTO by adding `@IsOptional()` decorator:
 userId?: string;
 ```
 
+## Problem 2: TypeScript Build Error
+Build was failing with error: `Argument of type 'DealStage | undefined' is not assignable to parameter of type 'DealStage'`
+
+### Root Cause
+The `dto.dealStage` field is optional and can be `undefined`, but methods `getMessageLimit()` and `getStageContext()` expected a non-nullable `DealStage` value.
+
+### Solution
+Added default value using nullish coalescing operator:
+
+```typescript
+const dealStage = dto.dealStage ?? DealStage.UNKNOWN;
+```
+
+Applied in two places:
+1. `buildPrompt()` method
+2. `generateCacheKey()` method
+
 ## Files Changed
 - `backend/src/modules/ai-assistant/dto/deepseek-request.dto.ts`
+- `backend/src/modules/ai-assistant/ai-assistant.service.ts`
 
 ## How It Works Now
 1. Frontend sends request WITHOUT `userId`

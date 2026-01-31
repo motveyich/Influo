@@ -144,13 +144,14 @@ export class AIAssistantService {
   }
 
   private buildPrompt(dto: DeepSeekRequestDto): string {
-    const messageLimit = this.getMessageLimit(dto.dealStage);
+    const dealStage = dto.dealStage ?? DealStage.UNKNOWN;
+    const messageLimit = this.getMessageLimit(dealStage);
     const lastMessages = dto.messages.slice(-messageLimit);
     const conversationText = lastMessages
       .map(m => `${m.senderId === dto.userId ? 'Я' : 'Собеседник'}: ${m.content}`)
       .join('\n');
 
-    const stageContext = this.getStageContext(dto.dealStage);
+    const stageContext = this.getStageContext(dealStage);
 
     const systemPrompt = `Ты AI-помощник сделки для платформы Influo (инфлюенсеры + рекламодатели).
 
@@ -234,7 +235,8 @@ ${conversationText}
       .map(m => m.content.substring(0, 50))
       .join('|');
 
-    return `${dto.type}:${dto.conversationId}:${dto.dealStage}:${messagesHash}`;
+    const dealStage = dto.dealStage ?? DealStage.UNKNOWN;
+    return `${dto.type}:${dto.conversationId}:${dealStage}:${messagesHash}`;
   }
 
   private getFromCache(key: string): string | null {
